@@ -7,7 +7,7 @@ import Timeline from './Timeline';
 import EventPanel from './EventPanel';
 import ShopModal from './ShopModal';
 import { FaArrowLeft, FaBars, FaTimes, FaExclamationTriangle, FaCog, FaSave } from 'react-icons/fa';
-import { generateStoryContinuation, generateGameEvent, generateDynamicLocation, analyzeActionForTechnique, generateBreakthroughNarrative, generateWorldEvent } from '../services/geminiService';
+import { generateStoryContinuationStream, generateGameEvent, generateDynamicLocation, analyzeActionForTechnique, generateBreakthroughNarrative, generateWorldEvent } from '../services/geminiService';
 import { SHICHEN_LIST, REALM_SYSTEM, TIMEOFDAY_DETAILS, NPC_LIST, INNATE_TALENT_RANKS } from '../constants';
 
 
@@ -211,10 +211,10 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const addStoryEntry = (newEntryData: Omit<StoryEntry, 'id'>) => {
+    const addStoryEntry = (newEntryData: Omit<StoryEntry, 'id'> & { id?: number }) => {
         setGameState(gs => {
             if (!gs) return null;
-            const newEntry: StoryEntry = { ...newEntryData, id: Date.now() + Math.random() };
+            const newEntry: StoryEntry = { ...newEntryData, id: newEntryData.id || Date.now() + Math.random() };
             return {
                 ...gs,
                 storyLog: [...gs.storyLog, newEntry]
@@ -351,8 +351,6 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     };
 
     const processAIResponse = (responseText: string) => {
-        let cleanedText = responseText;
-        
         const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH|ADD_TECHNIQUE|UPDATE_ATTRIBUTE|ADD_RECIPE):({.*?})\]/gs;
 
         let match;
@@ -507,10 +505,72 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                 }
             } catch (e) { console.error(`Failed to parse ${tagName} tag`, e, jsonString); }
         }
-        cleanedText = cleanedText.replace(tagRegex, '').trim();
+    };
 
-        if (cleanedText) {
-            addStoryEntry({ type: 'narrative', content: cleanedText });
+    const handleStreamedAIResponse = async (
+        playerActionEntry: StoryEntry,
+        eventOutcome?: { choiceText: string; result: 'success' | 'failure' | 'no_check' },
+        techniqueUsed?: CultivationTechnique
+    ) => {
+        setIsAILoading(true);
+    
+        const streamingEntryId = Date.now() + Math.random();
+        addStoryEntry({ id: streamingEntryId, type: 'narrative', content: '...' });
+    
+        let fullResponse = '';
+        try {
+            const stream = generateStoryContinuationStream(
+                gameState.storyLog,
+                playerActionEntry,
+                gameState,
+                eventOutcome,
+                techniqueUsed
+            );
+    
+            for await (const chunk of stream) {
+                fullResponse += chunk;
+                setGameState(gs => {
+                    if (!gs) return null;
+                    const newLog = gs.storyLog.map(entry => 
+                        entry.id === streamingEntryId ? { ...entry, content: fullResponse } : entry
+                    );
+                    return { ...gs, storyLog: newLog };
+                });
+            }
+    
+            processAIResponse(fullResponse);
+            
+            const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH|ADD_TECHNIQUE|UPDATE_ATTRIBUTE|ADD_RECIPE):({.*?})\]/gs;
+            const cleanedText = fullResponse.replace(tagRegex, '').trim();
+    
+            setGameState(gs => {
+                if (!gs) return null;
+                if (cleanedText) {
+                    const newLog = gs.storyLog.map(entry =>
+                        entry.id === streamingEntryId ? { ...entry, content: cleanedText } : entry
+                    );
+                    return { ...gs, storyLog: newLog };
+                } else {
+                    return { ...gs, storyLog: gs.storyLog.filter(e => e.id !== streamingEntryId) };
+                }
+            });
+    
+            const newActionCount = actionCounter + 1;
+            setActionCounter(newActionCount);
+            if (newActionCount % 5 === 0 && Math.random() < 0.6) {
+                setGameState(gs => {
+                    if(!gs) return null;
+                    const latestLocation = gs.discoveredLocations.find(l => l.id === gs.playerCharacter.currentLocationId)!;
+                    const latestNpcs = gs.activeNpcs.filter(n => n.locationId === latestLocation.id);
+                    generateGameEvent(gs.playerCharacter, gs.gameDate, latestLocation, latestNpcs).then(setCurrentEvent);
+                    return gs;
+                });
+            }
+        } catch (error) {
+            addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${(error as Error).message}` });
+            setGameState(gs => gs ? { ...gs, storyLog: gs.storyLog.filter(e => e.id !== streamingEntryId) } : null);
+        } finally {
+            setIsAILoading(false);
         }
     };
 
@@ -535,83 +595,44 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         }
 
         const playerEntryType = type === 'speak' ? 'player-dialogue' : 'player-action';
+        const playerEntry: StoryEntry = { id: Date.now(), type: playerEntryType, content: text };
         if (type !== 'continue') {
-            addStoryEntry({ type: playerEntryType, content: text });
+            addStoryEntry(playerEntry);
         }
-        setIsAILoading(true);
 
-        try {
-            setGameState(latestGameState => {
-                if (!latestGameState) {
-                    setIsAILoading(false);
-                    return null;
-                }
-                
-                const playerEntry: StoryEntry = { id: Date.now(), type: playerEntryType, content: text };
+        const techniqueUsed = await analyzeActionForTechnique(text, playerCharacter.techniques);
+        let canProceed = true;
 
-                (async () => {
-                    const techniqueUsed = await analyzeActionForTechnique(text, latestGameState.playerCharacter.techniques);
-                    let canProceed = true;
+        if (techniqueUsed) {
+            const costAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === techniqueUsed.cost.type);
+            if (costAttr && (costAttr.value as number) >= techniqueUsed.cost.value) {
+                 setPlayerCharacter(pc => {
+                    const newAttributes = pc.attributes.map(group => ({
+                        ...group,
+                        attributes: group.attributes.map(attr => {
+                            if (attr.name === techniqueUsed.cost.type) {
+                                return { ...attr, value: (attr.value as number) - techniqueUsed.cost.value };
+                            }
+                            return attr;
+                        })
+                    }));
+                    return {...pc, attributes: newAttributes};
+                });
+                addStoryEntry({ type: 'system', content: `Bạn sử dụng [${techniqueUsed.name}], tiêu hao ${techniqueUsed.cost.value} ${techniqueUsed.cost.type}.` });
+            } else {
+                addStoryEntry({ type: 'system', content: `${techniqueUsed.cost.type} không đủ để thi triển [${techniqueUsed.name}]!` });
+                canProceed = false;
+            }
+        }
 
-                    if (techniqueUsed) {
-                        const costAttr = latestGameState.playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === techniqueUsed.cost.type);
-                        if (costAttr && (costAttr.value as number) >= techniqueUsed.cost.value) {
-                             setPlayerCharacter(pc => {
-                                const newAttributes = pc.attributes.map(group => ({
-                                    ...group,
-                                    attributes: group.attributes.map(attr => {
-                                        if (attr.name === techniqueUsed.cost.type) {
-                                            return { ...attr, value: (attr.value as number) - techniqueUsed.cost.value };
-                                        }
-                                        return attr;
-                                    })
-                                }));
-                                return {...pc, attributes: newAttributes};
-                            });
-                            addStoryEntry({ type: 'system', content: `Bạn sử dụng [${techniqueUsed.name}], tiêu hao ${techniqueUsed.cost.value} ${techniqueUsed.cost.type}.` });
-                        } else {
-                            addStoryEntry({ type: 'system', content: `${techniqueUsed.cost.type} không đủ để thi triển [${techniqueUsed.name}]!` });
-                            canProceed = false;
-                        }
-                    }
-
-                    if (canProceed) {
-                        // Use a fresh copy of gameState for the AI call
-                        setGameState(currentStateForAI => {
-                            if (!currentStateForAI) return null;
-                             generateStoryContinuation(currentStateForAI.storyLog, playerEntry, currentStateForAI, undefined, techniqueUsed)
-                                .then(aiResponseText => {
-                                    processAIResponse(aiResponseText);
-                                    const newActionCount = actionCounter + 1;
-                                    setActionCounter(newActionCount);
-                                    if (newActionCount % 5 === 0 && Math.random() < 0.6) {
-                                        generateGameEvent(currentStateForAI.playerCharacter, currentStateForAI.gameDate, currentLocation, npcsAtLocation).then(setCurrentEvent);
-                                    }
-                                })
-                                .catch(error => {
-                                    addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${error.message}` });
-                                })
-                                .finally(() => setIsAILoading(false));
-                            return currentStateForAI;
-                        });
-                    } else {
-                        setIsAILoading(false);
-                    }
-                })();
-                
-                return latestGameState;
-            });
-
-        } catch (error: any) {
-            addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${error.message}` });
-            setIsAILoading(false);
+        if (canProceed) {
+            handleStreamedAIResponse(playerEntry, undefined, techniqueUsed);
         }
     };
     
     const handleEventChoice = async (choice: EventChoice) => {
         if (isAILoading) return;
 
-        setIsAILoading(true);
         const isDemonEvent = currentEvent?.id === 'inner_demon_event';
         setCurrentEvent(null);
 
@@ -638,6 +659,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         addStoryEntry(playerActionEntry);
 
         if (isDemonEvent) {
+            setIsAILoading(true);
             if (result === 'success') {
                 setPlayerCharacter(pc => {
                     const newAttributes = pc.attributes.map(group => {
@@ -667,24 +689,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                 setIsAILoading(false);
             }
         } else {
-             setGameState(latestGameState => {
-                if (!latestGameState) {
-                    setIsAILoading(false);
-                    return null;
-                }
-                generateStoryContinuation(
-                    latestGameState.storyLog,
-                    playerActionEntry,
-                    latestGameState,
-                    { choiceText: choice.text, result }
-                ).then(processAIResponse)
-                 .catch(error => {
-                    addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${error.message}` });
-                })
-                .finally(() => setIsAILoading(false));
-                
-                return latestGameState;
-             });
+             handleStreamedAIResponse(playerActionEntry, { choiceText: choice.text, result });
         }
     };
     

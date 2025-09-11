@@ -700,14 +700,13 @@ export const generateGameEvent = async (
     };
 };
 
-// FIX: Add generateStoryContinuation function and export it
-export const generateStoryContinuation = async (
+export const generateStoryContinuationStream = async function* (
     storyLog: StoryEntry[],
     playerAction: StoryEntry,
     gameState: GameState,
     eventOutcome?: { choiceText: string; result: 'success' | 'failure' | 'no_check' },
     techniqueUsed?: CultivationTechnique
-): Promise<string> => {
+): AsyncGenerator<string, void, undefined> {
     const { playerCharacter, gameDate, discoveredLocations, activeNpcs } = gameState;
     const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!;
     const npcsAtLocation = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
@@ -768,14 +767,33 @@ export const generateStoryContinuation = async (
     `;
     
     const settings = getSettings();
-    const response = await generateWithRetry({
+    const safetySettings = getSafetySettingsForApi();
+    
+    const finalRequest = {
         model: settings.mainTaskModel,
         contents: prompt,
-        config: {}
-    });
-
-    return response.text;
+        config: { 
+            safetySettings,
+            thinkingConfig: { thinkingBudget: 0 }
+        }
+    };
+    
+    let stream;
+    try {
+        const ai = getAiClient();
+        stream = await ai.models.generateContentStream(finalRequest);
+    } catch (e) {
+        console.error("Stream initialization failed, trying once more.", e);
+        await new Promise(res => setTimeout(res, 1000));
+        const ai = getAiClient();
+        stream = await ai.models.generateContentStream(finalRequest);
+    }
+    
+    for await (const chunk of stream) {
+        yield chunk.text;
+    }
 };
+
 
 // FIX: Add generateDynamicLocation function and export it
 export const generateDynamicLocation = async (parentLocation: Location): Promise<{ name: string; description: string }> => {
