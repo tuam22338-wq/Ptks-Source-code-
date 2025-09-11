@@ -7,6 +7,7 @@ import { FaTimes } from 'react-icons/fa';
 interface InventoryPanelProps {
     playerCharacter: PlayerCharacter;
     setPlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
+    showNotification: (message: string) => void;
 }
 
 // Helper to deep copy attributes without losing non-serializable icon components
@@ -51,6 +52,7 @@ const ItemDetailModal: React.FC<{
     onDrop: (item: InventoryItem) => void;
 }> = ({ item, onClose, onEquip, onUnequip, onUse, onDrop }) => {
     const qualityStyle = ITEM_QUALITY_STYLES[item.quality] || ITEM_QUALITY_STYLES['Phàm Phẩm'];
+    const canUse = item.type === 'Đan Dược' || item.type === 'Đan Phương';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
@@ -85,7 +87,7 @@ const ItemDetailModal: React.FC<{
                         ? <button onClick={() => { onUnequip(item.slot!); onClose(); }} className="px-4 py-2 bg-yellow-700/80 text-white font-bold rounded-lg hover:bg-yellow-600/80">Tháo Ra</button>
                         : <button onClick={() => { onEquip(item); onClose(); }} className="px-4 py-2 bg-green-700/80 text-white font-bold rounded-lg hover:bg-green-600/80">Trang Bị</button>
                     )}
-                    {item.type === 'Đan Dược' && <button onClick={() => { onUse(item); onClose(); }} className="px-4 py-2 bg-blue-700/80 text-white font-bold rounded-lg hover:bg-blue-600/80">Sử Dụng</button>}
+                    {canUse && <button onClick={() => { onUse(item); onClose(); }} className="px-4 py-2 bg-blue-700/80 text-white font-bold rounded-lg hover:bg-blue-600/80">{item.type === 'Đan Phương' ? 'Học' : 'Sử Dụng'}</button>}
                     <button onClick={() => { onDrop(item); onClose(); }} className="px-4 py-2 bg-red-800/80 text-white font-bold rounded-lg hover:bg-red-700/80 col-span-full">Vứt Bỏ</button>
                 </div>
             </div>
@@ -93,7 +95,7 @@ const ItemDetailModal: React.FC<{
     );
 };
 
-const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPlayerCharacter }) => {
+const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPlayerCharacter, showNotification }) => {
     const [activeTab, setActiveTab] = useState<'inventory' | 'equipment'>('inventory');
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
@@ -166,15 +168,38 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPla
     };
     
     const handleUse = (itemToUse: InventoryItem) => {
-        // Implement item usage logic here, e.g., healing potions.
-        console.log("Using item:", itemToUse.name);
-        // For now, just remove one from stack
-        setPlayerCharacter(pc => {
-            const newItems = pc.inventory.items.map(i => 
-                i.id === itemToUse.id ? { ...i, quantity: i.quantity - 1 } : i
-            ).filter(i => i.quantity > 0);
-            return {...pc, inventory: {...pc.inventory, items: newItems}};
-        });
+        if (itemToUse.type === 'Đan Phương') {
+            if (itemToUse.recipeId) {
+                setPlayerCharacter(pc => {
+                    if (pc.knownRecipeIds.includes(itemToUse.recipeId!)) {
+                        showNotification("Bạn đã học đan phương này rồi.");
+                        return pc;
+                    }
+                    showNotification(`Đã học được [${itemToUse.name}]!`);
+                    // Consume item
+                     const newItems = pc.inventory.items.map(i => 
+                        i.id === itemToUse.id ? { ...i, quantity: i.quantity - 1 } : i
+                    ).filter(i => i.quantity > 0);
+
+                    return {
+                        ...pc,
+                        knownRecipeIds: [...pc.knownRecipeIds, itemToUse.recipeId!],
+                        inventory: {...pc.inventory, items: newItems}
+                    };
+                });
+            }
+        } else if (itemToUse.type === 'Đan Dược') {
+             // Implement item usage logic here, e.g., healing potions.
+            console.log("Using item:", itemToUse.name);
+            showNotification(`Đã sử dụng ${itemToUse.name}`);
+            // For now, just remove one from stack
+            setPlayerCharacter(pc => {
+                const newItems = pc.inventory.items.map(i => 
+                    i.id === itemToUse.id ? { ...i, quantity: i.quantity - 1 } : i
+                ).filter(i => i.quantity > 0);
+                return {...pc, inventory: {...pc.inventory, items: newItems}};
+            });
+        }
     };
     
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;

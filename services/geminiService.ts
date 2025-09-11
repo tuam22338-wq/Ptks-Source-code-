@@ -1,7 +1,7 @@
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
-import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod } from '../types';
+import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL } from "../constants";
 import {
   FaSun, FaMoon
@@ -468,15 +468,16 @@ const getGameMasterSystemInstruction = (modContext?: ModContext): string => {
     - **Thuộc tính:** Nhân vật có các thuộc tính có thể được tăng cường. Danh sách đầy đủ: ${ALL_ATTRIBUTES.join(', ')}.
     - **Hệ thống Tu Luyện:** Hệ thống cảnh giới hiện tại trong mod này là: ${customRealms}. Bạn có thể định nghĩa lại toàn bộ hệ thống này bằng \`CREATE_REALM_SYSTEM\`.
     - **Phẩm chất Tiên Tư:** Các phẩm chất tiên tư hiện tại trong mod này là: ${customTalentRanks}.
-    - **Vật phẩm (Items):** Gồm 5 loại: Vũ Khí, Phòng Cụ, Đan Dược, Pháp Bảo, Tạp Vật. Chúng có phẩm chất, trọng lượng, và có thể cộng chỉ số.
+    - **Vật phẩm (Items):** Gồm các loại: Vũ Khí, Phòng Cụ, Đan Dược, Pháp Bảo, Tạp Vật, Đan Lô, Linh Dược, Đan Phương. Chúng có phẩm chất, trọng lượng, và có thể cộng chỉ số.
     - **Tiên Tư (Talents):** Là các tài năng bẩm sinh, có cấp bậc, và cũng có thể cộng chỉ số.
     - **Công Pháp (Techniques):** Là các kỹ năng nhân vật có thể sử dụng, có tiêu hao, hồi chiêu, và cấp bậc.
     - **Sự kiện (Events):** Là các tình huống có kịch bản với các lựa chọn, có thể yêu cầu kiểm tra thuộc tính (skill check) và dẫn đến các kết quả khác nhau (outcomes).
+    - **Đan Phương (Recipes):** Là các công thức luyện đan.
 
     **NHIỆM VỤ CỦA BẠN:**
     Phân tích yêu cầu của người dùng và chuyển đổi nó thành một hành động có cấu trúc (action) tương thích với các cơ chế trên.
     - Nếu người dùng chỉ đang trò chuyện hoặc hỏi, hãy sử dụng hành động 'CHAT'.
-    - Nếu người dùng yêu cầu tạo một hoặc nhiều vật phẩm, tiên tư, nhân vật, tông môn, công pháp, NPC, sự kiện v.v., hãy sử dụng các hành động 'CREATE' tương ứng.
+    - Nếu người dùng yêu cầu tạo một hoặc nhiều vật phẩm, tiên tư, nhân vật, tông môn, công pháp, NPC, sự kiện, đan phương v.v., hãy sử dụng các hành động 'CREATE' tương ứng.
     - Nếu người dùng yêu cầu nhiều thứ cùng lúc, hãy sử dụng 'BATCH_ACTIONS'.
     - Luôn trả lời ở định dạng JSON theo một trong các cấu trúc 'action' hợp lệ. Ví dụ: { "action": "CREATE_ITEM", "data": { ... } }.
     - Hãy sáng tạo dựa trên bối cảnh tu tiên và các yếu tố đã có trong mod.
@@ -487,7 +488,7 @@ const getGameMasterSystemInstruction = (modContext?: ModContext): string => {
 export const getGameMasterActionableResponse = async (prompt: string, fileContent?: string, modContext?: ModContext): Promise<AIAction> => {
     const statBonusSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] };
 
-    const itemSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, weight: { type: Type.NUMBER }, slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'] }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'type', 'quality', 'weight'] };
+    const itemSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, weight: { type: Type.NUMBER }, slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'] }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'type', 'quality', 'weight'] };
     const talentSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, rank: { type: Type.STRING, enum: TALENT_RANK_NAMES }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'rank'] };
     const characterSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] }, origin: { type: Type.STRING }, appearance: { type: Type.STRING }, personality: { type: Type.STRING }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'gender', 'origin'] };
     const sectSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, location: { type: Type.STRING }, members: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, rank: { type: Type.STRING, enum: ['Tông Chủ', 'Trưởng Lão', 'Đệ Tử Chân Truyền', 'Đệ Tử Nội Môn', 'Đệ Tử Ngoại Môn'] } } } }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'location'] };
@@ -548,6 +549,20 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
         required: ['name', 'description', 'choices']
     };
 
+    const recipeSchema = {
+        type: Type.OBJECT,
+        properties: {
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            icon: { type: Type.STRING, description: "Một emoji" },
+            ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
+            result: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] },
+            requiredAttribute: { type: Type.OBJECT, properties: { name: { const: 'Đan Thuật' }, value: { type: Type.NUMBER } }, required: ['name', 'value'] },
+            qualityCurve: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { threshold: { type: Type.NUMBER }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] } }, required: ['threshold', 'quality'] } }
+        },
+        required: ['name', 'description', 'icon', 'ingredients', 'result', 'requiredAttribute', 'qualityCurve']
+    };
+
     const responseSchema = {
         oneOf: [
             { properties: { action: { const: 'CHAT' }, data: { type: Type.OBJECT, properties: { response: { type: Type.STRING } } } } },
@@ -568,6 +583,8 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
             { properties: { action: { const: 'CREATE_MULTIPLE_NPCS' }, data: { type: Type.ARRAY, items: npcSchema } } },
             { properties: { action: { const: 'CREATE_EVENT' }, data: eventSchema } },
             { properties: { action: { const: 'CREATE_MULTIPLE_EVENTS' }, data: { type: Type.ARRAY, items: eventSchema } } },
+            { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
+            { properties: { action: { const: 'CREATE_MULTIPLE_RECIPES' }, data: { type: Type.ARRAY, items: recipeSchema } } },
             { properties: { action: { const: 'BATCH_ACTIONS' }, data: { type: Type.ARRAY, items: {
                  oneOf: [
                     { properties: { action: { const: 'CREATE_ITEM' }, data: itemSchema } },
@@ -576,6 +593,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
                     { properties: { action: { const: 'CREATE_TECHNIQUE' }, data: techniqueSchema } },
                     { properties: { action: { const: 'CREATE_NPC' }, data: npcSchema } },
                     { properties: { action: { const: 'CREATE_EVENT' }, data: eventSchema } },
+                    { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
                  ]
             } } } }
         ],
@@ -612,6 +630,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
     }
 };
 
+// FIX: Add generateGameEvent function and export it
 export const generateGameEvent = async (
     player: PlayerCharacter,
     date: GameDate,
@@ -647,24 +666,22 @@ export const generateGameEvent = async (
 
     const context = `
     **Bối cảnh:** Game tu tiên Phong Thần.
-    **Nhân vật chính:** ${player.identity.name} (${player.cultivation.currentRealmId})
+    **Nhân vật chính:** ${player.identity.name} (Cảnh giới: ${REALM_SYSTEM.find(r => r.id === player.cultivation.currentRealmId)?.name || 'Unknown'})
     **Thời gian:** ${date.season}, ${date.timeOfDay}
     **Địa điểm:** ${location.name} (${location.description})
     **Loại địa điểm:** ${location.type}
-    // FIX: Access npc.identity.name instead of npc.name to match the NPC type.
     **Nhân vật khác tại đây:** ${npcs.length > 0 ? npcs.map(n => n.identity.name).join(', ') : 'Không có ai'}
 
     Dựa vào bối cảnh trên, hãy tạo ra một tình tiết (event) nhỏ, bất ngờ và thú vị cho người chơi.
-    - Tình tiết phải có mô tả rõ ràng và 2-3 lựa chọn.
+    - Tình tiết phải có mô tả rõ ràng và 2-4 lựa chọn hành động.
     - QUAN TRỌNG: Nếu địa điểm là 'Bí Cảnh' hoặc 'Hoang Dã', hãy ưu tiên tạo ra các sự kiện nguy hiểm như gặp yêu thú, dính bẫy, hoặc bị tu sĩ khác tập kích.
-    - Mỗi lựa chọn có thể yêu cầu một bài kiểm tra thuộc tính (skill check) với độ khó (difficulty) hợp lý, hoặc không cần (check: null).
-    - Các lựa chọn nên đa dạng: có thể là đối thoại, hành động lén lút, sử dụng sức mạnh, hoặc bỏ qua.
-    - Giữ cho tình huống phù hợp với không khí tu tiên, huyền huyễn.
+    - Mỗi lựa chọn có thể yêu cầu một bài kiểm tra thuộc tính (skill check) với độ khó (difficulty) phù hợp.
+    - Trả về kết quả dưới dạng JSON theo schema.
     `;
     
     const settings = getSettings();
     const response = await generateWithRetry({
-        model: settings.actionAnalysisModel,
+        model: settings.mainTaskModel,
         contents: context,
         config: {
             responseMimeType: "application/json",
@@ -675,161 +692,106 @@ export const generateGameEvent = async (
     const eventData = JSON.parse(response.text);
     return {
         id: `event-${Date.now()}`,
-        description: eventData.description,
-        choices: eventData.choices.map((c: any, index: number) => ({ ...c, id: `choice-${index}` })),
+        ...eventData,
+        choices: eventData.choices.map((choice: any, index: number) => ({
+            ...choice,
+            id: `choice-${Date.now()}-${index}`,
+        })),
     };
 };
 
+// FIX: Add generateStoryContinuation function and export it
 export const generateStoryContinuation = async (
-    history: StoryEntry[],
+    storyLog: StoryEntry[],
     playerAction: StoryEntry,
     gameState: GameState,
     eventOutcome?: { choiceText: string; result: 'success' | 'failure' | 'no_check' },
     techniqueUsed?: CultivationTechnique
 ): Promise<string> => {
-    
-    const { playerCharacter, gameDate, activeNpcs, discoveredLocations, worldState, activeMods, encounteredNpcIds } = gameState;
-    const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
-    const npcsAtLocation = activeNpcs.filter(n => n.locationId === currentLocation.id);
+    const { playerCharacter, gameDate, discoveredLocations, activeNpcs } = gameState;
+    const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!;
+    const npcsAtLocation = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
+    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === getSettings().narrativeStyle)?.label || 'Classic Wuxia';
 
-    let actionDescription = `**Hành động của người chơi:**\n${playerAction.content}`;
+    const history = storyLog.slice(-15).map(entry => {
+        if (entry.type === 'player-action' || entry.type === 'player-dialogue') {
+            return `Người chơi: ${entry.content}`;
+        }
+        return `Hệ thống: ${entry.content}`;
+    }).join('\n');
+
+    let actionContext = '';
     if (eventOutcome) {
-        let resultText = '';
-        if (eventOutcome.result === 'success') resultText = 'và đã thành công';
-        if (eventOutcome.result === 'failure') resultText = 'nhưng đã thất bại';
-        actionDescription = `**Trong một tình huống, người chơi đã chọn:** "${eventOutcome.choiceText}" ${resultText}.`;
+        actionContext = `Người chơi vừa có lựa chọn "${eventOutcome.choiceText}" trong một sự kiện, và kết quả là: ${eventOutcome.result}.`;
+    } else {
+        actionContext = `Người chơi vừa thực hiện hành động: "${playerAction.content}".`;
     }
+    
     if (techniqueUsed) {
-        actionDescription += `\n**Người chơi đã thi triển công pháp:** ${techniqueUsed.name}.`;
+        actionContext += ` Người chơi đã sử dụng công pháp [${techniqueUsed.name}].`;
     }
+
+    const prompt = `Bạn là một người kể chuyện (Game Master) cho game tu tiên Phong Thần Ký Sự.
+    **Văn phong:** ${narrativeStyle}. Hãy viết tiếp câu chuyện một cách hấp dẫn, giàu trí tưởng tượng.
+    
+    **Bối cảnh hiện tại:**
+    - Nhân vật: ${playerCharacter.identity.name}, ${playerCharacter.identity.appearance}, ${playerCharacter.identity.personality}.
+    - Cảnh giới: ${REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name || 'Unknown'}
+    - Địa điểm: ${currentLocation.name} (${currentLocation.description})
+    - NPC xung quanh: ${npcsAtLocation.length > 0 ? npcsAtLocation.map(n => n.identity.name).join(', ') : 'Không có ai.'}
+    - Thời gian: ${gameDate.season}, ${gameDate.timeOfDay}
+    
+    **Lịch sử gần đây:**
+    ${history}
+
+    **Hành động của người chơi:**
+    ${actionContext}
+
+    **Nhiệm vụ của bạn:**
+    1.  **Mô tả kết quả:** Dựa vào hành động của người chơi và bối cảnh, hãy mô tả những gì xảy ra tiếp theo. Hãy sáng tạo và giữ cho câu chuyện liền mạch.
+    2.  **Sử dụng AI Tags (Quan trọng):** Nếu hành động của người chơi dẫn đến các thay đổi cụ thể trong game, hãy sử dụng các tag sau TRONG câu trả lời của bạn. AI sẽ chỉ trả về phần văn bản trần, các tag này sẽ được hệ thống xử lý riêng.
+        -   \`[ADD_ITEM:{"name": "Tên Vật Phẩm", "description": "Mô tả", "quantity": 1, "type": "Loại", "quality": "Phẩm chất", "weight": 0.5}]\`
+        -   \`[REMOVE_ITEM:{"name": "Tên Vật Phẩm", "quantity": 1}]\`
+        -   \`[ADD_CURRENCY:{"name": "Linh thạch hạ phẩm", "amount": 10}]\`
+        -   \`[UPDATE_RELATIONSHIP:{"npcName": "Tên NPC", "change": 10}]\` (change có thể là số âm)
+        -   \`[ADD_TECHNIQUE:{"name": "Tên Công Pháp", "description": "Mô tả", ...}]\`
+        -   \`[UPDATE_ATTRIBUTE:{"name": "Lực Lượng", "change": 1}]\`
+        -   \`[ADD_RECIPE:{"id": "recipe_id"}]\`
+        -   \`[DEATH:{"reason": "Lý do tử vong"}]\`
+        -   \`[SHOW_SHOP:{"shopId": "thien_co_cac"}]\`
+    
+    **Ví dụ:**
+    Người chơi: ta tìm trong bụi rậm xem có gì không
+    AI trả về: Bạn vạch bụi cỏ ra và thấy một chiếc túi gấm cũ. Mở ra xem, bên trong có vài viên linh thạch. [ADD_CURRENCY:{"name": "Linh thạch hạ phẩm", "amount": 5}]
+
+    Bây giờ, hãy viết tiếp câu chuyện.
+    `;
     
     const settings = getSettings();
-    const narrativeStyleDesc = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
-    
-    // FIX: Access npc.identity.name instead of npc.name.
-    const relationshipsText = playerCharacter.relationships.map(rel => {
-        const npc = activeNpcs.find(n => n.id === rel.npcId);
-        return npc ? `${npc.identity.name}: ${rel.status} (${rel.value})` : '';
-    }).filter(Boolean).join('; ');
-
-    const worldBuildingMod = activeMods?.find(mod => mod.content.worldBuilding && mod.content.worldBuilding.length > 0);
-    let gameContext = "**Bối cảnh:** Game tu tiên Phong Thần.";
-    if (worldBuildingMod && worldBuildingMod.content.worldBuilding && worldBuildingMod.content.worldBuilding.length > 0) {
-        const worldInfo = worldBuildingMod.content.worldBuilding[0];
-        gameContext = `**Bối cảnh:** ${worldInfo.title}. ${worldInfo.description}`;
-    }
-
-    const knownLocations = discoveredLocations.map(l => l.name).join(', ');
-    // FIX: Access npc.identity.name instead of npc.name.
-    const knownNpcs = activeNpcs.filter(n => encounteredNpcIds.includes(n.id)).map(n => n.identity.name).join(', ');
-
-    const currentRealmData = REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId);
-    const currentStageData = currentRealmData?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
-    const cultivationProgress = `(${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${currentStageData?.qiRequired.toLocaleString() || '???'})`;
-    const chinhDaoAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Chính Đạo')?.value || 0;
-    const maDaoAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Ma Đạo')?.value || 0;
-    
-    const activeModsInfo = activeMods.length > 0
-        ? `\n**Thông tin từ Mod đang kích hoạt:**\n${activeMods.map(mod => {
-            let modDetails = `- ${mod.modInfo.name}:\n`;
-            if (mod.content.worldBuilding?.length) {
-                modDetails += `  - Lore: ${mod.content.worldBuilding.map(wb => wb.title).join(', ')}\n`;
-            }
-            if (mod.content.sects?.length) {
-                modDetails += `  - Tông Môn: ${mod.content.sects.map(s => s.name).join(', ')}\n`;
-            }
-            if (mod.content.realmConfigs?.length) {
-                modDetails += `  - Hệ Thống Cảnh Giới: ${mod.content.realmConfigs.map(r => r.name).join(', ')}\n`;
-            }
-            if (mod.content.items?.length) {
-                 modDetails += `  - Vật phẩm mới: ${mod.content.items.slice(0, 3).map(i => i.name).join(', ')}...\n`;
-            }
-            return modDetails;
-        }).join('')}`
-        : '';
-
-    const context = `
-    ${gameContext}
-    ${activeModsInfo}
-    **Nhân vật chính:**
-    - Tên: ${playerCharacter.identity.name}
-    - Tuổi: ${playerCharacter.identity.age} (Tuổi thọ tối đa hiện tại dựa vào cảnh giới)
-    - Cảnh giới: ${currentRealmData?.name || 'Vô danh'} - ${currentStageData?.name || 'Sơ kỳ'} ${cultivationProgress}
-    - Thuộc tính: ${playerCharacter.attributes.flatMap(g => g.attributes).map(a => `${a.name}(${a.value})`).join(', ')}
-    - Thiên Hướng: Chính Đạo(${chinhDaoAttr}), Ma Đạo(${maDaoAttr})
-    - Tiên tư: ${playerCharacter.talents.map(t => t.name).join(', ') || 'Không có'}
-    - Trang bị: ${Object.values(playerCharacter.equipment).filter(Boolean).map(i => i!.name).join(', ') || 'Không có'}
-    - Công pháp đã học: ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa học'}
-    - Quan hệ: ${relationshipsText || 'Chưa có'}
-
-    **Kiến Thức Của Nhân Vật (Known World):**
-    - Các địa danh đã biết: ${knownLocations || 'Chỉ biết nơi mình đang đứng.'}
-    - Các nhân vật đã gặp: ${knownNpcs || 'Chưa gặp ai đáng nhớ.'}
-
-    **Thời gian & Không gian:**
-    - Thời gian: ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen})
-    - Địa điểm: ${currentLocation.name} (Loại: ${currentLocation.type}) (${currentLocation.description})
-    // FIX: Access identity.name and other direct properties to build the context string.
-    - Nhân vật khác tại đây: ${npcsAtLocation.map(n => `${n.identity.name} (Chính: ${n.ChinhDao || 0}, Ma: ${n.MaDao || 0}, Lực chiến: ${n.TienLuc || 10})`).join('; ') || 'Không có ai'}
-    - Các tin đồn gần đây: ${worldState.rumors.slice(-3).map(r => `Tại ${r.locationId}: "${r.text}"`).join('; ') || 'Không có'}
-
-    **Lịch sử gần đây:**
-    ${history.slice(-5).map(entry => `${entry.type === 'narrative' ? 'Hệ thống:' : 'Người chơi:'} ${entry.content}`).join('\n')}
-
-    ${actionDescription}
-    `;
-
-    const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai.
-    Nhiệm vụ của bạn là tiếp nối câu chuyện dựa trên hành động của người chơi và bối cảnh hiện tại.
-    - **Phong cách kể chuyện:** ${narrativeStyleDesc}. Hãy tuân thủ nghiêm ngặt phong cách này.
-    - **Hệ thống Chính-Ma:** Thế giới giờ có hệ thống Chính Đạo và Ma Đạo. Hành động của người chơi sẽ ảnh hưởng đến các chỉ số này. Ví dụ: cứu người tăng Chính Đạo, giết người vô cớ tăng Ma Đạo. Các NPC cũng có chỉ số này và sẽ phản ứng tương ứng. NPC chính đạo sẽ ghét người chơi ma đạo cao và ngược lại, có thể dẫn đến xung đột.
-    - **Hệ thống Chiến đấu (RẤT QUAN TRỌNG):** Khi người chơi thực hiện hành động tấn công/gây hấn với NPC, bạn PHẢI mô phỏng kết quả. So sánh sức mạnh của người chơi (dựa vào Cảnh giới, Tiên Lực) với NPC (dựa vào mô tả và chỉ số chiến đấu được cung cấp).
-        - Nếu chênh lệch quá lớn (ví dụ: Luyện Khí Kỳ tấn công một đại năng Nguyên Anh), người yếu hơn sẽ thua ngay lập tức. Nếu người chơi thua, dùng tag [DEATH:{"reason": "Bị [Tên NPC] giết chết trong một chiêu."}].
-        - Nếu người chơi mạnh hơn nhiều, hãy mô tả một chiến thắng dễ dàng và có thể thưởng vật phẩm bằng tag [ADD_ITEM] hoặc [ADD_CURRENCY].
-        - Nếu sức mạnh tương đương, hãy mô tả một trận chiến kịch tính.
-    - **KIỂM SOÁT LOGIC (CỰC KỲ QUAN TRỌNG):**
-        - Duy trì sự nhất quán của thế giới. Nhân vật chỉ biết những gì họ đã trải nghiệm.
-        - **Hành động phi logic:** Nếu người chơi thực hiện hành động dựa trên kiến thức mà nhân vật không thể có (ví dụ: "đi tìm gặp Tôn Ngộ Không"), bạn KHÔNG được thực hiện. Thay vào đó, hãy để nhân vật phản ứng một cách tự nhiên (ví dụ: "Trong đầu bạn chợt lóe lên một cái tên lạ lẫm...").
-    - **Tương tác Đặc Biệt (Dùng tag TRONG câu chuyện):**
-        - Hiển thị cửa hàng: [SHOW_SHOP:{"shopId": "thien_co_cac"}]
-        - Thay đổi quan hệ: [UPDATE_RELATIONSHIP:{"npcName": "Tên NPC", "change": 10}] (số dương là tốt, số âm là xấu).
-        - Thay đổi thuộc tính: [UPDATE_ATTRIBUTE:{"name": "Chính Đạo", "change": 10}] (dùng cho Chính Đạo, Ma Đạo, và các chỉ số khác).
-        - Cái chết: [DEATH:{"reason": "Bị yêu thú cấp cao giết chết."}]
-        - Thêm vật phẩm: [ADD_ITEM:{"name": "Tên", "description": "Mô tả", "quantity": 1, "type": "Tạp Vật", "icon": "❓", "weight": 0.1, "quality": "Phàm Phẩm"}]
-        - Mất vật phẩm: [REMOVE_ITEM:{"name": "Tên Vật Phẩm", "quantity": 1}]
-        - Thưởng tiền: [ADD_CURRENCY:{"name": "Bạc", "amount": 100}]
-        - NPC mới xuất hiện: [CREATE_NPC:{"name": "Tên", "status": "Trạng thái", "description": "Ngoại hình", "origin": "Xuất thân", "personality": "Tính cách", "locationId": "${currentLocation.id}"}]
-        - Khám phá địa điểm: [DISCOVER_LOCATION:{"id": "new_id", "name": "Tên", "description": "Mô tả", "type": "Hoang Dã", "neighbors": ["${currentLocation.id}"], "coordinates": {"x": ${currentLocation.coordinates.x + (Math.random() > 0.5 ? 1 : -1)}, "y": ${currentLocation.coordinates.y + (Math.random() > 0.5 ? 1 : -1)}}}]
-        - Thêm tin đồn: [ADD_RUMOR:{"locationId": "${currentLocation.id}", "text": "Nội dung tin đồn"}]
-        - Học công pháp: [ADD_TECHNIQUE:{"name": "Tên", "description": "Mô tả", "type": "Linh Kỹ", "cost": {"type": "Linh Lực", "value": 10}, "cooldown": 2, "effectDescription": "Hiệu ứng", "rank": "Phàm Giai", "icon": "🔥"}]
-    - **Lưu ý:** KHÔNG lặp lại hành động của người chơi. Chỉ viết phần tiếp theo. Giữ cho câu chuyện hấp dẫn.
-    `;
-    
     const response = await generateWithRetry({
-        contents: context,
-        config: {
-            systemInstruction,
-        }
+        model: settings.mainTaskModel,
+        contents: prompt,
+        config: {}
     });
 
     return response.text;
 };
 
-export const generateDynamicLocation = async (currentLocation: Location): Promise<{ name: string; description: string }> => {
+// FIX: Add generateDynamicLocation function and export it
+export const generateDynamicLocation = async (parentLocation: Location): Promise<{ name: string; description: string }> => {
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            name: { type: Type.STRING, description: 'Tên Hán Việt độc đáo cho địa điểm này (ví dụ: "Linh Tuyền Cốc", "Hắc Phong Động").' },
-            description: { type: Type.STRING, description: 'Mô tả chi tiết, giàu hình ảnh về địa điểm, bầu không khí và những gì người chơi nhìn thấy.' },
+            name: { type: Type.STRING, description: 'Tên Hán Việt độc đáo, hấp dẫn cho địa điểm mới.' },
+            description: { type: Type.STRING, description: 'Mô tả chi tiết, sống động về địa điểm này.' },
         },
         required: ['name', 'description'],
     };
 
-    const prompt = `Trong bối cảnh game tu tiên Phong Thần, người chơi đang khám phá khu vực hoang dã "${currentLocation.name}".
-    Hãy tạo ra một địa điểm nhỏ, bí ẩn và độc đáo bên trong khu vực này.
-    Địa điểm này có thể là một hang động, một khe núi, một ngôi miếu cổ, một hồ nước linh thiêng, v.v.
-    Cung cấp một cái tên và mô tả hấp dẫn cho địa điểm này.
-    `;
+    const prompt = `Trong bối cảnh game tu tiên Phong Thần, người chơi đang khám phá khu vực xung quanh "${parentLocation.name}" (${parentLocation.description}).
+    Hãy tạo ra một địa điểm nhỏ, cụ thể và thú vị mà họ có thể phát hiện ra.
+    Ví dụ: một hang động bí ẩn, một thác nước ẩn, một ngôi miếu hoang, một cây cổ thụ phát sáng...
+    Trả về kết quả dưới dạng JSON theo schema.`;
 
     const settings = getSettings();
     const response = await generateWithRetry({
@@ -841,33 +803,29 @@ export const generateDynamicLocation = async (currentLocation: Location): Promis
         }
     });
 
-    const locationData = JSON.parse(response.text);
-    return locationData as { name: string; description: string };
+    return JSON.parse(response.text);
 };
 
-export const analyzeActionForTechnique = async (actionText: string, techniques: CultivationTechnique[]): Promise<CultivationTechnique | null> => {
-    if (techniques.length === 0) return null;
+// FIX: Add analyzeActionForTechnique function and export it
+export const analyzeActionForTechnique = async (actionText: string, availableTechniques: CultivationTechnique[]): Promise<CultivationTechnique | null> => {
+    if (availableTechniques.length === 0) return null;
 
-    const techniqueNames = techniques.map(t => t.name);
-
+    const techniqueNames = availableTechniques.map(t => t.name);
+    
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            techniqueUsed: { 
-                type: Type.STRING,
-                enum: [...techniqueNames, 'None'],
-                description: 'Tên của công pháp được sử dụng, hoặc "None" nếu không có công pháp nào được sử dụng.'
-            },
+            techniqueName: { type: Type.STRING, enum: [...techniqueNames, ''], description: 'Tên công pháp được sử dụng. Trả về chuỗi rỗng nếu không có công pháp nào được sử dụng.' },
         },
-        required: ['techniqueUsed'],
+        required: ['techniqueName'],
     };
 
-    const prompt = `Phân tích hành động của người chơi và xác định xem họ có sử dụng công pháp nào trong danh sách dưới đây không.
+    const prompt = `Phân tích hành động sau của người chơi và xác định xem họ có đang cố gắng sử dụng một trong các công pháp có sẵn hay không.
     **Hành động của người chơi:** "${actionText}"
-    **Danh sách công pháp:** ${techniqueNames.join(', ')}
-    
-    Nếu hành động của người chơi mô tả rõ ràng hoặc ngụ ý việc sử dụng một công pháp, hãy trả về tên của công pháp đó. Nếu không, hãy trả về "None".
-    `;
+    **Danh sách công pháp có sẵn:** ${techniqueNames.join(', ')}
+
+    Nếu hành động của người chơi khớp hoặc có ý định rõ ràng sử dụng một công pháp, hãy trả về tên của công pháp đó. Nếu không, trả về một chuỗi rỗng.
+    Chỉ trả về JSON.`;
     
     const settings = getSettings();
     const response = await generateWithRetry({
@@ -879,86 +837,68 @@ export const analyzeActionForTechnique = async (actionText: string, techniques: 
         }
     });
 
-    const result = JSON.parse(response.text);
-    if (result.techniqueUsed && result.techniqueUsed !== 'None') {
-        return techniques.find(t => t.name === result.techniqueUsed) || null;
+    const { techniqueName } = JSON.parse(response.text);
+    if (techniqueName) {
+        return availableTechniques.find(t => t.name === techniqueName) || null;
     }
     return null;
 };
 
+// FIX: Add generateBreakthroughNarrative function and export it
 export const generateBreakthroughNarrative = async (
     player: PlayerCharacter,
     oldRealmName: string,
     newRealm: RealmConfig,
     newStage: RealmStage
 ): Promise<string> => {
-    const newRealmName = `${newRealm.name} - ${newStage.name}`;
-    const bonusesText = newStage.bonuses.length > 0
-        ? `Các chỉ số được tăng cường: ${newStage.bonuses.map(b => `${b.attribute} +${b.value}`).join(', ')}.`
-        : "Nền tảng được củng cố.";
+    const prompt = `Trong game tu tiên Phong Thần, người chơi "${player.identity.name}" vừa đột phá thành công từ cảnh giới ${oldRealmName} lên ${newRealm.name} - ${newStage.name}.
+    Hãy viết một đoạn văn mô tả lại quá trình đột phá này một cách hào hùng, kịch tính và sống động.
+    Mô tả những thay đổi trong cơ thể, linh lực, và nhận thức của nhân vật.
+    Đoạn văn nên ngắn gọn, khoảng 2-4 câu.`;
 
-    const prompt = `Trong game tu tiên Phong Thần, nhân vật "${player.identity.name}" vừa có một cuộc đột phá lớn!
-- Từ cảnh giới: ${oldRealmName}
-- Đạt đến cảnh giới mới: **${newRealmName}**.
-- Mô tả cảnh giới mới: ${newRealm.description || ''} ${newStage.description || ''}
-- ${bonusesText}
-- Các tiên tư đặc biệt của nhân vật có thể ảnh hưởng đến quá trình: ${player.talents.map(t => t.name).join(', ')}.
-
-Nhiệm vụ: Hãy viết một đoạn văn (3-4 câu) mô tả lại quá trình đột phá này một cách SỐNG ĐỘNG, HOÀNH TRÁNG và CHI TIẾT.
-- Mô tả sự thay đổi của trời đất xung quanh (linh khí, mây, sấm sét...).
-- Mô tả sự biến đổi bên trong cơ thể và sức mạnh của nhân vật (ví dụ: kim đan, nguyên anh, đạo cơ...).
-- Kết hợp các tiên tư của nhân vật vào mô tả để tạo sự độc đáo nếu có thể.
-- Nhấn mạnh sự khác biệt về sức mạnh sau khi đột phá.
-- Giữ văn phong tiên hiệp, hùng tráng.`;
-
+    const settings = getSettings();
     const response = await generateWithRetry({
+        model: settings.mainTaskModel,
         contents: prompt,
+        config: {}
     });
 
     return response.text;
 };
 
-
+// FIX: Add generateWorldEvent function and export it
 export const generateWorldEvent = async (gameState: GameState): Promise<Rumor> => {
-    const { gameDate, discoveredLocations, worldState } = gameState;
+    const { discoveredLocations, worldState } = gameState;
 
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            locationId: { type: Type.STRING, enum: discoveredLocations.map(l => l.id) },
-            text: { type: Type.STRING, description: 'Nội dung của tin đồn hoặc sự kiện, viết một cách ngắn gọn, hấp dẫn.' },
+            text: { type: Type.STRING, description: 'Nội dung của tin đồn, ngắn gọn và bí ẩn.' },
+            locationId: { type: Type.STRING, enum: discoveredLocations.map(l => l.id), description: 'ID của địa điểm mà tin đồn này xuất hiện.' },
         },
-        required: ['locationId', 'text'],
+        required: ['text', 'locationId'],
     };
 
-    const prompt = `Bối cảnh game tu tiên Phong Thần. Thời gian hiện tại là ${gameDate.era} năm ${gameDate.year}, mùa ${gameDate.season}.
-    Các tin đồn cũ: ${worldState.rumors.slice(-5).map(r => r.text).join('; ') || 'Chưa có.'}
+    const prompt = `Trong bối cảnh game tu tiên Phong Thần, hãy tạo ra một tin đồn (rumor) mới.
+    Tin đồn có thể về một bảo vật xuất thế, một cao nhân xuất hiện, một tông môn tuyển đệ tử, hoặc một nơi nào đó có dị tượng...
+    Tin đồn phải liên quan đến một trong những địa điểm đã được khám phá.
+    Các tin đồn hiện có: ${worldState.rumors.map(r => r.text).join('; ')}
     
-    Hãy tạo ra một sự kiện thế giới hoặc tin đồn MỚI, phù hợp với bối cảnh hỗn loạn của thời đại.
-    Sự kiện có thể là:
-    - Một giải đấu tu tiên được tổ chức.
-    - Một yêu thú mạnh xuất hiện ở đâu đó.
-    - Một bí cảnh mới được phát hiện.
-    - Một tông môn lớn tuyển đệ tử.
-    - Xung đột giữa các thế lực.
-    
-    Hãy trả về một tin đồn duy nhất theo JSON schema.
-    `;
+    Hãy tạo ra một tin đồn mới, không trùng lặp. Trả về dưới dạng JSON.`;
     
     const settings = getSettings();
     const response = await generateWithRetry({
-        model: settings.quickSupportModel,
+        model: settings.mainTaskModel,
         contents: prompt,
         config: {
             responseMimeType: "application/json",
             responseSchema,
         }
     });
-
+    
     const rumorData = JSON.parse(response.text);
     return {
         id: `rumor-${Date.now()}`,
-        locationId: rumorData.locationId,
-        text: rumorData.text,
+        ...rumorData,
     };
 };

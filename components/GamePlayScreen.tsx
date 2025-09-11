@@ -353,7 +353,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const processAIResponse = (responseText: string) => {
         let cleanedText = responseText;
         
-        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH|ADD_TECHNIQUE|UPDATE_ATTRIBUTE):({.*?})\]/gs;
+        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH|ADD_TECHNIQUE|UPDATE_ATTRIBUTE|ADD_RECIPE):({.*?})\]/gs;
 
         let match;
         while ((match = tagRegex.exec(responseText)) !== null) {
@@ -493,6 +493,15 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                             }
                             return pc;
                         });
+                        break;
+                    }
+                    case 'ADD_RECIPE': {
+                        const { id } = data;
+                        setPlayerCharacter(pc => {
+                            if (pc.knownRecipeIds.includes(id)) return pc;
+                            return { ...pc, knownRecipeIds: [...pc.knownRecipeIds, id] };
+                        });
+                        addStoryEntry({ type: 'system', content: `Bạn đã học được một đan phương mới!` });
                         break;
                     }
                 }
@@ -818,13 +827,13 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         neighbors={neighbors}
                         rumors={worldState.rumors}
                         onTravel={handleTravel}
-                        // FIX: Pass the `handleExplore` function to the `onExplore` prop instead of the undefined `onExplore` variable.
                         onExplore={handleExplore}
                         onNpcSelect={setViewingNpc}
                         allNpcs={activeNpcs}
                         encounteredNpcIds={encounteredNpcIds}
                         discoveredLocations={discoveredLocations}
                         realmSystem={realmSystem}
+                        showNotification={setNotification}
                     />
                 </aside>
             </div>

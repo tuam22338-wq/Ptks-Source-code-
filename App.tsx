@@ -159,7 +159,7 @@ const App: React.FC = () => {
   };
 
   const handleGameStart = async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds'>,
       npcDensity: NpcDensity
   }) => {
     if (currentSlotId === null) {
@@ -223,6 +223,7 @@ const App: React.FC = () => {
                 { id: 'item4', name: 'Lệnh Bài Thân Phận', description: 'Một lệnh bài bằng gỗ đào, khắc tên và xuất thân của bạn.', quantity: 1, type: 'Tạp Vật', icon: '🪪', weight: 0.1, quality: 'Phàm Phẩm' },
                 { id: 'item5', name: 'Phá Cấm Phù', description: 'Một lá bùa đơn giản có thể phá giải các cấm chế cấp thấp.', quantity: 3, type: 'Pháp Bảo', rank: 'Phàm Giai', icon: '📜', bonuses: [{ attribute: 'Nguyên Thần', value: 1 }], weight: 0.1, quality: 'Linh Phẩm' },
                 { id: 'item6', name: 'Sơ Cấp Tu Luyện Tâm Pháp', description: 'Ghi lại những khẩu quyết cơ bản để dẫn khí nhập thể, giúp tăng tốc độ tu luyện ban đầu.', quantity: 1, type: 'Tạp Vật', icon: '📖', bonuses: [{ attribute: 'Cảm Ngộ', value: 2 }], weight: 0.5, quality: 'Phàm Phẩm' },
+                { id: 'item7', name: 'Hồi Khí Đan - Đan Phương', description: 'Ghi lại phương pháp luyện chế Hồi Khí Đan Hạ Phẩm. Có thể học bằng cách sử dụng.', quantity: 1, type: 'Đan Phương', icon: '📜', weight: 0.1, quality: 'Phàm Phẩm', recipeId: 'recipe_hoi_khi_dan_ha_pham' },
             ]
         };
         const initialCurrencies: Currency = {
@@ -269,6 +270,7 @@ const App: React.FC = () => {
             techniques: INITIAL_TECHNIQUES,
             relationships: [],
             chosenPathIds: [],
+            knownRecipeIds: [],
         };
         
         const initialGameDate: GameDate = {

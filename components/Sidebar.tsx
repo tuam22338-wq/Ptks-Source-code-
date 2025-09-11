@@ -7,7 +7,9 @@ import TechniquesPanel from './TechniquesPanel';
 import WikiPanel from './WikiPanel';
 import RealmPanel from './RealmPanel';
 import LorePanel from './LorePanel';
+import AlchemyPanel from './AlchemyPanel';
 import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram } from 'react-icons/fa';
+import { GiCauldron } from 'react-icons/gi';
 
 interface SidebarProps {
     playerCharacter: PlayerCharacter;
@@ -24,17 +26,19 @@ interface SidebarProps {
     encounteredNpcIds: string[];
     discoveredLocations: Location[];
     realmSystem: RealmConfig[];
+    showNotification: (message: string) => void;
 }
-type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore';
+type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy';
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem } = props;
+    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification } = props;
     const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     
     const tabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
         {id: 'character', label: 'Nhân Vật', icon: FaUser },
         {id: 'techniques', label: 'Công Pháp', icon: FaScroll },
         {id: 'inventory', label: 'Hành Trang', icon: FaBoxOpen },
+        {id: 'alchemy', label: 'Luyện Đan', icon: GiCauldron },
         {id: 'world', label: 'Thế Giới', icon: FaGlobe },
         {id: 'wiki', label: 'Wiki', icon: FaBook },
         {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
@@ -80,8 +84,16 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                     <InventoryPanel 
                         playerCharacter={playerCharacter} 
                         setPlayerCharacter={setPlayerCharacter}
+                        showNotification={showNotification}
                     />
                 )}
+                 {activeTab === 'alchemy' && (
+                    <AlchemyPanel
+                        playerCharacter={playerCharacter}
+                        setPlayerCharacter={setPlayerCharacter}
+                        showNotification={showNotification}
+                    />
+                 )}
                  {activeTab === 'world' && (
                     <WorldPanel 
                         currentLocation={currentLocation}

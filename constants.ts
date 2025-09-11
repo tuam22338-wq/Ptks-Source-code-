@@ -1,4 +1,4 @@
-import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath } from './types';
+import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -259,6 +259,38 @@ export const MAJOR_EVENTS: MajorEvent[] = [
     summary: "Dương Tiễn, con trai của Dương Thiên Hựu và em gái Ngọc Đế là Vân Hoa Tiên Tử, sau khi học thành tài nghệ từ Ngọc Đỉnh Chân Nhân, đã dùng rìu khai sơn để chẻ đôi Đào Sơn, cứu mẹ mình bị Ngọc Đế giam cầm.",
     consequences: "Hành động này thể hiện sức mạnh và lòng hiếu thảo của Dương Tiễn, khiến ông nổi danh tam giới. Sau sự việc, ông trở thành một trong những chiến tướng đắc lực nhất của phe Xiển Giáo, phò trợ Khương Tử Nha."
   },
+    {
+    year: 30,
+    title: "Văn Trọng Phạt Tây Kỳ",
+    location: "Tây Kỳ",
+    involvedParties: "Thái sư Văn Trọng, Khương Tử Nha, quân đội Thương và Chu",
+    summary: "Sau khi dẹp yên các cuộc nổi loạn ở Bắc Hải, Thái sư Văn Trọng trở về Triều Ca và nhận thấy sự suy đồi của triều đình. Ông tức giận và quyết định thân chinh dẫn đại quân chinh phạt Tây Kỳ để diệt trừ hậu họa.",
+    consequences: "Mở đầu cho một loạt các trận chiến lớn giữa hai phe. Văn Trọng mời nhiều kỳ nhân dị sĩ của Triệt Giáo tới trợ giúp, khiến cho cuộc chiến trở nên vô cùng khốc liệt, nhiều tiên nhân của cả hai giáo đều bị cuốn vào vòng xoáy đại kiếp."
+  },
+  {
+    year: 32,
+    title: "Thập Tuyệt Trận",
+    location: "Phía ngoài thành Tây Kỳ",
+    involvedParties: "Thập Thiên Quân (Triệt Giáo), Xiển Giáo Thập Nhị Kim Tiên",
+    summary: "Thập Thiên Quân của Triệt Giáo đã bày ra mười trận pháp vô cùng lợi hại, mỗi trận mang một sức mạnh hủy diệt khác nhau, gây ra tổn thất nặng nề cho quân Chu và các đệ tử Xiển Giáo.",
+    consequences: "Để phá Thập Tuyệt Trận, Xiển Giáo đã phải nhờ đến các đại tiên, thậm chí cả Nguyên Thủy Thiên Tôn và Lão Tử cũng phải ra tay. Nhiều đạo hữu của Triệt Giáo đã phải lên Phong Thần Bảng trong trận chiến này, làm sâu sắc thêm mâu thuẫn giữa hai giáo."
+  },
+  {
+    year: 35,
+    title: "Võ Vương Phạt Trụ",
+    location: "Từ Tây Kỳ đến Triều Ca",
+    involvedParties: "Cơ Phát (Chu Võ Vương), Khương Tử Nha, Trụ Vương",
+    summary: "Sau khi Chu Văn Vương qua đời, con trai là Cơ Phát lên ngôi, tức Chu Võ Vương. Ông cùng Khương Tử Nha và các chư hầu chính thức khởi binh phạt Trụ, tiến về kinh đô Triều Ca.",
+    consequences: "Cuộc chiến cuối cùng giữa hai triều đại bùng nổ. Quân Chu vượt qua nhiều cửa ải, chiến đấu với vô số tướng lĩnh và dị nhân trung thành với nhà Thương, từng bước tiến tới sự sụp đổ của Trụ Vương."
+  },
+  {
+    year: 36,
+    title: "Vạn Tiên Trận",
+    location: "Gần Giới Bài Quan",
+    involvedParties: "Thông Thiên Giáo Chủ, Lão Tử, Nguyên Thủy Thiên Tôn, Tiếp Dẫn, Chuẩn Đề",
+    summary: "Sau nhiều thất bại, Thông Thiên Giáo Chủ tức giận bày ra Vạn Tiên Trận, quy tụ hàng vạn tiên nhân của Triệt Giáo để quyết một trận sống mái với Xiển Giáo.",
+    consequences: "Đây là trận chiến lớn nhất và bi thảm nhất trong đại kiếp Phong Thần. Tứ Thánh (Lão Tử, Nguyên Thủy, Tiếp Dẫn, Chuẩn Đề) cùng nhau ra tay phá trận. Vạn Tiên Trận bị phá, Triệt Giáo tổn thất nặng nề, Thông Thiên Giáo Chủ bại trận, gần như toàn bộ đệ tử của ông đều phải lên Phong Thần Bảng hoặc bị bắt đi Tây Phương."
+  }
 ];
 
 
@@ -337,7 +369,6 @@ export const REALM_SYSTEM: RealmConfig[] = [
         id: 'pham_nhan', name: 'Phàm Nhân', 
         description: 'Điểm khởi đầu của vạn vật, thân thể yếu đuối, chưa có linh lực, tuổi thọ hữu hạn.',
         stages: [
-// FIX: Added missing `bonuses` property to the RealmStage object to conform to the type definition.
             { id: 'pn_1', name: '', qiRequired: 0, bonuses: [], description: 'Sinh mệnh bình thường, không có khả năng đặc biệt.' },
         ]
     },
@@ -386,20 +417,54 @@ export const REALM_SYSTEM: RealmConfig[] = [
         stages: [
             { id: 'ht_1', name: 'Sơ Kỳ', qiRequired: 1000000000, bonuses: [{ attribute: 'Thân Pháp', value: 50 }, { attribute: 'Lực Lượng', value: 50 }], description: 'Sơ bộ nắm giữ pháp tắc không gian, có thể thuấn di.'},
             { id: 'ht_2', name: 'Trung Kỳ', qiRequired: 3000000000, bonuses: [{ attribute: 'Thân Pháp', value: 60 }, { attribute: 'Lực Lượng', value: 60 }], description: 'Lĩnh ngộ sâu hơn về pháp tắc, có thể tạo ra lĩnh vực của riêng mình.' },
-// FIX: Completed the truncated `Hóa Thần Kỳ` stage data and added bonuses to satisfy the RealmStage type.
             { id: 'ht_3', name: 'Hậu Kỳ', qiRequired: 8000000000, bonuses: [{ attribute: 'Thân Pháp', value: 70 }, { attribute: 'Lực Lượng', value: 70 }, { attribute: 'Tuổi Thọ', value: 1000 }], description: 'Hoàn toàn nắm giữ pháp tắc, chuẩn bị phi thăng.'},
         ]
     },
+    {
+        id: 'luyen_hu', name: 'Luyện Hư Kỳ',
+        description: 'Luyện hóa hư không, dung hợp thần thức vào thiên địa, bắt đầu cảm ngộ sâu sắc hơn về các quy tắc của đại đạo. Tuổi thọ đạt 5000 năm.',
+        hasTribulation: true,
+        stages: [
+            { id: 'lh_1', name: 'Sơ Kỳ', qiRequired: 20000000000, bonuses: [{ attribute: 'Nguyên Thần', value: 100 }, { attribute: 'Cảm Ngộ', value: 50 }], description: 'Thần thức hóa hư, có thể cảm nhận các dòng chảy quy tắc.' },
+            { id: 'lh_2', name: 'Hậu Kỳ', qiRequired: 50000000000, bonuses: [{ attribute: 'Nguyên Thần', value: 150 }, { attribute: 'Tuổi Thọ', value: 2000 }], description: 'Có thể điều động một phần quy tắc lực, tạo ra hư không lĩnh vực.' },
+        ]
+    },
+    {
+        id: 'hop_the', name: 'Hợp Thể Kỳ',
+        description: 'Nhục thân và nguyên thần hoàn toàn hợp nhất với thiên địa, đạt tới cảnh giới "thiên nhân hợp nhất". Sức mạnh vô song, có thể di sơn đảo hải. Tuổi thọ đạt 10.000 năm.',
+        stages: [
+            { id: 'hthe_1', name: 'Sơ Kỳ', qiRequired: 100000000000, bonuses: [{ attribute: 'Nhục Thân', value: 100 }, { attribute: 'Tiên Lực', value: 100 }], description: 'Mỗi cử động đều ẩn chứa uy lực của thiên địa.' },
+            { id: 'hthe_2', name: 'Trung Kỳ', qiRequired: 250000000000, bonuses: [{ attribute: 'Nhục Thân', value: 120 }, { attribute: 'Tiên Lực', value: 120 }], description: 'Pháp tướng thiên địa, sức mạnh kinh người.' },
+            { id: 'hthe_3', name: 'Hậu Kỳ', qiRequired: 500000000000, bonuses: [{ attribute: 'Nhục Thân', value: 150 }, { attribute: 'Tiên Lực', value: 150 }, { attribute: 'Tuổi Thọ', value: 5000 }], description: 'Hợp thể viên mãn, chuẩn bị cho Đại Thừa.' },
+        ]
+    },
+    {
+        id: 'dai_thua', name: 'Đại Thừa Kỳ',
+        description: 'Đại đạo thành tựu, là cảnh giới đỉnh cao của nhân gian. Tu sĩ Đại Thừa đã gần như bất tử, chỉ còn một bước nữa là phi thăng tiên giới. Tuổi thọ không còn là giới hạn.',
+        hasTribulation: true,
+        stages: [
+            { id: 'dt_1', name: 'Sơ Kỳ', qiRequired: 1000000000000, bonuses: [{ attribute: 'Lực Lượng', value: 200 }, { attribute: 'Thân Pháp', value: 200 }, { attribute: 'Nguyên Thần', value: 200 }], description: 'Lĩnh ngộ hoàn toàn một đại đạo.' },
+            { id: 'dt_2', name: 'Trung Kỳ', qiRequired: 2000000000000, bonuses: [{ attribute: 'Tiên Lực', value: 200 }, { attribute: 'Phòng Ngự', value: 200 }], description: 'Ngôn xuất pháp tùy, ý niệm di chuyển vạn dặm.' },
+            { id: 'dt_3', name: 'Hậu Kỳ', qiRequired: 5000000000000, bonuses: [{ attribute: 'Cảm Ngộ', value: 100 }, { attribute: 'Cơ Duyên', value: 50 }], description: 'Viên mãn vô khuyết, có thể cảm ứng được tiên giới chi môn.' },
+        ]
+    },
+    {
+        id: 'do_kiep', name: 'Độ Kiếp Kỳ',
+        description: 'Đối mặt với thiên kiếp cuối cùng, là thử thách để thoát ly phàm tục, phi thăng tiên giới. Thành công thì thành tiên, thất bại thì hồn phi phách tán.',
+        stages: [
+            { id: 'dk_1', name: 'Thiên Lôi Kiếp', qiRequired: 10000000000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 99999 }], description: 'Vượt qua chín chín tám mươi mốt đạo thiên lôi.' },
+            { id: 'dk_2', name: 'Tâm Ma Kiếp', qiRequired: 20000000000000, bonuses: [{ attribute: 'Đạo Tâm', value: 100 }], description: 'Trảm phá tâm ma cuối cùng, đạo tâm viên mãn.' },
+            { id: 'dk_3', name: 'Phi Thăng', qiRequired: 50000000000000, bonuses: [{ attribute: 'May Mắn', value: 100 }], description: 'Phá vỡ hư không, phi thăng tiên giới.' },
+        ]
+    }
 ];
 
-// FIX: Added and exported NPC_DENSITY_LEVELS to resolve module export errors.
 export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: string; count: number }[] = [
     { id: 'low', name: 'Thưa Thớt', description: 'Ít NPC, thế giới yên tĩnh.', count: 10 },
     { id: 'medium', name: 'Vừa Phải', description: 'Cân bằng, thế giới sống động.', count: 20 },
     { id: 'high', name: 'Đông Đúc', description: 'Nhiều NPC, thế giới hỗn loạn.', count: 35 },
 ];
 
-// FIX: Added and exported INITIAL_TECHNIQUES to resolve module export errors.
 export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
     {
         id: 'tech_basic_meditation',
@@ -429,7 +494,6 @@ export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
     },
 ];
 
-// FIX: Added and exported PREMADE_MODS to resolve module export errors.
 export const PREMADE_MODS: FullMod[] = [
     {
         modInfo: {
@@ -464,7 +528,6 @@ export const PREMADE_MODS: FullMod[] = [
     },
 ];
 
-// FIX: Added and exported NPC_LIST to resolve module export errors.
 export const NPC_LIST: NPC[] = [
     {
         id: 'canon-npc-kzy',
@@ -492,7 +555,24 @@ export const NPC_LIST: NPC[] = [
     },
 ];
 
-// FIX: Added and exported SHOPS to resolve module export errors.
+export const ALCHEMY_RECIPES: AlchemyRecipe[] = [
+    {
+        id: 'recipe_hoi_khi_dan_ha_pham',
+        name: 'Hồi Khí Đan - Hạ Phẩm',
+        description: 'Loại đan dược cơ bản nhất, giúp hồi phục một lượng nhỏ linh lực đã tiêu hao.',
+        ingredients: [
+            { name: 'Linh Tinh Thảo', quantity: 2 },
+        ],
+        result: { name: 'Hạ Phẩm Hồi Khí Đan', quantity: 1 },
+        requiredAttribute: { name: 'Đan Thuật', value: 10 },
+        icon: '💊',
+        qualityCurve: [
+            { threshold: 50, quality: 'Linh Phẩm' },
+            { threshold: 20, quality: 'Pháp Phẩm' }
+        ]
+    }
+];
+
 export const SHOPS: Shop[] = [
     {
         id: 'thien_co_cac',
@@ -518,6 +598,35 @@ export const SHOPS: Shop[] = [
                 price: { currency: 'Linh thạch hạ phẩm', amount: 50 },
                 stock: 5,
             },
+            {
+                name: 'Thanh Đồng Đan Lô',
+                description: 'Một lò luyện đan bằng đồng, chất lượng phổ thông, thích hợp cho người mới bắt đầu.',
+                type: 'Đan Lô',
+                quality: 'Phàm Phẩm',
+                weight: 5.0,
+                bonuses: [{ attribute: 'Đan Thuật', value: 5 }],
+                price: { currency: 'Bạc', amount: 200 },
+                stock: 3
+            },
+            {
+                name: 'Linh Tinh Thảo',
+                description: 'Loại linh thảo phổ biến, chứa một lượng linh khí mỏng manh, là nguyên liệu chính cho nhiều loại đan dược cấp thấp.',
+                type: 'Linh Dược',
+                quality: 'Phàm Phẩm',
+                weight: 0.1,
+                price: { currency: 'Bạc', amount: 10 },
+                stock: 'infinite'
+            },
+            {
+                name: 'Hồi Khí Đan - Đan Phương',
+                description: 'Ghi lại phương pháp luyện chế Hồi Khí Đan Hạ Phẩm.',
+                type: 'Đan Phương',
+                quality: 'Phàm Phẩm',
+                weight: 0.1,
+                recipeId: 'recipe_hoi_khi_dan_ha_pham',
+                price: { currency: 'Bạc', amount: 100 },
+                stock: 1
+            }
         ],
     },
 ];

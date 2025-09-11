@@ -131,7 +131,7 @@ export interface MajorEvent {
 
 // --- Modding Types ---
 
-export type ItemType = 'Vũ Khí' | 'Phòng Cụ' | 'Đan Dược' | 'Pháp Bảo' | 'Tạp Vật';
+export type ItemType = 'Vũ Khí' | 'Phòng Cụ' | 'Đan Dược' | 'Pháp Bảo' | 'Tạp Vật' | 'Đan Lô' | 'Linh Dược' | 'Đan Phương';
 export type PhapBaoRank = 'Phàm Giai' | 'Tiểu Giai' | 'Trung Giai' | 'Cao Giai' | 'Siêu Giai' | 'Địa Giai' | 'Thiên Giai' | 'Thánh Giai';
 export type ItemQuality = 'Phàm Phẩm' | 'Linh Phẩm' | 'Pháp Phẩm' | 'Bảo Phẩm' | 'Tiên Phẩm' | 'Tuyệt Phẩm';
 export type EquipmentSlot = 'Vũ Khí' | 'Thượng Y' | 'Hạ Y' | 'Giày' | 'Phụ Kiện 1' | 'Phụ Kiện 2';
@@ -294,6 +294,16 @@ export type ModEvent = Omit<GameEvent, 'id' | 'choices'> & {
     tags?: string[];
 };
 
+export interface AlchemyRecipe {
+  id: string;
+  name: string;
+  description: string;
+  ingredients: { name: string; quantity: number }[];
+  result: { name: string; quantity: number };
+  requiredAttribute: { name: 'Đan Thuật'; value: number };
+  icon: string;
+  qualityCurve: { threshold: number; quality: ItemQuality }[];
+}
 
 export interface ModContent {
     items?: Omit<ModItem, 'id'>[];
@@ -304,6 +314,7 @@ export interface ModContent {
     techniques?: Omit<ModTechnique, 'id'>[];
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];
+    recipes?: Omit<AlchemyRecipe, 'id'>[];
     realmConfigs?: Omit<RealmConfig, 'id'>[];
     talentSystemConfig?: TalentSystemConfig;
     talentRanks?: Omit<ModTalentRank, 'id'>[];
@@ -333,6 +344,7 @@ export type DefineWorldBuildingData = Omit<ModWorldBuilding, 'id'>;
 export type CreateTechniqueData = Omit<ModTechnique, 'id'>;
 export type CreateNpcData = Omit<ModNpc, 'id'>;
 export type CreateEventData = Omit<ModEvent, 'id'>;
+export type CreateRecipeData = Omit<AlchemyRecipe, 'id'>;
 
 
 export type AIAction =
@@ -351,6 +363,8 @@ export type AIAction =
     | { action: 'CREATE_MULTIPLE_NPCS'; data: CreateNpcData[] }
     | { action: 'CREATE_EVENT'; data: CreateEventData }
     | { action: 'CREATE_MULTIPLE_EVENTS'; data: CreateEventData[] }
+    | { action: 'CREATE_RECIPE'; data: CreateRecipeData }
+    | { action: 'CREATE_MULTIPLE_RECIPES'; data: CreateRecipeData[] }
     | { action: 'DEFINE_WORLD_BUILDING'; data: DefineWorldBuildingData }
     | { action: 'CREATE_REALM_SYSTEM'; data: CreateRealmSystemData }
     | { action: 'CONFIGURE_TALENT_SYSTEM'; data: ConfigureTalentSystemData }
@@ -371,6 +385,8 @@ export type AIAction =
             | { action: 'CREATE_MULTIPLE_NPCS'; data: CreateNpcData[] }
             | { action: 'CREATE_EVENT'; data: CreateEventData }
             | { action: 'CREATE_MULTIPLE_EVENTS'; data: CreateEventData[] }
+            | { action: 'CREATE_RECIPE'; data: CreateRecipeData }
+            | { action: 'CREATE_MULTIPLE_RECIPES'; data: CreateRecipeData[] }
             | { action: 'DEFINE_WORLD_BUILDING'; data: DefineWorldBuildingData }
             | { action: 'CREATE_REALM_SYSTEM'; data: CreateRealmSystemData }
             | { action: 'CONFIGURE_TALENT_SYSTEM'; data: ConfigureTalentSystemData }
@@ -434,6 +450,7 @@ export interface InventoryItem {
     value?: number;
     isEquipped?: boolean;
     slot?: EquipmentSlot;
+    recipeId?: string;
 }
 
 export interface Inventory {
@@ -495,6 +512,7 @@ export interface PlayerCharacter {
     techniques: CultivationTechnique[];
     relationships: PlayerNpcRelationship[];
     chosenPathIds: string[];
+    knownRecipeIds: string[];
 }
 
 export interface StoryEntry {

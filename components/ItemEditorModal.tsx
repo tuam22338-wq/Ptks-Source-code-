@@ -13,7 +13,7 @@ interface ItemEditorModalProps {
     suggestions?: string[];
 }
 
-const ITEM_TYPE_OPTIONS: ItemType[] = ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật'];
+const ITEM_TYPE_OPTIONS: ItemType[] = ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương'];
 
 const FieldWrapper: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
     <div>
