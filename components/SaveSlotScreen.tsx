@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { SaveSlot } from '../types';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -89,7 +90,7 @@ const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, on
       </div>
       <p className="text-center text-gray-400 mb-8">Hãy chọn một trang để viết nên câu chuyện của riêng bạn, hoặc tiếp tục một hành trình dang dở.</p>
 
-      <div className="grid grid-cols-3 gap-4 sm:gap-6 max-w-2xl mx-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 max-w-2xl mx-auto">
         {slots.map((slot) => (
           <SaveSlotCard 
             key={slot.id} 

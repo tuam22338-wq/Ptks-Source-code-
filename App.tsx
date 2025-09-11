@@ -53,7 +53,8 @@ const App: React.FC = () => {
     // Manage theme classes without removing others
     const themeClasses = THEME_OPTIONS.map(t => t.value);
     document.body.classList.remove(...themeClasses);
-    if (settings.theme) {
+    // Do not add the 'theme-amber' class as it's the default (root) style
+    if (settings.theme && settings.theme !== 'theme-amber') {
         document.body.classList.add(settings.theme);
     }
   }, [settings.fontFamily, settings.theme]);
@@ -96,7 +97,8 @@ const App: React.FC = () => {
   
   const handleSlotSelection = (slotId: number) => {
     const selectedSlot = saveSlots.find(s => s.id === slotId);
-    if (selectedSlot && selectedSlot.data) {
+    // Check if data is valid by ensuring playerCharacter exists
+    if (selectedSlot && selectedSlot.data && selectedSlot.data.playerCharacter) {
         // Load Game with a smooth transition
         setLoadingMessage('Đang tải hành trình...');
         setIsLoading(true);
@@ -107,6 +109,12 @@ const App: React.FC = () => {
             setIsLoading(false);
         }, 500); // Short delay to ensure a smooth visual transition
     } else {
+        // Handle invalid data or start new game
+        if (selectedSlot && selectedSlot.data) { // Data exists but is invalid
+            alert('Dữ liệu lưu trong ô này bị lỗi và sẽ được xóa. Vui lòng bắt đầu hành trình mới.');
+            localStorage.removeItem(`phongthan-gs-slot-${slotId}`);
+            loadSaveSlots(); // Refresh slots to show it as empty
+        }
         // Start New Game
         setCurrentSlotId(slotId);
         setView('characterCreation');

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../constants';
 import { testApiKeys } from '../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme } from '../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle, FaExpand } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
 
 interface SettingsPanelProps {
@@ -79,6 +79,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
         setKeyCheckResults([{ key: 'Error', status: 'invalid', error: e.message }]);
     } finally {
         setIsCheckingKeys(false);
+    }
+  };
+  
+  const handleFullScreen = () => {
+    const elem = document.documentElement as any;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { /* Firefox */
+        elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE/Edge */
+        elem.msRequestFullscreen();
     }
   };
 
@@ -160,6 +173,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                         </SettingsRow>
                         <SettingsRow label="Phông chữ" description="Chọn phông chữ cho toàn bộ trò chơi.">
                              <Select value={settings.fontFamily} onChange={e => onChange('fontFamily', e.target.value)} options={FONT_OPTIONS} />
+                        </SettingsRow>
+                         <SettingsRow label="Chế độ toàn màn hình" description="Bật chế độ toàn màn hình để có trải nghiệm tốt nhất.">
+                             <button onClick={handleFullScreen} className="flex items-center gap-2 px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">
+                                <FaExpand /> Bật Toàn Màn Hình
+                            </button>
                         </SettingsRow>
                     </SettingsSection>
                 </div>
