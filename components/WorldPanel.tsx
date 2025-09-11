@@ -66,7 +66,8 @@ const WorldPanel: React.FC<WorldPanelProps> = ({ currentLocation, npcsAtLocation
                     {npcsAtLocation.length > 0 ? (
                         npcsAtLocation.map(npc => (
                             <button key={npc.id} onClick={() => onNpcSelect(npc)} className="w-full text-left bg-black/20 p-3 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-cyan-400/50 transition-colors">
-                                <h4 className="font-bold text-cyan-300 font-title">{npc.name}</h4>
+                                {/* FIX: Access npc.identity.name instead of npc.name. */}
+                                <h4 className="font-bold text-cyan-300 font-title">{npc.identity.name}</h4>
                                 <p className="text-xs text-gray-400 mt-1 italic">"{npc.status}"</p>
                             </button>
                         ))

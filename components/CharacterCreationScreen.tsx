@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig } from '../types';
 import { FaArrowLeft, FaSyncAlt } from 'react-icons/fa';
@@ -14,7 +12,7 @@ import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS } from '../constant
 interface CharacterCreationScreenProps {
   onBack: () => void;
   onGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds'>,
       npcDensity: NpcDensity
   }) => void;
 }
@@ -124,7 +122,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         };
 
         const { identity: generatedIdentity, talents } = await generateCharacterFoundation(characterConcept, gender, modTalentConfig);
-        setIdentity({ ...generatedIdentity, gender });
+        setIdentity({ ...generatedIdentity, gender, age: 18 });
         setTalentChoices(talents);
         
         const rolledAttributes = ATTRIBUTES_CONFIG.map(group => ({
@@ -187,7 +185,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         alert("Vui lòng chọn ít nhất một Tiên Tư.");
         return;
     }
-    const characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships'> = {
+    const characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds'> = {
       identity,
       attributes,
       talents: selectedTalents,

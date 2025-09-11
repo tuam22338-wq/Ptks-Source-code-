@@ -1,7 +1,7 @@
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
-import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig } from '../types';
+import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM } from "../constants";
 
 // --- Key Manager ---
@@ -340,7 +340,28 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
     });
 
     const npcsData = JSON.parse(response.text);
-    return npcsData.map((npcData: any) => ({ ...npcData, id: `dynamic-npc-${Math.random().toString(36).substring(2, 9)}` }));
+    // FIX: Transform the flat AI response into the structured NPC type to match the type definition.
+    return npcsData.map((npcData: any): NPC => {
+        const { name, description, origin, personality, talents, ...rest } = npcData;
+        return {
+            ...rest,
+            id: `dynamic-npc-${Math.random().toString(36).substring(2, 9)}`,
+            identity: {
+                name: name,
+                appearance: description,
+                origin: origin,
+                personality: personality,
+            },
+            talents: talents || [],
+            // Fill required properties with defaults to conform to the NPC type.
+            attributes: [],
+            cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: false },
+            techniques: [],
+            inventory: { items: [], weightCapacity: 15 },
+            currencies: {},
+            equipment: {},
+        };
+    });
 };
 
 export const getGameMasterActionableResponse = async (prompt: string, fileContent?: string): Promise<AIAction> => {
@@ -526,7 +547,8 @@ export const generateGameEvent = async (
     **Thời gian:** ${date.season}, ${date.timeOfDay}
     **Địa điểm:** ${location.name} (${location.description})
     **Loại địa điểm:** ${location.type}
-    **Nhân vật khác tại đây:** ${npcs.length > 0 ? npcs.map(n => n.name).join(', ') : 'Không có ai'}
+    // FIX: Access npc.identity.name instead of npc.name to match the NPC type.
+    **Nhân vật khác tại đây:** ${npcs.length > 0 ? npcs.map(n => n.identity.name).join(', ') : 'Không có ai'}
 
     Dựa vào bối cảnh trên, hãy tạo ra một tình tiết (event) nhỏ, bất ngờ và thú vị cho người chơi.
     - Tình tiết phải có mô tả rõ ràng và 2-3 lựa chọn.
@@ -580,9 +602,10 @@ export const generateStoryContinuation = async (
     const settings = getSettings();
     const narrativeStyleDesc = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
     
+    // FIX: Access npc.identity.name instead of npc.name.
     const relationshipsText = playerCharacter.relationships.map(rel => {
         const npc = activeNpcs.find(n => n.id === rel.npcId);
-        return npc ? `${npc.name}: ${rel.status} (${rel.value})` : '';
+        return npc ? `${npc.identity.name}: ${rel.status} (${rel.value})` : '';
     }).filter(Boolean).join('; ');
 
     const worldBuildingMod = activeMods?.find(mod => mod.content.worldBuilding && mod.content.worldBuilding.length > 0);
@@ -593,7 +616,8 @@ export const generateStoryContinuation = async (
     }
 
     const knownLocations = discoveredLocations.map(l => l.name).join(', ');
-    const knownNpcs = activeNpcs.filter(n => encounteredNpcIds.includes(n.id)).map(n => n.name).join(', ');
+    // FIX: Access npc.identity.name instead of npc.name.
+    const knownNpcs = activeNpcs.filter(n => encounteredNpcIds.includes(n.id)).map(n => n.identity.name).join(', ');
 
     const currentRealmData = REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
@@ -621,7 +645,8 @@ export const generateStoryContinuation = async (
     **Thời gian & Không gian:**
     - Thời gian: ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen})
     - Địa điểm: ${currentLocation.name} (Loại: ${currentLocation.type}) (${currentLocation.description})
-    - Nhân vật khác tại đây: ${npcsAtLocation.map(n => `${n.name} (Chính: ${n.ChinhDao || 0}, Ma: ${n.MaDao || 0}, Lực chiến: ${n.TienLuc || 10})`).join('; ') || 'Không có ai'}
+    // FIX: Access identity.name and other direct properties to build the context string.
+    - Nhân vật khác tại đây: ${npcsAtLocation.map(n => `${n.identity.name} (Chính: ${n.ChinhDao || 0}, Ma: ${n.MaDao || 0}, Lực chiến: ${n.TienLuc || 10})`).join('; ') || 'Không có ai'}
     - Các tin đồn gần đây: ${worldState.rumors.slice(-3).map(r => `Tại ${r.locationId}: "${r.text}"`).join('; ') || 'Không có'}
 
     **Lịch sử gần đây:**

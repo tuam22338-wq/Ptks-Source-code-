@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -12,7 +10,7 @@ import GamePlayScreen from './components/GamePlayScreen';
 import LoadingScreen from './components/LoadingScreen';
 import LoreScreen from './components/LoreScreen';
 import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo } from './types';
-import { REALM_SYSTEM, NPC_LIST, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS } from './constants';
+import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS } from './constants';
 import { generateDynamicNpcs, reloadApiKeys } from './services/geminiService';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'lore';
@@ -152,7 +150,7 @@ const App: React.FC = () => {
   };
 
   const handleGameStart = async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds'>,
       npcDensity: NpcDensity
   }) => {
     if (currentSlotId === null) {
@@ -199,7 +197,7 @@ const App: React.FC = () => {
         setLoadingMessage('Đang tạo ra chúng sinh...');
         const densitySetting = NPC_DENSITY_LEVELS.find(d => d.id === npcDensity);
         const generatedNpcs = await generateDynamicNpcs(densitySetting?.count ?? 15);
-        const allNpcs = [...NPC_LIST, ...generatedNpcs];
+        const allNpcs = [...generatedNpcs];
         
         setLoadingMessage('Đang định hình Thiên Mệnh...');
 
@@ -260,6 +258,7 @@ const App: React.FC = () => {
             equipment: {},
             techniques: INITIAL_TECHNIQUES,
             relationships: [],
+            chosenPathIds: [],
         };
         
         const initialGameDate: GameDate = {
@@ -282,7 +281,7 @@ const App: React.FC = () => {
             playerCharacter: finalPlayerCharacter,
             activeNpcs: allNpcs,
             gameDate: initialGameDate,
-            discoveredLocations: initialCoreLocations,
+            discoveredLocations: [startingLocation, ...WORLD_MAP.filter(l => l.neighbors.includes(startingLocation.id))],
             worldState: initialWorldState,
             storyLog: initialStory,
             encounteredNpcIds: [],

@@ -24,6 +24,7 @@ const NpcEditorModal: React.FC<NpcEditorModalProps> = ({ isOpen, onClose, onSave
 
     useEffect(() => {
         if (isOpen) {
+            // FIX: Initialize state with the correct flat structure of ModNpc.
             const initialNpc = npcToEdit 
                 ? JSON.parse(JSON.stringify(npcToEdit))
                 : { 
@@ -47,6 +48,7 @@ const NpcEditorModal: React.FC<NpcEditorModalProps> = ({ isOpen, onClose, onSave
     };
 
     const handleSaveChanges = () => {
+        // FIX: Access npc.name directly as ModNpc is a flat type.
         if (!npc.name.trim()) {
             alert("Tên NPC không được để trống.");
             return;
@@ -65,6 +67,7 @@ const NpcEditorModal: React.FC<NpcEditorModalProps> = ({ isOpen, onClose, onSave
                 <div className="p-6 space-y-4 overflow-y-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <FieldWrapper label="Tên NPC">
+                            {/* FIX: Bind value and onChange to the correct top-level properties of the flat ModNpc type. */}
                             <input type="text" value={npc.name} onChange={e => handleChange('name', e.target.value)} placeholder="Ví dụ: Khương Tử Nha" className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                         </FieldWrapper>
                         <FieldWrapper label="Vị Trí Ban Đầu">
@@ -77,12 +80,15 @@ const NpcEditorModal: React.FC<NpcEditorModalProps> = ({ isOpen, onClose, onSave
                         <input type="text" value={npc.status} onChange={e => handleChange('status', e.target.value)} placeholder="Ví dụ: Đang câu cá bên bờ sông Vị Thủy" className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                     </FieldWrapper>
                     <FieldWrapper label="Mô Tả Ngoại Hình">
+                        {/* FIX: Bind value and onChange to the correct top-level properties of the flat ModNpc type. */}
                         <textarea value={npc.description} onChange={e => handleChange('description', e.target.value)} rows={2} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                     </FieldWrapper>
                      <FieldWrapper label="Xuất Thân">
+                        {/* FIX: Bind value and onChange to the correct top-level properties of the flat ModNpc type. */}
                         <textarea value={npc.origin} onChange={e => handleChange('origin', e.target.value)} rows={2} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                     </FieldWrapper>
                     <FieldWrapper label="Tính Cách">
+                        {/* FIX: Bind value and onChange to the correct top-level properties of the flat ModNpc type. */}
                         <input type="text" value={npc.personality} onChange={e => handleChange('personality', e.target.value)} placeholder="Ví dụ: Chính trực, thông tuệ" className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                     </FieldWrapper>
                     <FieldWrapper label="Tags">

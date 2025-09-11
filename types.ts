@@ -258,8 +258,16 @@ export type NpcRelationshipInput = {
     description: string; 
 };
 
-export type ModNpc = Omit<NPC, 'id' | 'relationships' | 'talents'> & {
+// FIX: Redefined ModNpc to be a flat structure for mod creation, resolving editor component errors.
+// This type represents a template for an NPC in a mod file.
+export type ModNpc = {
     id: string;
+    name: string;
+    status: string;
+    description: string; // Used for appearance in the mod definition
+    origin: string;
+    personality: string;
+    locationId: string;
     relationships?: NpcRelationshipInput[];
     talentNames?: string[];
     tags: string[];
@@ -386,14 +394,18 @@ export interface Relationship {
 
 export interface NPC {
     id: string;
-    name:string;
+    identity: Omit<CharacterIdentity, 'age' | 'gender'> & { gender?: Gender };
     status: string;
-    description: string; // Physical appearance
-    origin: string;
-    personality: string;
+    attributes: AttributeGroup[];
     talents: InnateTalent[];
     locationId: string;
     relationships?: Relationship[];
+    cultivation: CultivationState;
+    techniques: CultivationTechnique[];
+    inventory: Inventory;
+    currencies: Currency;
+    equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
+    // FIX: Add optional properties to align with AI-generated data and context building.
     ChinhDao?: number;
     MaDao?: number;
     TienLuc?: number;
@@ -444,6 +456,9 @@ export interface CultivationTechnique {
     effectDescription: string;
     rank: PhapBaoRank;
     icon: string;
+    level: number;
+    maxLevel: number;
+    levelBonuses?: { level: number, bonuses: StatBonus[] }[];
 }
 
 export interface PlayerNpcRelationship {
@@ -451,6 +466,15 @@ export interface PlayerNpcRelationship {
     value: number; // e.g., -100 (Hated) to 100 (Loved)
     status: 'Thù địch' | 'Lạnh nhạt' | 'Trung lập' | 'Thân thiện' | 'Tri kỷ';
 }
+
+export interface CultivationPath {
+  id: string;
+  name: string;
+  description: string;
+  requiredRealmId: string; // The realm you must ENTER to be offered this path
+  bonuses: StatBonus[];
+}
+
 
 export interface PlayerCharacter {
     identity: CharacterIdentity;
@@ -463,6 +487,7 @@ export interface PlayerCharacter {
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     techniques: CultivationTechnique[];
     relationships: PlayerNpcRelationship[];
+    chosenPathIds: string[];
 }
 
 export interface StoryEntry {

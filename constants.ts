@@ -1,4 +1,4 @@
-import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme } from './types';
+import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -222,6 +222,14 @@ export const MAJOR_EVENTS: MajorEvent[] = [
     summary: "Trên đường dâng đến Triều Ca, Tô Đát Kỷ thật đã bị Cửu Vỹ Hồ Ly Tinh (Hồ Ly Tinh ngàn năm) phụng mệnh Nữ Oa chiếm đoạt thân xác. Hồ Ly Tinh tiến cung và nhanh chóng mê hoặc Trụ Vương bằng sắc đẹp tuyệt trần.",
     consequences: "Triều chính nhà Thương bắt đầu một chuỗi ngày đen tối. Đát Kỷ xúi giục Trụ Vương làm những việc tàn bạo như xây Lộc Đài, thiêu Bào Lạc, giết hại trung thần, khiến lòng dân oán thán, đẩy nhanh sự sụp đổ của triều đại."
   },
+    {
+    year: 10,
+    title: "Na Tra Náo Hải",
+    location: "Trần Đường Quan, Đông Hải",
+    involvedParties: "Na Tra, Ngao Bính (Tam thái tử Đông Hải), Lý Tịnh",
+    summary: "Na Tra, vốn là Linh Châu Tử chuyển thế, nghịch ngợm dùng Càn Khôn Quyển và Hỗn Thiên Lăng làm chấn động Đông Hải Long Cung. Tam thái tử Ngao Bính lên bờ hỏi tội, bị Na Tra đánh chết, rút cả gân rồng.",
+    consequences: "Đông Hải Long Vương Ngao Quảng nổi giận, dâng nước lên Trần Đường Quan, dọa dâng tấu lên Thiên Đình. Để cứu dân chúng, Na Tra lóc xương trả cha, lóc thịt trả mẹ. Sau được Thái Ất Chân Nhân dùng hoa sen tái tạo lại thân thể, trở nên mạnh mẽ hơn."
+  },
   {
     year: 20,
     title: "Cơ Xương Thoát Nạn",
@@ -237,6 +245,14 @@ export const MAJOR_EVENTS: MajorEvent[] = [
     involvedParties: "Khương Tử Nha, Nguyên Thủy Thiên Tôn, Cơ Xương",
     summary: "Khương Tử Nha, đệ tử của Nguyên Thủy Thiên Tôn tại Xiển Giáo, tu đạo đến năm 72 tuổi vẫn chưa thành tiên. Ông phụng mệnh sư phụ xuống núi để phò Chu diệt Thương, hoàn thành đại nghiệp Phong Thần.",
     consequences: "Khương Tử Nha đến bờ sông Vị Thủy buông câu, chờ đợi minh chủ. Cơ Xương tìm đến và phong ông làm thừa tướng, giao cho trọng trách quân sự. Điều này chính thức khởi động cuộc chiến giữa Chu và Thương, đồng thời mở ra màn chủ trì Phong Thần Bảng của Khương Tử Nha."
+  },
+   {
+    year: 28,
+    title: "Dương Tiễn Phách Sơn Cứu Mẫu",
+    location: "Đào Sơn",
+    involvedParties: "Dương Tiễn, Vân Hoa Tiên Tử (Dao Cơ)",
+    summary: "Dương Tiễn, con trai của Dương Thiên Hựu và em gái Ngọc Đế là Vân Hoa Tiên Tử, sau khi học thành tài nghệ từ Ngọc Đỉnh Chân Nhân, đã dùng rìu khai sơn để chẻ đôi Đào Sơn, cứu mẹ mình bị Ngọc Đế giam cầm.",
+    consequences: "Hành động này thể hiện sức mạnh và lòng hiếu thảo của Dương Tiễn, khiến ông nổi danh tam giới. Sau sự việc, ông trở thành một trong những chiến tướng đắc lực nhất của phe Xiển Giáo, phò trợ Khương Tử Nha."
   },
 ];
 
@@ -300,12 +316,15 @@ export const WORLD_MAP: Location[] = [
     { id: 'thanh_ha_tran', name: 'Thanh Hà Trấn', description: 'Một trấn nhỏ yên bình nằm bên cạnh con sông lớn, là nơi giao thương của các thôn làng lân cận.', type: 'Thôn Làng', neighbors: ['rung_co_thu', 'song_vi_thuy'], coordinates: { x: 5, y: 5 } },
     { id: 'rung_co_thu', name: 'Rừng Cổ Thụ', description: 'Một khu rừng rậm rạp với những cây cổ thụ cao chọc trời, là nơi trú ngụ của nhiều yêu thú cấp thấp.', type: 'Hoang Dã', neighbors: ['thanh_ha_tran', 'hac_long_dam', 'thanh_loan_son'], isExplorable: true, coordinates: { x: 4, y: 6 } },
     { id: 'hac_long_dam', name: 'Hắc Long Đàm', description: 'Một hồ nước sâu không thấy đáy, quanh năm bao phủ bởi sương mù, tương truyền có giao long ẩn náu.', type: 'Bí Cảnh', neighbors: ['rung_co_thu'], coordinates: { x: 3, y: 8 } },
-    { id: 'song_vi_thuy', name: 'Sông Vị Thủy', description: 'Một con sông lớn chảy xiết, nghe đồn Khương Tử Nha từng buông câu tại đây.', type: 'Hoang Dã', neighbors: ['thanh_ha_tran', 'trieu_ca'], coordinates: { x: 7, y: 5 } },
+    { id: 'song_vi_thuy', name: 'Sông Vị Thủy', description: 'Một con sông lớn chảy xiết, nghe đồn Khương Tử Nha từng buông câu tại đây.', type: 'Hoang Dã', neighbors: ['thanh_ha_tran', 'trieu_ca', 'tay_ky'], coordinates: { x: 7, y: 5 } },
     { id: 'trieu_ca', name: 'Triều Ca', description: 'Kinh đô của nhà Thương, phồn hoa và tráng lệ, nhưng ẩn chứa nhiều âm mưu và nguy hiểm.', type: 'Thành Thị', neighbors: ['song_vi_thuy', 'tam_son_quan'], coordinates: { x: 12, y: 5 } },
     { id: 'tam_son_quan', name: 'Tam Sơn Quan', description: 'Cửa ải quân sự trọng yếu của nhà Thương, canh gác con đường tiến vào kinh đô.', type: 'Quan Ải', neighbors: ['trieu_ca', 'dong_hai'], coordinates: { x: 15, y: 7 } },
-    { id: 'dong_hai', name: 'Đông Hải', description: 'Vùng biển rộng lớn phía đông, là địa bàn của Long Tộc. Sóng to gió lớn, cực kỳ nguy hiểm.', type: 'Hoang Dã', neighbors: ['tam_son_quan', 'dao_ngao_binh'], coordinates: { x: 20, y: 8 } },
+    { id: 'dong_hai', name: 'Đông Hải', description: 'Vùng biển rộng lớn phía đông, là địa bàn của Long Tộc. Sóng to gió lớn, cực kỳ nguy hiểm.', type: 'Hoang Dã', neighbors: ['tam_son_quan', 'dao_ngao_binh', 'tran_duong_quan'], coordinates: { x: 20, y: 8 } },
     { id: 'dao_ngao_binh', name: 'Đảo Ngao Binh', description: 'Một hòn đảo nhỏ ở Đông Hải, là tiền đồn của Long Cung.', type: 'Bí Cảnh', neighbors: ['dong_hai'], coordinates: { x: 22, y: 10 } },
-    { id: 'thanh_loan_son', name: 'Thanh Loan Sơn', description: 'Ngọn núi linh thiêng, quanh năm có mây mù bao phủ, là nơi tu luyện của các tán tu.', type: 'Sơn Mạch', neighbors: ['rung_co_thu'], coordinates: { x: 2, y: 3 } },
+    { id: 'thanh_loan_son', name: 'Thanh Loan Sơn', description: 'Ngọn núi linh thiêng, quanh năm có mây mù bao phủ, là nơi tu luyện của các tán tu.', type: 'Sơn Mạch', neighbors: ['rung_co_thu', 'con_lon_son'], coordinates: { x: 2, y: 3 } },
+    { id: 'tay_ky', name: 'Tây Kỳ', description: 'Kinh đô của nhà Chu, nơi Cơ Xương cai quản. Đất đai trù phú, lòng dân quy thuận, đang chiêu hiền đãi sĩ.', type: 'Thành Thị', neighbors: ['song_vi_thuy'], coordinates: { x: 8, y: 2 } },
+    { id: 'con_lon_son', name: 'Côn Lôn Sơn', description: 'Dãy núi tổ của vạn sơn, là đạo trường của Xiển Giáo do Nguyên Thủy Thiên Tôn đứng đầu. Linh khí nồng đậm, tiên cảnh ngút ngàn.', type: 'Thánh Địa', neighbors: ['thanh_loan_son'], coordinates: { x: 1, y: 1 } },
+    { id: 'tran_duong_quan', name: 'Trần Đường Quan', description: 'Một cửa ải do Lý Tịnh trấn giữ, nằm gần Đông Hải.', type: 'Quan Ải', neighbors: ['dong_hai'], coordinates: { x: 18, y: 6 } },
 ];
 
 export const REALM_SYSTEM: RealmConfig[] = [
@@ -366,44 +385,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     }
 ];
 
-export const NPC_LIST: NPC[] = [
-    { 
-        id: 'npc_khuong_tu_nha', 
-        name: 'Khương Tử Nha', 
-        status: 'Đang câu cá bên bờ sông Vị Thủy, vẻ mặt trầm tư.', 
-        description: 'Một lão ông râu tóc bạc phơ, mặc áo vải, trông có vẻ bình thường nhưng ánh mắt lại ẩn chứa sự thông tuệ phi phàm.', 
-        origin: 'Đệ tử của Nguyên Thủy Thiên Tôn, phái Xiển Giáo.', 
-        personality: 'Chính Trực', 
-        talents: [
-            { name: 'Thiên Mệnh Chi Tử', rank: 'Thiên Tư', description: 'Người được thiên mệnh lựa chọn để hoàn thành đại nghiệp Phong Thần.', effect: 'Cơ Duyên cực cao, dễ dàng gặp được kỳ ngộ và người tài. Luôn có thể tìm ra một con đường sống trong tuyệt cảnh.', bonuses: [{ attribute: 'Cơ Duyên', value: 20 }] },
-            { name: 'Đại Trí Nhược Ngu', rank: 'Siêu Tư', description: 'Trí tuệ vĩ đại ẩn sau vẻ ngoài bình thường.', effect: 'Ẩn giấu khí tức, người khác khó có thể nhìn thấu tu vi thật sự. Khả năng lĩnh ngộ và hoạch định chiến lược vượt xa người thường.', bonuses: [{ attribute: 'Cảm Ngộ', value: 15 }] }
-        ], 
-        locationId: 'song_vi_thuy',
-        ChinhDao: 100,
-        MaDao: 0,
-        TienLuc: 500,
-        PhongNgu: 300,
-        SinhMenh: 1000,
-    },
-    { 
-        id: 'npc_na_tra', 
-        name: 'Na Tra', 
-        status: 'Đang gây náo loạn ở Đông Hải, chân đạp Phong Hỏa Luân, tay cầm Hỏa Tiêm Thương.', 
-        description: 'Một thiếu niên khôi ngô, tuấn tú nhưng ánh mắt đầy vẻ ngang tàng, kiêu ngạo. Toàn thân khoác hồng lụa, khí thế bức người.', 
-        origin: 'Linh Châu Tử chuyển thế, con trai thứ ba của Lý Tịnh.', 
-        personality: 'Hỗn Loạn', 
-        talents: [
-            { name: 'Liên Hoa Hóa Thân', rank: 'Thiên Tư', description: 'Thân thể được tái tạo từ hoa sen, miễn nhiễm với phần lớn độc tố và ma khí.', effect: 'Kháng độc và kháng ma thuật cực cao. Có thể tái sinh một lần sau khi tử vong.', bonuses: [{ attribute: 'Nhục Thân', value: 20 }] },
-            { name: 'Tam Đầu Lục Tí', rank: 'Siêu Tư', description: 'Thần thông hiển hóa ba đầu sáu tay, chiến lực tăng vọt.', effect: 'Khi chiến đấu có thể tấn công nhiều mục tiêu hoặc sử dụng nhiều pháp bảo cùng lúc.', bonuses: [{ attribute: 'Thân Pháp', value: 15 }] }
-        ], 
-        locationId: 'dong_hai',
-        ChinhDao: 20,
-        MaDao: 30,
-        TienLuc: 800,
-        PhongNgu: 600,
-        SinhMenh: 2000,
-    },
-];
+export const NPC_LIST: NPC[] = []; // NPC list is now too large and complex, will be generated dynamically or loaded from mods.
 
 export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: string; count: number }[] = [
     { id: 'low', name: 'Thấp', description: 'Thế giới ít người, chủ yếu là hoang dã.', count: 10 },
@@ -412,8 +394,14 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
 ];
 
 export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
-    { id: 'tech_linh_dan_thuat', name: 'Linh Đạn Thuật', description: 'Ngưng tụ linh khí thành một viên đạn nhỏ tấn công mục tiêu.', type: 'Linh Kỹ', cost: { type: 'Linh Lực', value: 5 }, cooldown: 0, effectDescription: 'Gây sát thương Tiên Lực cơ bản.', rank: 'Phàm Giai', icon: '💧' },
-    { id: 'tech_ngu_phong_thuat', name: 'Ngự Phong Thuật', description: 'Sử dụng linh khí để gia tăng tốc độ, giúp di chuyển nhanh hơn.', type: 'Độn Thuật', cost: { type: 'Linh Lực', value: 10 }, cooldown: 2, effectDescription: 'Tăng Thân Pháp trong một khoảng thời gian ngắn.', rank: 'Phàm Giai', icon: '💨' },
+    { id: 'tech_linh_dan_thuat', name: 'Linh Đạn Thuật', description: 'Ngưng tụ linh khí thành một viên đạn nhỏ tấn công mục tiêu.', type: 'Linh Kỹ', cost: { type: 'Linh Lực', value: 5 }, cooldown: 0, effectDescription: 'Gây sát thương Tiên Lực cơ bản.', rank: 'Phàm Giai', icon: '💧', level: 1, maxLevel: 9, levelBonuses: [{level: 1, bonuses: [{attribute: 'Tiên Lực', value: 1}]}]},
+    { id: 'tech_ngu_phong_thuat', name: 'Ngự Phong Thuật', description: 'Sử dụng linh khí để gia tăng tốc độ, giúp di chuyển nhanh hơn.', type: 'Độn Thuật', cost: { type: 'Linh Lực', value: 10 }, cooldown: 2, effectDescription: 'Tăng Thân Pháp trong một khoảng thời gian ngắn.', rank: 'Phàm Giai', icon: '💨', level: 1, maxLevel: 9, levelBonuses: [{level: 1, bonuses: [{attribute: 'Thân Pháp', value: 1}]}]},
+];
+
+export const CULTIVATION_PATHS: CultivationPath[] = [
+    { id: 'path_sword', name: 'Kiếm Tu - Vô Tình Kiếm Đạo', description: 'Lấy thân làm kiếm, lấy tâm ngự kiếm. Con đường của kiếm tu sắc bén, bá đạo, chuyên về tấn công.', requiredRealmId: 'ket_dan', bonuses: [{ attribute: 'Kiếm Pháp', value: 20 }, { attribute: 'Tiên Lực', value: 10 }] },
+    { id: 'path_elemental', name: 'Pháp Tu - Ngũ Hành Chân Quyết', description: 'Điều khiển sức mạnh của ngũ hành, am hiểu chân lý trời đất. Pháp tu có thần thông quảng đại, biến hóa khôn lường.', requiredRealmId: 'ket_dan', bonuses: [{ attribute: 'Nguyên Thần', value: 15 }, { attribute: 'Linh Lực', value: 100 }] },
+    { id: 'path_body', name: 'Thể Tu - Bất Diệt Kim Thân', description: 'Dùng thiên địa linh khí để rèn luyện thân thể, đạt tới cảnh giới vạn pháp bất xâm, nhục thân bất hoại.', requiredRealmId: 'ket_dan', bonuses: [{ attribute: 'Nhục Thân', value: 15 }, { attribute: 'Sinh Mệnh', value: 150 }] },
 ];
 
 export const PREMADE_MODS: FullMod[] = [
