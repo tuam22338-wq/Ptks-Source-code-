@@ -60,7 +60,10 @@ export const DEFAULT_SETTINGS: GameSettings = {
         hateSpeech: 'BLOCK_MEDIUM_AND_ABOVE',
         sexuallyExplicit: 'BLOCK_MEDIUM_AND_ABOVE',
         dangerousContent: 'BLOCK_MEDIUM_AND_ABOVE',
-    }
+    },
+    apiKey: '',
+    apiKeys: [],
+    useKeyRotation: false,
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [

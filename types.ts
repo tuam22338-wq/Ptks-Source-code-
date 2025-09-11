@@ -56,6 +56,9 @@ export interface GameSettings {
     enableAiSoundSystem: boolean;
     masterSafetySwitch: boolean;
     safetyLevels: SafetySettings;
+    apiKey: string;
+    apiKeys: string[];
+    useKeyRotation: boolean;
 }
 
 // --- Character Creation & Stats Types ---

@@ -2,9 +2,62 @@ import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/gen
 import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent } from '../types';
 import { INNATE_TALENT_PROBABILITY, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-
 const talentRanks: InnateTalentRank[] = ['Phàm Tư', 'Tiểu Tư', 'Đại Tư', 'Siêu Tư', 'Thiên Tư'];
+
+// --- Key Manager ---
+const ApiKeyManager = (() => {
+    let keys: string[] = [];
+    let currentKeyIndex = 0;
+
+    const loadKeys = () => {
+        try {
+            const settingsStr = localStorage.getItem('game-settings');
+            const settings = settingsStr ? JSON.parse(settingsStr) : {};
+            const keyList = settings.apiKeys?.filter((k: string) => k.trim()) || [];
+            
+            if (settings.useKeyRotation && keyList.length > 0) {
+                keys = keyList;
+            } else if (settings.apiKey) {
+                keys = [settings.apiKey.trim()];
+            } else {
+                keys = [process.env.API_KEY as string].filter(Boolean);
+            }
+            currentKeyIndex = 0;
+        } catch (e) {
+            console.error("Could not load API keys from settings.", e);
+            keys = [process.env.API_KEY as string].filter(Boolean);
+        }
+    };
+
+    loadKeys();
+
+    return {
+        getKey: (): string | null => {
+            if (keys.length === 0) return null;
+            return keys[currentKeyIndex];
+        },
+        rotateKey: (): string | null => {
+            if (keys.length <= 1) return null;
+            currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+            console.warn(`Rotating to API key #${currentKeyIndex + 1}`);
+            return keys[currentKeyIndex];
+        },
+        reload: loadKeys,
+        getKeys: () => keys,
+        getCurrentIndex: () => currentKeyIndex,
+    };
+})();
+
+export const reloadApiKeys = ApiKeyManager.reload;
+
+const getAiClient = () => {
+    const apiKey = ApiKeyManager.getKey();
+    if (!apiKey) {
+        throw new Error("API Key của Gemini chưa được cấu hình. Vui lòng vào Cài Đặt và thêm API Key.");
+    }
+    return new GoogleGenAI({ apiKey });
+};
+
 
 const getSettings = (): GameSettings => {
     try {
@@ -18,8 +71,6 @@ const getSettings = (): GameSettings => {
 
 const getSafetySettingsForApi = () => {
     const settings = getSettings();
-
-    // The UI logic is inverted: masterSafetySwitch: true means the toggle is OFF, which means filters are disabled.
     if (settings.masterSafetySwitch) {
         return [
             { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -28,7 +79,6 @@ const getSafetySettingsForApi = () => {
             { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
         ];
     }
-
     return [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: settings.safetyLevels.harassment as HarmBlockThreshold },
         { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: settings.safetyLevels.hateSpeech as HarmBlockThreshold },
@@ -37,76 +87,90 @@ const getSafetySettingsForApi = () => {
     ];
 };
 
+const performApiCall = async <T>(
+    apiFunction: (client: GoogleGenAI, request: any) => Promise<T>,
+    baseRequest: any,
+    maxRetries = 3
+): Promise<T> => {
+    const keyCount = ApiKeyManager.getKeys().length;
+    if (keyCount === 0) getAiClient(); // This will throw the user-friendly error
 
-// --- API Call Helpers with Retry Logic ---
+    const initialKeyIndex = ApiKeyManager.getCurrentIndex();
 
-const generateWithRetry = async (generationRequest: any, maxRetries = 3) => {
-    let attempt = 0;
+    for (let i = 0; i < keyCount; i++) {
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                const ai = getAiClient();
+                const response = await apiFunction(ai, baseRequest);
+                return response;
+            } catch (error: any) {
+                attempt++;
+                const errorMessage = error.toString().toLowerCase();
+                const isAuthError = errorMessage.includes('400') || errorMessage.includes('permission') || errorMessage.includes('api key not valid');
+                const isQuotaError = errorMessage.includes('429') || errorMessage.includes('resource_exhausted');
+
+                if (isAuthError || isQuotaError) {
+                    console.warn(`Key ${ApiKeyManager.getCurrentIndex() + 1}/${keyCount} failed: ${errorMessage}`);
+                    break; 
+                }
+                
+                if (attempt >= maxRetries) {
+                    throw error;
+                }
+
+                const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                console.warn(`Gặp lỗi máy chủ. Thử lại sau ${delay.toFixed(0)}ms... (Lần thử ${attempt}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        ApiKeyManager.rotateKey();
+        if (ApiKeyManager.getCurrentIndex() === initialKeyIndex && keyCount > 1) {
+             break; // We've tried all keys
+        }
+    }
     
+    throw new Error("Tất cả các API key đều không thành công.");
+};
+
+
+const generateWithRetry = (generationRequest: any, maxRetries = 3) => {
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
     const finalRequest = {
         ...generationRequest,
-        model: settings.mainTaskModel, // Use model from settings
-        config: {
-            ...generationRequest.config,
-            safetySettings: safetySettings,
-        }
+        model: settings.mainTaskModel,
+        config: { ...generationRequest.config, safetySettings }
     };
-
-    while (attempt < maxRetries) {
-        try {
-            const response = await ai.models.generateContent(finalRequest);
-            return response;
-        } catch (error: any) {
-            attempt++;
-            const errorMessage = error.toString();
-            if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-                if (attempt >= maxRetries) {
-                    throw new Error("Hạn ngạch Gemini API đã bị vượt quá. Vui lòng chờ một lát và thử lại.");
-                }
-                const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-                console.warn(`Gặp lỗi 429. Thử lại sau ${delay.toFixed(0)}ms... (Lần thử ${attempt}/${maxRetries})`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            } else {
-                throw error; // For other errors, fail immediately
-            }
-        }
-    }
-    throw new Error("Không thể hoàn thành yêu cầu API sau nhiều lần thử.");
+    return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest, maxRetries);
 };
 
-const generateImagesWithRetry = async (generationRequest: any, maxRetries = 3) => {
-    let attempt = 0;
-    
+const generateImagesWithRetry = (generationRequest: any, maxRetries = 3) => {
     const settings = getSettings();
-    const finalRequest = {
-        ...generationRequest,
-        model: settings.imageGenerationModel, // use model from settings
-    };
+    const finalRequest = { ...generationRequest, model: settings.imageGenerationModel };
+    return performApiCall((ai, req) => ai.models.generateImages(req), finalRequest, maxRetries);
+};
 
-    while (attempt < maxRetries) {
+export const testApiKeys = async (): Promise<{ key: string, status: 'valid' | 'invalid', error?: string }[]> => {
+    reloadApiKeys();
+    const keys = ApiKeyManager.getKeys();
+    if (keys.length === 0) {
+        return [{ key: 'N/A', status: 'invalid', error: 'Không có key nào được cung cấp.' }];
+    }
+
+    const results = [];
+    for (const key of keys) {
         try {
-            const response = await ai.models.generateImages(finalRequest);
-            return response;
-        } catch (error: any) {
-            attempt++;
-            const errorMessage = error.toString();
-            if (errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
-                if (attempt >= maxRetries) {
-                    throw new Error("Hạn ngạch Gemini API đã bị vượt quá. Vui lòng chờ một lát và thử lại.");
-                }
-                const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-                console.warn(`Gặp lỗi 429. Thử lại sau ${delay.toFixed(0)}ms... (Lần thử ${attempt}/${maxRetries})`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            } else {
-                 console.error("Lỗi tạo ảnh:", error);
-                throw new Error("Không thể tạo ảnh. Vui lòng kiểm tra lại prompt hoặc thử lại sau.");
-            }
+            const testAi = new GoogleGenAI({ apiKey: key });
+            await testAi.models.generateContent({ model: 'gemini-2.5-flash', contents: 'test' });
+            results.push({ key: `...${key.slice(-4)}`, status: 'valid' as const });
+        } catch (e: any) {
+            results.push({ key: `...${key.slice(-4)}`, status: 'invalid' as const, error: e.message });
         }
     }
-    throw new Error("Không thể hoàn thành yêu cầu tạo ảnh sau nhiều lần thử.");
+    return results;
 };
+
 
 export const generateCharacterFoundation = async (concept: string, gender: Gender): Promise<{ identity: Omit<CharacterIdentity, 'gender'>, talents: InnateTalent[] }> => {
     const characterFoundationSchema = {

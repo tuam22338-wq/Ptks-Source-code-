@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES } from '../constants';
+import { reloadApiKeys, testApiKeys } from '../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle } from '../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import LoadingSpinner from './LoadingSpinner';
 
 interface SettingsPanelProps {
   onBack: () => void;
 }
 
-type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'advanced';
+type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'api' | 'advanced';
 
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="mb-8">
@@ -43,6 +45,8 @@ const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLI
   </label>
 );
 
+type KeyCheckResult = { key: string; status: 'valid' | 'invalid'; error?: string };
+
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   const [settings, setSettings] = useState<GameSettings>(() => {
     try {
@@ -54,7 +58,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
     }
   });
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('api');
+  const [isCheckingKeys, setIsCheckingKeys] = useState(false);
+  const [keyCheckResults, setKeyCheckResults] = useState<KeyCheckResult[] | null>(null);
 
   const handleSettingChange = (key: keyof GameSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -73,10 +79,27 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   const handleSaveSettings = () => {
     try {
         localStorage.setItem('game-settings', JSON.stringify(settings));
+        reloadApiKeys();
         alert('Cài đặt đã được lưu!');
     } catch (error) {
         console.error("Failed to save settings to localStorage", error);
         alert('Lỗi: Không thể lưu cài đặt.');
+    }
+  };
+
+  const handleCheckKeys = async () => {
+    setIsCheckingKeys(true);
+    setKeyCheckResults(null);
+    try {
+        // Temporarily save current settings to be used by the service
+        localStorage.setItem('game-settings', JSON.stringify(settings));
+        reloadApiKeys();
+        const results = await testApiKeys();
+        setKeyCheckResults(results);
+    } catch (e: any) {
+        setKeyCheckResults([{ key: 'Error', status: 'invalid', error: e.message }]);
+    } finally {
+        setIsCheckingKeys(false);
     }
   };
 
@@ -100,6 +123,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
 
         {/* Tab Navigation */}
         <div className="flex items-center gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
+            <TabButton tabId="api" label="API" icon={FaKey} />
             <TabButton tabId="interface" label="Giao Diện" icon={FaDesktop} />
             <TabButton tabId="ai_models" label="Model AI" icon={FaRobot} />
             <TabButton tabId="safety" label="An Toàn" icon={FaShieldAlt} />
@@ -109,6 +133,43 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
         
         {/* Tab Content */}
         <div className="min-h-[350px]">
+             {activeTab === 'api' && (
+                <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                    <SettingsSection title="Cấu hình API Key Gemini">
+                        <SettingsRow label="API Key Mặc định" description="Sử dụng key này nếu không bật chế độ xoay key.">
+                             <input type="password" value={settings.apiKey} onChange={e => handleSettingChange('apiKey', e.target.value)} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200" />
+                        </SettingsRow>
+                         <SettingsRow label="Bật chế độ xoay Key" description="Sử dụng danh sách các key bên dưới và tự động xoay vòng khi gặp lỗi.">
+                            <Toggle checked={settings.useKeyRotation} onChange={e => handleSettingChange('useKeyRotation', e.target.checked)} />
+                        </SettingsRow>
+                         <SettingsRow label="Danh sách API Keys" description="Nhập mỗi key trên một dòng.">
+                            <textarea 
+                                value={settings.apiKeys.join('\n')}
+                                onChange={e => handleSettingChange('apiKeys', e.target.value.split('\n'))}
+                                rows={4}
+                                placeholder="Nhập mỗi key một dòng..."
+                                className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 font-mono text-sm"
+                            />
+                        </SettingsRow>
+                         <div className="flex justify-end pt-2">
+                             <button onClick={handleCheckKeys} disabled={isCheckingKeys} className="px-4 py-2 bg-blue-700/80 text-white font-bold rounded-lg hover:bg-blue-600/80 disabled:bg-gray-600">
+                                {isCheckingKeys ? <LoadingSpinner size="sm"/> : 'Kiểm tra Keys'}
+                            </button>
+                         </div>
+                         {keyCheckResults && (
+                            <div className="mt-4 space-y-2">
+                                {keyCheckResults.map((result, index) => (
+                                    <div key={index} className={`flex items-center gap-2 p-2 rounded-md text-sm ${result.status === 'valid' ? 'bg-green-500/10 text-green-300 border border-green-500/30' : 'bg-red-500/10 text-red-300 border border-red-500/30'}`}>
+                                        {result.status === 'valid' ? <FaCheckCircle/> : <FaTimesCircle/>}
+                                        <span>Key kết thúc bằng {result.key}: <strong>{result.status === 'valid' ? 'Hợp lệ' : 'Không hợp lệ'}</strong></span>
+                                        {result.error && <p className="text-xs">({result.error})</p>}
+                                    </div>
+                                ))}
+                            </div>
+                         )}
+                    </SettingsSection>
+                </div>
+            )}
             {activeTab === 'interface' && (
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Cài Đặt Giao Diện">
