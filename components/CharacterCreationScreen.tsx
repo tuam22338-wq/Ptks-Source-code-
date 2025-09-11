@@ -7,6 +7,7 @@ import { generateCharacterFoundation } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import InnateTalentSelection from './InnateTalentSelection';
 import CharacterIdentityDisplay from './CharacterIdentityDisplay';
+// FIX: Added NPC_DENSITY_LEVELS to imports, which will be added to constants.ts to resolve module export error.
 import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS } from '../constants';
 
 interface CharacterCreationScreenProps {

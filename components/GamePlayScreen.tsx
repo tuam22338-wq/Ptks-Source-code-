@@ -23,7 +23,6 @@ const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
         <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-                {/* FIX: Access npc.identity.name instead of npc.name. */}
                 <h3 className="text-xl text-[var(--primary-accent-color)] font-bold font-title">{npc.identity.name}</h3>
                 <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
             </div>
@@ -34,17 +33,14 @@ const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> 
                 </div>
                 <div>
                     <p className="text-sm text-gray-400 font-semibold">Ngoại hình</p>
-                    {/* FIX: Access npc.identity.appearance instead of npc.description. */}
                     <p className="text-gray-300">{npc.identity.appearance}</p>
                 </div>
                  <div>
                     <p className="text-sm text-gray-400 font-semibold">Xuất thân</p>
-                    {/* FIX: Access npc.identity.origin instead of npc.origin. */}
                     <p className="text-gray-300">{npc.identity.origin}</p>
                 </div>
                  <div>
                     <p className="text-sm text-gray-400 font-semibold">Tính cách</p>
-                    {/* FIX: Access npc.identity.personality instead of npc.personality. */}
                     <p className="text-gray-300">{npc.identity.personality}</p>
                 </div>
                  {npc.relationships && npc.relationships.length > 0 && (
@@ -57,7 +53,6 @@ const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> 
                                 return (
                                     <div key={index} className="text-gray-300 bg-black/20 px-3 py-2 rounded-md border border-gray-700/60">
                                         <p className="font-semibold text-purple-300">
-                                            {/* FIX: Access targetNpc.identity.name instead of targetNpc.name. */}
                                             {rel.type} với <span className="text-amber-300">{targetNpc.identity.name}</span>
                                         </p>
                                         <p className="text-xs italic text-gray-400">{rel.description}</p>
@@ -436,7 +431,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     }
                     case 'UPDATE_RELATIONSHIP': {
                         const { npcName, change } = data;
-                        // FIX: Access identity.name to find the target NPC.
+                        // FIX: Access npc.identity.name instead of npc.name to correctly find the target NPC.
                         const targetNpc = activeNpcs.find(n => n.identity.name === npcName);
                         if (targetNpc) {
                             setPlayerCharacter(pc => {

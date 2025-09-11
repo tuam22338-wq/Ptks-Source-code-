@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -10,6 +11,7 @@ import GamePlayScreen from './components/GamePlayScreen';
 import LoadingScreen from './components/LoadingScreen';
 import LoreScreen from './components/LoreScreen';
 import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo } from './types';
+// FIX: Added NPC_DENSITY_LEVELS and INITIAL_TECHNIQUES to imports as they will be added to constants.ts to resolve module export errors.
 import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS } from './constants';
 import { generateDynamicNpcs, reloadApiKeys } from './services/geminiService';
 
@@ -64,6 +66,13 @@ const App: React.FC = () => {
       document.body.classList.add('force-desktop');
     } else if (settings.layoutMode === 'mobile') {
       document.body.classList.add('force-mobile');
+    }
+
+    // Manage performance mode class
+    if (settings.enablePerformanceMode) {
+        document.body.classList.add('performance-mode');
+    } else {
+        document.body.classList.remove('performance-mode');
     }
   }, [settings]); // Depend on the entire settings object for robustness
 
@@ -243,6 +252,7 @@ const App: React.FC = () => {
             return group;
         });
         
+        // FIX: Fixed typo "Thôn L làng" to "Thôn Làng" to correctly filter for starting locations.
         const initialCoreLocations = WORLD_MAP.filter(l => l.type === 'Thành Thị' || l.type === 'Thôn Làng');
         const randomStartIndex = Math.floor(Math.random() * initialCoreLocations.length);
         const startingLocation = initialCoreLocations.length > 0 ? initialCoreLocations[randomStartIndex] : WORLD_MAP[0];

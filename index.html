@@ -229,6 +229,31 @@
         animation: talent-reveal 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
       }
 
+      /* Performance Mode Overrides */
+      .performance-mode *,
+      .performance-mode *::before,
+      .performance-mode *::after {
+        transition-property: none !important;
+        animation: none !important;
+      }
+      .performance-mode .themed-panel,
+      .performance-mode .themed-modal {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background-color: rgba(12, 10, 9, 0.95) !important;
+        box-shadow: none !important;
+      }
+      .performance-mode .themed-modal {
+         border-width: 2px !important;
+      }
+      .performance-mode .font-title {
+        text-shadow: none !important;
+      }
+      .performance-mode .themed-button-primary:hover:not(:disabled) {
+        box-shadow: none !important;
+        transform: none !important;
+      }
+
     </style>
   <script type="importmap">
 {

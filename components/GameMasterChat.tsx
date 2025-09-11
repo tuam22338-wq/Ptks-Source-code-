@@ -2,18 +2,24 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaPaperPlane, FaFileUpload, FaTimesCircle, FaCheck, FaTimes } from 'react-icons/fa';
 import { getGameMasterActionableResponse } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
-import type { AIAction } from '../types';
+import type { AIAction, RealmConfig, ModTalentRank } from '../types';
 
 interface Message {
     role: 'user' | 'model';
     text: string;
 }
 
-interface GameMasterChatProps {
-    onActionRequest: (action: AIAction) => void;
+interface ModContext {
+    realms: RealmConfig[];
+    talentRanks: ModTalentRank[];
 }
 
-const GameMasterChat: React.FC<GameMasterChatProps> = ({ onActionRequest }) => {
+interface GameMasterChatProps {
+    onActionRequest: (action: AIAction) => void;
+    modContext: ModContext;
+}
+
+const GameMasterChat: React.FC<GameMasterChatProps> = ({ onActionRequest, modContext }) => {
     const [messages, setMessages] = useState<Message[]>([
         { role: 'model', text: 'Xin chào! Tôi là GameMaster AI. Bạn muốn xây dựng một thế giới như thế nào? Hãy mô tả ý tưởng của bạn hoặc tải lên một tệp ghi chú để bắt đầu.'}
     ]);
@@ -54,7 +60,7 @@ const GameMasterChat: React.FC<GameMasterChatProps> = ({ onActionRequest }) => {
         setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
         
         try {
-            const responseAction = await getGameMasterActionableResponse(trimmedInput, uploadedFile?.content);
+            const responseAction = await getGameMasterActionableResponse(trimmedInput, uploadedFile?.content, modContext);
             if (responseAction.action === 'CHAT') {
                 setMessages(prev => [...prev, { role: 'model', text: responseAction.data.response }]);
             } else {

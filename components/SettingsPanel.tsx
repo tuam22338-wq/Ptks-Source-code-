@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../constants';
 import { testApiKeys } from '../services/geminiService';
@@ -232,6 +233,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                         </SettingsRow>
                          <SettingsRow label="Văn phong kể chuyện của AI" description="Chọn phong cách văn bản mà AI sẽ sử dụng để kể chuyện.">
                              <Select value={settings.narrativeStyle} onChange={e => onChange('narrativeStyle', e.target.value as NarrativeStyle)} options={NARRATIVE_STYLES} />
+                        </SettingsRow>
+                        <SettingsRow label="Chế độ hiệu năng" description="Tắt các hiệu ứng đồ họa phức tạp (đổ bóng, blur, animation) để tăng hiệu năng. Không ảnh hưởng gameplay.">
+                            <Toggle checked={settings.enablePerformanceMode} onChange={e => onChange('enablePerformanceMode', e.target.checked)} />
                         </SettingsRow>
                     </SettingsSection>
                 </div>

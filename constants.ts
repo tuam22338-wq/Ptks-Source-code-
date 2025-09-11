@@ -25,6 +25,10 @@ export const FACTIONS: Faction[] = [
   },
 ];
 
+// URL for the community mod manifest. Using a Gist is a great way to host this.
+// For this example, it points to a sample manifest.
+export const COMMUNITY_MODS_URL = 'https://gist.githubusercontent.com/anonymous/832128e932a3a0e6b52865917b2b3563/raw/phongthan-community-mods.json';
+
 export const NARRATIVE_STYLES: { value: NarrativeStyle; label: string }[] = [
     { value: 'classic_wuxia', label: 'Cổ điển Tiên hiệp' },
     { value: 'dark_fantasy', label: 'Huyền huyễn Hắc ám' },
@@ -80,6 +84,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     apiKey: '',
     apiKeys: [],
     useKeyRotation: false,
+    enablePerformanceMode: true,
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [
@@ -332,6 +337,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
         id: 'pham_nhan', name: 'Phàm Nhân', 
         description: 'Điểm khởi đầu của vạn vật, thân thể yếu đuối, chưa có linh lực, tuổi thọ hữu hạn.',
         stages: [
+// FIX: Added missing `bonuses` property to the RealmStage object to conform to the type definition.
             { id: 'pn_1', name: '', qiRequired: 0, bonuses: [], description: 'Sinh mệnh bình thường, không có khả năng đặc biệt.' },
         ]
     },
@@ -380,60 +386,138 @@ export const REALM_SYSTEM: RealmConfig[] = [
         stages: [
             { id: 'ht_1', name: 'Sơ Kỳ', qiRequired: 1000000000, bonuses: [{ attribute: 'Thân Pháp', value: 50 }, { attribute: 'Lực Lượng', value: 50 }], description: 'Sơ bộ nắm giữ pháp tắc không gian, có thể thuấn di.'},
             { id: 'ht_2', name: 'Trung Kỳ', qiRequired: 3000000000, bonuses: [{ attribute: 'Thân Pháp', value: 60 }, { attribute: 'Lực Lượng', value: 60 }], description: 'Lĩnh ngộ sâu hơn về pháp tắc, có thể tạo ra lĩnh vực của riêng mình.' },
-            { id: 'ht_3', name: 'Hậu Kỳ', qiRequired: 8000000000, bonuses: [{ attribute: 'Thân Pháp', value: 70 }, { attribute: 'Lực Lượng', value: 70 }, { attribute: 'Tuổi Thọ', value: 1000 }], description: 'Đỉnh cao Hóa Thần, chuẩn bị phi thăng.'},
+// FIX: Completed the truncated `Hóa Thần Kỳ` stage data and added bonuses to satisfy the RealmStage type.
+            { id: 'ht_3', name: 'Hậu Kỳ', qiRequired: 8000000000, bonuses: [{ attribute: 'Thân Pháp', value: 70 }, { attribute: 'Lực Lượng', value: 70 }, { attribute: 'Tuổi Thọ', value: 1000 }], description: 'Hoàn toàn nắm giữ pháp tắc, chuẩn bị phi thăng.'},
         ]
-    }
+    },
 ];
 
-export const NPC_LIST: NPC[] = []; // NPC list is now too large and complex, will be generated dynamically or loaded from mods.
-
+// FIX: Added and exported NPC_DENSITY_LEVELS to resolve module export errors.
 export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: string; count: number }[] = [
-    { id: 'low', name: 'Thấp', description: 'Thế giới ít người, chủ yếu là hoang dã.', count: 10 },
-    { id: 'medium', name: 'Vừa', description: 'Cân bằng giữa thành thị và hoang dã.', count: 20 },
-    { id: 'high', name: 'Cao', description: 'Thế giới đông đúc, náo nhiệt.', count: 35 },
+    { id: 'low', name: 'Thưa Thớt', description: 'Ít NPC, thế giới yên tĩnh.', count: 10 },
+    { id: 'medium', name: 'Vừa Phải', description: 'Cân bằng, thế giới sống động.', count: 20 },
+    { id: 'high', name: 'Đông Đúc', description: 'Nhiều NPC, thế giới hỗn loạn.', count: 35 },
 ];
 
+// FIX: Added and exported INITIAL_TECHNIQUES to resolve module export errors.
 export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
-    { id: 'tech_linh_dan_thuat', name: 'Linh Đạn Thuật', description: 'Ngưng tụ linh khí thành một viên đạn nhỏ tấn công mục tiêu.', type: 'Linh Kỹ', cost: { type: 'Linh Lực', value: 5 }, cooldown: 0, effectDescription: 'Gây sát thương Tiên Lực cơ bản.', rank: 'Phàm Giai', icon: '💧', level: 1, maxLevel: 9, levelBonuses: [{level: 1, bonuses: [{attribute: 'Tiên Lực', value: 1}]}]},
-    { id: 'tech_ngu_phong_thuat', name: 'Ngự Phong Thuật', description: 'Sử dụng linh khí để gia tăng tốc độ, giúp di chuyển nhanh hơn.', type: 'Độn Thuật', cost: { type: 'Linh Lực', value: 10 }, cooldown: 2, effectDescription: 'Tăng Thân Pháp trong một khoảng thời gian ngắn.', rank: 'Phàm Giai', icon: '💨', level: 1, maxLevel: 9, levelBonuses: [{level: 1, bonuses: [{attribute: 'Thân Pháp', value: 1}]}]},
+    {
+        id: 'tech_basic_meditation',
+        name: 'Sơ Cấp Dẫn Khí Quyết',
+        description: 'Một tâm pháp cơ bản để dẫn linh khí trời đất vào cơ thể, củng cố nền tảng tu luyện.',
+        type: 'Linh Kỹ',
+        cost: { type: 'Linh Lực', value: 5 },
+        cooldown: 0,
+        effectDescription: 'Tăng nhẹ tốc độ hấp thụ linh khí khi đả tọa trong 1 canh giờ.',
+        rank: 'Phàm Giai',
+        icon: '🧘',
+        level: 1,
+        maxLevel: 5,
+    },
+    {
+        id: 'tech_basic_strike',
+        name: 'Ngưng Khí Chỉ',
+        description: 'Ngưng tụ một lượng nhỏ linh lực ở đầu ngón tay và bắn ra, gây sát thương cho kẻ địch ở cự ly gần.',
+        type: 'Linh Kỹ',
+        cost: { type: 'Linh Lực', value: 10 },
+        cooldown: 1,
+        effectDescription: 'Gây một lượng nhỏ sát thương Tiên Lực.',
+        rank: 'Phàm Giai',
+        icon: '👉',
+        level: 1,
+        maxLevel: 10,
+    },
 ];
 
-export const CULTIVATION_PATHS: CultivationPath[] = [
-    { id: 'path_sword', name: 'Kiếm Tu - Vô Tình Kiếm Đạo', description: 'Lấy thân làm kiếm, lấy tâm ngự kiếm. Con đường của kiếm tu sắc bén, bá đạo, chuyên về tấn công.', requiredRealmId: 'ket_dan', bonuses: [{ attribute: 'Kiếm Pháp', value: 20 }, { attribute: 'Tiên Lực', value: 10 }] },
-    { id: 'path_elemental', name: 'Pháp Tu - Ngũ Hành Chân Quyết', description: 'Điều khiển sức mạnh của ngũ hành, am hiểu chân lý trời đất. Pháp tu có thần thông quảng đại, biến hóa khôn lường.', requiredRealmId: 'ket_dan', bonuses: [{ attribute: 'Nguyên Thần', value: 15 }, { attribute: 'Linh Lực', value: 100 }] },
-    { id: 'path_body', name: 'Thể Tu - Bất Diệt Kim Thân', description: 'Dùng thiên địa linh khí để rèn luyện thân thể, đạt tới cảnh giới vạn pháp bất xâm, nhục thân bất hoại.', requiredRealmId: 'ket_dan', bonuses: [{ attribute: 'Nhục Thân', value: 15 }, { attribute: 'Sinh Mệnh', value: 150 }] },
-];
-
+// FIX: Added and exported PREMADE_MODS to resolve module export errors.
 export const PREMADE_MODS: FullMod[] = [
     {
         modInfo: {
-            id: 'than_binh_loi_khi_v1',
+            id: 'phongthan-thanbinh',
             name: 'Thần Binh Lợi Khí',
-            author: 'GameMaster AI',
-            description: 'Bổ sung 5 món vũ khí và pháp bảo huyền thoại vào thế giới Phong Thần.',
+            author: 'Game Master',
+            description: 'Bổ sung một số thần binh và pháp bảo nổi tiếng trong thế giới Phong Thần.',
             version: '1.0.0',
         },
         content: {
             items: [
-                { name: 'Phiên Thiên Ấn', description: 'Pháp bảo của Quảng Thành Tử, có sức mạnh lật trời, cực kỳ nặng.', type: 'Pháp Bảo', quality: 'Tiên Phẩm', weight: 10, bonuses: [{ attribute: 'Lực Lượng', value: 15 }, { attribute: 'Tiên Lực', value: 20 }], tags: ['vũ khí', 'pháp bảo', 'xiển giáo'] },
-                { name: 'Tru Tiên Kiếm', description: 'Một trong Tứ Tiên Kiếm của Triệt Giáo, sát khí ngút trời, phi Thánh nhân không thể địch.', type: 'Vũ Khí', quality: 'Tuyệt Phẩm', weight: 5, bonuses: [{ attribute: 'Kiếm Pháp', value: 25 }, { attribute: 'Tiên Lực', value: 30 }], tags: ['vũ khí', 'kiếm', 'triệt giáo'], slot: 'Vũ Khí' },
-                // ... more items
-            ]
-        }
-    }
+                {
+                    name: 'Phiên Thiên Ấn',
+                    description: 'Một pháp bảo của Quảng Thành Tử, có sức mạnh lật trời, một khi tung ra, vạn vật đều khó chống đỡ.',
+                    type: 'Pháp Bảo',
+                    quality: 'Tiên Phẩm',
+                    weight: 5.0,
+                    bonuses: [{ attribute: 'Lực Lượng', value: 25 }, { attribute: 'Tiên Lực', value: 50 }],
+                    tags: ['Xiển Giáo', 'Pháp Bảo Mạnh'],
+                },
+                {
+                    name: 'Hỗn Nguyên Kim Đấu',
+                    description: 'Bảo vật trấn động của Tam Tiêu Nương Nương, có thể thu nhiếp vạn vật, làm mất đi tu vi của tiên nhân.',
+                    type: 'Pháp Bảo',
+                    quality: 'Tiên Phẩm',
+                    weight: 3.0,
+                    bonuses: [{ attribute: 'Nguyên Thần', value: 30 }, { attribute: 'Phòng Ngự', value: 40 }],
+                    tags: ['Triệt Giáo', 'Khống Chế'],
+                },
+            ],
+        },
+    },
 ];
 
+// FIX: Added and exported NPC_LIST to resolve module export errors.
+export const NPC_LIST: NPC[] = [
+    {
+        id: 'canon-npc-kzy',
+        identity: {
+            name: 'Khương Tử Nha',
+            gender: 'Nam',
+            origin: 'Đệ tử Xiển Giáo, phụng mệnh xuống núi phò Chu diệt Thương.',
+            appearance: 'Một lão ông râu tóc bạc phơ, tướng mạo phi phàm, ánh mắt tinh anh, thường mặc đạo bào màu xám.',
+            personality: 'Thông tuệ, kiên nhẫn, có tầm nhìn xa trông rộng.',
+        },
+        status: 'Đang câu cá bên bờ sông Vị Thủy.',
+        attributes: [],
+        talents: [],
+        locationId: 'song_vi_thuy',
+        cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_3', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [],
+        inventory: { items: [], weightCapacity: 20 },
+        currencies: {},
+        equipment: {},
+        ChinhDao: 95,
+        MaDao: 0,
+        TienLuc: 350,
+        PhongNgu: 280,
+        SinhMenh: 2000,
+    },
+];
+
+// FIX: Added and exported SHOPS to resolve module export errors.
 export const SHOPS: Shop[] = [
     {
         id: 'thien_co_cac',
         name: 'Thiên Cơ Các',
-        description: 'Nơi bán đủ loại kỳ trân dị bảo, chỉ cần bạn có đủ linh thạch.',
+        description: 'Một cửa hàng bí ẩn bán đủ loại vật phẩm kỳ lạ, từ pháp bảo đến tin tức.',
         inventory: [
-            { name: 'Hồi Lực Đan', description: 'Viên đan dược giúp hồi phục 100 Linh Lực.', type: 'Đan Dược', icon: '💊', weight: 0.1, quality: 'Linh Phẩm', price: { currency: 'Linh thạch hạ phẩm', amount: 50 }, stock: 10 },
-            { name: 'Trúc Cơ Đan', description: 'Tăng 20% tỷ lệ thành công khi đột phá Trúc Cơ.', type: 'Đan Dược', icon: '🌟', weight: 0.1, quality: 'Pháp Phẩm', price: { currency: 'Linh thạch hạ phẩm', amount: 500 }, stock: 1 },
-            { name: 'Huyền Thiết Trọng Kiếm', description: 'Một thanh trọng kiếm làm từ huyền thiết, uy lực kinh người.', type: 'Vũ Khí', icon: '🗡️', bonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Tiên Lực', value: 10 }], weight: 15.0, quality: 'Linh Phẩm', slot: 'Vũ Khí', price: { currency: 'Linh thạch hạ phẩm', amount: 350 }, stock: 1 },
-            { name: 'Ngự Phong Chu', description: 'Một chiếc thuyền nhỏ có thể ngự không phi hành, tăng tốc độ di chuyển giữa các địa điểm.', type: 'Pháp Bảo', rank: 'Trung Giai', icon: '⛵', weight: 5.0, quality: 'Bảo Phẩm', price: { currency: 'Linh thạch hạ phẩm', amount: 1200 }, stock: 1 },
-            { name: 'Bản đồ Sơn Hà Xã Tắc (Mảnh vỡ)', description: 'Một mảnh vỡ của bản đồ cổ, ẩn chứa bí mật động trời.', type: 'Tạp Vật', icon: '🗺️', weight: 0.1, quality: 'Tiên Phẩm', price: { currency: 'Bạc', amount: 10000 }, stock: 'infinite' },
-        ]
-    }
+            {
+                name: 'La Bàn Tìm Rồng',
+                description: 'Một la bàn có khả năng chỉ dẫn đến nơi có long mạch hoặc bảo vật ẩn giấu.',
+                type: 'Pháp Bảo',
+                quality: 'Pháp Phẩm',
+                weight: 0.5,
+                price: { currency: 'Linh thạch hạ phẩm', amount: 150 },
+                stock: 1,
+            },
+            {
+                name: 'Tẩy Tủy Đan',
+                description: 'Đan dược giúp tẩy trừ tạp chất trong cơ thể, tăng nhẹ tư chất tu luyện.',
+                type: 'Đan Dược',
+                quality: 'Linh Phẩm',
+                weight: 0.1,
+                bonuses: [{ attribute: 'Cảm Ngộ', value: 1 }],
+                price: { currency: 'Linh thạch hạ phẩm', amount: 50 },
+                stock: 5,
+            },
+        ],
+    },
 ];

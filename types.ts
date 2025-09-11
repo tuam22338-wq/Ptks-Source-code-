@@ -63,6 +63,7 @@ export interface GameSettings {
     apiKey: string;
     apiKeys: string[];
     useKeyRotation: boolean;
+    enablePerformanceMode: boolean;
 }
 
 // --- Character Creation & Stats Types ---
@@ -311,6 +312,12 @@ export interface ModContent {
 export interface FullMod {
     modInfo: ModInfo;
     content: ModContent;
+}
+
+// New type for the community mod library
+export interface CommunityMod {
+    modInfo: ModInfo;
+    downloadUrl: string;
 }
 
 

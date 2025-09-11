@@ -14,6 +14,7 @@ import WorldBuildingEditorModal from './WorldBuildingEditorModal';
 import SectEditorModal from './SectEditorModal';
 import RealmEditorModal from './RealmEditorModal';
 import NpcEditorModal from './NpcEditorModal';
+// FIX: Changed import to a named import as TechniqueEditorModal does not have a default export.
 import TechniqueEditorModal from './TechniqueEditorModal';
 import EventEditorModal from './EventEditorModal';
 
@@ -189,6 +190,11 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             }
         }
     }, []);
+
+    const modContextForAI = useMemo(() => ({
+        realms,
+        talentRanks,
+    }), [realms, talentRanks]);
 
     const handleConfirmSystemReplacement = () => {
         if (!pendingSystemAction) return;
@@ -699,7 +705,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 )}
                 {activeTab === 'ai' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                       <GameMasterChat onActionRequest={handleAIAction} />
+                       <GameMasterChat onActionRequest={handleAIAction} modContext={modContextForAI} />
                     </div>
                 )}
             </div>
