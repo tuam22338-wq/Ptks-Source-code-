@@ -13,33 +13,45 @@
         --bg-color: #0c0a09;
         --text-color: #d1d5db;
         --text-muted-color: #9ca3af;
+        
+        /* Amber Theme */
         --primary-accent-color: #f59e0b; /* amber-400 */
         --primary-accent-text-color: #0c0a09;
         --secondary-accent-color: #14b8a6; /* teal-500 */
         --border-color: #4b5563; /* gray-600 */
-        --panel-bg-color: rgba(0, 0, 0, 0.3);
-        --panel-border-color: rgba(107, 114, 128, 0.5); /* gray-500 */
+        --panel-bg-color: rgba(28, 18, 5, 0.4);
+        --panel-border-color: rgba(245, 158, 11, 0.25);
         --button-primary-bg: #a03d35;
         --button-primary-hover-bg: #b5453d;
         --button-primary-border: #6e2a24;
+        --primary-glow-color: rgba(245, 158, 11, 0.4);
+        --input-focus-ring-color: #f59e0b;
       }
 
       body.theme-jade-green {
         --primary-accent-color: #14b8a6; /* teal-500 */
         --primary-accent-text-color: #ffffff;
         --secondary-accent-color: #a78bfa; /* violet-400 */
+        --panel-bg-color: rgba(5, 28, 25, 0.4);
+        --panel-border-color: rgba(20, 184, 166, 0.25);
         --button-primary-bg: #0f766e; /* teal-700 */
         --button-primary-hover-bg: #0d9488; /* teal-600 */
         --button-primary-border: #134e4a; /* teal-900 */
+        --primary-glow-color: rgba(20, 184, 166, 0.4);
+        --input-focus-ring-color: #14b8a6;
       }
       
       body.theme-amethyst-purple {
          --primary-accent-color: #8b5cf6; /* violet-500 */
          --primary-accent-text-color: #ffffff;
          --secondary-accent-color: #38bdf8; /* lightBlue-400 */
+         --panel-bg-color: rgba(25, 5, 28, 0.4);
+         --panel-border-color: rgba(139, 92, 246, 0.25);
          --button-primary-bg: #6d28d9; /* violet-700 */
          --button-primary-hover-bg: #7c3aed; /* violet-600 */
          --button-primary-border: #4c1d95; /* violet-900 */
+         --primary-glow-color: rgba(139, 92, 246, 0.4);
+         --input-focus-ring-color: #8b5cf6;
       }
 
       body {
@@ -53,8 +65,44 @@
       }
       .font-title {
         font-family: 'Cormorant Garamond', serif;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 12px var(--primary-glow-color);
       }
       
+      /* --- Themed UI Elements --- */
+      .themed-panel {
+        background-color: var(--panel-bg-color) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--panel-border-color) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      }
+      
+      .themed-modal {
+        background-color: var(--panel-bg-color) !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--primary-accent-color) !important;
+        box-shadow: 0 0 30px 0 var(--primary-glow-color);
+      }
+
+      .themed-button-primary {
+        background-color: var(--button-primary-bg);
+        border: 2px solid var(--button-primary-border);
+        transition: all 0.3s ease-in-out;
+      }
+      .themed-button-primary:hover:not(:disabled) {
+        background-color: var(--button-primary-hover-bg);
+        box-shadow: 0 0 15px 0 var(--primary-glow-color);
+        transform: scale(1.05);
+      }
+
+      input, select, textarea {
+        --tw-ring-color: var(--input-focus-ring-color) !important;
+      }
+      input:focus, select:focus, textarea:focus {
+        border-color: var(--input-focus-ring-color) !important;
+      }
+
       /* Custom scrollbar for the dark theme */
       ::-webkit-scrollbar {
         width: 8px;
@@ -63,11 +111,23 @@
         background: rgba(0, 0, 0, 0.2);
       }
       ::-webkit-scrollbar-thumb {
-        background-color: #4a4a4a;
+        background-color: var(--border-color);
         border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background-color: #6a6a6a;
+        background-color: var(--primary-accent-color);
+      }
+
+      /* Layout mode overrides */
+      body.force-mobile main {
+        max-width: 420px !important;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      body.force-desktop {
+        min-width: 1024px;
       }
 
       /* Animations */

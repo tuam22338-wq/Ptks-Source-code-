@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { SaveSlot } from '../types';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -46,7 +47,7 @@ const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slo
                      transition-all duration-300 ease-in-out transform hover:scale-105
                      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
                      ${isNew ? 'bg-black/20 border-gray-700/80 hover:border-gray-400 hover:bg-black/30 focus:ring-gray-400' 
-                             : 'bg-teal-900/20 border-teal-500/50 hover:border-teal-400 hover:bg-teal-900/30 focus:ring-teal-400'}`}
+                             : 'bg-[color:var(--primary-accent-color)]/10 border-[color:var(--primary-accent-color)]/50 hover:border-[color:var(--primary-accent-color)] hover:bg-[color:var(--primary-accent-color)]/20 focus:ring-[var(--primary-accent-color)]'}`}
         >
           {isNew ? (
             <>
@@ -61,7 +62,7 @@ const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slo
           ) : (
              <div className="flex flex-col h-full justify-between w-full">
                 <div>
-                    <h3 className="font-title text-xl text-amber-300">{character?.identity.name}</h3>
+                    <h3 className="font-title text-xl text-[var(--primary-accent-color)]">{character?.identity.name}</h3>
                     <p className="text-xs text-cyan-300">{realmDisplay}</p>
                 </div>
                 <div className="text-center">
@@ -77,7 +78,7 @@ const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slo
 
 const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, onBack }) => {
   return (
-    <div className="w-full animate-fade-in bg-black/30 backdrop-blur-md rounded-lg shadow-2xl shadow-black/50 border border-gray-700/50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-3xl text-gray-200 font-bold font-title">Thiên Mệnh Thư</h2>
          <button 

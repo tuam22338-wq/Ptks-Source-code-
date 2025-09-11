@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -48,16 +49,25 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Apply font family directly
     document.body.style.fontFamily = settings.fontFamily;
 
-    // Manage theme classes without removing others
-    const themeClasses = THEME_OPTIONS.map(t => t.value);
-    document.body.classList.remove(...themeClasses);
-    // Do not add the 'theme-amber' class as it's the default (root) style
-    if (settings.theme && settings.theme !== 'theme-amber') {
+    // Manage theme classes by removing all possible themes and adding the current one
+    THEME_OPTIONS.forEach(themeOption => {
+        document.body.classList.remove(themeOption.value);
+    });
+    if (settings.theme && settings.theme !== 'theme-amber') { // 'theme-amber' is the default via :root
         document.body.classList.add(settings.theme);
     }
-  }, [settings.fontFamily, settings.theme]);
+    
+    // Manage layout classes by removing all layout modes and adding the current one
+    document.body.classList.remove('force-desktop', 'force-mobile');
+    if (settings.layoutMode === 'desktop') {
+      document.body.classList.add('force-desktop');
+    } else if (settings.layoutMode === 'mobile') {
+      document.body.classList.add('force-mobile');
+    }
+  }, [settings]); // Depend on the entire settings object for robustness
 
   const handleSettingChange = (key: keyof GameSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -335,7 +345,7 @@ const App: React.FC = () => {
   const showHeader = view !== 'mainMenu' && view !== 'gamePlay' && !isLoading;
 
   return (
-    <div className={`min-h-screen w-full flex flex-col items-center justify-center font-serif relative transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
+    <div className={`min-h-screen w-full flex flex-col items-center justify-center relative transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
       <div className={`w-full max-w-7xl transition-opacity duration-700 ${!showHeader ? 'opacity-0 h-0 invisible' : 'opacity-100'}`}>
         {showHeader && <Header />}
       </div>

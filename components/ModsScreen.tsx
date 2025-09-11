@@ -21,7 +21,7 @@ type ModsTab = 'library' | 'import' | 'create';
 const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }> = ({ checked, onChange }) => (
   <label className="relative inline-flex items-center cursor-pointer">
     <input type="checkbox" checked={checked} onChange={onChange} className="sr-only peer" />
-    <div className="w-14 h-7 bg-gray-700 rounded-full border border-gray-600 peer peer-focus:ring-2 peer-focus:ring-gray-500/50 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+    <div className="w-14 h-7 bg-gray-700 rounded-full border border-gray-600 peer peer-focus:ring-2 peer-focus:ring-gray-500/50 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-accent-color)]"></div>
   </label>
 );
 
@@ -166,7 +166,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
           onClick={() => setActiveTab(tabId)}
           className={`w-full flex items-center justify-start gap-4 p-4 text-md font-bold rounded-lg transition-colors duration-200 ${
             activeTab === tabId
-              ? 'bg-black/20 text-white'
+              ? 'bg-[color:var(--primary-accent-color)]/20 text-white'
               : 'text-gray-400 hover:bg-gray-800/50'
           }`}
         >
@@ -176,7 +176,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
     );
 
   return (
-    <div className="w-full animate-fade-in bg-black/30 backdrop-blur-md rounded-lg shadow-2xl shadow-black/50 border border-gray-700/50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl text-gray-200 font-bold font-title">Quản lý Mods</h2>
             <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">

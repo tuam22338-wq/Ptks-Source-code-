@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface StartButtonProps {
@@ -9,9 +10,9 @@ const StartButton: React.FC<StartButtonProps> = ({ onClick }) => {
     <div className="flex justify-center my-6">
       <button
         onClick={onClick}
-        className="w-48 h-20 bg-[#a03d35] text-white text-2xl font-bold font-title
-                   rounded-md border-2 border-[#6e2a24]
-                   transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-[#b5453d]
+        className="w-48 h-20 bg-[var(--button-primary-bg)] text-white text-2xl font-bold font-title
+                   rounded-md border-2 border-[var(--button-primary-border)]
+                   transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-[var(--button-primary-hover-bg)]
                    shadow-lg shadow-black/20"
         style={{
           textShadow: '1px 1px 2px rgba(0,0,0,0.3)',

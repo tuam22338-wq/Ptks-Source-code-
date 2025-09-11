@@ -79,10 +79,10 @@ const ConfirmationModal: React.FC<{
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }}>
-            <div className="bg-gray-900/95 border border-amber-500/50 rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4">
+            <div className="themed-panel rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4">
                 <div className="p-6 text-center">
                     <div className="flex justify-center mb-4">
-                        <FaExclamationTriangle className="text-amber-400 text-4xl" />
+                        <FaExclamationTriangle className="text-[var(--primary-accent-color)] text-4xl" />
                     </div>
                     <h3 className="text-xl text-gray-100 font-bold font-title">{title}</h3>
                     <p className="text-gray-300 mt-2">{message}</p>
@@ -471,7 +471,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
           onClick={() => setActiveTab(tabId)}
           className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 ${
             activeTab === tabId
-              ? 'bg-black/20 text-white'
+              ? 'bg-[color:var(--primary-accent-color)]/20 text-white'
               : 'text-gray-400 hover:bg-gray-800/50'
           }`}
         >
@@ -546,7 +546,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="w-full animate-fade-in bg-black/30 backdrop-blur-md rounded-lg shadow-2xl shadow-black/50 border border-gray-700/50 p-4 sm:p-6 lg:p-8">
+        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
             <ConfirmationModal isOpen={!!pendingSystemAction} title="Xác Nhận Thay Thế Hệ Thống" message="Hành động này sẽ thay thế toàn bộ cấu hình hệ thống hiện tại bằng dữ liệu mới do AI tạo ra. Bạn có chắc chắn muốn tiếp tục?" onConfirm={handleConfirmSystemReplacement} onCancel={() => setPendingSystemAction(null)} />
             <ItemEditorModal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onSave={handleSaveItem} itemToEdit={editingItem} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <TalentEditorModal isOpen={isTalentModalOpen} onClose={() => setIsTalentModalOpen(false)} onSave={handleSaveTalent} talentToEdit={editingTalent} allAttributes={ALL_ATTRIBUTES} talentRanks={talentRanks} suggestions={allUniqueTags} />

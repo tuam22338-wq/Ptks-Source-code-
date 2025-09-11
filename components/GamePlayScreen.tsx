@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship } from '../types';
 import StoryLog from './StoryLog';
@@ -22,9 +23,9 @@ interface GamePlayScreenProps {
 const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> = ({ npc, allNpcs, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
-        <div className="bg-gray-900/95 border border-amber-500/50 rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-                <h3 className="text-xl text-amber-300 font-bold font-title">{npc.name}</h3>
+                <h3 className="text-xl text-[var(--primary-accent-color)] font-bold font-title">{npc.name}</h3>
                 <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
             </div>
             <div className="p-6 space-y-4 overflow-y-auto">
@@ -92,7 +93,7 @@ const GameMenuModal: React.FC<{
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
-            <div className="bg-gray-900/95 border border-gray-700 rounded-lg shadow-2xl shadow-black/50 w-full max-w-xs m-4 p-4 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-xs m-4 p-4 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
                 <h3 className="text-xl text-center text-gray-200 font-bold font-title mb-2">Tùy Chọn</h3>
                 <button onClick={onSave} className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 transition-colors">
                     <FaSave /> Lưu Game
@@ -736,7 +737,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
             {viewingNpc && <NpcInfoModal npc={viewingNpc} allNpcs={activeNpcs} onClose={() => setViewingNpc(null)} />}
              {isGameOver && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }}>
-                    <div className="bg-gray-900/95 border border-red-500/50 rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4 p-8 text-center">
+                    <div className="themed-panel border-red-500/50 rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4 p-8 text-center">
                         <div className="flex justify-center mb-4">
                             <FaExclamationTriangle className="text-red-500 text-5xl" />
                         </div>
@@ -790,6 +791,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         neighbors={neighbors}
                         rumors={worldState.rumors}
                         onTravel={handleTravel}
+                        // FIX: Pass the `handleExplore` function to the `onExplore` prop instead of the undefined `onExplore` variable.
                         onExplore={handleExplore}
                         onNpcSelect={setViewingNpc}
                         allNpcs={activeNpcs}

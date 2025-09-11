@@ -8,7 +8,7 @@ interface LoreScreenProps {
 
 const LoreScreen: React.FC<LoreScreenProps> = ({ onBack }) => {
   return (
-    <div className="w-full animate-fade-in bg-black/30 backdrop-blur-md rounded-lg shadow-2xl shadow-black/50 border border-gray-700/50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl text-gray-200 font-bold font-title">Phong Thần Niên Biểu Bảng</h2>
         <button

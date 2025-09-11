@@ -1,3 +1,5 @@
+
+
 import React, { useState, useCallback, useEffect } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig } from '../types';
 import { FaArrowLeft, FaSyncAlt } from 'react-icons/fa';
@@ -234,10 +236,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         
         <button
           onClick={handleGenerate}
-          className="flex items-center justify-center gap-3 w-64 h-16 bg-[#a03d35] text-white text-xl font-bold font-title
-                     rounded-md border-2 border-[#6e2a24]
-                     transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-[#b5453d]
-                     shadow-lg shadow-black/20"
+          className="themed-button-primary flex items-center justify-center gap-3 w-64 h-16 text-white text-xl font-bold font-title rounded-md shadow-lg shadow-black/20"
         >
           <GiGalaxy />
           <span>Luận Bàn Thiên Cơ</span>
@@ -300,7 +299,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
                 <FaSyncAlt />
                 <span>Gieo Quẻ Lại</span>
             </button>
-            <button onClick={handleConfirm} className="w-52 h-16 bg-[#a03d35] text-white text-xl font-bold font-title rounded-md border-2 border-[#6e2a24] transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-[#b5453d] disabled:bg-gray-600/70 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:scale-100">
+            <button onClick={handleConfirm} className="themed-button-primary w-52 h-16 text-white text-xl font-bold font-title rounded-md disabled:bg-gray-600/70 disabled:text-gray-400 disabled:cursor-not-allowed disabled:transform-none">
                 Xác Nhận
             </button>
         </div>
@@ -308,7 +307,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
   );
 
   return (
-    <div className="w-full animate-fade-in bg-black/40 backdrop-blur-lg rounded-lg shadow-2xl shadow-black/50 border border-gray-700/50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-3xl text-gray-200 font-bold font-title">Kiến Tạo Thân Phận</h2>
         <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Quay Lại">

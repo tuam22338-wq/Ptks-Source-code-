@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../constants';
 import { testApiKeys } from '../services/geminiService';
@@ -33,19 +34,19 @@ const SettingsRow: React.FC<{ label: string; description?: string; children: Rea
 );
 
 const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: { value: string; label: string }[]; }> = ({ value, onChange, options }) => (
-  <select value={value} onChange={onChange} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all">
+  <select value={value} onChange={onChange} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 transition-all">
     {options.map(opt => <option key={opt.value} value={opt.value} className="bg-gray-800">{opt.label}</option>)}
   </select>
 );
 
 const NumberInput: React.FC<{ value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; min?: number; max?: number; }> = ({ value, onChange, min, max }) => (
-  <input type="number" value={value} onChange={onChange} min={min} max={max} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+  <input type="number" value={value} onChange={onChange} min={min} max={max} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2" />
 );
 
 const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }> = ({ checked, onChange }) => (
   <label className="relative inline-flex items-center cursor-pointer">
     <input type="checkbox" checked={checked} onChange={onChange} className="sr-only peer" />
-    <div className="w-14 h-7 bg-gray-700 rounded-full border border-gray-600 peer peer-focus:ring-2 peer-focus:ring-gray-500/50 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+    <div className="w-14 h-7 bg-gray-700 rounded-full border border-gray-600 peer peer-focus:ring-2 peer-focus:ring-gray-500/50 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-accent-color)]"></div>
   </label>
 );
 
@@ -100,7 +101,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
       onClick={() => setActiveTab(tabId)}
       className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 ${
         activeTab === tabId
-          ? 'bg-black/20 text-white'
+          ? 'bg-[color:var(--primary-accent-color)]/20 text-white'
           : 'text-gray-400 hover:bg-gray-800/50'
       }`}
     >
@@ -110,7 +111,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
   );
 
   return (
-    <div className="w-full animate-fade-in bg-black/30 backdrop-blur-md rounded-lg shadow-2xl shadow-black/50 border border-gray-700/50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
         <h2 className="text-3xl text-center text-gray-200 font-bold font-title mb-6">Cài Đặt Game</h2>
 
         {/* Tab Navigation */}

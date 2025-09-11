@@ -102,10 +102,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ shopId, gameState, setGameState, 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
-            <div className="bg-gray-900/95 border border-amber-500/50 rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <div>
-                        <h3 className="text-2xl text-amber-300 font-bold font-title">{shopData.name}</h3>
+                        <h3 className="text-2xl text-[var(--primary-accent-color)] font-bold font-title">{shopData.name}</h3>
                         <p className="text-sm text-gray-400">{shopData.description}</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
