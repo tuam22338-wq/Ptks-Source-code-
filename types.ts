@@ -532,6 +532,7 @@ export interface WorldState {
 }
 
 export interface GameState {
+    version?: string;
     playerCharacter: PlayerCharacter;
     activeNpcs: NPC[];
     discoveredLocations: Location[];

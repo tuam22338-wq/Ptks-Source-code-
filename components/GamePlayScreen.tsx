@@ -395,7 +395,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     case 'CREATE_NPC': {
                         const newNpc: NPC = { id: `dynamic-npc-${Date.now()}`, talents: [], ...data };
                         setGameState(gs => gs ? ({ ...gs, activeNpcs: [...gs.activeNpcs, newNpc] }) : null);
-                        addStoryEntry({ type: 'system', content: `Bạn đã gặp [${newNpc.name}].`});
+                        addStoryEntry({ type: 'system', content: `Bạn đã gặp [${newNpc.identity.name}].`});
                         break;
                     }
                      case 'DISCOVER_LOCATION': {

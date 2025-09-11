@@ -27,6 +27,41 @@ const initialStory: StoryEntry[] = [
     { id: 2, type: 'system', content: 'Bạn có thể dùng ô "Nói" để giao tiếp, "Hành Động" để tương tác, hoặc nhập "tu luyện" để tĩnh tọa hấp thụ linh khí.' },
 ];
 
+const CURRENT_GAME_VERSION = "1.1.0";
+
+const migrateGameState = (savedGame: any): GameState => {
+    if (savedGame.version === CURRENT_GAME_VERSION) {
+        return savedGame as GameState;
+    }
+
+    let migratedData = { ...savedGame };
+    let version = savedGame.version || "1.0.0";
+
+    if (version === "1.0.0") {
+        console.log("Migrating save from v1.0.0 to v1.1.0...");
+        
+        migratedData.activeMods = migratedData.activeMods ?? [];
+        migratedData.realmSystem = migratedData.realmSystem ?? REALM_SYSTEM;
+        migratedData.encounteredNpcIds = migratedData.encounteredNpcIds ?? [];
+
+        if (migratedData.playerCharacter) {
+            migratedData.playerCharacter.relationships = migratedData.playerCharacter.relationships ?? [];
+            migratedData.playerCharacter.chosenPathIds = migratedData.playerCharacter.chosenPathIds ?? [];
+            migratedData.playerCharacter.knownRecipeIds = migratedData.playerCharacter.knownRecipeIds ?? [];
+        }
+        
+        migratedData.version = "1.1.0";
+        version = "1.1.0";
+    }
+
+    if (version !== CURRENT_GAME_VERSION) {
+        throw new Error(`Migration failed. Could not migrate from ${savedGame.version || 'unversioned'} to ${CURRENT_GAME_VERSION}.`);
+    }
+    
+    return migratedData as GameState;
+};
+
+
 const App: React.FC = () => {
   const [view, setView] = useState<View>('mainMenu');
   const [isLoading, setIsLoading] = useState(false);
@@ -98,14 +133,15 @@ const App: React.FC = () => {
         try {
             const savedGameRaw = localStorage.getItem(`phongthan-gs-slot-${i}`);
             if (savedGameRaw) {
-                const savedGame: GameState = JSON.parse(savedGameRaw);
-                loadedSlots.push({ id: i, data: savedGame });
+                const savedGame: any = JSON.parse(savedGameRaw);
+                const migratedGame = migrateGameState(savedGame);
+                loadedSlots.push({ id: i, data: migratedGame });
             } else {
                 loadedSlots.push({ id: i, data: null });
             }
         } catch (error) {
-            console.error(`Failed to load slot ${i}`, error);
-            localStorage.removeItem(`phongthan-gs-slot-${i}`); // Clear corrupted data
+            console.error(`Slot ${i} is corrupted or incompatible and will be cleared. Error:`, error);
+            localStorage.removeItem(`phongthan-gs-slot-${i}`);
             loadedSlots.push({ id: i, data: null });
         }
     }
@@ -114,25 +150,22 @@ const App: React.FC = () => {
   
   const handleSlotSelection = (slotId: number) => {
     const selectedSlot = saveSlots.find(s => s.id === slotId);
-    // Check if data is valid by ensuring playerCharacter exists
+
     if (selectedSlot && selectedSlot.data && selectedSlot.data.playerCharacter) {
-        // Load Game with a smooth transition
         setLoadingMessage('Đang tải hành trình...');
         setIsLoading(true);
         setTimeout(() => {
+            // The data in `selectedSlot` is now migrated and up-to-date.
+            // We immediately re-save it to persist the migration.
+            localStorage.setItem(`phongthan-gs-slot-${slotId}`, JSON.stringify(selectedSlot.data));
+
             setGameState(selectedSlot.data);
             setCurrentSlotId(slotId);
             setView('gamePlay');
             setIsLoading(false);
-        }, 500); // Short delay to ensure a smooth visual transition
+        }, 500);
     } else {
-        // Handle invalid data or start new game
-        if (selectedSlot && selectedSlot.data) { // Data exists but is invalid
-            alert('Dữ liệu lưu trong ô này bị lỗi và sẽ được xóa. Vui lòng bắt đầu hành trình mới.');
-            localStorage.removeItem(`phongthan-gs-slot-${slotId}`);
-            loadSaveSlots(); // Refresh slots to show it as empty
-        }
-        // Start New Game
+        // Start New Game for empty or invalid slots
         setCurrentSlotId(slotId);
         setView('characterCreation');
     }
@@ -141,10 +174,14 @@ const App: React.FC = () => {
   const handleSaveGame = (currentState: GameState, showNotification: (message: string) => void) => {
     if (currentState && currentSlotId !== null) {
         try {
-            const gameStateWithTimestamp: GameState = { ...currentState, lastSaved: new Date().toISOString() };
-            localStorage.setItem(`phongthan-gs-slot-${currentSlotId}`, JSON.stringify(gameStateWithTimestamp));
-            setGameState(gameStateWithTimestamp); // Update state with timestamp
-            loadSaveSlots(); // Refresh slot data
+            const gameStateToSave: GameState = { 
+                ...currentState, 
+                version: CURRENT_GAME_VERSION,
+                lastSaved: new Date().toISOString() 
+            };
+            localStorage.setItem(`phongthan-gs-slot-${currentSlotId}`, JSON.stringify(gameStateToSave));
+            setGameState(gameStateToSave);
+            loadSaveSlots();
             showNotification('Đã lưu game thành công!');
         } catch (error) {
             console.error("Failed to save game", error);
@@ -290,6 +327,7 @@ const App: React.FC = () => {
         };
 
         const newGameState: GameState = {
+            version: CURRENT_GAME_VERSION,
             playerCharacter: finalPlayerCharacter,
             activeNpcs: allNpcs,
             gameDate: initialGameDate,
