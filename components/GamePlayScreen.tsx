@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship } from '../types';
 import StoryLog from './StoryLog';
@@ -188,7 +189,8 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const [notification, setNotification] = useState<string | null>(null);
     const [activeShopId, setActiveShopId] = useState<string | null>(null);
     
-    const { playerCharacter, activeNpcs, gameDate, discoveredLocations, worldState, storyLog, encounteredNpcIds } = gameState;
+    // FIX: Destructure `realmSystem` from `gameState` to pass it down to the Sidebar component.
+    const { playerCharacter, activeNpcs, gameDate, discoveredLocations, worldState, storyLog, encounteredNpcIds, realmSystem } = gameState;
     
     useEffect(() => {
         if (notification) {
@@ -293,7 +295,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         });
     };
 
-    const currentRealmData = REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+    const currentRealmData = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
     const currentRealmState = `${currentRealmData?.name || 'Vô danh'} - ${currentStageData?.name || 'Sơ kỳ'}`;
 
@@ -345,7 +347,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const processAIResponse = (responseText: string) => {
         let cleanedText = responseText;
         
-        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH):({.*?})\]/gs;
+        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH|ADD_TECHNIQUE):({.*?})\]/gs;
 
         let match;
         while ((match = tagRegex.exec(responseText)) !== null) {
@@ -452,6 +454,17 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     case 'DEATH': {
                         addStoryEntry({ type: 'system', content: data.reason });
                         setIsGameOver(true);
+                        break;
+                    }
+                    case 'ADD_TECHNIQUE': {
+                        const newTechnique: CultivationTechnique = { id: `tech-${Date.now()}-${Math.random()}`, ...data };
+                        setPlayerCharacter(pc => {
+                            if (pc.techniques.some(t => t.name === newTechnique.name)) {
+                                return pc;
+                            }
+                            return { ...pc, techniques: [...pc.techniques, newTechnique] };
+                        });
+                        addStoryEntry({ type: 'system', content: `Bạn đã học được công pháp mới: [${newTechnique.name}]`});
                         break;
                     }
                 }
@@ -641,7 +654,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const handleBreakthrough = async () => {
         if (!currentRealmData || !currentStageData || playerCharacter.cultivation.spiritualQi < currentStageData.qiRequired) return;
         
-        const isTribulationRealm = currentRealmData.hasTribulation || (REALM_SYSTEM[REALM_SYSTEM.findIndex(r => r.id === currentRealmData.id) + 1]?.hasTribulation);
+        const isTribulationRealm = currentRealmData.hasTribulation || (realmSystem[realmSystem.findIndex(r => r.id === currentRealmData.id) + 1]?.hasTribulation);
 
         const canCo = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Nhục Thân')?.value as number || 10;
         const coDuyen = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Cơ Duyên')?.value as number || 10;
@@ -655,8 +668,8 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
             let nextStageData = currentRealmData.stages[currentStageIndex + 1];
             let nextRealmData = currentRealmData;
             if (!nextStageData) {
-                const currentRealmIndex = REALM_SYSTEM.findIndex(r => r.id === currentRealmData.id);
-                const nextRealm = REALM_SYSTEM[currentRealmIndex + 1];
+                const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealmData.id);
+                const nextRealm = realmSystem[currentRealmIndex + 1];
                 if (nextRealm) {
                     nextRealmData = nextRealm;
                     nextStageData = nextRealm.stages[0];
@@ -754,7 +767,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
             </header>
             <div className="w-full flex-grow grid grid-cols-1 lg:grid-cols-4 overflow-hidden relative">
                 <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-                    <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} />
+                    <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} techniques={playerCharacter.techniques} />
                     {currentEvent ? (
                         <EventPanel 
                             key={currentEvent.id} 
@@ -782,6 +795,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         allNpcs={activeNpcs}
                         encounteredNpcIds={encounteredNpcIds}
                         discoveredLocations={discoveredLocations}
+                        realmSystem={realmSystem}
                     />
                 </aside>
             </div>

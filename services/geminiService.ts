@@ -1,7 +1,9 @@
+
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
-import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship } from '../types';
-import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES } from "../constants";
+// FIX: Import additional types required for mod-based character generation.
+import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig } from '../types';
+import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM } from "../constants";
 
 // --- Key Manager ---
 const ApiKeyManager = (() => {
@@ -176,8 +178,19 @@ export const testApiKeys = async (): Promise<{ key: string, status: 'valid' | 'i
     return results;
 };
 
+// FIX: Add interface for mod talent configuration to be used in character generation.
+interface ModTalentConfig {
+    systemConfig: TalentSystemConfig;
+    ranks: ModTalentRank[];
+    availableTalents: ModTalent[];
+}
 
-export const generateCharacterFoundation = async (concept: string, gender: Gender): Promise<{ identity: Omit<CharacterIdentity, 'gender'>, talents: InnateTalent[] }> => {
+// FIX: Update function signature to accept `modTalentConfig` and use it to dynamically generate character talents based on active mods.
+// This resolves the error in CharacterCreationScreen.tsx where a third argument was passed to a function that only accepted two.
+export const generateCharacterFoundation = async (concept: string, gender: Gender, modTalentConfig: ModTalentConfig): Promise<{ identity: Omit<CharacterIdentity, 'gender'>, talents: InnateTalent[] }> => {
+    const talentRanks = modTalentConfig.ranks.length > 0 ? modTalentConfig.ranks.map(r => r.name) : TALENT_RANK_NAMES;
+    const choicesPerRoll = modTalentConfig.systemConfig.choicesPerRoll || 6;
+    
     const characterFoundationSchema = {
         type: Type.OBJECT,
         properties: {
@@ -193,13 +206,13 @@ export const generateCharacterFoundation = async (concept: string, gender: Gende
             },
             talents: {
                 type: Type.ARRAY,
-                description: 'Một danh sách gồm chính xác 6 tiên tư độc đáo.',
+                description: `Một danh sách gồm chính xác ${choicesPerRoll} tiên tư độc đáo.`,
                 items: {
                     type: Type.OBJECT,
                     properties: {
                         name: { type: Type.STRING, description: 'Tên của tiên tư, ngắn gọn và độc đáo (ví dụ: "Thánh Thể Hoang Cổ", "Kiếm Tâm Thông Minh").' },
                         description: { type: Type.STRING, description: 'Mô tả ngắn gọn về bản chất của tiên tư.' },
-                        rank: { type: Type.STRING, enum: TALENT_RANK_NAMES, description: 'Cấp bậc của tiên tư.' },
+                        rank: { type: Type.STRING, enum: talentRanks, description: 'Cấp bậc của tiên tư.' },
                         effect: { type: Type.STRING, description: 'Mô tả hiệu ứng trong game của tiên tư.' },
                         bonuses: {
                             type: Type.ARRAY,
@@ -223,6 +236,10 @@ export const generateCharacterFoundation = async (concept: string, gender: Gende
         required: ['identity', 'talents'],
     };
 
+    const talentInstructions = modTalentConfig.systemConfig.allowAIGeneratedTalents !== false
+    ? `Tạo ra ${choicesPerRoll} tiên tư độc đáo, có liên quan mật thiết đến thân phận và ý tưởng gốc của nhân vật. Phân bổ cấp bậc của chúng một cách ngẫu nhiên và hợp lý (sử dụng các cấp bậc: ${talentRanks.join(', ')}). Các tiên tư phải có chiều sâu, có thể có điều kiện kích hoạt hoặc tương tác đặc biệt.`
+    : `CHỈ được chọn ${choicesPerRoll} tiên tư từ danh sách có sẵn sau: ${modTalentConfig.availableTalents.map(t => t.name).join(', ')}.`;
+
     const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Phong Thần, hãy tạo ra một nhân vật hoàn chỉnh.
     - **Bối cảnh:** Phong Thần Diễn Nghĩa, thế giới huyền huyễn, tiên hiệp.
     - **Giới tính nhân vật:** ${gender}
@@ -230,7 +247,7 @@ export const generateCharacterFoundation = async (concept: string, gender: Gende
 
     Nhiệm vụ:
     1.  **Tạo Thân Phận (Identity):** Dựa vào ý tưởng gốc, hãy sáng tạo ra một cái tên, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
-    2.  **Tạo 6 Tiên Tư (Innate Talents):** Tạo ra 6 tiên tư độc đáo, có liên quan mật thiết đến thân phận và ý tưởng gốc của nhân vật. Phân bổ cấp bậc của chúng một cách ngẫu nhiên và hợp lý (nên có cả cấp thấp và cấp cao). Các tiên tư phải có chiều sâu, có thể có điều kiện kích hoạt hoặc tương tác đặc biệt.
+    2.  **Tạo Tiên Tư (Innate Talents):** ${talentInstructions}
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
     `;
@@ -577,16 +594,20 @@ export const generateStoryContinuation = async (
     const knownLocations = discoveredLocations.map(l => l.name).join(', ');
     const knownNpcs = activeNpcs.filter(n => encounteredNpcIds.includes(n.id)).map(n => n.name).join(', ');
 
+    const currentRealmData = REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+    const currentStageData = currentRealmData?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
+    const cultivationProgress = `(${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${currentStageData?.qiRequired.toLocaleString() || '???'})`;
+
     const context = `
     ${gameContext}
     **Nhân vật chính:**
     - Tên: ${playerCharacter.identity.name}
     - Tuổi: ${playerCharacter.identity.age} (Tuổi thọ tối đa hiện tại dựa vào cảnh giới)
-    - Cảnh giới: ${playerCharacter.cultivation.currentRealmId}
+    - Cảnh giới: ${currentRealmData?.name || 'Vô danh'} - ${currentStageData?.name || 'Sơ kỳ'} ${cultivationProgress}
     - Thuộc tính: ${playerCharacter.attributes.flatMap(g => g.attributes).map(a => `${a.name}(${a.value})`).join(', ')}
     - Tiên tư: ${playerCharacter.talents.map(t => t.name).join(', ') || 'Không có'}
-    - Trang bị chính: ${Object.values(playerCharacter.equipment).filter(Boolean).map(i => i!.name).join(', ') || 'Không có'}
-    - Vật phẩm quan trọng: ${importantItems || 'Không có'}
+    - Trang bị: ${Object.values(playerCharacter.equipment).filter(Boolean).map(i => i!.name).join(', ') || 'Không có'}
+    - Công pháp đã học: ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa học'}
     - Quan hệ: ${relationshipsText || 'Chưa có'}
 
     **Kiến Thức Của Nhân Vật (Known World):**
@@ -609,8 +630,8 @@ export const generateStoryContinuation = async (
     Nhiệm vụ của bạn là tiếp nối câu chuyện dựa trên hành động của người chơi và bối cảnh hiện tại.
     - **Phong cách kể chuyện:** ${narrativeStyleDesc}. Hãy tuân thủ nghiêm ngặt phong cách này.
     - **Bối cảnh:** Hãy bám sát vào bối cảnh đã được cung cấp. Nếu đó là thế giới Phong Thần, hãy dùng các yếu tố của nó. Nếu một bối cảnh tùy chỉnh được cung cấp, hãy ưu tiên và xây dựng câu chuyện xoay quanh nó.
-    - **Tham chiếu trạng thái (RẤT QUAN TRỌNG):** Câu chuyện của bạn PHẢI thể hiện được các thuộc tính, tiên tư, vật phẩm, và mối quan hệ của nhân vật. Hãy chú ý đến thời gian, địa điểm, các NPC và tin đồn hiện có để câu chuyện liền mạch. Hãy nhớ đến tuổi tác và giới hạn tuổi thọ của nhân vật.
-    - **Mô tả kết quả:** Dựa trên hành động, kết quả (thành công/thất bại), và công pháp sử dụng, hãy mô tả kết quả một cách sống động và hợp lý.
+    - **Tham chiếu trạng thái (RẤT QUAN TRỌNG):** Câu chuyện của bạn PHẢI thể hiện được các thuộc tính, tiên tư, vật phẩm, công pháp và mối quan hệ của nhân vật. Hãy chú ý đến thời gian, địa điểm, các NPC và tin đồn hiện có để câu chuyện liền mạch. Hãy nhớ đến tuổi tác, cảnh giới và giới hạn tuổi thọ của nhân vật.
+    - **Mô tả kết quả:** Dựa trên hành động, kết quả (thành công/thất bại), và công pháp sử dụng, hãy mô tả kết quả một cách sống động và hợp lý. Nếu người chơi vừa "tu luyện", hãy mô tả cảm giác linh khí chảy trong cơ thể họ.
     - **KIỂM SOÁT LOGIC TUYỆT ĐỐI (CỰC KỲ QUAN TRỌNG):**
         - Bạn PHẢI duy trì sự logic và nhất quán của thế giới. Nhân vật chỉ biết những gì họ đã trải nghiệm, nghe thấy hoặc được kể trong game.
         - **Kiến thức của nhân vật:** Toàn bộ kiến thức của nhân vật về thế giới được cung cấp trong mục "Kiến Thức Của Nhân Vật". Họ không biết về bất kỳ địa danh hay nhân vật nào khác ngoài danh sách đó.
@@ -623,6 +644,7 @@ export const generateStoryContinuation = async (
         - Dựa vào hành động của người chơi (tặng quà, giúp đỡ, xúc phạm), hãy thay đổi mối quan hệ với NPC bằng tag: [UPDATE_RELATIONSHIP:{"npcName": "Tên NPC", "change": 10}] (số dương là tốt, số âm là xấu).
         - Nếu hành động của người chơi dẫn đến cái chết không thể tránh khỏi, hãy dùng tag: [DEATH:{"reason": "Bị yêu thú cấp cao giết chết."}]
         - Tạo vật phẩm: [ADD_ITEM:{"name": "Tên Vật Phẩm", "description": "Mô tả", "quantity": 1, "type": "Tạp Vật", "icon": "❓", "weight": 0.1, "quality": "Phàm Phẩm"}]
+        - Học công pháp mới: [ADD_TECHNIQUE:{"name": "Tên Công Pháp", "description": "Mô tả", "type": "Linh Kỹ", "cost": {"type": "Linh Lực", "value": 10}, "cooldown": 2, "effectDescription": "Mô tả hiệu ứng", "rank": "Phàm Giai", "icon": "🔥"}]
         - Mất vật phẩm: [REMOVE_ITEM:{"name": "Tên Vật Phẩm", "quantity": 1}]
         - Thưởng tiền: [ADD_CURRENCY:{"name": "Bạc", "amount": 100}]
         - NPC mới xuất hiện: [CREATE_NPC:{"name": "Tên NPC", "status": "Mô tả trạng thái", "description": "Mô tả ngoại hình", "origin": "Xuất thân", "personality": "Tính cách", "locationId": "${currentLocation.id}"}]

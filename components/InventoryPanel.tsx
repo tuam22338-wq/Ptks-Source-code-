@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import type { PlayerCharacter, InventoryItem, EquipmentSlot, StatBonus, AttributeGroup } from '../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS } from '../constants';
 import { GiWeight, GiSwapBag, GiPerson } from "react-icons/gi";
@@ -251,4 +251,4 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPla
     );
 };
 
-export default InventoryPanel;
+export default memo(InventoryPanel);

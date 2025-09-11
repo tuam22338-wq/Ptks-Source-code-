@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import type { GameEvent, EventChoice, Attribute } from '../types';
 import { FaDiceD20 } from 'react-icons/fa';
 
@@ -83,4 +83,4 @@ const EventPanel: React.FC<EventPanelProps> = ({ event, onChoice, playerAttribut
     );
 };
 
-export default EventPanel;
+export default memo(EventPanel);

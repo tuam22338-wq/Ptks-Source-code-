@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../constants';
+import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../constants';
 import { testApiKeys } from '../services/geminiService';
-import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle } from '../types';
+import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme } from '../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -158,7 +158,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSe
             {activeTab === 'interface' && (
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Cài Đặt Giao Diện">
-                        <SettingsRow label="Giao diện người dùng" description="Chọn bố cục cho máy tính hoặc di động. 'Tự động' sẽ dựa trên kích thước màn hình.">
+                        <SettingsRow label="Theme Giao Diện" description="Thay đổi bảng màu tổng thể của trò chơi.">
+                             <Select value={settings.theme} onChange={e => handleSettingChange('theme', e.target.value as Theme)} options={THEME_OPTIONS} />
+                        </SettingsRow>
+                        <SettingsRow label="Bố cục" description="Chọn bố cục cho máy tính hoặc di động. 'Tự động' sẽ dựa trên kích thước màn hình.">
                              <Select value={settings.layoutMode} onChange={e => handleSettingChange('layoutMode', e.target.value as LayoutMode)} options={LAYOUT_MODES} />
                         </SettingsRow>
                         <SettingsRow label="Phông chữ" description="Chọn phông chữ cho toàn bộ trò chơi.">

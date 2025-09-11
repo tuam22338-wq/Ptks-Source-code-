@@ -1,4 +1,4 @@
-import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop } from './types';
+import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -38,11 +38,18 @@ export const FONT_OPTIONS: { value: string; label: string }[] = [
     { value: "'Ma Shan Zheng', cursive", label: 'Ma Shan Zheng' },
 ];
 
+export const THEME_OPTIONS: { value: Theme; label: string }[] = [
+    { value: 'theme-amber', label: 'Hổ Phách (Mặc định)' },
+    { value: 'theme-jade-green', label: 'Bích Ngọc' },
+    { value: 'theme-amethyst-purple', label: 'Tử Tinh' },
+];
+
 export const DEFAULT_SETTINGS: GameSettings = {
     layoutMode: 'auto',
     gameSpeed: 'normal',
     narrativeStyle: 'classic_wuxia',
     fontFamily: "'Noto Serif', serif",
+    theme: 'theme-amber',
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',
@@ -75,6 +82,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (Nhanh)' },
 ];
 export const IMAGE_AI_MODELS: { value: ImageModel; label: string }[] = [
     { value: 'imagen-4.0-generate-001', label: 'Imagen 4.0 Generate' },

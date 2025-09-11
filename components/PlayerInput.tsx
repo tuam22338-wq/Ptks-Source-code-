@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { FaPaperPlane } from 'react-icons/fa';
 import { GiFootsteps } from "react-icons/gi";
 
@@ -65,4 +65,4 @@ const PlayerInput: React.FC<PlayerInputProps> = ({ onAction, disabled }) => {
     );
 };
 
-export default PlayerInput;
+export default memo(PlayerInput);

@@ -1,37 +1,51 @@
-import React, { useRef, useEffect } from 'react';
-import type { StoryEntry, InventoryItem } from '../types';
+import React, { useRef, useEffect, memo } from 'react';
+import type { StoryEntry, InventoryItem, CultivationTechnique } from '../types';
 
 interface StoryLogProps {
     story: StoryEntry[];
     inventoryItems: InventoryItem[];
+    techniques: CultivationTechnique[];
 }
 
-const highlightItems = (text: string, items: InventoryItem[]): React.ReactNode => {
-    if (!items || items.length === 0 || !text) return text;
+const highlightText = (text: string, items: InventoryItem[], techniques: CultivationTechnique[]): React.ReactNode => {
+    if (!text) return text;
     
-    // Create a sorted list of item names, longest first, to avoid partial matches (e.g., "Kiếm" matching inside "Trường Kiếm")
-    const itemNames = [...new Set(items.map(item => item.name))]
-        .sort((a, b) => b.length - a.length)
-        .map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); // Escape special regex characters
-        
-    if (itemNames.length === 0) return text;
+    const itemNames = items ? [...new Set(items.map(item => item.name))] : [];
+    const techniqueNames = techniques ? [...new Set(techniques.map(tech => tech.name))] : [];
 
-    const regex = new RegExp(`(${itemNames.join('|')})`, 'g');
+    if (itemNames.length === 0 && techniqueNames.length === 0) return text;
+
+    const allNames = [...itemNames, ...techniqueNames]
+        .sort((a, b) => b.length - a.length)
+        .map(name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); 
+        
+    if (allNames.length === 0) return text;
+
+    const regex = new RegExp(`(${allNames.join('|')})`, 'g');
     const parts = text.split(regex);
 
-    return parts.map((part, i) =>
-        itemNames.includes(part.replace(/\\/g, '')) ? ( // Check against unescaped name
-            <span key={i} className="font-bold text-amber-300 bg-amber-500/10 px-1 rounded-sm">
-                {part}
-            </span>
-        ) : (
-            part
-        )
-    );
+    return parts.map((part, i) => {
+        const unescapedPart = part.replace(/\\/g, '');
+        if (itemNames.includes(unescapedPart)) {
+            return (
+                <span key={i} className="font-bold text-amber-300 bg-amber-500/10 px-1 rounded-sm">
+                    {part}
+                </span>
+            );
+        }
+        if (techniqueNames.includes(unescapedPart)) {
+            return (
+                <span key={i} className="font-bold text-cyan-400 bg-cyan-500/10 px-1 rounded-sm">
+                    {part}
+                </span>
+            );
+        }
+        return part;
+    });
 };
 
 
-const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems }) => {
+const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }) => {
     const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -42,7 +56,7 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems }) => {
         <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
             {story.map((entry) => {
                 const animationStyle = { animationDuration: '600ms' };
-                const contentWithHighlight = highlightItems(entry.content, inventoryItems);
+                const contentWithHighlight = highlightText(entry.content, inventoryItems, techniques);
 
                 switch (entry.type) {
                     case 'narrative':
@@ -79,4 +93,4 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems }) => {
     );
 };
 
-export default StoryLog;
+export default memo(StoryLog);

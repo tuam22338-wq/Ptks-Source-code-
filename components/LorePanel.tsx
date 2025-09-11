@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FaSun } from 'react-icons/fa';
 import { MAJOR_EVENTS } from '../constants';
 
@@ -29,4 +29,4 @@ const LorePanel: React.FC = () => {
   );
 };
 
-export default LorePanel;
+export default memo(LorePanel);

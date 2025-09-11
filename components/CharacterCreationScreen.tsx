@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate } from '../types';
+import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig } from '../types';
 import { FaArrowLeft, FaSyncAlt } from 'react-icons/fa';
 import { GiGalaxy } from "react-icons/gi";
 import Timeline from './Timeline';
@@ -44,6 +44,8 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
   const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
   const [talentChoices, setTalentChoices] = useState<InnateTalent[]>([]);
   const [selectedTalents, setSelectedTalents] = useState<InnateTalent[]>([]);
+  const [talentSystemConfig, setTalentSystemConfig] = useState<{maxSelectable: number}>({maxSelectable: 3});
+
 
   const initialGameDate: GameDate = {
     era: 'Tiên Phong Thần' as const,
@@ -85,7 +87,41 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
     setError(null);
 
     try {
-        const { identity: generatedIdentity, talents } = await generateCharacterFoundation(characterConcept, gender);
+        // Load mods
+        const modLibrary: {modInfo: {id: string}, isEnabled: boolean}[] = JSON.parse(localStorage.getItem('mod-library') || '[]');
+        const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
+        const activeMods: FullMod[] = [];
+        for (const modInfo of enabledModsInfo) {
+            const modContentRaw = localStorage.getItem(`mod-content-${modInfo.modInfo.id}`);
+            if (modContentRaw) activeMods.push(JSON.parse(modContentRaw));
+        }
+        
+        // Aggregate mod data for talents
+        let finalTalentSystemConfig: TalentSystemConfig | null = null;
+        const finalTalentRanks: ModTalentRank[] = [];
+        const finalAvailableTalents: ModTalent[] = [];
+
+        activeMods.forEach(mod => {
+            if (mod.content.talentSystemConfig) {
+                finalTalentSystemConfig = mod.content.talentSystemConfig;
+            }
+            if (mod.content.talentRanks) {
+                finalTalentRanks.push(...mod.content.talentRanks.map((r, i) => ({...r, id: r.name + i})));
+            }
+            if (mod.content.talents) {
+                finalAvailableTalents.push(...mod.content.talents.map((t, i) => ({...t, id: t.name + i})));
+            }
+        });
+        
+        setTalentSystemConfig({ maxSelectable: finalTalentSystemConfig?.maxSelectable ?? 3 });
+
+        const modTalentConfig = {
+            systemConfig: finalTalentSystemConfig || { systemName: 'default', choicesPerRoll: 6, maxSelectable: 3, allowAIGeneratedTalents: true },
+            ranks: finalTalentRanks.length > 0 ? finalTalentRanks : [],
+            availableTalents: finalAvailableTalents
+        };
+
+        const { identity: generatedIdentity, talents } = await generateCharacterFoundation(characterConcept, gender, modTalentConfig);
         setIdentity({ ...generatedIdentity, gender });
         setTalentChoices(talents);
         
@@ -223,6 +259,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
           talents={talentChoices} 
           selectedTalents={selectedTalents}
           onSelectionChange={setSelectedTalents}
+          maxSelectable={talentSystemConfig.maxSelectable}
         />
 
         <div className="bg-black/20 p-4 rounded-lg border border-gray-700/60">

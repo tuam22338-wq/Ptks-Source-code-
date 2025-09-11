@@ -1,11 +1,12 @@
-import React from 'react';
-import type { PlayerCharacter, Attribute } from '../types';
-import { INNATE_TALENT_RANKS, REALM_SYSTEM } from '../constants';
+import React, { memo } from 'react';
+import type { PlayerCharacter, Attribute, RealmConfig } from '../types';
+import { INNATE_TALENT_RANKS } from '../constants';
 import { FaBolt, FaCoins, FaGem } from 'react-icons/fa';
 
 interface CharacterPanelProps {
     character: PlayerCharacter;
     onBreakthrough: () => void;
+    realmSystem: RealmConfig[];
 }
 
 const ProgressBar: React.FC<{
@@ -33,10 +34,10 @@ const ProgressBar: React.FC<{
 };
 
 
-const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough }) => {
+const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
     const { identity, attributes, talents, cultivation, currencies } = character;
 
-    const currentRealmData = REALM_SYSTEM.find(r => r.id === cultivation.currentRealmId);
+    const currentRealmData = realmSystem.find(r => r.id === cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === cultivation.currentStageId);
     const currentRealmState = `${currentRealmData?.name || 'Vô danh'} - ${currentStageData?.name || 'Sơ kỳ'}`;
     const qiRequired = currentStageData?.qiRequired || 100;
@@ -47,8 +48,8 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
     const currentStageIndex = currentRealmData?.stages.findIndex(s => s.id === cultivation.currentStageId) ?? -1;
     let isNextRealmTribulation = false;
     if (currentRealmData && currentStageIndex === currentRealmData.stages.length - 1) {
-        const currentRealmIndex = REALM_SYSTEM.findIndex(r => r.id === currentRealmData.id);
-        const nextRealmData = REALM_SYSTEM[currentRealmIndex + 1];
+        const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealmData.id);
+        const nextRealmData = realmSystem[currentRealmIndex + 1];
         if (nextRealmData?.hasTribulation) {
             isNextRealmTribulation = true;
         }
@@ -159,4 +160,4 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
     );
 };
 
-export default CharacterPanel;
+export default memo(CharacterPanel);

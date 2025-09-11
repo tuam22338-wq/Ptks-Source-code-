@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import type { NPC, Location, PlayerCharacter, PlayerNpcRelationship } from '../types';
 import { INNATE_TALENT_RANKS, NPC_LIST, WORLD_MAP } from '../constants';
 import { FaUsers, FaMapMarkedAlt, FaArrowLeft, FaEye } from 'react-icons/fa';
@@ -184,4 +184,4 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ playerCharacter, allNpcs, encount
     );
 };
 
-export default WikiPanel;
+export default memo(WikiPanel);

@@ -15,7 +15,7 @@ export interface SaveSlot {
 
 
 // --- Settings Types ---
-export type AIModel = 'gemini-2.5-flash' | 'gemini-2.5-flash-lite' | 'gemini-2.5-pro' | 'gemini-2.5-flash-preview-05-20' | 'gemini-2.0-flash';
+export type AIModel = 'gemini-2.5-flash' | 'gemini-2.5-flash-lite' | 'gemini-2.5-pro';
 export type ImageModel = 'imagen-4.0-generate-001';
 export type RagEmbeddingModel = 'text-embedding-004';
 export type LayoutMode = 'auto' | 'desktop' | 'mobile';
@@ -23,6 +23,7 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
+export type Theme = 'theme-amber' | 'theme-jade-green' | 'theme-amethyst-purple';
 
 
 export interface SafetySettings {
@@ -37,6 +38,7 @@ export interface GameSettings {
     gameSpeed: GameSpeed;
     narrativeStyle: NarrativeStyle;
     fontFamily: string;
+    theme: Theme;
     mainTaskModel: AIModel;
     quickSupportModel: AIModel;
     itemAnalysisModel: AIModel;
@@ -180,6 +182,7 @@ export interface TalentSystemConfig {
     systemName: string;
     choicesPerRoll: number;
     maxSelectable: number;
+    allowAIGeneratedTalents?: boolean;
 }
 
 export interface ModTalentRank {
@@ -482,6 +485,7 @@ export interface GameState {
     lastSaved?: string;
     encounteredNpcIds: string[];
     activeMods: FullMod[];
+    realmSystem: RealmConfig[];
 }
 
 // --- Gameplay Event Types ---

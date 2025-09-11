@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { Location, NPC, Rumor } from '../types';
 import { FaMapMarkerAlt, FaUsers, FaRoute, FaCommentDots } from 'react-icons/fa';
 import { GiForest } from 'react-icons/gi';
@@ -101,4 +101,4 @@ const WorldPanel: React.FC<WorldPanelProps> = ({ currentLocation, npcsAtLocation
     );
 };
 
-export default WorldPanel;
+export default memo(WorldPanel);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { InnateTalent } from '../types';
 import { INNATE_TALENT_RANKS } from '../constants';
 
@@ -73,4 +73,4 @@ const InnateTalentCard: React.FC<InnateTalentCardProps> = ({ talent, isSelected,
   );
 };
 
-export default InnateTalentCard;
+export default memo(InnateTalentCard);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { PlayerCharacter, CultivationTechnique, CultivationTechniqueType } from '../types';
 import { PHAP_BAO_RANKS } from '../constants';
 
@@ -68,4 +68,4 @@ const TechniquesPanel: React.FC<TechniquesPanelProps> = ({ character }) => {
     );
 };
 
-export default TechniquesPanel;
+export default memo(TechniquesPanel);

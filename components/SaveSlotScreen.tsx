@@ -31,7 +31,8 @@ const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slo
     
     let realmDisplay = '...';
     if (character) {
-        const realmData = REALM_SYSTEM.find(r => r.id === character.cultivation.currentRealmId);
+        const realmSystem = slot.data?.realmSystem || REALM_SYSTEM;
+        const realmData = realmSystem.find(r => r.id === character.cultivation.currentRealmId);
         const stageData = realmData?.stages.find(s => s.id === character.cultivation.currentStageId);
         realmDisplay = `${realmData?.name || ''} ${stageData?.name || ''}`;
     }

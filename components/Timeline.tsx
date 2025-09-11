@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import type { GameDate } from '../types';
 import { GiScrollUnfurled } from 'react-icons/gi';
 import { SHICHEN_LIST, MAJOR_EVENTS, SEASON_ICONS, WEATHER_INFO, TIMEOFDAY_DETAILS } from '../constants';
@@ -97,4 +97,4 @@ const Timeline: React.FC<TimelineProps> = ({ gameDate }) => {
   );
 };
 
-export default Timeline;
+export default memo(Timeline);

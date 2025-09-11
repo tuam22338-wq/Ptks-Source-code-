@@ -9,10 +9,43 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Ma+Shan+Zheng&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --bg-color: #0c0a09;
+        --text-color: #d1d5db;
+        --text-muted-color: #9ca3af;
+        --primary-accent-color: #f59e0b; /* amber-400 */
+        --primary-accent-text-color: #0c0a09;
+        --secondary-accent-color: #14b8a6; /* teal-500 */
+        --border-color: #4b5563; /* gray-600 */
+        --panel-bg-color: rgba(0, 0, 0, 0.3);
+        --panel-border-color: rgba(107, 114, 128, 0.5); /* gray-500 */
+        --button-primary-bg: #a03d35;
+        --button-primary-hover-bg: #b5453d;
+        --button-primary-border: #6e2a24;
+      }
+
+      body.theme-jade-green {
+        --primary-accent-color: #14b8a6; /* teal-500 */
+        --primary-accent-text-color: #ffffff;
+        --secondary-accent-color: #a78bfa; /* violet-400 */
+        --button-primary-bg: #0f766e; /* teal-700 */
+        --button-primary-hover-bg: #0d9488; /* teal-600 */
+        --button-primary-border: #134e4a; /* teal-900 */
+      }
+      
+      body.theme-amethyst-purple {
+         --primary-accent-color: #8b5cf6; /* violet-500 */
+         --primary-accent-text-color: #ffffff;
+         --secondary-accent-color: #38bdf8; /* lightBlue-400 */
+         --button-primary-bg: #6d28d9; /* violet-700 */
+         --button-primary-hover-bg: #7c3aed; /* violet-600 */
+         --button-primary-border: #4c1d95; /* violet-900 */
+      }
+
       body {
         /* font-family will be set by React */
-        color: #d1d5db; /* Màu văn bản sáng hơn một chút cho dễ đọc */
-        background-color: #0c0a09;
+        color: var(--text-color);
+        background-color: var(--bg-color);
         background-image: url('https://images.unsplash.com/photo-1597810749557-93f543f4a3e8?q=80&w=2574&auto=format&fit=crop');
         background-size: cover;
         background-position: center;

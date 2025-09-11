@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { PlayerCharacter, Location, NPC, Rumor } from '../types';
+import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig } from '../types';
 import CharacterPanel from './CharacterPanel';
 import InventoryPanel from './InventoryPanel';
 import WorldPanel from './WorldPanel';
@@ -23,11 +23,12 @@ interface SidebarProps {
     allNpcs: NPC[];
     encounteredNpcIds: string[];
     discoveredLocations: Location[];
+    realmSystem: RealmConfig[];
 }
 type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore';
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations } = props;
+    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem } = props;
     const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     
     const tabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
@@ -63,6 +64,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                     <CharacterPanel 
                         character={playerCharacter}
                         onBreakthrough={onBreakthrough}
+                        realmSystem={realmSystem}
                     />
                 )}
                 {activeTab === 'techniques' && (
@@ -98,6 +100,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                  {activeTab === 'realms' && (
                     <RealmPanel
                         playerCharacter={playerCharacter}
+                        realmSystem={realmSystem}
                     />
                 )}
                 {activeTab === 'lore' && (

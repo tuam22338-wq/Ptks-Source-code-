@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -48,7 +49,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     document.body.style.fontFamily = settings.fontFamily;
-  }, [settings.fontFamily]);
+    document.body.className = settings.theme || 'theme-amber';
+  }, [settings.fontFamily, settings.theme]);
 
   const handleSettingsSave = (newSettings: GameSettings) => {
     try {
@@ -86,10 +88,15 @@ const App: React.FC = () => {
   const handleSlotSelection = (slotId: number) => {
     const selectedSlot = saveSlots.find(s => s.id === slotId);
     if (selectedSlot && selectedSlot.data) {
-        // Load Game
-        setGameState(selectedSlot.data);
-        setCurrentSlotId(slotId);
-        setView('gamePlay');
+        // Load Game with a smooth transition
+        setLoadingMessage('Đang tải hành trình...');
+        setIsLoading(true);
+        setTimeout(() => {
+            setGameState(selectedSlot.data);
+            setCurrentSlotId(slotId);
+            setView('gamePlay');
+            setIsLoading(false);
+        }, 500); // Short delay to ensure a smooth visual transition
     } else {
         // Start New Game
         setCurrentSlotId(slotId);
@@ -154,6 +161,14 @@ const App: React.FC = () => {
             }
         }
 
+        // Determine Realm System
+        const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
+        const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
+            // FIX: The type for a mod's realm config omits the `id`. Generate a new ID from the name instead of trying to access a non-existent `id` property.
+            ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
+            : REALM_SYSTEM;
+
+
         setLoadingMessage('Đang tạo ra chúng sinh...');
         const densitySetting = NPC_DENSITY_LEVELS.find(d => d.id === npcDensity);
         const generatedNpcs = await generateDynamicNpcs(densitySetting?.count ?? 15);
@@ -182,8 +197,8 @@ const App: React.FC = () => {
         };
 
         const initialCultivation: CultivationState = {
-            currentRealmId: REALM_SYSTEM[0].id,
-            currentStageId: REALM_SYSTEM[0].stages[0].id,
+            currentRealmId: realmSystemToUse[0].id,
+            currentStageId: realmSystemToUse[0].stages[0].id,
             spiritualQi: 0,
             hasConqueredInnerDemon: false,
         };
@@ -202,6 +217,10 @@ const App: React.FC = () => {
             }
             return group;
         });
+        
+        const initialCoreLocations = WORLD_MAP.filter(l => l.type === 'Thành Thị' || l.type === 'Thôn Làng');
+        const randomStartIndex = Math.floor(Math.random() * initialCoreLocations.length);
+        const startingLocation = initialCoreLocations.length > 0 ? initialCoreLocations[randomStartIndex] : WORLD_MAP[0];
 
         const finalPlayerCharacter: PlayerCharacter = {
             identity: { ...characterData.identity, age: 18 },
@@ -210,7 +229,7 @@ const App: React.FC = () => {
             inventory: initialInventory,
             currencies: initialCurrencies,
             cultivation: initialCultivation,
-            currentLocationId: 'thanh_ha_tran',
+            currentLocationId: startingLocation.id,
             equipment: {},
             techniques: INITIAL_TECHNIQUES,
             relationships: [],
@@ -228,10 +247,6 @@ const App: React.FC = () => {
             maxActionPoints: 4,
         };
         
-        const initialDiscoveredLocations: Location[] = [
-            WORLD_MAP.find(l => l.id === 'thanh_ha_tran')!
-        ];
-        
         const initialWorldState: WorldState = {
             rumors: [],
         };
@@ -240,11 +255,12 @@ const App: React.FC = () => {
             playerCharacter: finalPlayerCharacter,
             activeNpcs: allNpcs,
             gameDate: initialGameDate,
-            discoveredLocations: initialDiscoveredLocations,
+            discoveredLocations: initialCoreLocations,
             worldState: initialWorldState,
             storyLog: initialStory,
             encounteredNpcIds: [],
             activeMods: activeMods,
+            realmSystem: realmSystemToUse,
         };
         
         // Initial save
@@ -284,8 +300,12 @@ const App: React.FC = () => {
       case 'lore':
         return <LoreScreen onBack={() => handleNavigate('mainMenu')} />;
       case 'gamePlay':
+        if (!gameState) {
+            // This case prevents the "black screen" by showing a loader if gameState is not ready
+            return <LoadingScreen message="Đang tải dữ liệu..." />;
+        }
         return <GamePlayScreen 
-            gameState={gameState!} 
+            gameState={gameState} 
             setGameState={setGameState} 
             onSaveGame={handleSaveGame}
             onBack={() => { setGameState(null); setCurrentSlotId(null); handleNavigate('mainMenu'); }} 

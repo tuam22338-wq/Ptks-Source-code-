@@ -44,7 +44,8 @@ const DEFAULT_REALMS: RealmConfig[] = [
 const DEFAULT_TALENT_SYSTEM_CONFIG: TalentSystemConfig = {
     systemName: 'Tiên Tư',
     choicesPerRoll: 6,
-    maxSelectable: 3
+    maxSelectable: 3,
+    allowAIGeneratedTalents: true,
 };
 
 const DEFAULT_TALENT_RANKS: ModTalentRank[] = INNATE_TALENT_PROBABILITY.map((p, i) => ({
@@ -663,6 +664,21 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                         </Section>
                         <Section title="Hệ Thống Phẩm Chất Tiên Tư">
                             <p className="text-sm text-gray-400">Tùy chỉnh các cấp bậc của Tiên Tư và xác suất xuất hiện của chúng.</p>
+                             <InputRow label="Cho phép AI tạo Tiên Tư">
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="checkbox" 
+                                        id="allowAIGen" 
+                                        checked={talentSystemConfig.allowAIGeneratedTalents ?? true} 
+                                        onChange={e => setTalentSystemConfig(prev => ({ ...prev, allowAIGeneratedTalents: e.target.checked }))} 
+                                        className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500"
+                                    />
+                                    <label htmlFor="allowAIGen" className="text-sm text-gray-400">
+                                        Nếu bật, AI sẽ tự tạo Tiên Tư mới dựa trên ý niệm nhân vật. 
+                                        <br/>Nếu tắt, AI sẽ chỉ chọn từ danh sách Tiên Tư bạn đã tạo trong tab "Nội Dung".
+                                    </label>
+                                </div>
+                            </InputRow>
                             <div className="space-y-3">
                                 {talentRanks.map((rank, index) => (
                                     <div key={rank.id} className="grid grid-cols-12 gap-2 items-center">

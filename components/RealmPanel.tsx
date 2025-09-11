@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import type { PlayerCharacter } from '../types';
-import { REALM_SYSTEM } from '../constants';
+import React, { useState, memo } from 'react';
+import type { PlayerCharacter, RealmConfig } from '../types';
 import { FaGopuram, FaChevronDown } from 'react-icons/fa';
 
 interface RealmPanelProps {
     playerCharacter: PlayerCharacter;
+    realmSystem: RealmConfig[];
 }
 
-const RealmPanel: React.FC<RealmPanelProps> = ({ playerCharacter }) => {
+const RealmPanel: React.FC<RealmPanelProps> = ({ playerCharacter, realmSystem }) => {
     const { cultivation } = playerCharacter;
     const [openRealms, setOpenRealms] = useState<Set<string>>(new Set([cultivation.currentRealmId]));
 
@@ -30,10 +30,10 @@ const RealmPanel: React.FC<RealmPanelProps> = ({ playerCharacter }) => {
                     <FaGopuram className="text-purple-300" /> Hệ Thống Cảnh Giới
                 </h3>
                 <div className="space-y-2">
-                    {REALM_SYSTEM.map((realm, index) => {
+                    {realmSystem.map((realm, index) => {
                         const isCurrentRealm = realm.id === cultivation.currentRealmId;
                         const isOpen = openRealms.has(realm.id);
-                        const isUnlocked = REALM_SYSTEM.findIndex(r => r.id === cultivation.currentRealmId) >= index;
+                        const isUnlocked = realmSystem.findIndex(r => r.id === cultivation.currentRealmId) >= index;
 
                         return (
                             <div key={realm.id} className={`rounded-lg border-2 transition-all duration-300 ${isCurrentRealm ? 'bg-purple-900/30 border-purple-500/50' : 'bg-black/20 border-gray-700/60'}`}>
@@ -80,4 +80,4 @@ const RealmPanel: React.FC<RealmPanelProps> = ({ playerCharacter }) => {
     );
 };
 
-export default RealmPanel;
+export default memo(RealmPanel);
