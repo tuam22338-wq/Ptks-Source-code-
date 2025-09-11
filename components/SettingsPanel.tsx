@@ -1,0 +1,204 @@
+import React, { useState } from 'react';
+import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES } from '../constants';
+import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle } from '../types';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad } from 'react-icons/fa';
+
+interface SettingsPanelProps {
+  onBack: () => void;
+}
+
+type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'advanced';
+
+const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <section className="mb-8">
+    <h3 className="text-xl text-gray-300 font-bold font-title mb-4 pb-2 border-b border-gray-600/50">{title}</h3>
+    <div className="space-y-4">{children}</div>
+  </section>
+);
+
+const SettingsRow: React.FC<{ label: string; description?: string; children: React.ReactNode }> = ({ label, description, children }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 items-center bg-black/20 p-3 rounded-md border border-gray-700/60">
+    <div>
+      <label className="block text-md text-gray-200">{label}</label>
+      {description && <p className="text-xs text-gray-400 mt-1">{description}</p>}
+    </div>
+    <div className="flex items-center justify-start md:justify-end w-full">{children}</div>
+  </div>
+);
+
+const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: { value: string; label: string }[]; }> = ({ value, onChange, options }) => (
+  <select value={value} onChange={onChange} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all">
+    {options.map(opt => <option key={opt.value} value={opt.value} className="bg-gray-800">{opt.label}</option>)}
+  </select>
+);
+
+const NumberInput: React.FC<{ value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; min?: number; max?: number; }> = ({ value, onChange, min, max }) => (
+  <input type="number" value={value} onChange={onChange} min={min} max={max} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+);
+
+const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }> = ({ checked, onChange }) => (
+  <label className="relative inline-flex items-center cursor-pointer">
+    <input type="checkbox" checked={checked} onChange={onChange} className="sr-only peer" />
+    <div className="w-14 h-7 bg-gray-700 rounded-full border border-gray-600 peer peer-focus:ring-2 peer-focus:ring-gray-500/50 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+  </label>
+);
+
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
+  const [settings, setSettings] = useState<GameSettings>(() => {
+    try {
+        const savedSettings = localStorage.getItem('game-settings');
+        return savedSettings ? { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) } : DEFAULT_SETTINGS;
+    } catch (error) {
+        console.error("Failed to load settings from localStorage", error);
+        return DEFAULT_SETTINGS;
+    }
+  });
+
+  const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
+
+  const handleSettingChange = (key: keyof GameSettings, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+  
+  const handleSafetyLevelChange = (category: keyof GameSettings['safetyLevels'], value: SafetyLevel) => {
+    setSettings(prev => ({
+        ...prev,
+        safetyLevels: {
+            ...prev.safetyLevels,
+            [category]: value
+        }
+    }));
+  };
+  
+  const handleSaveSettings = () => {
+    try {
+        localStorage.setItem('game-settings', JSON.stringify(settings));
+        alert('Cài đặt đã được lưu!');
+    } catch (error) {
+        console.error("Failed to save settings to localStorage", error);
+        alert('Lỗi: Không thể lưu cài đặt.');
+    }
+  };
+
+  const TabButton: React.FC<{ tabId: SettingsTab; label: string; icon: React.ElementType }> = ({ tabId, label, icon: Icon }) => (
+    <button
+      onClick={() => setActiveTab(tabId)}
+      className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 ${
+        activeTab === tabId
+          ? 'bg-black/20 text-white'
+          : 'text-gray-400 hover:bg-gray-800/50'
+      }`}
+    >
+      <Icon className="w-5 h-5 mb-1 sm:mb-0" />
+      <span>{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="w-full animate-fade-in bg-black/30 backdrop-blur-md rounded-lg shadow-2xl shadow-black/50 border border-gray-700/50 p-4 sm:p-6 lg:p-8">
+        <h2 className="text-3xl text-center text-gray-200 font-bold font-title mb-6">Cài Đặt Game</h2>
+
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
+            <TabButton tabId="interface" label="Giao Diện" icon={FaDesktop} />
+            <TabButton tabId="ai_models" label="Model AI" icon={FaRobot} />
+            <TabButton tabId="safety" label="An Toàn" icon={FaShieldAlt} />
+            <TabButton tabId="gameplay" label="Gameplay" icon={FaGamepad} />
+            <TabButton tabId="advanced" label="Nâng Cao" icon={FaCog} />
+        </div>
+        
+        {/* Tab Content */}
+        <div className="min-h-[350px]">
+            {activeTab === 'interface' && (
+                <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                    <SettingsSection title="Cài Đặt Giao Diện">
+                        <SettingsRow label="Giao diện người dùng" description="Chọn bố cục cho máy tính hoặc di động. 'Tự động' sẽ dựa trên kích thước màn hình.">
+                             <Select value={settings.layoutMode} onChange={e => handleSettingChange('layoutMode', e.target.value as LayoutMode)} options={LAYOUT_MODES} />
+                        </SettingsRow>
+                    </SettingsSection>
+                </div>
+            )}
+            {activeTab === 'ai_models' && (
+                <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                    <SettingsSection title="Model AI cho Tác Vụ Chính & Phức Tạp">
+                        <SettingsRow label="Model AI cho Văn Bản" description="Model cho nội dung chính.">
+                            <Select value={settings.mainTaskModel} onChange={e => handleSettingChange('mainTaskModel', e.target.value as AIModel)} options={AI_MODELS} />
+                        </SettingsRow>
+                        <SettingsRow label="Model AI Hỗ Trợ Nhanh" description="Model cho hỗ trợ thiết lập nhanh.">
+                            <Select value={settings.quickSupportModel} onChange={e => handleSettingChange('quickSupportModel', e.target.value as AIModel)} options={AI_MODELS} />
+                        </SettingsRow>
+                    </SettingsSection>
+                    <SettingsSection title="Model AI Chuyên Dụng">
+                         <SettingsRow label="Model AI Mô Phỏng NPC" description="Model để tạo và mô phỏng hành vi của NPC.">
+                            <Select value={settings.npcSimulationModel} onChange={e => handleSettingChange('npcSimulationModel', e.target.value as AIModel)} options={AI_MODELS} />
+                        </SettingsRow>
+                        <SettingsRow label="Model AI Tạo Ảnh" description="Model để tạo hình ảnh nhân vật, vật phẩm.">
+                            <Select value={settings.imageGenerationModel} onChange={e => handleSettingChange('imageGenerationModel', e.target.value as ImageModel)} options={IMAGE_AI_MODELS} />
+                        </SettingsRow>
+                        <SettingsRow label="Model AI cho GameMaster" description="Model để phân tích yêu cầu tạo mod của bạn.">
+                            <Select value={settings.gameMasterModel} onChange={e => handleSettingChange('gameMasterModel', e.target.value as AIModel)} options={AI_MODELS} />
+                        </SettingsRow>
+                    </SettingsSection>
+                </div>
+            )}
+             {activeTab === 'safety' && (
+                <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                    <SettingsSection title="Bật lọc an toàn Gemini API">
+                        <SettingsRow label="Bật/Tắt tất cả bộ lọc" description="Ghi đè tất cả cài đặt an toàn bên dưới.">
+                            <Toggle checked={!settings.masterSafetySwitch} onChange={e => handleSettingChange('masterSafetySwitch', !e.target.checked)} />
+                        </SettingsRow>
+                        {SAFETY_CATEGORIES.map(category => (
+                            <SettingsRow key={category.id} label={category.name}>
+                                <Select 
+                                    value={settings.safetyLevels[category.id as keyof GameSettings['safetyLevels']]} 
+                                    onChange={e => handleSafetyLevelChange(category.id as keyof GameSettings['safetyLevels'], e.target.value as SafetyLevel)} 
+                                    options={SAFETY_LEVELS} 
+                                />
+                            </SettingsRow>
+                        ))}
+                    </SettingsSection>
+                </div>
+             )}
+            {activeTab === 'gameplay' && (
+                <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                    <SettingsSection title="Cài Đặt Gameplay">
+                        <SettingsRow label="Tốc độ thời gian" description="Điều chỉnh tốc độ trôi qua của thời gian trong game. Yêu cầu tải lại game.">
+                             <Select value={settings.gameSpeed} onChange={e => handleSettingChange('gameSpeed', e.target.value as GameSpeed)} options={GAME_SPEEDS} />
+                        </SettingsRow>
+                         <SettingsRow label="Văn phong kể chuyện của AI" description="Chọn phong cách văn bản mà AI sẽ sử dụng để kể chuyện.">
+                             <Select value={settings.narrativeStyle} onChange={e => handleSettingChange('narrativeStyle', e.target.value as NarrativeStyle)} options={NARRATIVE_STYLES} />
+                        </SettingsRow>
+                    </SettingsSection>
+                </div>
+            )}
+              {activeTab === 'advanced' && (
+                <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                    <SettingsSection title="RAG & Tóm Tắt">
+                        <SettingsRow label="Model cho RAG Embeddings" description="Model Gemini để tạo vector embeddings.">
+                            <Select value={settings.ragEmbeddingModel} onChange={() => {}} options={RAG_EMBEDDING_MODELS} />
+                        </SettingsRow>
+                        <SettingsRow label="Tần suất Tóm tắt Tự động" description="AI tóm tắt bối cảnh sau mỗi X lượt.">
+                            <NumberInput value={settings.autoSummaryFrequency} onChange={e => handleSettingChange('autoSummaryFrequency', parseInt(e.target.value))} min={1} />
+                        </SettingsRow>
+                    </SettingsSection>
+                </div>
+            )}
+        </div>
+
+        <div className="flex justify-center items-center gap-4 mt-10">
+            <button 
+                onClick={onBack} 
+                className="px-5 py-3 bg-gray-800/80 text-white font-bold rounded-lg hover:bg-gray-700/80 transition-colors duration-300 transform hover:scale-105 shadow-lg shadow-black/30"
+                title="Quay Lại"
+            >
+                <FaArrowLeft className="w-5 h-5" />
+            </button>
+            <button onClick={handleSaveSettings} className="px-8 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 transition-colors duration-300 transform hover:scale-105 shadow-lg shadow-black/30">
+                Lưu Cài Đặt
+            </button>
+        </div>
+    </div>
+  );
+};
+
+export default SettingsPanel;
