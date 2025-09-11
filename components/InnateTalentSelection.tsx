@@ -60,7 +60,7 @@ const InnateTalentSelection: React.FC<InnateTalentSelectionProps> = ({ talents, 
                     return (
                         <div 
                             key={index} 
-                            className="animate-talent-reveal aspect-[4/5]" 
+                            className="animate-talent-reveal aspect-[4/5] relative" 
                             style={{animationDelay: `${index * 50}ms`}}
                             onMouseDown={() => handlePointerDown(talent.name)}
                             onMouseUp={() => handlePointerUp(talent)}

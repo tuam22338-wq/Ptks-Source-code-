@@ -1,4 +1,4 @@
-import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle } from './types';
+import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -31,11 +31,18 @@ export const NARRATIVE_STYLES: { value: NarrativeStyle; label: string }[] = [
     { value: 'concise', label: 'Súc tích, ngắn gọn' },
 ];
 
+export const FONT_OPTIONS: { value: string; label: string }[] = [
+    { value: "'Noto Serif', serif", label: 'Noto Serif (Mặc định)' },
+    { value: "'Cormorant Garamond', serif", label: 'Cormorant Garamond' },
+    { value: "'ZCOOL XiaoWei', serif", label: 'ZCOOL XiaoWei' },
+    { value: "'Ma Shan Zheng', cursive", label: 'Ma Shan Zheng' },
+];
 
 export const DEFAULT_SETTINGS: GameSettings = {
     layoutMode: 'auto',
     gameSpeed: 'normal',
     narrativeStyle: 'classic_wuxia',
+    fontFamily: "'Noto Serif', serif",
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',
@@ -161,6 +168,9 @@ export const INNATE_TALENT_PROBABILITY: { rank: InnateTalentRank, weight: number
     { rank: 'Siêu Tư', weight: 10 },
     { rank: 'Thiên Tư', weight: 5 },
 ];
+
+export const TALENT_RANK_NAMES: InnateTalentRank[] = INNATE_TALENT_PROBABILITY.map(p => p.rank);
+
 export const INNATE_TALENT_RANKS: Record<InnateTalentRank, { color: string }> = {
     'Phàm Tư': { color: 'text-gray-400' },
     'Tiểu Tư': { color: 'text-green-400' },
@@ -339,7 +349,32 @@ export const REALM_SYSTEM: RealmConfig[] = [
 ];
 
 export const NPC_LIST: NPC[] = [
-    { id: 'npc_khuong_tu_nha', name: 'Khương Tử Nha', status: 'Đang câu cá bên bờ sông Vị Thủy, vẻ mặt trầm tư.', description: 'Một lão ông râu tóc bạc phơ, mặc áo vải, trông có vẻ bình thường nhưng ánh mắt lại ẩn chứa sự thông tuệ phi phàm.', origin: 'Đệ tử của Nguyên Thủy Thiên Tôn, phái Xiển Giáo.', personality: 'Chính Trực', talents: [], locationId: 'song_vi_thuy' },
+    { 
+        id: 'npc_khuong_tu_nha', 
+        name: 'Khương Tử Nha', 
+        status: 'Đang câu cá bên bờ sông Vị Thủy, vẻ mặt trầm tư.', 
+        description: 'Một lão ông râu tóc bạc phơ, mặc áo vải, trông có vẻ bình thường nhưng ánh mắt lại ẩn chứa sự thông tuệ phi phàm.', 
+        origin: 'Đệ tử của Nguyên Thủy Thiên Tôn, phái Xiển Giáo.', 
+        personality: 'Chính Trực', 
+        talents: [
+            { name: 'Thiên Mệnh Chi Tử', rank: 'Thiên Tư', description: 'Người được thiên mệnh lựa chọn để hoàn thành đại nghiệp Phong Thần.', effect: 'Cơ Duyên cực cao, dễ dàng gặp được kỳ ngộ và người tài. Luôn có thể tìm ra một con đường sống trong tuyệt cảnh.', bonuses: [{ attribute: 'Cơ Duyên', value: 20 }] },
+            { name: 'Đại Trí Nhược Ngu', rank: 'Siêu Tư', description: 'Trí tuệ vĩ đại ẩn sau vẻ ngoài bình thường.', effect: 'Ẩn giấu khí tức, người khác khó có thể nhìn thấu tu vi thật sự. Khả năng lĩnh ngộ và hoạch định chiến lược vượt xa người thường.', bonuses: [{ attribute: 'Cảm Ngộ', value: 15 }] }
+        ], 
+        locationId: 'song_vi_thuy' 
+    },
+    { 
+        id: 'npc_na_tra', 
+        name: 'Na Tra', 
+        status: 'Đang gây náo loạn ở Đông Hải, chân đạp Phong Hỏa Luân, tay cầm Hỏa Tiêm Thương.', 
+        description: 'Một thiếu niên khôi ngô, tuấn tú nhưng ánh mắt đầy vẻ ngang tàng, kiêu ngạo. Toàn thân khoác hồng lụa, khí thế bức người.', 
+        origin: 'Linh Châu Tử chuyển thế, con trai thứ ba của Lý Tịnh.', 
+        personality: 'Hỗn Loạn', 
+        talents: [
+            { name: 'Liên Hoa Hóa Thân', rank: 'Thiên Tư', description: 'Thân thể được tái tạo từ hoa sen, miễn nhiễm với phần lớn độc tố và ma khí.', effect: 'Kháng độc và kháng ma thuật cực cao. Có thể tái sinh một lần sau khi tử vong.', bonuses: [{ attribute: 'Nhục Thân', value: 20 }] },
+            { name: 'Tam Đầu Lục Tí', rank: 'Siêu Tư', description: 'Thần thông hiển hóa ba đầu sáu tay, chiến lực tăng vọt.', effect: 'Khi chiến đấu có thể tấn công nhiều mục tiêu hoặc sử dụng nhiều pháp bảo cùng lúc.', bonuses: [{ attribute: 'Thân Pháp', value: 15 }] }
+        ], 
+        locationId: 'dong_hai' 
+    },
 ];
 
 export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: string; count: number }[] = [
@@ -369,5 +404,20 @@ export const PREMADE_MODS: FullMod[] = [
                 // ... more items
             ]
         }
+    }
+];
+
+export const SHOPS: Shop[] = [
+    {
+        id: 'thien_co_cac',
+        name: 'Thiên Cơ Các',
+        description: 'Nơi bán đủ loại kỳ trân dị bảo, chỉ cần bạn có đủ linh thạch.',
+        inventory: [
+            { name: 'Hồi Lực Đan', description: 'Viên đan dược giúp hồi phục 100 Linh Lực.', type: 'Đan Dược', icon: '💊', weight: 0.1, quality: 'Linh Phẩm', price: { currency: 'Linh thạch hạ phẩm', amount: 50 }, stock: 10 },
+            { name: 'Trúc Cơ Đan', description: 'Tăng 20% tỷ lệ thành công khi đột phá Trúc Cơ.', type: 'Đan Dược', icon: '🌟', weight: 0.1, quality: 'Pháp Phẩm', price: { currency: 'Linh thạch hạ phẩm', amount: 500 }, stock: 1 },
+            { name: 'Huyền Thiết Trọng Kiếm', description: 'Một thanh trọng kiếm làm từ huyền thiết, uy lực kinh người.', type: 'Vũ Khí', icon: '🗡️', bonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Tiên Lực', value: 10 }], weight: 15.0, quality: 'Linh Phẩm', slot: 'Vũ Khí', price: { currency: 'Linh thạch hạ phẩm', amount: 350 }, stock: 1 },
+            { name: 'Ngự Phong Chu', description: 'Một chiếc thuyền nhỏ có thể ngự không phi hành, tăng tốc độ di chuyển giữa các địa điểm.', type: 'Pháp Bảo', rank: 'Trung Giai', icon: '⛵', weight: 5.0, quality: 'Bảo Phẩm', price: { currency: 'Linh thạch hạ phẩm', amount: 1200 }, stock: 1 },
+            { name: 'Bản đồ Sơn Hà Xã Tắc (Mảnh vỡ)', description: 'Một mảnh vỡ của bản đồ cổ, ẩn chứa bí mật động trời.', type: 'Tạp Vật', icon: '🗺️', weight: 0.1, quality: 'Tiên Phẩm', price: { currency: 'Bạc', amount: 10000 }, stock: 'infinite' },
+        ]
     }
 ];

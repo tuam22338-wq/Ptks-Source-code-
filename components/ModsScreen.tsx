@@ -106,7 +106,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
         reader.onload = (e) => {
             try {
                 const text = e.target?.result as string;
-                const newModData = JSON.parse(text);
+                const newModData: FullMod = JSON.parse(text);
 
                 if (newModData.modInfo && newModData.modInfo.id && newModData.modInfo.name) {
                      if (mods.some(m => m.modInfo.id === newModData.modInfo.id)) {
@@ -118,6 +118,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
                         isEnabled: true,
                     };
                     setMods(prev => [...prev, newMod]);
+                    localStorage.setItem(`mod-content-${newModData.modInfo.id}`, JSON.stringify(newModData));
                     alert(`Mod "${newMod.modInfo.name}" đã được nhập thành công!`);
                 } else {
                     throw new Error("Tệp mod không hợp lệ. Thiếu thông tin 'modInfo'.");
@@ -142,6 +143,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
         const modToDelete = mods.find(m => m.modInfo.id === id);
         if (window.confirm(`Bạn có chắc muốn xóa vĩnh viễn mod "${modToDelete?.modInfo.name}"?`)) {
             setMods(mods.filter(mod => mod.modInfo.id !== id));
+            localStorage.removeItem(`mod-content-${id}`);
         }
     };
     
@@ -155,6 +157,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
             isEnabled: true
         };
         setMods(prev => [...prev, newModForLibrary]);
+        localStorage.setItem(`mod-content-${modToInstall.modInfo.id}`, JSON.stringify(modToInstall));
         alert(`Đã cài đặt thành công mod "${modToInstall.modInfo.name}"!`);
     }
 

@@ -1,8 +1,7 @@
-import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent } from '../types';
-import { INNATE_TALENT_PROBABILITY, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES } from "../constants";
-
-const talentRanks: InnateTalentRank[] = ['Phàm Tư', 'Tiểu Tư', 'Đại Tư', 'Siêu Tư', 'Thiên Tư'];
+// FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
+import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship } from '../types';
+import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES } from "../constants";
 
 // --- Key Manager ---
 const ApiKeyManager = (() => {
@@ -134,7 +133,10 @@ const performApiCall = async <T>(
 };
 
 
-const generateWithRetry = (generationRequest: any, maxRetries = 3) => {
+// FIX: Add an explicit return type `Promise<GenerateContentResponse>` to `generateWithRetry`.
+// This resolves multiple downstream errors where the compiler could not infer the type of the awaited response,
+// thus treating `response.text` as an access on an `unknown` type.
+const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateContentResponse> => {
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
     const finalRequest = {
@@ -145,7 +147,10 @@ const generateWithRetry = (generationRequest: any, maxRetries = 3) => {
     return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest, maxRetries);
 };
 
-const generateImagesWithRetry = (generationRequest: any, maxRetries = 3) => {
+// FIX: Add an explicit return type `Promise<GenerateImagesResponse>` to `generateImagesWithRetry`.
+// This fixes an error where `response.generatedImages` was accessed on an `unknown` type because the
+// compiler could not infer the response type.
+const generateImagesWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateImagesResponse> => {
     const settings = getSettings();
     const finalRequest = { ...generationRequest, model: settings.imageGenerationModel };
     return performApiCall((ai, req) => ai.models.generateImages(req), finalRequest, maxRetries);
@@ -194,7 +199,7 @@ export const generateCharacterFoundation = async (concept: string, gender: Gende
                     properties: {
                         name: { type: Type.STRING, description: 'Tên của tiên tư, ngắn gọn và độc đáo (ví dụ: "Thánh Thể Hoang Cổ", "Kiếm Tâm Thông Minh").' },
                         description: { type: Type.STRING, description: 'Mô tả ngắn gọn về bản chất của tiên tư.' },
-                        rank: { type: Type.STRING, enum: talentRanks, description: 'Cấp bậc của tiên tư.' },
+                        rank: { type: Type.STRING, enum: TALENT_RANK_NAMES, description: 'Cấp bậc của tiên tư.' },
                         effect: { type: Type.STRING, description: 'Mô tả hiệu ứng trong game của tiên tư.' },
                         bonuses: {
                             type: Type.ARRAY,
@@ -284,7 +289,7 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
                         properties: {
                             name: { type: Type.STRING },
                             description: { type: Type.STRING },
-                            rank: { type: Type.STRING, enum: talentRanks },
+                            rank: { type: Type.STRING, enum: TALENT_RANK_NAMES },
                             effect: { type: Type.STRING },
                         },
                         required: ['name', 'description', 'rank', 'effect'],
@@ -319,7 +324,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
     const statBonusSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] };
 
     const itemSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, weight: { type: Type.NUMBER }, slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'] }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'type', 'quality', 'weight'] };
-    const talentSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, rank: { type: Type.STRING, enum: talentRanks }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'rank'] };
+    const talentSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, rank: { type: Type.STRING, enum: TALENT_RANK_NAMES }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'rank'] };
     const characterSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] }, origin: { type: Type.STRING }, appearance: { type: Type.STRING }, personality: { type: Type.STRING }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'gender', 'origin'] };
     const sectSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, location: { type: Type.STRING }, members: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, rank: { type: Type.STRING, enum: ['Tông Chủ', 'Trưởng Lão', 'Đệ Tử Chân Truyền', 'Đệ Tử Nội Môn', 'Đệ Tử Ngoại Môn'] } } } }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'location'] };
     const worldBuildingSchema = { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, data: { type: Type.OBJECT, description: "Đối tượng JSON tự do" }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['title', 'data'] };
@@ -413,8 +418,17 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
     };
 
     const systemInstruction = `Bạn là một GameMaster AI thông minh, giúp người dùng tạo mod cho game tu tiên Phong Thần Ký Sự.
-    Nhiệm vụ của bạn là phân tích yêu cầu của người dùng và chuyển đổi nó thành một hành động có cấu trúc (action).
-    - Bạn có thể tạo các nội dung phức tạp bao gồm: NPCs tùy chỉnh có mối quan hệ, các sự kiện tự sự với các lựa chọn và kiểm tra kỹ năng, và các công pháp tu luyện (kỹ năng) mới.
+    
+    **HIỂU BIẾT VỀ CƠ CHẾ GAME:**
+    - **Thuộc tính:** Nhân vật có các thuộc tính có thể được tăng cường. Bạn có thể tạo vật phẩm/tiên tư cộng trực tiếp vào các thuộc tính này. Danh sách đầy đủ: ${ALL_ATTRIBUTES.join(', ')}.
+    - **Hệ thống Tu Luyện:** Trò chơi có hệ thống cảnh giới (vd: Luyện Khí, Trúc Cơ). Bạn có thể định nghĩa lại toàn bộ hệ thống này bằng \`CREATE_REALM_SYSTEM\`. Mỗi cảnh giới có nhiều giai đoạn, yêu cầu điểm linh khí (qiRequired) và có thể cộng chỉ số (bonuses).
+    - **Vật phẩm (Items):** Gồm 5 loại: Vũ Khí, Phòng Cụ, Đan Dược, Pháp Bảo, Tạp Vật. Chúng có phẩm chất, trọng lượng, và có thể cộng chỉ số.
+    - **Tiên Tư (Talents):** Là các tài năng bẩm sinh, có cấp bậc, và cũng có thể cộng chỉ số.
+    - **Công Pháp (Techniques):** Là các kỹ năng nhân vật có thể sử dụng, có tiêu hao, hồi chiêu, và cấp bậc.
+    - **Sự kiện (Events):** Là các tình huống có kịch bản với các lựa chọn, có thể yêu cầu kiểm tra thuộc tính (skill check) và dẫn đến các kết quả khác nhau.
+
+    **NHIỆM VỤ CỦA BẠN:**
+    Phân tích yêu cầu của người dùng và chuyển đổi nó thành một hành động có cấu trúc (action) tương thích với các cơ chế trên.
     - Nếu người dùng chỉ đang trò chuyện hoặc hỏi, hãy sử dụng hành động 'CHAT'.
     - Nếu người dùng yêu cầu tạo một hoặc nhiều vật phẩm, tiên tư, nhân vật, tông môn, công pháp, NPC, sự kiện v.v., hãy sử dụng các hành động 'CREATE' tương ứng.
     - Nếu người dùng yêu cầu nhiều thứ cùng lúc, hãy sử dụng 'BATCH_ACTIONS'.
@@ -488,10 +502,12 @@ export const generateGameEvent = async (
     **Nhân vật chính:** ${player.identity.name} (${player.cultivation.currentRealmId})
     **Thời gian:** ${date.season}, ${date.timeOfDay}
     **Địa điểm:** ${location.name} (${location.description})
+    **Loại địa điểm:** ${location.type}
     **Nhân vật khác tại đây:** ${npcs.length > 0 ? npcs.map(n => n.name).join(', ') : 'Không có ai'}
 
     Dựa vào bối cảnh trên, hãy tạo ra một tình tiết (event) nhỏ, bất ngờ và thú vị cho người chơi.
     - Tình tiết phải có mô tả rõ ràng và 2-3 lựa chọn.
+    - QUAN TRỌNG: Nếu địa điểm là 'Bí Cảnh' hoặc 'Hoang Dã', hãy ưu tiên tạo ra các sự kiện nguy hiểm như gặp yêu thú, dính bẫy, hoặc bị tu sĩ khác tập kích.
     - Mỗi lựa chọn có thể yêu cầu một bài kiểm tra thuộc tính (skill check) với độ khó (difficulty) hợp lý, hoặc không cần (check: null).
     - Các lựa chọn nên đa dạng: có thể là đối thoại, hành động lén lút, sử dụng sức mạnh, hoặc bỏ qua.
     - Giữ cho tình huống phù hợp với không khí tu tiên, huyền huyễn.
@@ -523,7 +539,7 @@ export const generateStoryContinuation = async (
     techniqueUsed?: CultivationTechnique
 ): Promise<string> => {
     
-    const { playerCharacter, gameDate, activeNpcs, discoveredLocations, worldState } = gameState;
+    const { playerCharacter, gameDate, activeNpcs, discoveredLocations, worldState, activeMods, encounteredNpcIds } = gameState;
     const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
     const npcsAtLocation = activeNpcs.filter(n => n.locationId === currentLocation.id);
 
@@ -546,19 +562,40 @@ export const generateStoryContinuation = async (
         .map(i => `${i.name} (x${i.quantity})`)
         .join(', ');
 
+    const relationshipsText = playerCharacter.relationships.map(rel => {
+        const npc = activeNpcs.find(n => n.id === rel.npcId);
+        return npc ? `${npc.name}: ${rel.status} (${rel.value})` : '';
+    }).filter(Boolean).join('; ');
+
+    const worldBuildingMod = activeMods?.find(mod => mod.content.worldBuilding && mod.content.worldBuilding.length > 0);
+    let gameContext = "**Bối cảnh:** Game tu tiên Phong Thần.";
+    if (worldBuildingMod && worldBuildingMod.content.worldBuilding && worldBuildingMod.content.worldBuilding.length > 0) {
+        const worldInfo = worldBuildingMod.content.worldBuilding[0];
+        gameContext = `**Bối cảnh:** ${worldInfo.title}. ${worldInfo.description}`;
+    }
+
+    const knownLocations = discoveredLocations.map(l => l.name).join(', ');
+    const knownNpcs = activeNpcs.filter(n => encounteredNpcIds.includes(n.id)).map(n => n.name).join(', ');
+
     const context = `
-    **Bối cảnh:** Game tu tiên Phong Thần.
+    ${gameContext}
     **Nhân vật chính:**
     - Tên: ${playerCharacter.identity.name}
+    - Tuổi: ${playerCharacter.identity.age} (Tuổi thọ tối đa hiện tại dựa vào cảnh giới)
     - Cảnh giới: ${playerCharacter.cultivation.currentRealmId}
     - Thuộc tính: ${playerCharacter.attributes.flatMap(g => g.attributes).map(a => `${a.name}(${a.value})`).join(', ')}
     - Tiên tư: ${playerCharacter.talents.map(t => t.name).join(', ') || 'Không có'}
     - Trang bị chính: ${Object.values(playerCharacter.equipment).filter(Boolean).map(i => i!.name).join(', ') || 'Không có'}
     - Vật phẩm quan trọng: ${importantItems || 'Không có'}
+    - Quan hệ: ${relationshipsText || 'Chưa có'}
+
+    **Kiến Thức Của Nhân Vật (Known World):**
+    - Các địa danh đã biết: ${knownLocations || 'Chỉ biết nơi mình đang đứng.'}
+    - Các nhân vật đã gặp: ${knownNpcs || 'Chưa gặp ai đáng nhớ.'}
 
     **Thời gian & Không gian:**
     - Thời gian: ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen})
-    - Địa điểm: ${currentLocation.name} (Tọa độ: ${currentLocation.coordinates?.x}, ${currentLocation.coordinates?.y}) (${currentLocation.description})
+    - Địa điểm: ${currentLocation.name} (Loại: ${currentLocation.type}) (${currentLocation.description})
     - Nhân vật khác tại đây: ${npcsAtLocation.length > 0 ? npcsAtLocation.map(n => n.name).join(', ') : 'Không có ai'}
     - Các tin đồn gần đây: ${worldState.rumors.slice(-3).map(r => `Tại ${r.locationId}: "${r.text}"`).join('; ') || 'Không có'}
 
@@ -568,12 +605,23 @@ export const generateStoryContinuation = async (
     ${actionDescription}
     `;
 
-    const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai tu tiên.
+    const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai.
     Nhiệm vụ của bạn là tiếp nối câu chuyện dựa trên hành động của người chơi và bối cảnh hiện tại.
     - **Phong cách kể chuyện:** ${narrativeStyleDesc}. Hãy tuân thủ nghiêm ngặt phong cách này.
-    - **Tham chiếu bối cảnh (RẤT QUAN TRỌNG):** Câu chuyện của bạn PHẢI thể hiện được các thuộc tính của nhân vật (ví dụ: người có Lực Lượng cao sẽ mạnh mẽ, người có Thân Pháp cao sẽ nhanh nhẹn). Hãy nhắc đến các vật phẩm trong túi đồ của họ nếu có liên quan. Hãy chú ý đến thời gian, địa điểm, các NPC và tin đồn hiện có để câu chuyện liền mạch.
+    - **Bối cảnh:** Hãy bám sát vào bối cảnh đã được cung cấp. Nếu đó là thế giới Phong Thần, hãy dùng các yếu tố của nó. Nếu một bối cảnh tùy chỉnh được cung cấp, hãy ưu tiên và xây dựng câu chuyện xoay quanh nó.
+    - **Tham chiếu trạng thái (RẤT QUAN TRỌNG):** Câu chuyện của bạn PHẢI thể hiện được các thuộc tính, tiên tư, vật phẩm, và mối quan hệ của nhân vật. Hãy chú ý đến thời gian, địa điểm, các NPC và tin đồn hiện có để câu chuyện liền mạch. Hãy nhớ đến tuổi tác và giới hạn tuổi thọ của nhân vật.
     - **Mô tả kết quả:** Dựa trên hành động, kết quả (thành công/thất bại), và công pháp sử dụng, hãy mô tả kết quả một cách sống động và hợp lý.
-    - **Phát triển thế giới (QUAN TRỌNG):** Nếu hợp lý, hãy tạo ra các yếu tố mới cho thế giới bằng cách sử dụng các tag sau TRONG câu chuyện của bạn:
+    - **KIỂM SOÁT LOGIC TUYỆT ĐỐI (CỰC KỲ QUAN TRỌNG):**
+        - Bạn PHẢI duy trì sự logic và nhất quán của thế giới. Nhân vật chỉ biết những gì họ đã trải nghiệm, nghe thấy hoặc được kể trong game.
+        - **Kiến thức của nhân vật:** Toàn bộ kiến thức của nhân vật về thế giới được cung cấp trong mục "Kiến Thức Của Nhân Vật". Họ không biết về bất kỳ địa danh hay nhân vật nào khác ngoài danh sách đó.
+        - **Hành động phi logic:** Nếu người chơi thực hiện một hành động dựa trên kiến thức mà nhân vật không thể có (ví dụ: "đi đến Hoa Quả Sơn gặp Tôn Ngộ Không" khi nhân vật chưa bao giờ nghe về những cái tên này), bạn KHÔNG được thực hiện hành động đó.
+        - **Phản hồi cho hành động phi logic:** Thay vào đó, hãy để nhân vật phản ứng một cách tự nhiên. Họ nên cảm thấy bối rối, tự hỏi tại sao mình lại có suy nghĩ đó. Ví dụ: "Trong đầu bạn chợt lóe lên hai cái tên lạ lẫm: 'Hoa Quả Sơn' và 'Tôn Ngộ Không'. Chúng từ đâu tới? Bạn lắc đầu, cố xua đi ý nghĩ kỳ quái. Nơi đó không hề tồn tại trong ký ức hay trên bất kỳ tấm bản đồ nào bạn từng thấy."
+        - **Duy trì bối cảnh:** Không cho phép người chơi phá vỡ bối cảnh đã thiết lập bằng những hành động không phù hợp. Nếu bối cảnh là Phong Thần, đừng để các yếu tố từ Tây Du Ký hay các thế giới khác xen vào, trừ khi chúng được giới thiệu một cách hợp lý trong game (ví dụ qua một cuốn sách cổ, một tin đồn).
+        - **Nguy hiểm:** Nếu người chơi ở một nơi nguy hiểm như "Bí Cảnh" hay "Hoang Dã", hãy tăng khả năng gặp nguy hiểm (bị tấn công, dính bẫy, bị cướp đồ).
+    - **Tương tác Đặc Biệt:** Dùng các tag sau TRONG câu chuyện của bạn khi thích hợp:
+        - Nếu người chơi đến một địa điểm có cửa hàng như "Thiên Cơ Các", hãy dùng tag: [SHOW_SHOP:{"shopId": "thien_co_cac"}]
+        - Dựa vào hành động của người chơi (tặng quà, giúp đỡ, xúc phạm), hãy thay đổi mối quan hệ với NPC bằng tag: [UPDATE_RELATIONSHIP:{"npcName": "Tên NPC", "change": 10}] (số dương là tốt, số âm là xấu).
+        - Nếu hành động của người chơi dẫn đến cái chết không thể tránh khỏi, hãy dùng tag: [DEATH:{"reason": "Bị yêu thú cấp cao giết chết."}]
         - Tạo vật phẩm: [ADD_ITEM:{"name": "Tên Vật Phẩm", "description": "Mô tả", "quantity": 1, "type": "Tạp Vật", "icon": "❓", "weight": 0.1, "quality": "Phàm Phẩm"}]
         - Mất vật phẩm: [REMOVE_ITEM:{"name": "Tên Vật Phẩm", "quantity": 1}]
         - Thưởng tiền: [ADD_CURRENCY:{"name": "Bạc", "amount": 100}]
@@ -694,4 +742,49 @@ Nhiệm vụ: Hãy viết một đoạn văn (3-4 câu) mô tả lại quá trì
     });
 
     return response.text;
+};
+
+
+export const generateWorldEvent = async (gameState: GameState): Promise<Rumor> => {
+    const { gameDate, discoveredLocations, worldState } = gameState;
+
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            locationId: { type: Type.STRING, enum: discoveredLocations.map(l => l.id) },
+            text: { type: Type.STRING, description: 'Nội dung của tin đồn hoặc sự kiện, viết một cách ngắn gọn, hấp dẫn.' },
+        },
+        required: ['locationId', 'text'],
+    };
+
+    const prompt = `Bối cảnh game tu tiên Phong Thần. Thời gian hiện tại là ${gameDate.era} năm ${gameDate.year}, mùa ${gameDate.season}.
+    Các tin đồn cũ: ${worldState.rumors.slice(-5).map(r => r.text).join('; ') || 'Chưa có.'}
+    
+    Hãy tạo ra một sự kiện thế giới hoặc tin đồn MỚI, phù hợp với bối cảnh hỗn loạn của thời đại.
+    Sự kiện có thể là:
+    - Một giải đấu tu tiên được tổ chức.
+    - Một yêu thú mạnh xuất hiện ở đâu đó.
+    - Một bí cảnh mới được phát hiện.
+    - Một tông môn lớn tuyển đệ tử.
+    - Xung đột giữa các thế lực.
+    
+    Hãy trả về một tin đồn duy nhất theo JSON schema.
+    `;
+    
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.quickSupportModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema,
+        }
+    });
+
+    const rumorData = JSON.parse(response.text);
+    return {
+        id: `rumor-${Date.now()}`,
+        locationId: rumorData.locationId,
+        text: rumorData.text,
+    };
 };

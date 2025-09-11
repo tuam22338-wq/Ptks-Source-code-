@@ -9,12 +9,21 @@ import CreateModScreen from './components/CreateModScreen';
 import GamePlayScreen from './components/GamePlayScreen';
 import LoadingScreen from './components/LoadingScreen';
 import LoreScreen from './components/LoreScreen';
-import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState } from './types';
-import { REALM_SYSTEM, NPC_LIST, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP } from './constants';
-import { generateDynamicNpcs } from './services/geminiService';
+import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo } from './types';
+import { REALM_SYSTEM, NPC_LIST, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS } from './constants';
+import { generateDynamicNpcs, reloadApiKeys } from './services/geminiService';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'lore';
 
+interface ModInLibrary {
+    modInfo: ModInfo;
+    isEnabled: boolean;
+}
+
+const initialStory: StoryEntry[] = [
+    { id: 1, type: 'narrative', content: 'Màn sương mỏng dần, để lộ ra một con đường mòn phủ đầy lá rụng trong khu rừng tĩnh mịch. Không khí se lạnh mang theo mùi đất ẩm và cây cỏ. Xa xa, tiếng chim hót lảnh lót phá vỡ sự yên tĩnh. Đây là nơi câu chuyện của bạn bắt đầu.' },
+    { id: 2, type: 'system', content: 'Bạn có thể dùng ô "Nói" để giao tiếp, "Hành Động" để tương tác, hoặc nhập "tu luyện" để tĩnh tọa hấp thụ linh khí.' },
+];
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('mainMenu');
@@ -23,10 +32,36 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [saveSlots, setSaveSlots] = useState<SaveSlot[]>([]);
   const [currentSlotId, setCurrentSlotId] = useState<number | null>(null);
+  const [settings, setSettings] = useState<GameSettings>(() => {
+    try {
+        const savedSettings = localStorage.getItem('game-settings');
+        return savedSettings ? { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) } : DEFAULT_SETTINGS;
+    } catch (error) {
+        console.error("Failed to load settings from localStorage", error);
+        return DEFAULT_SETTINGS;
+    }
+  });
 
   useEffect(() => {
     loadSaveSlots();
   }, []);
+
+  useEffect(() => {
+    document.body.style.fontFamily = settings.fontFamily;
+  }, [settings.fontFamily]);
+
+  const handleSettingsSave = (newSettings: GameSettings) => {
+    try {
+        localStorage.setItem('game-settings', JSON.stringify(newSettings));
+        setSettings(newSettings);
+        reloadApiKeys();
+        alert('Cài đặt đã được lưu!');
+    } catch (error) {
+        console.error("Failed to save settings to localStorage", error);
+        alert('Lỗi: Không thể lưu cài đặt.');
+    }
+  };
+
 
   const loadSaveSlots = () => {
     const loadedSlots: SaveSlot[] = [];
@@ -62,10 +97,10 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveGame = (showNotification: (message: string) => void) => {
-    if (gameState && currentSlotId !== null) {
+  const handleSaveGame = (currentState: GameState, showNotification: (message: string) => void) => {
+    if (currentState && currentSlotId !== null) {
         try {
-            const gameStateWithTimestamp: GameState = { ...gameState, lastSaved: new Date().toISOString() };
+            const gameStateWithTimestamp: GameState = { ...currentState, lastSaved: new Date().toISOString() };
             localStorage.setItem(`phongthan-gs-slot-${currentSlotId}`, JSON.stringify(gameStateWithTimestamp));
             setGameState(gameStateWithTimestamp); // Update state with timestamp
             loadSaveSlots(); // Refresh slot data
@@ -83,7 +118,7 @@ const App: React.FC = () => {
   };
 
   const handleGameStart = async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships'>,
       npcDensity: NpcDensity
   }) => {
     if (currentSlotId === null) {
@@ -103,6 +138,22 @@ const App: React.FC = () => {
 
 
     try {
+        setLoadingMessage('Đang nạp các mod đã kích hoạt...');
+        const activeMods: FullMod[] = [];
+        const modLibrary: ModInLibrary[] = JSON.parse(localStorage.getItem('mod-library') || '[]');
+        const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
+
+        for (const modInfo of enabledModsInfo) {
+            try {
+                const modContentRaw = localStorage.getItem(`mod-content-${modInfo.modInfo.id}`);
+                if (modContentRaw) {
+                    activeMods.push(JSON.parse(modContentRaw));
+                }
+            } catch (e) {
+                console.error(`Failed to load content for mod ${modInfo.modInfo.id}`, e);
+            }
+        }
+
         setLoadingMessage('Đang tạo ra chúng sinh...');
         const densitySetting = NPC_DENSITY_LEVELS.find(d => d.id === npcDensity);
         const generatedNpcs = await generateDynamicNpcs(densitySetting?.count ?? 15);
@@ -153,15 +204,16 @@ const App: React.FC = () => {
         });
 
         const finalPlayerCharacter: PlayerCharacter = {
-            identity: characterData.identity,
+            identity: { ...characterData.identity, age: 18 },
             attributes: updatedAttributes,
-            talents: characterData.talents, // Explicitly assign talents to fix bug
+            talents: characterData.talents,
             inventory: initialInventory,
             currencies: initialCurrencies,
             cultivation: initialCultivation,
             currentLocationId: 'thanh_ha_tran',
             equipment: {},
             techniques: INITIAL_TECHNIQUES,
+            relationships: [],
         };
         
         const initialGameDate: GameDate = {
@@ -190,7 +242,9 @@ const App: React.FC = () => {
             gameDate: initialGameDate,
             discoveredLocations: initialDiscoveredLocations,
             worldState: initialWorldState,
+            storyLog: initialStory,
             encounteredNpcIds: [],
+            activeMods: activeMods,
         };
         
         // Initial save
@@ -222,7 +276,7 @@ const App: React.FC = () => {
       case 'characterCreation':
         return <CharacterCreationScreen onBack={() => handleNavigate('saveSlots')} onGameStart={handleGameStart} />;
       case 'settings':
-        return <SettingsPanel onBack={() => handleNavigate('mainMenu')} />;
+        return <SettingsPanel onBack={() => handleNavigate('mainMenu')} onSave={handleSettingsSave} initialSettings={settings} />;
       case 'mods':
         return <ModsScreen onBack={() => handleNavigate('mainMenu')} onNavigate={handleNavigate} />;
       case 'createMod':

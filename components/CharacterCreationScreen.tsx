@@ -12,7 +12,7 @@ import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS } from '../constant
 interface CharacterCreationScreenProps {
   onBack: () => void;
   onGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships'>,
       npcDensity: NpcDensity
   }) => void;
 }
@@ -149,7 +149,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         alert("Vui lòng chọn ít nhất một Tiên Tư.");
         return;
     }
-    const characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques'> = {
+    const characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships'> = {
       identity,
       attributes,
       talents: selectedTalents,

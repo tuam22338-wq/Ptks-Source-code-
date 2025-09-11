@@ -1,18 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import type { NPC, Location } from '../types';
+import type { NPC, Location, PlayerCharacter, PlayerNpcRelationship } from '../types';
 import { INNATE_TALENT_RANKS, NPC_LIST, WORLD_MAP } from '../constants';
 import { FaUsers, FaMapMarkedAlt, FaArrowLeft, FaEye } from 'react-icons/fa';
 
 interface WikiPanelProps {
+    playerCharacter: PlayerCharacter;
     allNpcs: NPC[];
     encounteredNpcIds: string[];
     discoveredLocations: Location[];
 }
 
-const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[] }> = ({ npc, allNpcs }) => (
+const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerNpcRelationship }> = ({ npc, allNpcs, relationship }) => (
     <div className="p-4 bg-black/20 rounded-lg border border-gray-700/60 animate-fade-in" style={{animationDuration: '300ms'}}>
         <h3 className="text-xl text-amber-300 font-bold font-title">{npc.name}</h3>
         <div className="mt-4 space-y-4 text-sm">
+            {relationship && (
+                <p><strong className="text-gray-400">Quan hệ:</strong> <span className="text-yellow-300 font-semibold">{relationship.status} ({relationship.value})</span></p>
+            )}
             <p><strong className="text-gray-400">Trạng thái:</strong> <em className="text-gray-300">"{npc.status}"</em></p>
             <p><strong className="text-gray-400">Ngoại hình:</strong> <span className="text-gray-300">{npc.description}</span></p>
             <p><strong className="text-gray-400">Xuất thân:</strong> <span className="text-gray-300">{npc.origin}</span></p>
@@ -71,9 +75,10 @@ const LocationDetailView: React.FC<{ location: Location }> = ({ location }) => (
 );
 
 
-const WikiPanel: React.FC<WikiPanelProps> = ({ allNpcs, encounteredNpcIds, discoveredLocations }) => {
+const WikiPanel: React.FC<WikiPanelProps> = ({ playerCharacter, allNpcs, encounteredNpcIds, discoveredLocations }) => {
     const [view, setView] = useState<'list' | 'npc_detail' | 'location_detail'>('list');
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const { relationships } = playerCharacter;
 
     const combinedNpcs = useMemo(() => {
         const npcMap = new Map<string, NPC>();
@@ -109,6 +114,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ allNpcs, encounteredNpcIds, disco
 
     const selectedNpc = view === 'npc_detail' ? combinedNpcs.find(n => n.id === selectedId) : null;
     const selectedLocation = view === 'location_detail' ? combinedLocations.find(l => l.id === selectedId) : null;
+    const selectedRelationship = selectedNpc ? relationships.find(r => r.npcId === selectedNpc.id) : undefined;
 
     if (view !== 'list') {
         return (
@@ -116,7 +122,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ allNpcs, encounteredNpcIds, disco
                 <button onClick={handleBackToList} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4">
                     <FaArrowLeft /> Quay lại danh sách
                 </button>
-                {selectedNpc && <NpcDetailView npc={selectedNpc} allNpcs={combinedNpcs} />}
+                {selectedNpc && <NpcDetailView npc={selectedNpc} allNpcs={combinedNpcs} relationship={selectedRelationship} />}
                 {selectedLocation && <LocationDetailView location={selectedLocation} />}
             </div>
         );
@@ -132,11 +138,15 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ allNpcs, encounteredNpcIds, disco
                     {combinedNpcs.length > 0 ? (
                         combinedNpcs.map(npc => {
                             const isEncountered = encounteredNpcIds.includes(npc.id);
+                            const rel = relationships.find(r => r.npcId === npc.id);
                             return (
                                 <button key={npc.id} onClick={() => handleSelectNpc(npc)} className="w-full text-left bg-black/20 p-2 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-cyan-400/50 transition-colors">
                                     <div className="flex justify-between items-center">
                                         <h4 className={`font-bold font-title text-sm ${isEncountered ? 'text-cyan-300' : 'text-gray-400'}`}>{npc.name}</h4>
-                                        {isEncountered && <FaEye className="text-cyan-400" title="Đã gặp"/>}
+                                        <div className="flex items-center gap-2">
+                                            {rel && <span className="text-xs text-yellow-300">{rel.status}</span>}
+                                            {isEncountered && <FaEye className="text-cyan-400" title="Đã gặp"/>}
+                                        </div>
                                     </div>
                                 </button>
                             );

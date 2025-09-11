@@ -33,7 +33,7 @@ const InnateTalentCard: React.FC<InnateTalentCardProps> = ({ talent, isSelected,
 
       {/* Detailed View (Overlay on hold) */}
       {showDetails && (
-        <div className="absolute inset-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 rounded-lg border-2 border-amber-400 flex flex-col justify-between animate-fade-in transform scale-110 shadow-2xl shadow-black/70"
+        <div className="absolute inset-0 z-20 bg-gray-900/95 backdrop-blur-md p-4 rounded-lg border-2 border-amber-400 flex flex-col justify-between animate-fade-in w-full h-full shadow-2xl shadow-black/70"
              style={{ animationDuration: '150ms' }}
         >
           <div className="text-center">

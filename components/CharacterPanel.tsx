@@ -62,7 +62,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
             {/* Identity */}
             <div className="text-center">
-                <h2 className="text-2xl font-bold text-amber-300 font-title">{identity.name}</h2>
+                <h2 className="text-2xl font-bold text-amber-300 font-title">{identity.name} ({identity.age} tuổi)</h2>
                 <p className="text-sm text-gray-400 mb-2">{identity.origin}</p>
                 <p className="text-md font-semibold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-full inline-block border border-cyan-500/30">{currentRealmState}</p>
             </div>

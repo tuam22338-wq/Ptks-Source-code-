@@ -36,6 +36,7 @@ export interface GameSettings {
     layoutMode: LayoutMode;
     gameSpeed: GameSpeed;
     narrativeStyle: NarrativeStyle;
+    fontFamily: string;
     mainTaskModel: AIModel;
     quickSupportModel: AIModel;
     itemAnalysisModel: AIModel;
@@ -95,6 +96,7 @@ export interface CharacterIdentity {
   appearance: string;
   gender: Gender;
   personality: string;
+  age: number;
 }
 
 // --- Timeline Types ---
@@ -435,6 +437,12 @@ export interface CultivationTechnique {
     icon: string;
 }
 
+export interface PlayerNpcRelationship {
+    npcId: string;
+    value: number; // e.g., -100 (Hated) to 100 (Loved)
+    status: 'Thù địch' | 'Lạnh nhạt' | 'Trung lập' | 'Thân thiện' | 'Tri kỷ';
+}
+
 export interface PlayerCharacter {
     identity: CharacterIdentity;
     attributes: AttributeGroup[];
@@ -445,6 +453,7 @@ export interface PlayerCharacter {
     currentLocationId: string;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     techniques: CultivationTechnique[];
+    relationships: PlayerNpcRelationship[];
 }
 
 export interface StoryEntry {
@@ -469,8 +478,10 @@ export interface GameState {
     discoveredLocations: Location[];
     worldState: WorldState;
     gameDate: GameDate;
+    storyLog: StoryEntry[];
     lastSaved?: string;
     encounteredNpcIds: string[];
+    activeMods: FullMod[];
 }
 
 // --- Gameplay Event Types ---
@@ -489,4 +500,20 @@ export interface GameEvent {
     id: string;
     description: string;
     choices: EventChoice[];
+}
+
+// --- Shop Types ---
+export interface ShopItem extends Omit<InventoryItem, 'id' | 'quantity'> {
+    price: {
+        currency: string;
+        amount: number;
+    };
+    stock: number | 'infinite';
+}
+
+export interface Shop {
+    id: string;
+    name: string;
+    description: string;
+    inventory: ShopItem[];
 }

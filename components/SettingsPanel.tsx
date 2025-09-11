@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES } from '../constants';
-import { reloadApiKeys, testApiKeys } from '../services/geminiService';
+import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../constants';
+import { testApiKeys } from '../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle } from '../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
 
 interface SettingsPanelProps {
   onBack: () => void;
+  onSave: (settings: GameSettings) => void;
+  initialSettings: GameSettings;
 }
 
 type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'api' | 'advanced';
@@ -47,17 +49,8 @@ const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLI
 
 type KeyCheckResult = { key: string; status: 'valid' | 'invalid'; error?: string };
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
-  const [settings, setSettings] = useState<GameSettings>(() => {
-    try {
-        const savedSettings = localStorage.getItem('game-settings');
-        return savedSettings ? { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) } : DEFAULT_SETTINGS;
-    } catch (error) {
-        console.error("Failed to load settings from localStorage", error);
-        return DEFAULT_SETTINGS;
-    }
-  });
-
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSettings }) => {
+  const [settings, setSettings] = useState<GameSettings>(initialSettings);
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
   const [isCheckingKeys, setIsCheckingKeys] = useState(false);
   const [keyCheckResults, setKeyCheckResults] = useState<KeyCheckResult[] | null>(null);
@@ -77,14 +70,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   };
   
   const handleSaveSettings = () => {
-    try {
-        localStorage.setItem('game-settings', JSON.stringify(settings));
-        reloadApiKeys();
-        alert('Cài đặt đã được lưu!');
-    } catch (error) {
-        console.error("Failed to save settings to localStorage", error);
-        alert('Lỗi: Không thể lưu cài đặt.');
-    }
+    onSave(settings);
   };
 
   const handleCheckKeys = async () => {
@@ -93,7 +79,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
     try {
         // Temporarily save current settings to be used by the service
         localStorage.setItem('game-settings', JSON.stringify(settings));
-        reloadApiKeys();
         const results = await testApiKeys();
         setKeyCheckResults(results);
     } catch (e: any) {
@@ -175,6 +160,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
                     <SettingsSection title="Cài Đặt Giao Diện">
                         <SettingsRow label="Giao diện người dùng" description="Chọn bố cục cho máy tính hoặc di động. 'Tự động' sẽ dựa trên kích thước màn hình.">
                              <Select value={settings.layoutMode} onChange={e => handleSettingChange('layoutMode', e.target.value as LayoutMode)} options={LAYOUT_MODES} />
+                        </SettingsRow>
+                        <SettingsRow label="Phông chữ" description="Chọn phông chữ cho toàn bộ trò chơi.">
+                             <Select value={settings.fontFamily} onChange={e => handleSettingChange('fontFamily', e.target.value)} options={FONT_OPTIONS} />
                         </SettingsRow>
                     </SettingsSection>
                 </div>

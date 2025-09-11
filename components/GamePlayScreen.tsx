@@ -1,19 +1,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique } from '../types';
+import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship } from '../types';
 import StoryLog from './StoryLog';
 import PlayerInput from './PlayerInput';
 import Sidebar from './Sidebar';
 import Timeline from './Timeline';
 import EventPanel from './EventPanel';
+import ShopModal from './ShopModal';
 import { FaArrowLeft, FaBars, FaTimes, FaExclamationTriangle, FaCog, FaSave } from 'react-icons/fa';
-import { generateStoryContinuation, generateGameEvent, generateDynamicLocation, analyzeActionForTechnique, generateBreakthroughNarrative } from '../services/geminiService';
+import { generateStoryContinuation, generateGameEvent, generateDynamicLocation, analyzeActionForTechnique, generateBreakthroughNarrative, generateWorldEvent } from '../services/geminiService';
 import { SHICHEN_LIST, REALM_SYSTEM, TIMEOFDAY_DETAILS, NPC_LIST, INNATE_TALENT_RANKS } from '../constants';
 
 
 interface GamePlayScreenProps {
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
-    onSaveGame: (showNotification: (message: string) => void) => void;
+    onSaveGame: (currentState: GameState, showNotification: (message: string) => void) => void;
     onBack: () => void;
 }
 
@@ -107,11 +108,6 @@ const GameMenuModal: React.FC<{
 };
 
 
-const initialStory: StoryEntry[] = [
-    { id: 1, type: 'narrative', content: 'Màn sương mỏng dần, để lộ ra một con đường mòn phủ đầy lá rụng trong khu rừng tĩnh mịch. Không khí se lạnh mang theo mùi đất ẩm và cây cỏ. Xa xa, tiếng chim hót lảnh lót phá vỡ sự yên tĩnh. Đây là nơi câu chuyện của bạn bắt đầu.' },
-    { id: 2, type: 'system', content: 'Bạn có thể dùng ô "Nói" để giao tiếp, "Hành Động" để tương tác, hoặc nhập "tu luyện" để tĩnh tọa hấp thụ linh khí.' },
-];
-
 const CULTIVATION_COMMANDS = ['tu luyện', 'đả tọa', 'hấp thụ linh khí', 'ngồi thiền', 'tĩnh tọa'];
 const TRAVEL_SPEED = 3; // Coordinate units per shichen.
 
@@ -125,8 +121,10 @@ const getNewWeather = (season: Season): Weather => {
     }
 };
 
-const pureAdvanceTime = (currentDate: GameDate, shichenToAdvance: number = 1): GameDate => {
+const pureAdvanceTime = (currentDate: GameDate, shichenToAdvance: number = 1): { newDate: GameDate, yearPassed: boolean, monthPassed: boolean } => {
     let newDate = { ...currentDate };
+    let yearPassed = false;
+    let monthPassed = false;
     newDate.actionPoints = newDate.maxActionPoints; // Reset action points
 
     for(let i=0; i<shichenToAdvance; i++){
@@ -140,15 +138,19 @@ const pureAdvanceTime = (currentDate: GameDate, shichenToAdvance: number = 1): G
             newDate.weather = getNewWeather(newDate.season);
             if (newDate.day > 30) {
                 newDate.day = 1;
+                monthPassed = true;
                 const seasons: Season[] = ['Xuân', 'Hạ', 'Thu', 'Đông'];
                 const seasonIndex = seasons.findIndex(s => s === newDate.season);
                 const nextSeasonIndex = (seasonIndex + 1) % seasons.length;
                 newDate.season = seasons[nextSeasonIndex];
-                if (nextSeasonIndex === 0) newDate.year++;
+                if (nextSeasonIndex === 0) {
+                    newDate.year++;
+                    yearPassed = true;
+                }
             }
         }
     }
-    return newDate;
+    return { newDate, yearPassed, monthPassed };
 };
 
 const simulateNpcMovement = (currentNpcs: NPC[], discoveredLocations: Location[], shichenPassed: number): NPC[] => {
@@ -175,7 +177,6 @@ const simulateNpcMovement = (currentNpcs: NPC[], discoveredLocations: Location[]
 
 
 const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState, onSaveGame, onBack }) => {
-    const [story, setStory] = useState<StoryEntry[]>(initialStory);
     const [isAILoading, setIsAILoading] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
     const [locationMultiplier, setLocationMultiplier] = useState(1);
@@ -185,8 +186,9 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const [isGameOver, setIsGameOver] = useState(false);
     const [isGameMenuOpen, setIsGameMenuOpen] = useState(false);
     const [notification, setNotification] = useState<string | null>(null);
+    const [activeShopId, setActiveShopId] = useState<string | null>(null);
     
-    const { playerCharacter, activeNpcs, gameDate, discoveredLocations, worldState, encounteredNpcIds } = gameState;
+    const { playerCharacter, activeNpcs, gameDate, discoveredLocations, worldState, storyLog, encounteredNpcIds } = gameState;
     
     useEffect(() => {
         if (notification) {
@@ -200,6 +202,17 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    const addStoryEntry = (newEntryData: Omit<StoryEntry, 'id'>) => {
+        setGameState(gs => {
+            if (!gs) return null;
+            const newEntry: StoryEntry = { ...newEntryData, id: Date.now() + Math.random() };
+            return {
+                ...gs,
+                storyLog: [...gs.storyLog, newEntry]
+            };
+        });
+    };
 
     const { currentLocation, npcsAtLocation, neighbors } = useMemo(() => {
         const loc = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
@@ -225,13 +238,49 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         }
     }, [npcsAtLocation, encounteredNpcIds, setGameState]);
 
+    useEffect(() => {
+        const tuoiThoAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Tuổi Thọ');
+        const currentAge = playerCharacter.identity.age;
+        if (tuoiThoAttr && currentAge > (tuoiThoAttr.value as number)) {
+            addStoryEntry({ type: 'system', content: `Thọ nguyên đã hết, bạn không thể chống lại quy luật của đất trời. Hành trình tu tiên kết thúc.` });
+            setIsGameOver(true);
+        }
+    }, [playerCharacter.identity.age, playerCharacter.attributes]);
 
-    const handleAdvanceTime = (shichenToAdvance: number = 1) => {
+
+    const handleAdvanceTime = async (shichenToAdvance: number = 1) => {
+        const { monthPassed: willMonthPass } = pureAdvanceTime(gameDate, shichenToAdvance);
+
+        if (willMonthPass) {
+            try {
+                const newRumor = await generateWorldEvent(gameState);
+                setGameState(gs => {
+                    if (!gs) return null;
+                    const updatedRumors = [...gs.worldState.rumors, newRumor];
+                    return { ...gs, worldState: { ...gs.worldState, rumors: updatedRumors } };
+                });
+                addStoryEntry({ type: 'system', content: `Có tin tức mới trong thiên hạ... (Kiểm tra mục Thế Giới hoặc Wiki)`});
+            } catch (e) {
+                console.error("Could not generate world event", e);
+            }
+        }
+        
         setGameState(prev => {
             if (!prev) return null;
+            const { newDate, yearPassed } = pureAdvanceTime(prev.gameDate, shichenToAdvance);
+            
+            let updatedPc = prev.playerCharacter;
+            if (yearPassed) {
+                updatedPc = {
+                    ...updatedPc,
+                    identity: { ...updatedPc.identity, age: updatedPc.identity.age + 1 }
+                };
+            }
+            
             return {
                 ...prev,
-                gameDate: pureAdvanceTime(prev.gameDate, shichenToAdvance),
+                playerCharacter: updatedPc,
+                gameDate: newDate,
                 activeNpcs: simulateNpcMovement(prev.activeNpcs, prev.discoveredLocations, shichenToAdvance),
             };
         });
@@ -248,21 +297,20 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const currentStageData = currentRealmData?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
     const currentRealmState = `${currentRealmData?.name || 'Vô danh'} - ${currentStageData?.name || 'Sơ kỳ'}`;
 
-    const handleCultivate = () => {
+    const handleCultivate = async () => {
         if (!currentStageData) return;
         
-        handleAdvanceTime();
+        await handleAdvanceTime();
         setPlayerCharacter(prev => {
             const camNgo = prev.attributes.flatMap(g => g.attributes).find(a => a.name === 'Cảm Ngộ')?.value as number || 0;
             const qiGained = (1 + Math.floor(camNgo / 10)) * locationMultiplier;
             const newQi = Math.min(prev.cultivation.spiritualQi + qiGained, currentStageData.qiRequired);
-             const systemMessage: StoryEntry = { id: Date.now(), type: 'system', content: `Bạn hấp thụ được ${qiGained.toLocaleString()} điểm linh khí. (Hệ số: x${locationMultiplier})` };
-            setStory(s => [...s, systemMessage]);
+             addStoryEntry({ type: 'system', content: `Bạn hấp thụ được ${qiGained.toLocaleString()} điểm linh khí. (Hệ số: x${locationMultiplier})` });
             return { ...prev, cultivation: { ...prev.cultivation, spiritualQi: newQi } };
         });
     };
     
-    const handleTravel = (destinationId: string) => {
+    const handleTravel = async (destinationId: string) => {
         const destination = discoveredLocations.find(l => l.id === destinationId);
         const origin = currentLocation;
 
@@ -273,25 +321,22 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
             
             const travelTime = Math.max(1, Math.round(distance / TRAVEL_SPEED));
 
-            handleAdvanceTime(travelTime);
+            await handleAdvanceTime(travelTime);
             setPlayerCharacter(pc => ({ ...pc, currentLocationId: destinationId }));
-            const travelMessage: StoryEntry = { id: Date.now(), type: 'narrative', content: `Sau ${travelTime} canh giờ, bạn đã đến được ${destination.name}.` };
-            setStory(s => [...s, travelMessage]);
+            addStoryEntry({ type: 'narrative', content: `Sau ${travelTime} canh giờ, bạn đã đến được ${destination.name}.` });
         }
     };
     
     const handleExplore = async () => {
         if (isAILoading) return;
         setIsAILoading(true);
-        handleAdvanceTime();
+        await handleAdvanceTime();
 
         try {
             const { name, description } = await generateDynamicLocation(currentLocation);
-            const exploreMessage: StoryEntry = { id: Date.now(), type: 'narrative', content: `Bạn dành thời gian khám phá xung quanh và phát hiện ra một nơi đặc biệt: **${name}**. ${description}` };
-            setStory(s => [...s, exploreMessage]);
+            addStoryEntry({ type: 'narrative', content: `Bạn dành thời gian khám phá xung quanh và phát hiện ra một nơi đặc biệt: **${name}**. ${description}` });
         } catch (error: any) {
-            const errorResponse: StoryEntry = { id: Date.now() + 1, type: 'system', content: `Lỗi khi khám phá: ${error.message}` };
-            setStory(prev => [...prev, errorResponse]);
+            addStoryEntry({ type: 'system', content: `Lỗi khi khám phá: ${error.message}` });
         } finally {
             setIsAILoading(false);
         }
@@ -300,7 +345,8 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const processAIResponse = (responseText: string) => {
         let cleanedText = responseText;
         
-        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR):({.*})\]/gs;
+        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH):({.*?})\]/gs;
+
         let match;
         while ((match = tagRegex.exec(responseText)) !== null) {
             const [fullMatch, tagName, jsonString] = match;
@@ -316,7 +362,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                                 : [...pc.inventory.items, newItem];
                             return {...pc, inventory: {...pc.inventory, items: newItems}};
                         });
-                        setStory(prev => [...prev, {id: Date.now() + Math.random(), type: 'system', content: `Bạn nhận được [${newItem.name} x${newItem.quantity}]`}]);
+                        addStoryEntry({ type: 'system', content: `Bạn nhận được [${newItem.name} x${newItem.quantity}]`});
                         break;
                     }
                      case 'REMOVE_ITEM': {
@@ -330,18 +376,18 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                             }).filter(item => item.quantity > 0);
                             return { ...pc, inventory: { ...pc.inventory, items: newItems } };
                         });
-                        setStory(prev => [...prev, {id: Date.now() + Math.random(), type: 'system', content: `Bạn đã mất [${name} x${quantity || 1}]`}]);
+                        addStoryEntry({ type: 'system', content: `Bạn đã mất [${name} x${quantity || 1}]`});
                         break;
                     }
                     case 'ADD_CURRENCY': {
                         setPlayerCharacter(pc => ({ ...pc, currencies: { ...pc.currencies, [data.name]: (pc.currencies[data.name] || 0) + data.amount } }));
-                        setStory(prev => [...prev, {id: Date.now() + Math.random(), type: 'system', content: `Bạn nhận được ${data.amount.toLocaleString()} ${data.name}`}]);
+                        addStoryEntry({ type: 'system', content: `Bạn nhận được ${data.amount.toLocaleString()} ${data.name}`});
                         break;
                     }
                     case 'CREATE_NPC': {
                         const newNpc: NPC = { id: `dynamic-npc-${Date.now()}`, talents: [], ...data };
                         setGameState(gs => gs ? ({ ...gs, activeNpcs: [...gs.activeNpcs, newNpc] }) : null);
-                        setStory(prev => [...prev, {id: Date.now() + Math.random(), type: 'system', content: `Bạn đã gặp [${newNpc.name}].`}]);
+                        addStoryEntry({ type: 'system', content: `Bạn đã gặp [${newNpc.name}].`});
                         break;
                     }
                      case 'DISCOVER_LOCATION': {
@@ -362,13 +408,50 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                                 ] 
                             };
                         });
-                         setStory(prev => [...prev, {id: Date.now() + Math.random(), type: 'system', content: `Bạn đã khám phá ra [${newLocation.name}].`}]);
+                         addStoryEntry({ type: 'system', content: `Bạn đã khám phá ra [${newLocation.name}].`});
                         break;
                     }
                     case 'ADD_RUMOR': {
                         const newRumor: Rumor = { id: `rumor-${Date.now()}`, ...data };
                         setGameState(gs => gs ? ({ ...gs, worldState: { ...gs.worldState, rumors: [...gs.worldState.rumors, newRumor] } }) : null);
-                        setStory(prev => [...prev, {id: Date.now() + Math.random(), type: 'system', content: `Bạn nghe được một tin đồn mới.`}]);
+                        addStoryEntry({ type: 'system', content: `Bạn nghe được một tin đồn mới.`});
+                        break;
+                    }
+                    case 'SHOW_SHOP': {
+                        setActiveShopId(data.shopId);
+                        break;
+                    }
+                    case 'UPDATE_RELATIONSHIP': {
+                        const { npcName, change } = data;
+                        const targetNpc = activeNpcs.find(n => n.name === npcName);
+                        if (targetNpc) {
+                            setPlayerCharacter(pc => {
+                                const existingRel = pc.relationships.find(r => r.npcId === targetNpc.id);
+                                let newRelationships: PlayerNpcRelationship[];
+                                if (existingRel) {
+                                    newRelationships = pc.relationships.map(r => r.npcId === targetNpc.id ? { ...r, value: Math.max(-100, Math.min(100, r.value + change)) } : r);
+                                } else {
+                                    newRelationships = [...pc.relationships, { npcId: targetNpc.id, value: Math.max(-100, Math.min(100, change)), status: 'Trung lập' }];
+                                }
+                                
+                                newRelationships = newRelationships.map(r => {
+                                    let newStatus: PlayerNpcRelationship['status'] = 'Trung lập';
+                                    if (r.value <= -50) newStatus = 'Thù địch';
+                                    else if (r.value < 0) newStatus = 'Lạnh nhạt';
+                                    else if (r.value >= 50) newStatus = 'Tri kỷ';
+                                    else if (r.value > 0) newStatus = 'Thân thiện';
+                                    return { ...r, status: newStatus };
+                                });
+
+                                return { ...pc, relationships: newRelationships };
+                            });
+                            addStoryEntry({type: 'system', content: `Mối quan hệ của bạn với ${npcName} đã thay đổi.`});
+                        }
+                        break;
+                    }
+                    case 'DEATH': {
+                        addStoryEntry({ type: 'system', content: data.reason });
+                        setIsGameOver(true);
                         break;
                     }
                 }
@@ -377,8 +460,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         cleanedText = cleanedText.replace(tagRegex, '').trim();
 
         if (cleanedText) {
-            const aiResponse: StoryEntry = { id: Date.now() + 1, type: 'narrative', content: cleanedText };
-            setStory(prev => [...prev, aiResponse]);
+            addStoryEntry({ type: 'narrative', content: cleanedText });
         }
     };
 
@@ -387,91 +469,91 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         
         const lowercasedText = text.toLowerCase().trim();
         if (CULTIVATION_COMMANDS.includes(lowercasedText)) {
-            handleCultivate();
+            await handleCultivate();
             return;
         }
 
-        let shichenAdvanced = false;
         if (type !== 'continue') {
             const newActionPoints = gameDate.actionPoints - 1;
             if (newActionPoints <= 0) {
-                handleAdvanceTime();
-                shichenAdvanced = true;
+                await handleAdvanceTime();
             } else {
                 setGameState(gs => gs ? ({ ...gs, gameDate: { ...gs.gameDate, actionPoints: newActionPoints } }) : null);
             }
         } else {
-            handleAdvanceTime();
-            shichenAdvanced = true;
+            await handleAdvanceTime();
         }
 
         const playerEntryType = type === 'speak' ? 'player-dialogue' : 'player-action';
-        const playerEntry: StoryEntry = { id: Date.now(), type: playerEntryType, content: text };
-        let newHistory = [...story];
         if (type !== 'continue') {
-            newHistory.push(playerEntry);
-            setStory(newHistory);
+            addStoryEntry({ type: playerEntryType, content: text });
         }
         setIsAILoading(true);
 
         try {
-            const techniqueUsed = await analyzeActionForTechnique(text, playerCharacter.techniques);
-            let techniqueFeedback = null;
-
-            if (techniqueUsed) {
-                const linhLucAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === techniqueUsed.cost.type);
-                if (linhLucAttr && (linhLucAttr.value as number) >= techniqueUsed.cost.value) {
-                    setPlayerCharacter(pc => {
-                         const newAttributes = pc.attributes.map(group => ({
-                            ...group,
-                            attributes: group.attributes.map(attr => {
-                                if (attr.name === techniqueUsed.cost.type) {
-                                    return { ...attr, value: (attr.value as number) - techniqueUsed.cost.value };
-                                }
-                                return attr;
-                            })
-                        }));
-                        return {...pc, attributes: newAttributes};
-                    });
-                    const techMessage: StoryEntry = { id: Date.now() + 0.5, type: 'system', content: `Bạn sử dụng [${techniqueUsed.name}], tiêu hao ${techniqueUsed.cost.value} ${techniqueUsed.cost.type}.` };
-                    newHistory.push(techMessage);
-                    setStory(s => [...s, techMessage]);
-                    techniqueFeedback = techniqueUsed;
-                } else {
-                    const failMessage: StoryEntry = { id: Date.now() + 0.5, type: 'system', content: `${techniqueUsed.cost.type} không đủ để thi triển [${techniqueUsed.name}]!` };
-                    setStory(s => [...s, failMessage]);
-                    setIsAILoading(false);
-                    return;
-                }
-            }
-            
-            // This is a complex operation, so we need to get the latest game state
             setGameState(latestGameState => {
                 if (!latestGameState) {
                     setIsAILoading(false);
                     return null;
                 }
-                generateStoryContinuation(newHistory, playerEntry, latestGameState, undefined, techniqueFeedback)
-                    .then(aiResponseText => {
-                        processAIResponse(aiResponseText);
-                        const newActionCount = actionCounter + 1;
-                        setActionCounter(newActionCount);
-                        if (newActionCount % 5 === 0 && Math.random() < 0.6) {
-                            generateGameEvent(playerCharacter, gameDate, currentLocation, npcsAtLocation).then(setCurrentEvent);
-                        }
-                    })
-                    .catch(error => {
-                        const errorResponse: StoryEntry = { id: Date.now() + 1, type: 'system', content: `Lỗi hệ thống: ${error.message}` };
-                        setStory(prev => [...prev, errorResponse]);
-                    })
-                    .finally(() => setIsAILoading(false));
                 
-                return latestGameState; // Return current state, async operations will update it later
+                const playerEntry: StoryEntry = { id: Date.now(), type: playerEntryType, content: text };
+
+                (async () => {
+                    const techniqueUsed = await analyzeActionForTechnique(text, latestGameState.playerCharacter.techniques);
+                    let canProceed = true;
+
+                    if (techniqueUsed) {
+                        const costAttr = latestGameState.playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === techniqueUsed.cost.type);
+                        if (costAttr && (costAttr.value as number) >= techniqueUsed.cost.value) {
+                             setPlayerCharacter(pc => {
+                                const newAttributes = pc.attributes.map(group => ({
+                                    ...group,
+                                    attributes: group.attributes.map(attr => {
+                                        if (attr.name === techniqueUsed.cost.type) {
+                                            return { ...attr, value: (attr.value as number) - techniqueUsed.cost.value };
+                                        }
+                                        return attr;
+                                    })
+                                }));
+                                return {...pc, attributes: newAttributes};
+                            });
+                            addStoryEntry({ type: 'system', content: `Bạn sử dụng [${techniqueUsed.name}], tiêu hao ${techniqueUsed.cost.value} ${techniqueUsed.cost.type}.` });
+                        } else {
+                            addStoryEntry({ type: 'system', content: `${techniqueUsed.cost.type} không đủ để thi triển [${techniqueUsed.name}]!` });
+                            canProceed = false;
+                        }
+                    }
+
+                    if (canProceed) {
+                        // Use a fresh copy of gameState for the AI call
+                        setGameState(currentStateForAI => {
+                            if (!currentStateForAI) return null;
+                             generateStoryContinuation(currentStateForAI.storyLog, playerEntry, currentStateForAI, undefined, techniqueUsed)
+                                .then(aiResponseText => {
+                                    processAIResponse(aiResponseText);
+                                    const newActionCount = actionCounter + 1;
+                                    setActionCounter(newActionCount);
+                                    if (newActionCount % 5 === 0 && Math.random() < 0.6) {
+                                        generateGameEvent(currentStateForAI.playerCharacter, currentStateForAI.gameDate, currentLocation, npcsAtLocation).then(setCurrentEvent);
+                                    }
+                                })
+                                .catch(error => {
+                                    addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${error.message}` });
+                                })
+                                .finally(() => setIsAILoading(false));
+                            return currentStateForAI;
+                        });
+                    } else {
+                        setIsAILoading(false);
+                    }
+                })();
+                
+                return latestGameState;
             });
 
         } catch (error: any) {
-            const errorResponse: StoryEntry = { id: Date.now() + 1, type: 'system', content: `Lỗi hệ thống: ${error.message}` };
-            setStory(prev => [...prev, errorResponse]);
+            addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${error.message}` });
             setIsAILoading(false);
         }
     };
@@ -499,12 +581,11 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
 
             outcomeText += `\n(Kiểm tra ${choice.check.attribute}: ${total} [${roll > 0 ? roll : `(${roll})`}${modifier >= 0 ? `+${modifier}`: modifier}] vs DC ${choice.check.difficulty} -> ${success ? 'Thành Công' : 'Thất Bại'})`;
         }
-
-        const systemMessage: StoryEntry = { id: Date.now(), type: 'system', content: outcomeText };
+        
         const playerActionEntry: StoryEntry = { id: Date.now() + 0.1, type: 'player-action', content: choice.text };
 
-        const newHistory = [...story, systemMessage, playerActionEntry];
-        setStory(newHistory);
+        addStoryEntry({ type: 'system', content: outcomeText });
+        addStoryEntry(playerActionEntry);
 
         if (isDemonEvent) {
             if (result === 'success') {
@@ -529,29 +610,26 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         cultivation: { ...pc.cultivation, hasConqueredInnerDemon: true, spiritualQi: 0 } // Reset Linh khí sau trận chiến
                     };
                 });
-                const successMessage: StoryEntry = { id: Date.now() + 1, type: 'system', content: 'Bạn gầm lên một tiếng, dùng ý chí sắc như kiếm chém tan bóng đen! Tâm ma đã bị trảm, đạo tâm của bạn trở nên kiên định và không gì có thể lay chuyển. Dù lần này đột phá không thành, nền tảng của bạn đã vững chắc hơn bao giờ hết.' };
-                setStory(s => [...s, successMessage]);
+                addStoryEntry({ type: 'system', content: 'Bạn gầm lên một tiếng, dùng ý chí sắc như kiếm chém tan bóng đen! Tâm ma đã bị trảm, đạo tâm của bạn trở nên kiên định và không gì có thể lay chuyển. Dù lần này đột phá không thành, nền tảng của bạn đã vững chắc hơn bao giờ hết.' });
                 setIsAILoading(false);
             } else { // Thất bại
                 setIsGameOver(true);
                 setIsAILoading(false);
             }
         } else {
-            // This is a complex operation, so we need to get the latest game state
              setGameState(latestGameState => {
                 if (!latestGameState) {
                     setIsAILoading(false);
                     return null;
                 }
                 generateStoryContinuation(
-                    newHistory,
+                    latestGameState.storyLog,
                     playerActionEntry,
                     latestGameState,
                     { choiceText: choice.text, result }
                 ).then(processAIResponse)
                  .catch(error => {
-                    const errorResponse: StoryEntry = { id: Date.now() + 1, type: 'system', content: `Lỗi hệ thống: ${error.message}` };
-                    setStory(prev => [...prev, errorResponse]);
+                    addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${error.message}` });
                 })
                 .finally(() => setIsAILoading(false));
                 
@@ -583,7 +661,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     nextRealmData = nextRealm;
                     nextStageData = nextRealm.stages[0];
                 } else {
-                    setStory(prev => [...prev, { id: Date.now(), type: 'system', content: "Bạn đã đạt đến đỉnh cao của thế giới này, không thể đột phá thêm."}]);
+                    addStoryEntry({ type: 'system', content: "Bạn đã đạt đến đỉnh cao của thế giới này, không thể đột phá thêm."});
                     return;
                 }
             }
@@ -605,7 +683,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
             });
             const oldRealmName = currentRealmData.name;
             const breakthroughNarrative = await generateBreakthroughNarrative(playerCharacter, oldRealmName, nextRealmData, nextStageData);
-            setStory(prev => [...prev, { id: Date.now(), type: 'narrative', content: breakthroughNarrative}]);
+            addStoryEntry({ type: 'narrative', content: breakthroughNarrative});
 
         } else {
             if (isTribulationRealm && !playerCharacter.cultivation.hasConqueredInnerDemon) {
@@ -618,14 +696,12 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     }]
                 };
                 setCurrentEvent(demonEvent);
-                const systemMessage: StoryEntry = { id: Date.now(), type: 'system', content: 'Thiên kiếp chưa tới, tâm ma đã đến trước! Đây là kiếp nạn của bạn!' };
-                setStory(s => [...s, systemMessage]);
+                addStoryEntry({ type: 'system', content: 'Thiên kiếp chưa tới, tâm ma đã đến trước! Đây là kiếp nạn của bạn!' });
             } else {
                 setPlayerCharacter(pc => ({
                     ...pc, cultivation: { ...pc.cultivation, spiritualQi: pc.cultivation.spiritualQi / 2 }
                 }));
-                const failureMessage: StoryEntry = { id: Date.now(), type: 'system', content: `Đột phá thất bại! Linh khí trong cơ thể hỗn loạn, bạn bị phản phệ, tu vi tổn hại.` };
-                setStory(s => [...s, failureMessage]);
+                addStoryEntry({ type: 'system', content: `Đột phá thất bại! Linh khí trong cơ thể hỗn loạn, bạn bị phản phệ, tu vi tổn hại.` });
             }
         }
     };
@@ -633,14 +709,15 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     return (
         <div className="w-full h-screen bg-transparent flex flex-col animate-fade-in">
              {notification && (
-                <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-green-600/90 text-white px-6 py-2 rounded-full shadow-lg animate-fade-in">
+                <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] bg-green-600/90 text-white px-6 py-2 rounded-full shadow-lg animate-fade-in">
                     {notification}
                 </div>
             )}
+             {activeShopId && <ShopModal shopId={activeShopId} gameState={gameState} setGameState={setGameState} showNotification={setNotification} onClose={() => setActiveShopId(null)} />}
             <GameMenuModal 
                 isOpen={isGameMenuOpen}
                 onClose={() => setIsGameMenuOpen(false)}
-                onSave={() => { onSaveGame(setNotification); setIsGameMenuOpen(false); }}
+                onSave={() => { onSaveGame(gameState, setNotification); setIsGameMenuOpen(false); }}
                 onExit={onBack}
             />
             {viewingNpc && <NpcInfoModal npc={viewingNpc} allNpcs={activeNpcs} onClose={() => setViewingNpc(null)} />}
@@ -650,10 +727,10 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         <div className="flex justify-center mb-4">
                             <FaExclamationTriangle className="text-red-500 text-5xl" />
                         </div>
-                        <h3 className="text-2xl text-red-400 font-bold font-title">Tẩu Hỏa Nhập Ma</h3>
-                        <p className="text-gray-300 mt-4">Lý trí của bạn đã bị tâm ma nuốt chửng. Hành trình tu tiên đã kết thúc trong bi kịch.</p>
+                        <h3 className="text-2xl text-red-400 font-bold font-title">Hành Trình Kết Thúc</h3>
+                        <p className="text-gray-300 mt-4">Lý trí của bạn đã bị tâm ma nuốt chửng, hoặc thọ nguyên đã cạn. Hành trình tu tiên đã kết thúc trong bi kịch.</p>
                         <button onClick={onBack} className="mt-8 px-8 py-3 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors">
-                           Kết Thúc
+                           Về Menu Chính
                         </button>
                     </div>
                 </div>
@@ -665,7 +742,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     </button>
                     <div className="text-center">
                         <h1 className="text-xl sm:text-2xl font-bold text-gray-200 font-title" style={{textShadow: '0 1px 3px rgba(0,0,0,0.5)'}}>
-                            {playerCharacter.identity.name}
+                            {playerCharacter.identity.name} ({playerCharacter.identity.age} tuổi)
                         </h1>
                         <p className="text-xs text-amber-300 font-semibold">{currentRealmState}</p>
                     </div>
@@ -677,7 +754,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
             </header>
             <div className="w-full flex-grow grid grid-cols-1 lg:grid-cols-4 overflow-hidden relative">
                 <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-                    <StoryLog story={story} inventoryItems={playerCharacter.inventory.items} />
+                    <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} />
                     {currentEvent ? (
                         <EventPanel 
                             key={currentEvent.id} 

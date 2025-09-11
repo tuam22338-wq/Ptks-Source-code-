@@ -89,6 +89,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 )}
                 {activeTab === 'wiki' && (
                     <WikiPanel
+                        playerCharacter={playerCharacter}
                         allNpcs={allNpcs}
                         encounteredNpcIds={encounteredNpcIds}
                         discoveredLocations={discoveredLocations}
