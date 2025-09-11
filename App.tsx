@@ -11,7 +11,7 @@ import GamePlayScreen from './components/GamePlayScreen';
 import LoadingScreen from './components/LoadingScreen';
 import LoreScreen from './components/LoreScreen';
 import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo } from './types';
-import { REALM_SYSTEM, NPC_LIST, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS } from './constants';
+import { REALM_SYSTEM, NPC_LIST, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS } from './constants';
 import { generateDynamicNpcs, reloadApiKeys } from './services/geminiService';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'lore';
@@ -49,13 +49,22 @@ const App: React.FC = () => {
 
   useEffect(() => {
     document.body.style.fontFamily = settings.fontFamily;
-    document.body.className = settings.theme || 'theme-amber';
+
+    // Manage theme classes without removing others
+    const themeClasses = THEME_OPTIONS.map(t => t.value);
+    document.body.classList.remove(...themeClasses);
+    if (settings.theme) {
+        document.body.classList.add(settings.theme);
+    }
   }, [settings.fontFamily, settings.theme]);
 
-  const handleSettingsSave = (newSettings: GameSettings) => {
+  const handleSettingChange = (key: keyof GameSettings, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSettingsSave = () => {
     try {
-        localStorage.setItem('game-settings', JSON.stringify(newSettings));
-        setSettings(newSettings);
+        localStorage.setItem('game-settings', JSON.stringify(settings));
         reloadApiKeys();
         alert('Cài đặt đã được lưu!');
     } catch (error) {
@@ -292,7 +301,7 @@ const App: React.FC = () => {
       case 'characterCreation':
         return <CharacterCreationScreen onBack={() => handleNavigate('saveSlots')} onGameStart={handleGameStart} />;
       case 'settings':
-        return <SettingsPanel onBack={() => handleNavigate('mainMenu')} onSave={handleSettingsSave} initialSettings={settings} />;
+        return <SettingsPanel onBack={() => handleNavigate('mainMenu')} onSave={handleSettingsSave} settings={settings} onChange={handleSettingChange} />;
       case 'mods':
         return <ModsScreen onBack={() => handleNavigate('mainMenu')} onNavigate={handleNavigate} />;
       case 'createMod':

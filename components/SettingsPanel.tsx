@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../constants';
 import { testApiKeys } from '../services/geminiService';
@@ -7,8 +8,9 @@ import LoadingSpinner from './LoadingSpinner';
 
 interface SettingsPanelProps {
   onBack: () => void;
-  onSave: (settings: GameSettings) => void;
-  initialSettings: GameSettings;
+  onSave: () => void;
+  settings: GameSettings;
+  onChange: (key: keyof GameSettings, value: any) => void;
 }
 
 type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'api' | 'advanced';
@@ -49,28 +51,20 @@ const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLI
 
 type KeyCheckResult = { key: string; status: 'valid' | 'invalid'; error?: string };
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSettings }) => {
-  const [settings, setSettings] = useState<GameSettings>(initialSettings);
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings, onChange }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
   const [isCheckingKeys, setIsCheckingKeys] = useState(false);
   const [keyCheckResults, setKeyCheckResults] = useState<KeyCheckResult[] | null>(null);
-
-  const handleSettingChange = (key: keyof GameSettings, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
   
   const handleSafetyLevelChange = (category: keyof GameSettings['safetyLevels'], value: SafetyLevel) => {
-    setSettings(prev => ({
-        ...prev,
-        safetyLevels: {
-            ...prev.safetyLevels,
-            [category]: value
-        }
-    }));
+    onChange('safetyLevels', {
+        ...settings.safetyLevels,
+        [category]: value
+    });
   };
   
   const handleSaveSettings = () => {
-    onSave(settings);
+    onSave();
   };
 
   const handleCheckKeys = async () => {
@@ -122,15 +116,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSe
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Cấu hình API Key Gemini">
                         <SettingsRow label="API Key Mặc định" description="Sử dụng key này nếu không bật chế độ xoay key.">
-                             <input type="password" value={settings.apiKey} onChange={e => handleSettingChange('apiKey', e.target.value)} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200" />
+                             <input type="password" value={settings.apiKey} onChange={e => onChange('apiKey', e.target.value)} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200" />
                         </SettingsRow>
                          <SettingsRow label="Bật chế độ xoay Key" description="Sử dụng danh sách các key bên dưới và tự động xoay vòng khi gặp lỗi.">
-                            <Toggle checked={settings.useKeyRotation} onChange={e => handleSettingChange('useKeyRotation', e.target.checked)} />
+                            <Toggle checked={settings.useKeyRotation} onChange={e => onChange('useKeyRotation', e.target.checked)} />
                         </SettingsRow>
                          <SettingsRow label="Danh sách API Keys" description="Nhập mỗi key trên một dòng.">
                             <textarea 
                                 value={settings.apiKeys.join('\n')}
-                                onChange={e => handleSettingChange('apiKeys', e.target.value.split('\n'))}
+                                onChange={e => onChange('apiKeys', e.target.value.split('\n'))}
                                 rows={4}
                                 placeholder="Nhập mỗi key một dòng..."
                                 className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 font-mono text-sm"
@@ -159,13 +153,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSe
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Cài Đặt Giao Diện">
                         <SettingsRow label="Theme Giao Diện" description="Thay đổi bảng màu tổng thể của trò chơi.">
-                             <Select value={settings.theme} onChange={e => handleSettingChange('theme', e.target.value as Theme)} options={THEME_OPTIONS} />
+                             <Select value={settings.theme} onChange={e => onChange('theme', e.target.value as Theme)} options={THEME_OPTIONS} />
                         </SettingsRow>
                         <SettingsRow label="Bố cục" description="Chọn bố cục cho máy tính hoặc di động. 'Tự động' sẽ dựa trên kích thước màn hình.">
-                             <Select value={settings.layoutMode} onChange={e => handleSettingChange('layoutMode', e.target.value as LayoutMode)} options={LAYOUT_MODES} />
+                             <Select value={settings.layoutMode} onChange={e => onChange('layoutMode', e.target.value as LayoutMode)} options={LAYOUT_MODES} />
                         </SettingsRow>
                         <SettingsRow label="Phông chữ" description="Chọn phông chữ cho toàn bộ trò chơi.">
-                             <Select value={settings.fontFamily} onChange={e => handleSettingChange('fontFamily', e.target.value)} options={FONT_OPTIONS} />
+                             <Select value={settings.fontFamily} onChange={e => onChange('fontFamily', e.target.value)} options={FONT_OPTIONS} />
                         </SettingsRow>
                     </SettingsSection>
                 </div>
@@ -174,21 +168,21 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSe
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Model AI cho Tác Vụ Chính & Phức Tạp">
                         <SettingsRow label="Model AI cho Văn Bản" description="Model cho nội dung chính.">
-                            <Select value={settings.mainTaskModel} onChange={e => handleSettingChange('mainTaskModel', e.target.value as AIModel)} options={AI_MODELS} />
+                            <Select value={settings.mainTaskModel} onChange={e => onChange('mainTaskModel', e.target.value as AIModel)} options={AI_MODELS} />
                         </SettingsRow>
                         <SettingsRow label="Model AI Hỗ Trợ Nhanh" description="Model cho hỗ trợ thiết lập nhanh.">
-                            <Select value={settings.quickSupportModel} onChange={e => handleSettingChange('quickSupportModel', e.target.value as AIModel)} options={AI_MODELS} />
+                            <Select value={settings.quickSupportModel} onChange={e => onChange('quickSupportModel', e.target.value as AIModel)} options={AI_MODELS} />
                         </SettingsRow>
                     </SettingsSection>
                     <SettingsSection title="Model AI Chuyên Dụng">
                          <SettingsRow label="Model AI Mô Phỏng NPC" description="Model để tạo và mô phỏng hành vi của NPC.">
-                            <Select value={settings.npcSimulationModel} onChange={e => handleSettingChange('npcSimulationModel', e.target.value as AIModel)} options={AI_MODELS} />
+                            <Select value={settings.npcSimulationModel} onChange={e => onChange('npcSimulationModel', e.target.value as AIModel)} options={AI_MODELS} />
                         </SettingsRow>
                         <SettingsRow label="Model AI Tạo Ảnh" description="Model để tạo hình ảnh nhân vật, vật phẩm.">
-                            <Select value={settings.imageGenerationModel} onChange={e => handleSettingChange('imageGenerationModel', e.target.value as ImageModel)} options={IMAGE_AI_MODELS} />
+                            <Select value={settings.imageGenerationModel} onChange={e => onChange('imageGenerationModel', e.target.value as ImageModel)} options={IMAGE_AI_MODELS} />
                         </SettingsRow>
                         <SettingsRow label="Model AI cho GameMaster" description="Model để phân tích yêu cầu tạo mod của bạn.">
-                            <Select value={settings.gameMasterModel} onChange={e => handleSettingChange('gameMasterModel', e.target.value as AIModel)} options={AI_MODELS} />
+                            <Select value={settings.gameMasterModel} onChange={e => onChange('gameMasterModel', e.target.value as AIModel)} options={AI_MODELS} />
                         </SettingsRow>
                     </SettingsSection>
                 </div>
@@ -197,7 +191,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSe
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Bật lọc an toàn Gemini API">
                         <SettingsRow label="Bật/Tắt tất cả bộ lọc" description="Ghi đè tất cả cài đặt an toàn bên dưới.">
-                            <Toggle checked={!settings.masterSafetySwitch} onChange={e => handleSettingChange('masterSafetySwitch', !e.target.checked)} />
+                            <Toggle checked={!settings.masterSafetySwitch} onChange={e => onChange('masterSafetySwitch', !e.target.checked)} />
                         </SettingsRow>
                         {SAFETY_CATEGORIES.map(category => (
                             <SettingsRow key={category.id} label={category.name}>
@@ -215,10 +209,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSe
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Cài Đặt Gameplay">
                         <SettingsRow label="Tốc độ thời gian" description="Điều chỉnh tốc độ trôi qua của thời gian trong game. Yêu cầu tải lại game.">
-                             <Select value={settings.gameSpeed} onChange={e => handleSettingChange('gameSpeed', e.target.value as GameSpeed)} options={GAME_SPEEDS} />
+                             <Select value={settings.gameSpeed} onChange={e => onChange('gameSpeed', e.target.value as GameSpeed)} options={GAME_SPEEDS} />
                         </SettingsRow>
                          <SettingsRow label="Văn phong kể chuyện của AI" description="Chọn phong cách văn bản mà AI sẽ sử dụng để kể chuyện.">
-                             <Select value={settings.narrativeStyle} onChange={e => handleSettingChange('narrativeStyle', e.target.value as NarrativeStyle)} options={NARRATIVE_STYLES} />
+                             <Select value={settings.narrativeStyle} onChange={e => onChange('narrativeStyle', e.target.value as NarrativeStyle)} options={NARRATIVE_STYLES} />
                         </SettingsRow>
                     </SettingsSection>
                 </div>
@@ -230,7 +224,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, initialSe
                             <Select value={settings.ragEmbeddingModel} onChange={() => {}} options={RAG_EMBEDDING_MODELS} />
                         </SettingsRow>
                         <SettingsRow label="Tần suất Tóm tắt Tự động" description="AI tóm tắt bối cảnh sau mỗi X lượt.">
-                            <NumberInput value={settings.autoSummaryFrequency} onChange={e => handleSettingChange('autoSummaryFrequency', parseInt(e.target.value))} min={1} />
+                            <NumberInput value={settings.autoSummaryFrequency} onChange={e => onChange('autoSummaryFrequency', parseInt(e.target.value))} min={1} />
                         </SettingsRow>
                     </SettingsSection>
                 </div>
