@@ -197,8 +197,8 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
   
   const renderIdeaStep = () => (
     <div className="flex flex-col items-center space-y-6">
-        <h3 className="text-2xl text-gray-300 font-bold font-title text-center">Ý Niệm Ban Sơ</h3>
-        <p className="text-center text-gray-400 max-w-2xl">Vạn vật khởi nguồn từ một ý niệm. Hãy cho ta biết, sinh linh mà ngươi muốn kiến tạo sẽ như thế nào? Cung cấp một vài từ khóa hoặc một đoạn mô tả ngắn gọn.</p>
+        <h3 className="text-2xl font-bold font-title text-center" style={{color: 'var(--text-color)'}}>Ý Niệm Ban Sơ</h3>
+        <p className="text-center max-w-2xl" style={{color: 'var(--text-muted-color)'}}>Vạn vật khởi nguồn từ một ý niệm. Hãy cho ta biết, sinh linh mà ngươi muốn kiến tạo sẽ như thế nào? Cung cấp một vài từ khóa hoặc một đoạn mô tả ngắn gọn.</p>
         
         {error && <div className="bg-red-800/20 border border-red-500/50 text-red-200 p-4 rounded-lg text-center my-4">{error}</div>}
 
@@ -212,7 +212,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         
         <div className="w-full max-w-2xl space-y-4">
             <div>
-                <p className="text-sm text-gray-400 mb-2 text-center">Giới Tính</p>
+                <p className="text-sm text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Giới Tính</p>
                 <div className="flex items-center gap-2">
                     {GENDERS.map(g => (
                         <button key={g} onClick={() => setGender(g)} className={`p-3 text-sm rounded-md border text-center transition-all duration-200 w-full ${gender === g ? 'bg-teal-500/20 border-teal-400 text-white' : 'bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50'}`}>
@@ -222,7 +222,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
                 </div>
             </div>
              <div>
-                <p className="text-sm text-gray-400 mb-2 text-center">Mật độ Chúng Sinh</p>
+                <p className="text-sm text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Mật độ Chúng Sinh</p>
                 <div className="grid grid-cols-3 gap-2">
                     {NPC_DENSITY_LEVELS.map(level => (
                         <button key={level.id} onClick={() => setNpcDensity(level.id)} title={level.description} className={`p-3 text-sm rounded-md border text-center transition-all duration-200 ${npcDensity === level.id ? 'bg-teal-500/20 border-teal-400 text-white' : 'bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50'}`}>
@@ -236,7 +236,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         
         <button
           onClick={handleGenerate}
-          className="themed-button-primary flex items-center justify-center gap-3 w-64 h-16 text-white text-xl font-bold font-title rounded-md shadow-lg shadow-black/20"
+          className="themed-button-primary flex items-center justify-center gap-3 w-64 h-16 text-xl font-bold font-title rounded-md shadow-lg shadow-black/20"
         >
           <GiGalaxy />
           <span>Luận Bàn Thiên Cơ</span>
@@ -262,11 +262,11 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         />
 
         <div className="bg-black/20 p-4 rounded-lg border border-gray-700/60">
-          <h3 className="text-xl text-gray-300 font-title font-semibold mb-4 text-center">Bảng Thuộc Tính</h3>
+          <h3 className="text-xl font-title font-semibold mb-4 text-center" style={{color: 'var(--text-muted-color)'}}>Bảng Thuộc Tính</h3>
           <div className="space-y-3">
             {attributes.map((group, groupIndex) => (
               <div key={group.title}>
-                <h4 className="text-md text-gray-400 font-title mb-2">{group.title}</h4>
+                <h4 className="text-md font-title mb-2" style={{color: 'var(--text-muted-color)'}}>{group.title}</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2">
                   {group.attributes.map((attr, attrIndex) => {
                     const baseAttr = baseAttributes[groupIndex]?.attributes[attrIndex];
@@ -299,7 +299,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
                 <FaSyncAlt />
                 <span>Gieo Quẻ Lại</span>
             </button>
-            <button onClick={handleConfirm} className="themed-button-primary w-52 h-16 text-white text-xl font-bold font-title rounded-md disabled:bg-gray-600/70 disabled:text-gray-400 disabled:cursor-not-allowed disabled:transform-none">
+            <button onClick={handleConfirm} className="themed-button-primary w-52 h-16 text-xl font-bold font-title rounded-md disabled:bg-gray-600/70 disabled:text-gray-400 disabled:cursor-not-allowed disabled:transform-none">
                 Xác Nhận
             </button>
         </div>
@@ -309,7 +309,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-3xl text-gray-200 font-bold font-title">Kiến Tạo Thân Phận</h2>
+        <h2 className="text-3xl font-bold font-title">Kiến Tạo Thân Phận</h2>
         <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Quay Lại">
           <FaArrowLeft className="w-5 h-5" />
         </button>

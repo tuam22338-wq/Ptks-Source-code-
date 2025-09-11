@@ -5,6 +5,7 @@ import {
   GiRunningShoe, GiScrollQuill, GiSparklingSabre, GiStairsGoal, GiStoneTower, GiYinYang,
   GiSpinalCoil, GiMuscularTorso, GiSoulVessel, GiBoltSpellCast, GiHeartTower, GiScales
 } from 'react-icons/gi';
+import { FaSun, FaMoon } from 'react-icons/fa';
 
 export const FACTIONS: Faction[] = [
   {
@@ -42,6 +43,7 @@ export const THEME_OPTIONS: { value: Theme; label: string }[] = [
     { value: 'theme-amber', label: 'Hổ Phách (Mặc định)' },
     { value: 'theme-jade-green', label: 'Bích Ngọc' },
     { value: 'theme-amethyst-purple', label: 'Tử Tinh' },
+    { value: 'theme-celestial-light', label: 'Thiên Quang' },
 ];
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -164,6 +166,13 @@ export const ATTRIBUTES_CONFIG: AttributeGroup[] = [
       { name: 'Tuổi Thọ', description: 'Thời gian sống còn lại.', value: 80, icon: GiHourglass },
        { name: 'Đạo Tâm', description: 'Sự kiên định trên con đường tu tiên, ảnh hưởng đến khả năng chống lại tâm ma.', value: 10, icon: GiStoneTower },
        { name: 'Nhân Quả', description: 'Nghiệp báo từ những hành động đã làm, có thể dẫn đến phúc hoặc họa.', value: 0, icon: GiScales },
+    ],
+  },
+  {
+    title: 'Thiên Hướng',
+    attributes: [
+      { name: 'Chính Đạo', description: 'Danh tiếng trong chính đạo. Càng cao càng được phe chính phái yêu mến, nhưng bị ma đạo căm ghét.', value: 0, icon: FaSun },
+      { name: 'Ma Đạo', description: 'Uy danh trong ma đạo. Càng cao càng được ma tu kính sợ, nhưng bị chính đạo truy lùng.', value: 0, icon: FaMoon },
     ],
   },
 ];
@@ -369,7 +378,12 @@ export const NPC_LIST: NPC[] = [
             { name: 'Thiên Mệnh Chi Tử', rank: 'Thiên Tư', description: 'Người được thiên mệnh lựa chọn để hoàn thành đại nghiệp Phong Thần.', effect: 'Cơ Duyên cực cao, dễ dàng gặp được kỳ ngộ và người tài. Luôn có thể tìm ra một con đường sống trong tuyệt cảnh.', bonuses: [{ attribute: 'Cơ Duyên', value: 20 }] },
             { name: 'Đại Trí Nhược Ngu', rank: 'Siêu Tư', description: 'Trí tuệ vĩ đại ẩn sau vẻ ngoài bình thường.', effect: 'Ẩn giấu khí tức, người khác khó có thể nhìn thấu tu vi thật sự. Khả năng lĩnh ngộ và hoạch định chiến lược vượt xa người thường.', bonuses: [{ attribute: 'Cảm Ngộ', value: 15 }] }
         ], 
-        locationId: 'song_vi_thuy' 
+        locationId: 'song_vi_thuy',
+        ChinhDao: 100,
+        MaDao: 0,
+        TienLuc: 500,
+        PhongNgu: 300,
+        SinhMenh: 1000,
     },
     { 
         id: 'npc_na_tra', 
@@ -382,7 +396,12 @@ export const NPC_LIST: NPC[] = [
             { name: 'Liên Hoa Hóa Thân', rank: 'Thiên Tư', description: 'Thân thể được tái tạo từ hoa sen, miễn nhiễm với phần lớn độc tố và ma khí.', effect: 'Kháng độc và kháng ma thuật cực cao. Có thể tái sinh một lần sau khi tử vong.', bonuses: [{ attribute: 'Nhục Thân', value: 20 }] },
             { name: 'Tam Đầu Lục Tí', rank: 'Siêu Tư', description: 'Thần thông hiển hóa ba đầu sáu tay, chiến lực tăng vọt.', effect: 'Khi chiến đấu có thể tấn công nhiều mục tiêu hoặc sử dụng nhiều pháp bảo cùng lúc.', bonuses: [{ attribute: 'Thân Pháp', value: 15 }] }
         ], 
-        locationId: 'dong_hai' 
+        locationId: 'dong_hai',
+        ChinhDao: 20,
+        MaDao: 30,
+        TienLuc: 800,
+        PhongNgu: 600,
+        SinhMenh: 2000,
     },
 ];
 

@@ -54,6 +54,28 @@
          --input-focus-ring-color: #8b5cf6;
       }
 
+      body.theme-celestial-light {
+        --bg-color: #f9fafb; /* gray-50 */
+        --text-color: #1f2937; /* gray-800 */
+        --text-muted-color: #4b5563; /* gray-600 */
+        
+        --primary-accent-color: #c09a58; /* Gold */
+        --primary-accent-text-color: #111827; /* Dark Gray for contrast on gold */
+        --secondary-accent-color: #52525b; /* zinc-600 */
+        --border-color: #d1d5db; /* gray-300 */
+        
+        --panel-bg-color: rgba(255, 255, 255, 0.7);
+        --panel-border-color: rgba(209, 213, 219, 0.8);
+        
+        --button-primary-bg: #c09a58;
+        --button-primary-hover-bg: #d4af6a;
+        --button-primary-border: #a5844a;
+        
+        --primary-glow-color: rgba(212, 175, 55, 0.3);
+        --input-focus-ring-color: #c09a58;
+      }
+
+
       body {
         /* font-family will be set by React */
         color: var(--text-color);
@@ -89,11 +111,28 @@
         background-color: var(--button-primary-bg);
         border: 2px solid var(--button-primary-border);
         transition: all 0.3s ease-in-out;
+        color: var(--primary-accent-text-color);
       }
       .themed-button-primary:hover:not(:disabled) {
         background-color: var(--button-primary-hover-bg);
         box-shadow: 0 0 15px 0 var(--primary-glow-color);
         transform: scale(1.05);
+      }
+      
+      body.theme-celestial-light .font-title {
+        text-shadow: 0 1px 1px rgba(0,0,0,0.1), 0 0 10px var(--primary-glow-color);
+      }
+      
+      body.theme-celestial-light input, 
+      body.theme-celestial-light select, 
+      body.theme-celestial-light textarea {
+          background-color: rgba(229, 231, 235, 0.5);
+          border-color: var(--border-color);
+          color: var(--text-color);
+      }
+      body.theme-celestial-light input::placeholder,
+      body.theme-celestial-light textarea::placeholder {
+          color: var(--text-muted-color);
       }
 
       input, select, textarea {
@@ -103,7 +142,7 @@
         border-color: var(--input-focus-ring-color) !important;
       }
 
-      /* Custom scrollbar for the dark theme */
+      /* Custom scrollbar for dark themes */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -118,6 +157,17 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background-color: var(--primary-accent-color);
+      }
+      
+      /* Scrollbar for light theme */
+      body.theme-celestial-light::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      body.theme-celestial-light::-webkit-scrollbar-thumb {
+        background-color: #bdc3c7;
+      }
+      body.theme-celestial-light::-webkit-scrollbar-thumb:hover {
+        background-color: #95a5a6;
       }
 
       /* Layout mode overrides */

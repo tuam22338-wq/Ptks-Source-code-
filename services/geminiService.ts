@@ -1,4 +1,3 @@
-
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
@@ -299,6 +298,11 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
                 description: { type: Type.STRING, description: 'Mô tả ngoại hình của NPC.' },
                 origin: { type: Type.STRING, description: 'Mô tả xuất thân, nguồn gốc của NPC.' },
                 personality: { type: Type.STRING, description: 'Tính cách của NPC (ví dụ: Trung Lập, Tà Ác, Hỗn Loạn, Chính Trực).' },
+                ChinhDao: { type: Type.NUMBER, description: 'Điểm Chính Đạo (0-100).' },
+                MaDao: { type: Type.NUMBER, description: 'Điểm Ma Đạo (0-100).' },
+                TienLuc: { type: Type.NUMBER, description: 'Chỉ số Tiên Lực chiến đấu.' },
+                PhongNgu: { type: Type.NUMBER, description: 'Chỉ số Phòng Ngự chiến đấu.' },
+                SinhMenh: { type: Type.NUMBER, description: 'Chỉ số Sinh Mệnh chiến đấu.' },
                 talents: {
                     type: Type.ARRAY,
                     items: {
@@ -314,13 +318,15 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
                 },
                 locationId: { type: Type.STRING, enum: availableLocations },
             },
-            required: ['name', 'status', 'description', 'origin', 'personality', 'talents', 'locationId'],
+            required: ['name', 'status', 'description', 'origin', 'personality', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'TienLuc', 'PhongNgu', 'SinhMenh'],
         },
     };
     
     const prompt = `Tạo ra ${count} NPC (Non-Player Characters) độc đáo cho thế giới game tu tiên Phong Thần.
     Các NPC này có thể là tu sĩ, yêu ma, dân thường, hoặc các sinh vật kỳ dị.
-    Mỗi NPC cần có thông tin đầy đủ theo schema. Hãy sáng tạo và làm cho thế giới trở nên sống động.
+    Mỗi NPC cần có thông tin đầy đủ theo schema. Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chính Đạo, Ma Đạo) và chỉ số chiến đấu (Tiên Lực, Phòng Ngự, Sinh Mệnh). 
+    Ví dụ, một 'ma đầu' sẽ có Ma Đạo cao, trong khi một 'đại hiệp' sẽ có Chính Đạo cao. Sức mạnh chiến đấu nên tương xứng với mô tả.
+    Hãy sáng tạo và làm cho thế giới trở nên sống động.
     `;
     
     const settings = getSettings();
@@ -574,11 +580,6 @@ export const generateStoryContinuation = async (
     const settings = getSettings();
     const narrativeStyleDesc = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
     
-    const importantItems = playerCharacter.inventory.items
-        .filter(i => ['Vũ Khí', 'Pháp Bảo'].includes(i.type) || ['Tiên Phẩm', 'Tuyệt Phẩm'].includes(i.quality))
-        .map(i => `${i.name} (x${i.quantity})`)
-        .join(', ');
-
     const relationshipsText = playerCharacter.relationships.map(rel => {
         const npc = activeNpcs.find(n => n.id === rel.npcId);
         return npc ? `${npc.name}: ${rel.status} (${rel.value})` : '';
@@ -597,6 +598,8 @@ export const generateStoryContinuation = async (
     const currentRealmData = REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
     const cultivationProgress = `(${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${currentStageData?.qiRequired.toLocaleString() || '???'})`;
+    const chinhDaoAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Chính Đạo')?.value || 0;
+    const maDaoAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Ma Đạo')?.value || 0;
 
     const context = `
     ${gameContext}
@@ -605,6 +608,7 @@ export const generateStoryContinuation = async (
     - Tuổi: ${playerCharacter.identity.age} (Tuổi thọ tối đa hiện tại dựa vào cảnh giới)
     - Cảnh giới: ${currentRealmData?.name || 'Vô danh'} - ${currentStageData?.name || 'Sơ kỳ'} ${cultivationProgress}
     - Thuộc tính: ${playerCharacter.attributes.flatMap(g => g.attributes).map(a => `${a.name}(${a.value})`).join(', ')}
+    - Thiên Hướng: Chính Đạo(${chinhDaoAttr}), Ma Đạo(${maDaoAttr})
     - Tiên tư: ${playerCharacter.talents.map(t => t.name).join(', ') || 'Không có'}
     - Trang bị: ${Object.values(playerCharacter.equipment).filter(Boolean).map(i => i!.name).join(', ') || 'Không có'}
     - Công pháp đã học: ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa học'}
@@ -617,7 +621,7 @@ export const generateStoryContinuation = async (
     **Thời gian & Không gian:**
     - Thời gian: ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen})
     - Địa điểm: ${currentLocation.name} (Loại: ${currentLocation.type}) (${currentLocation.description})
-    - Nhân vật khác tại đây: ${npcsAtLocation.length > 0 ? npcsAtLocation.map(n => n.name).join(', ') : 'Không có ai'}
+    - Nhân vật khác tại đây: ${npcsAtLocation.map(n => `${n.name} (Chính: ${n.ChinhDao || 0}, Ma: ${n.MaDao || 0}, Lực chiến: ${n.TienLuc || 10})`).join('; ') || 'Không có ai'}
     - Các tin đồn gần đây: ${worldState.rumors.slice(-3).map(r => `Tại ${r.locationId}: "${r.text}"`).join('; ') || 'Không có'}
 
     **Lịch sử gần đây:**
@@ -629,28 +633,27 @@ export const generateStoryContinuation = async (
     const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai.
     Nhiệm vụ của bạn là tiếp nối câu chuyện dựa trên hành động của người chơi và bối cảnh hiện tại.
     - **Phong cách kể chuyện:** ${narrativeStyleDesc}. Hãy tuân thủ nghiêm ngặt phong cách này.
-    - **Bối cảnh:** Hãy bám sát vào bối cảnh đã được cung cấp. Nếu đó là thế giới Phong Thần, hãy dùng các yếu tố của nó. Nếu một bối cảnh tùy chỉnh được cung cấp, hãy ưu tiên và xây dựng câu chuyện xoay quanh nó.
-    - **Tham chiếu trạng thái (RẤT QUAN TRỌNG):** Câu chuyện của bạn PHẢI thể hiện được các thuộc tính, tiên tư, vật phẩm, công pháp và mối quan hệ của nhân vật. Hãy chú ý đến thời gian, địa điểm, các NPC và tin đồn hiện có để câu chuyện liền mạch. Hãy nhớ đến tuổi tác, cảnh giới và giới hạn tuổi thọ của nhân vật.
-    - **Mô tả kết quả:** Dựa trên hành động, kết quả (thành công/thất bại), và công pháp sử dụng, hãy mô tả kết quả một cách sống động và hợp lý. Nếu người chơi vừa "tu luyện", hãy mô tả cảm giác linh khí chảy trong cơ thể họ.
-    - **KIỂM SOÁT LOGIC TUYỆT ĐỐI (CỰC KỲ QUAN TRỌNG):**
-        - Bạn PHẢI duy trì sự logic và nhất quán của thế giới. Nhân vật chỉ biết những gì họ đã trải nghiệm, nghe thấy hoặc được kể trong game.
-        - **Kiến thức của nhân vật:** Toàn bộ kiến thức của nhân vật về thế giới được cung cấp trong mục "Kiến Thức Của Nhân Vật". Họ không biết về bất kỳ địa danh hay nhân vật nào khác ngoài danh sách đó.
-        - **Hành động phi logic:** Nếu người chơi thực hiện một hành động dựa trên kiến thức mà nhân vật không thể có (ví dụ: "đi đến Hoa Quả Sơn gặp Tôn Ngộ Không" khi nhân vật chưa bao giờ nghe về những cái tên này), bạn KHÔNG được thực hiện hành động đó.
-        - **Phản hồi cho hành động phi logic:** Thay vào đó, hãy để nhân vật phản ứng một cách tự nhiên. Họ nên cảm thấy bối rối, tự hỏi tại sao mình lại có suy nghĩ đó. Ví dụ: "Trong đầu bạn chợt lóe lên hai cái tên lạ lẫm: 'Hoa Quả Sơn' và 'Tôn Ngộ Không'. Chúng từ đâu tới? Bạn lắc đầu, cố xua đi ý nghĩ kỳ quái. Nơi đó không hề tồn tại trong ký ức hay trên bất kỳ tấm bản đồ nào bạn từng thấy."
-        - **Duy trì bối cảnh:** Không cho phép người chơi phá vỡ bối cảnh đã thiết lập bằng những hành động không phù hợp. Nếu bối cảnh là Phong Thần, đừng để các yếu tố từ Tây Du Ký hay các thế giới khác xen vào, trừ khi chúng được giới thiệu một cách hợp lý trong game (ví dụ qua một cuốn sách cổ, một tin đồn).
-        - **Nguy hiểm:** Nếu người chơi ở một nơi nguy hiểm như "Bí Cảnh" hay "Hoang Dã", hãy tăng khả năng gặp nguy hiểm (bị tấn công, dính bẫy, bị cướp đồ).
-    - **Tương tác Đặc Biệt:** Dùng các tag sau TRONG câu chuyện của bạn khi thích hợp:
-        - Nếu người chơi đến một địa điểm có cửa hàng như "Thiên Cơ Các", hãy dùng tag: [SHOW_SHOP:{"shopId": "thien_co_cac"}]
-        - Dựa vào hành động của người chơi (tặng quà, giúp đỡ, xúc phạm), hãy thay đổi mối quan hệ với NPC bằng tag: [UPDATE_RELATIONSHIP:{"npcName": "Tên NPC", "change": 10}] (số dương là tốt, số âm là xấu).
-        - Nếu hành động của người chơi dẫn đến cái chết không thể tránh khỏi, hãy dùng tag: [DEATH:{"reason": "Bị yêu thú cấp cao giết chết."}]
-        - Tạo vật phẩm: [ADD_ITEM:{"name": "Tên Vật Phẩm", "description": "Mô tả", "quantity": 1, "type": "Tạp Vật", "icon": "❓", "weight": 0.1, "quality": "Phàm Phẩm"}]
-        - Học công pháp mới: [ADD_TECHNIQUE:{"name": "Tên Công Pháp", "description": "Mô tả", "type": "Linh Kỹ", "cost": {"type": "Linh Lực", "value": 10}, "cooldown": 2, "effectDescription": "Mô tả hiệu ứng", "rank": "Phàm Giai", "icon": "🔥"}]
+    - **Hệ thống Chính-Ma:** Thế giới giờ có hệ thống Chính Đạo và Ma Đạo. Hành động của người chơi sẽ ảnh hưởng đến các chỉ số này. Ví dụ: cứu người tăng Chính Đạo, giết người vô cớ tăng Ma Đạo. Các NPC cũng có chỉ số này và sẽ phản ứng tương ứng. NPC chính đạo sẽ ghét người chơi ma đạo cao và ngược lại, có thể dẫn đến xung đột.
+    - **Hệ thống Chiến đấu (RẤT QUAN TRỌNG):** Khi người chơi thực hiện hành động tấn công/gây hấn với NPC, bạn PHẢI mô phỏng kết quả. So sánh sức mạnh của người chơi (dựa vào Cảnh giới, Tiên Lực) với NPC (dựa vào mô tả và chỉ số chiến đấu được cung cấp).
+        - Nếu chênh lệch quá lớn (ví dụ: Luyện Khí Kỳ tấn công một đại năng Nguyên Anh), người yếu hơn sẽ thua ngay lập tức. Nếu người chơi thua, dùng tag [DEATH:{"reason": "Bị [Tên NPC] giết chết trong một chiêu."}].
+        - Nếu người chơi mạnh hơn nhiều, hãy mô tả một chiến thắng dễ dàng và có thể thưởng vật phẩm bằng tag [ADD_ITEM] hoặc [ADD_CURRENCY].
+        - Nếu sức mạnh tương đương, hãy mô tả một trận chiến kịch tính.
+    - **KIỂM SOÁT LOGIC (CỰC KỲ QUAN TRỌNG):**
+        - Duy trì sự nhất quán của thế giới. Nhân vật chỉ biết những gì họ đã trải nghiệm.
+        - **Hành động phi logic:** Nếu người chơi thực hiện hành động dựa trên kiến thức mà nhân vật không thể có (ví dụ: "đi tìm gặp Tôn Ngộ Không"), bạn KHÔNG được thực hiện. Thay vào đó, hãy để nhân vật phản ứng một cách tự nhiên (ví dụ: "Trong đầu bạn chợt lóe lên một cái tên lạ lẫm...").
+    - **Tương tác Đặc Biệt (Dùng tag TRONG câu chuyện):**
+        - Hiển thị cửa hàng: [SHOW_SHOP:{"shopId": "thien_co_cac"}]
+        - Thay đổi quan hệ: [UPDATE_RELATIONSHIP:{"npcName": "Tên NPC", "change": 10}] (số dương là tốt, số âm là xấu).
+        - Thay đổi thuộc tính: [UPDATE_ATTRIBUTE:{"name": "Chính Đạo", "change": 10}] (dùng cho Chính Đạo, Ma Đạo, và các chỉ số khác).
+        - Cái chết: [DEATH:{"reason": "Bị yêu thú cấp cao giết chết."}]
+        - Thêm vật phẩm: [ADD_ITEM:{"name": "Tên", "description": "Mô tả", "quantity": 1, "type": "Tạp Vật", "icon": "❓", "weight": 0.1, "quality": "Phàm Phẩm"}]
         - Mất vật phẩm: [REMOVE_ITEM:{"name": "Tên Vật Phẩm", "quantity": 1}]
         - Thưởng tiền: [ADD_CURRENCY:{"name": "Bạc", "amount": 100}]
-        - NPC mới xuất hiện: [CREATE_NPC:{"name": "Tên NPC", "status": "Mô tả trạng thái", "description": "Mô tả ngoại hình", "origin": "Xuất thân", "personality": "Tính cách", "locationId": "${currentLocation.id}"}]
-        - Khám phá địa điểm mới: [DISCOVER_LOCATION:{"id": "new_id", "name": "Tên Địa Điểm", "description": "Mô tả", "type": "Hoang Dã", "neighbors": ["${currentLocation.id}"], "coordinates": {"x": ${currentLocation.coordinates.x + (Math.random() > 0.5 ? 1 : -1)}, "y": ${currentLocation.coordinates.y + (Math.random() > 0.5 ? 1 : -1)}}}]
-        - Tạo tin đồn: [ADD_RUMOR:{"locationId": "${currentLocation.id}", "text": "Nội dung tin đồn"}]
-    - **Lưu ý:** KHÔNG lặp lại hành động của người chơi. Chỉ viết phần tiếp theo của câu chuyện. Giữ cho câu chuyện hấp dẫn.
+        - NPC mới xuất hiện: [CREATE_NPC:{"name": "Tên", "status": "Trạng thái", "description": "Ngoại hình", "origin": "Xuất thân", "personality": "Tính cách", "locationId": "${currentLocation.id}"}]
+        - Khám phá địa điểm: [DISCOVER_LOCATION:{"id": "new_id", "name": "Tên", "description": "Mô tả", "type": "Hoang Dã", "neighbors": ["${currentLocation.id}"], "coordinates": {"x": ${currentLocation.coordinates.x + (Math.random() > 0.5 ? 1 : -1)}, "y": ${currentLocation.coordinates.y + (Math.random() > 0.5 ? 1 : -1)}}}]
+        - Thêm tin đồn: [ADD_RUMOR:{"locationId": "${currentLocation.id}", "text": "Nội dung tin đồn"}]
+        - Học công pháp: [ADD_TECHNIQUE:{"name": "Tên", "description": "Mô tả", "type": "Linh Kỹ", "cost": {"type": "Linh Lực", "value": 10}, "cooldown": 2, "effectDescription": "Hiệu ứng", "rank": "Phàm Giai", "icon": "🔥"}]
+    - **Lưu ý:** KHÔNG lặp lại hành động của người chơi. Chỉ viết phần tiếp theo. Giữ cho câu chuyện hấp dẫn.
     `;
     
     const response = await generateWithRetry({

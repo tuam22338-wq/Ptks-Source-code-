@@ -135,7 +135,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
             <div>
                  <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Thuộc Tính Chi Tiết</h3>
                 <div className="space-y-4">
-                    {attributes.filter(g => !['Chỉ số Chiến Đấu', 'Thông Tin Tu Luyện'].includes(g.title)).map(group => (
+                    {attributes.filter(g => !['Chỉ số Sinh Tồn', 'Thông Tin Tu Luyện'].includes(g.title)).map(group => (
                       <div key={group.title}>
                         <h4 className="text-md text-gray-400 font-title mb-2">{group.title}</h4>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">

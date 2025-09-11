@@ -10,7 +10,7 @@ const LoreScreen: React.FC<LoreScreenProps> = ({ onBack }) => {
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl text-gray-200 font-bold font-title">Phong Thần Niên Biểu Bảng</h2>
+        <h2 className="text-3xl font-bold font-title">Phong Thần Niên Biểu Bảng</h2>
         <button
           onClick={onBack}
           className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
@@ -19,7 +19,7 @@ const LoreScreen: React.FC<LoreScreenProps> = ({ onBack }) => {
           <FaArrowLeft className="w-5 h-5" />
         </button>
       </div>
-      <p className="text-center text-gray-400 mb-10">Những sự kiện trọng đại đã định hình nên thời đại loạn lạc này.</p>
+      <p className="text-center mb-10" style={{color: 'var(--text-muted-color)'}}>Những sự kiện trọng đại đã định hình nên thời đại loạn lạc này.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-4">
         {MAJOR_EVENTS.map((event, index) => (
@@ -29,7 +29,7 @@ const LoreScreen: React.FC<LoreScreenProps> = ({ onBack }) => {
                 <p className="text-lg font-bold text-amber-400 font-title tracking-wider">
                     Năm {event.year}
                 </p>
-                <h3 className="mt-1 text-2xl font-bold text-gray-100 font-title">
+                <h3 className="mt-1 text-2xl font-bold font-title" style={{color: 'var(--text-color)'}}>
                     {event.title}
                 </h3>
             </div>
@@ -38,15 +38,15 @@ const LoreScreen: React.FC<LoreScreenProps> = ({ onBack }) => {
             <div className="space-y-4 text-base flex-grow">
                <div className="flex items-start gap-3">
                  <FaMapMarkerAlt className="text-gray-500 mt-1 flex-shrink-0" />
-                 <p className="text-gray-300"><strong className="font-semibold text-gray-200">Địa điểm:</strong> {event.location}</p>
+                 <p><strong className="font-semibold" style={{color: 'var(--text-color)'}}>Địa điểm:</strong> {event.location}</p>
                </div>
                <div className="flex items-start gap-3">
                  <FaUsers className="text-gray-500 mt-1 flex-shrink-0" />
-                 <p className="text-gray-300"><strong className="font-semibold text-gray-200">Liên quan:</strong> {event.involvedParties}</p>
+                 <p><strong className="font-semibold" style={{color: 'var(--text-color)'}}>Liên quan:</strong> {event.involvedParties}</p>
                </div>
                <div className="flex items-start gap-3">
                  <FaFileSignature className="text-gray-500 mt-1 flex-shrink-0" />
-                 <p className="text-gray-400 text-justify">{event.summary}</p>
+                 <p className="text-justify" style={{color: 'var(--text-muted-color)'}}>{event.summary}</p>
                </div>
             </div>
 

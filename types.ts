@@ -23,7 +23,8 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
-export type Theme = 'theme-amber' | 'theme-jade-green' | 'theme-amethyst-purple';
+// FIX: Add 'theme-celestial-light' to the Theme type to resolve the type error in constants.ts.
+export type Theme = 'theme-amber' | 'theme-jade-green' | 'theme-amethyst-purple' | 'theme-celestial-light';
 
 
 export interface SafetySettings {
@@ -393,6 +394,11 @@ export interface NPC {
     talents: InnateTalent[];
     locationId: string;
     relationships?: Relationship[];
+    ChinhDao?: number;
+    MaDao?: number;
+    TienLuc?: number;
+    PhongNgu?: number;
+    SinhMenh?: number;
 }
 
 export interface InventoryItem {

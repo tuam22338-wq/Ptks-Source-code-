@@ -54,7 +54,7 @@ const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slo
               <span className="text-5xl text-gray-500 group-hover:text-gray-300 transition-colors duration-300">
                 ?
               </span>
-              <h3 className="mt-4 font-title text-xl text-gray-400 group-hover:text-white transition-colors duration-300">
+              <h3 className="mt-4 font-title text-xl text-[color:var(--text-muted-color)] group-hover:text-[color:var(--text-color)] transition-colors duration-300">
                 Hành Trình Mới
               </h3>
               <p className="text-sm text-gray-500">Bắt đầu một định mệnh mới</p>
@@ -80,7 +80,7 @@ const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, on
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-3xl text-gray-200 font-bold font-title">Thiên Mệnh Thư</h2>
+        <h2 className="text-3xl font-bold font-title">Thiên Mệnh Thư</h2>
          <button 
           onClick={onBack} 
           className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
@@ -89,7 +89,7 @@ const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, on
           <FaArrowLeft className="w-5 h-5" />
         </button>
       </div>
-      <p className="text-center text-gray-400 mb-8">Hãy chọn một trang để viết nên câu chuyện của riêng bạn, hoặc tiếp tục một hành trình dang dở.</p>
+      <p className="text-center mb-8" style={{color: 'var(--text-muted-color)'}}>Hãy chọn một trang để viết nên câu chuyện của riêng bạn, hoặc tiếp tục một hành trình dang dở.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 max-w-2xl mx-auto">
         {slots.map((slot) => (

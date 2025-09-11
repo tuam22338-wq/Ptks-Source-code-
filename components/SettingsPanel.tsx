@@ -18,7 +18,7 @@ type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'api' | '
 
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="mb-8">
-    <h3 className="text-xl text-gray-300 font-bold font-title mb-4 pb-2 border-b border-gray-600/50">{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-muted-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
@@ -26,21 +26,21 @@ const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = 
 const SettingsRow: React.FC<{ label: string; description?: string; children: React.ReactNode }> = ({ label, description, children }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 items-center bg-black/20 p-3 rounded-md border border-gray-700/60">
     <div>
-      <label className="block text-md text-gray-200">{label}</label>
-      {description && <p className="text-xs text-gray-400 mt-1">{description}</p>}
+      <label className="block text-md" style={{color: 'var(--text-color)'}}>{label}</label>
+      {description && <p className="text-xs mt-1" style={{color: 'var(--text-muted-color)'}}>{description}</p>}
     </div>
     <div className="flex items-center justify-start md:justify-end w-full">{children}</div>
   </div>
 );
 
 const Select: React.FC<{ value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: { value: string; label: string }[]; }> = ({ value, onChange, options }) => (
-  <select value={value} onChange={onChange} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 transition-all">
+  <select value={value} onChange={onChange} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 transition-all">
     {options.map(opt => <option key={opt.value} value={opt.value} className="bg-gray-800">{opt.label}</option>)}
   </select>
 );
 
 const NumberInput: React.FC<{ value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; min?: number; max?: number; }> = ({ value, onChange, min, max }) => (
-  <input type="number" value={value} onChange={onChange} min={min} max={max} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 focus:outline-none focus:ring-2" />
+  <input type="number" value={value} onChange={onChange} min={min} max={max} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2" />
 );
 
 const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; }> = ({ checked, onChange }) => (
@@ -101,8 +101,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
       onClick={() => setActiveTab(tabId)}
       className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 ${
         activeTab === tabId
-          ? 'bg-[color:var(--primary-accent-color)]/20 text-white'
-          : 'text-gray-400 hover:bg-gray-800/50'
+          ? 'bg-[color:var(--primary-accent-color)]/20 text-[color:var(--primary-accent-color)]'
+          : 'text-[color:var(--text-muted-color)] hover:bg-black/10'
       }`}
     >
       <Icon className="w-5 h-5 mb-1 sm:mb-0" />
@@ -112,7 +112,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
 
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
-        <h2 className="text-3xl text-center text-gray-200 font-bold font-title mb-6">Cài Đặt Game</h2>
+        <h2 className="text-3xl text-center font-bold font-title mb-6">Cài Đặt Game</h2>
 
         {/* Tab Navigation */}
         <div className="flex items-center gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
@@ -130,7 +130,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                     <SettingsSection title="Cấu hình API Key Gemini">
                         <SettingsRow label="API Key Mặc định" description="Sử dụng key này nếu không bật chế độ xoay key.">
-                             <input type="password" value={settings.apiKey} onChange={e => onChange('apiKey', e.target.value)} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200" />
+                             <input type="password" value={settings.apiKey} onChange={e => onChange('apiKey', e.target.value)} className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2" />
                         </SettingsRow>
                          <SettingsRow label="Bật chế độ xoay Key" description="Sử dụng danh sách các key bên dưới và tự động xoay vòng khi gặp lỗi.">
                             <Toggle checked={settings.useKeyRotation} onChange={e => onChange('useKeyRotation', e.target.checked)} />
@@ -141,7 +141,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                                 onChange={e => onChange('apiKeys', e.target.value.split('\n'))}
                                 rows={4}
                                 placeholder="Nhập mỗi key một dòng..."
-                                className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-gray-200 font-mono text-sm"
+                                className="w-full max-w-xs bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 font-mono text-sm"
                             />
                         </SettingsRow>
                          <div className="flex justify-end pt-2">

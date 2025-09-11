@@ -84,8 +84,8 @@ const ConfirmationModal: React.FC<{
                     <div className="flex justify-center mb-4">
                         <FaExclamationTriangle className="text-[var(--primary-accent-color)] text-4xl" />
                     </div>
-                    <h3 className="text-xl text-gray-100 font-bold font-title">{title}</h3>
-                    <p className="text-gray-300 mt-2">{message}</p>
+                    <h3 className="text-xl font-bold font-title">{title}</h3>
+                    <p className="mt-2" style={{color: 'var(--text-muted-color)'}}>{message}</p>
                 </div>
                 <div className="p-4 bg-black/20 flex justify-center gap-4">
                     <button onClick={onCancel} className="px-6 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors">Hủy</button>
@@ -99,14 +99,14 @@ const ConfirmationModal: React.FC<{
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="mb-6 bg-black/20 p-4 rounded-lg border border-gray-700/60">
-    <h3 className="text-xl text-gray-300 font-bold font-title mb-4 pb-2 border-b border-gray-600/50">{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-muted-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
 
 const InputRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 items-start py-2">
-    <label className="block text-md text-gray-200 sm:w-1/4 flex-shrink-0 pt-1">{label}</label>
+    <label className="block text-md sm:w-1/4 flex-shrink-0 pt-1" style={{color: 'var(--text-color)'}}>{label}</label>
     <div className="w-full sm:w-3/4">{children}</div>
   </div>
 );
@@ -471,8 +471,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
           onClick={() => setActiveTab(tabId)}
           className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 ${
             activeTab === tabId
-              ? 'bg-[color:var(--primary-accent-color)]/20 text-white'
-              : 'text-gray-400 hover:bg-gray-800/50'
+              ? 'bg-[color:var(--primary-accent-color)]/20 text-[color:var(--primary-accent-color)]'
+              : 'text-[color:var(--text-muted-color)] hover:bg-black/10'
           }`}
         >
           <Icon className="w-5 h-5 mb-1 sm:mb-0" />
@@ -525,8 +525,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                     <div className="flex items-center gap-3 overflow-hidden">
                         <div className={`${info.color} p-2 rounded-md`}><info.icon className="w-5 h-5 text-white/90" /></div>
                         <div className="truncate">
-                            <p className="font-bold text-gray-200 truncate">{nameOrTitle}</p>
-                            {description && <p className="text-sm text-gray-400 truncate">{description}</p>}
+                            <p className="font-bold truncate" style={{color: 'var(--text-color)'}}>{nameOrTitle}</p>
+                            {description && <p className="text-sm truncate" style={{color: 'var(--text-muted-color)'}}>{description}</p>}
                         </div>
                     </div>
                      <div className="flex gap-2 flex-shrink-0 ml-2">
@@ -558,7 +558,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             <TechniqueEditorModal isOpen={isTechniqueModalOpen} onClose={() => setIsTechniqueModalOpen(false)} onSave={handleSaveTechnique} techniqueToEdit={editingTechnique} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <EventEditorModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} onSave={handleSaveEvent} eventToEdit={editingEvent} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             
-            <div className="flex justify-between items-center mb-6"><h2 className="text-3xl text-gray-200 font-bold font-title">Trình Chỉnh Sửa Mod</h2><button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button></div>
+            <div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold font-title">Trình Chỉnh Sửa Mod</h2><button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button></div>
 
             <div className="flex items-center gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-8">
                 <TabButton tabId="info" label="Thông Tin" icon={FaFileSignature} />
@@ -571,9 +571,9 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 {activeTab === 'info' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                         <Section title="Thông Tin Cơ Bản">
-                            <InputRow label="Tên Mod"><input type="text" value={modName} onChange={(e) => setModName(e.target.value)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" placeholder="Ví dụ: Thần Binh Lợi Khí" /></InputRow>
-                            <InputRow label="Tác Giả"><input type="text" value={modAuthor} onChange={(e) => setModAuthor(e.target.value)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" placeholder="Tên của bạn hoặc biệt danh" /></InputRow>
-                            <InputRow label="Mô Tả Mod"><textarea value={modDescription} onChange={(e) => setModDescription(e.target.value)} rows={3} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" placeholder="Ví dụ: Mod này thêm vào 10 loại thần binh mới..." /></InputRow>
+                            <InputRow label="Tên Mod"><input type="text" value={modName} onChange={(e) => setModName(e.target.value)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" placeholder="Ví dụ: Thần Binh Lợi Khí" /></InputRow>
+                            <InputRow label="Tác Giả"><input type="text" value={modAuthor} onChange={(e) => setModAuthor(e.target.value)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" placeholder="Tên của bạn hoặc biệt danh" /></InputRow>
+                            <InputRow label="Mô Tả Mod"><textarea value={modDescription} onChange={(e) => setModDescription(e.target.value)} rows={3} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" placeholder="Ví dụ: Mod này thêm vào 10 loại thần binh mới..." /></InputRow>
                         </Section>
                     </div>
                 )}
@@ -648,8 +648,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                 {realms.map(realm => (
                                     <div key={realm.id} className="bg-black/20 p-3 rounded-lg flex justify-between items-center border border-gray-700/60">
                                         <div>
-                                            <p className="font-bold text-gray-200">{realm.name}</p>
-                                            <p className="text-sm text-gray-400">{realm.stages.length} giai đoạn</p>
+                                            <p className="font-bold">{realm.name}</p>
+                                            <p className="text-sm" style={{color: 'var(--text-muted-color)'}}>{realm.stages.length} giai đoạn</p>
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => handleOpenRealmEditor(realm)} className="p-2 text-gray-400 hover:text-white"><FaEdit /></button>
@@ -663,7 +663,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                             </button>
                         </Section>
                         <Section title="Hệ Thống Phẩm Chất Tiên Tư">
-                            <p className="text-sm text-gray-400">Tùy chỉnh các cấp bậc của Tiên Tư và xác suất xuất hiện của chúng.</p>
+                            <p className="text-sm" style={{color: 'var(--text-muted-color)'}}>Tùy chỉnh các cấp bậc của Tiên Tư và xác suất xuất hiện của chúng.</p>
                              <InputRow label="Cho phép AI tạo Tiên Tư">
                                 <div className="flex items-center gap-3">
                                     <input 
@@ -673,7 +673,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                         onChange={e => setTalentSystemConfig(prev => ({ ...prev, allowAIGeneratedTalents: e.target.checked }))} 
                                         className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500"
                                     />
-                                    <label htmlFor="allowAIGen" className="text-sm text-gray-400">
+                                    <label htmlFor="allowAIGen" className="text-sm" style={{color: 'var(--text-muted-color)'}}>
                                         Nếu bật, AI sẽ tự tạo Tiên Tư mới dựa trên ý niệm nhân vật. 
                                         <br/>Nếu tắt, AI sẽ chỉ chọn từ danh sách Tiên Tư bạn đã tạo trong tab "Nội Dung".
                                     </label>
@@ -682,9 +682,9 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                             <div className="space-y-3">
                                 {talentRanks.map((rank, index) => (
                                     <div key={rank.id} className="grid grid-cols-12 gap-2 items-center">
-                                        <input type="text" value={rank.name} onChange={(e) => handleTalentRankChange(index, 'name', e.target.value)} className="col-span-5 bg-gray-800/50 border border-gray-600 rounded px-2 py-1 text-gray-200 text-sm" placeholder="Tên phẩm chất" />
-                                        <input type="text" value={rank.color} onChange={(e) => handleTalentRankChange(index, 'color', e.target.value)} className="col-span-4 bg-gray-800/50 border border-gray-600 rounded px-2 py-1 text-gray-200 text-sm" placeholder="Màu CSS (vd: text-red-400)" />
-                                        <input type="number" value={rank.weight} onChange={(e) => handleTalentRankChange(index, 'weight', parseInt(e.target.value) || 0)} className="col-span-2 bg-gray-800/50 border border-gray-600 rounded px-2 py-1 text-gray-200 text-sm" placeholder="Trọng số" title="Trọng số xác suất" />
+                                        <input type="text" value={rank.name} onChange={(e) => handleTalentRankChange(index, 'name', e.target.value)} className="col-span-5 bg-gray-800/50 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="Tên phẩm chất" />
+                                        <input type="text" value={rank.color} onChange={(e) => handleTalentRankChange(index, 'color', e.target.value)} className="col-span-4 bg-gray-800/50 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="Màu CSS (vd: text-red-400)" />
+                                        <input type="number" value={rank.weight} onChange={(e) => handleTalentRankChange(index, 'weight', parseInt(e.target.value) || 0)} className="col-span-2 bg-gray-800/50 border border-gray-600 rounded px-2 py-1 text-sm" placeholder="Trọng số" title="Trọng số xác suất" />
                                         <div className="col-span-1 flex justify-end">
                                             <button onClick={() => removeTalentRank(index)} className="p-2 text-gray-400 hover:text-red-400"><FaTrash /></button>
                                         </div>

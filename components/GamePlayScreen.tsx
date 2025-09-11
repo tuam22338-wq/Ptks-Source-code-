@@ -1,7 +1,5 @@
-
-
 import React, { useState, useMemo, useEffect } from 'react';
-import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship } from '../types';
+import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup } from '../types';
 import StoryLog from './StoryLog';
 import PlayerInput from './PlayerInput';
 import Sidebar from './Sidebar';
@@ -177,6 +175,13 @@ const simulateNpcMovement = (currentNpcs: NPC[], discoveredLocations: Location[]
     });
 };
 
+const deepCopyAttributes = (attributeGroups: AttributeGroup[]): AttributeGroup[] => {
+    return attributeGroups.map(group => ({
+        ...group,
+        attributes: group.attributes.map(attr => ({ ...attr })),
+    }));
+};
+
 
 const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState, onSaveGame, onBack }) => {
     const [isAILoading, setIsAILoading] = useState(false);
@@ -348,7 +353,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const processAIResponse = (responseText: string) => {
         let cleanedText = responseText;
         
-        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH|ADD_TECHNIQUE):({.*?})\]/gs;
+        const tagRegex = /\[(ADD_ITEM|REMOVE_ITEM|ADD_CURRENCY|CREATE_NPC|DISCOVER_LOCATION|ADD_RUMOR|SHOW_SHOP|UPDATE_RELATIONSHIP|DEATH|ADD_TECHNIQUE|UPDATE_ATTRIBUTE):({.*?})\]/gs;
 
         let match;
         while ((match = tagRegex.exec(responseText)) !== null) {
@@ -466,6 +471,27 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                             return { ...pc, techniques: [...pc.techniques, newTechnique] };
                         });
                         addStoryEntry({ type: 'system', content: `Bạn đã học được công pháp mới: [${newTechnique.name}]`});
+                        break;
+                    }
+                    case 'UPDATE_ATTRIBUTE': {
+                        const { name, change } = data;
+                        setPlayerCharacter(pc => {
+                            const newAttributes = deepCopyAttributes(pc.attributes);
+                            let updated = false;
+                            for (const group of newAttributes) {
+                                const attr = group.attributes.find(a => a.name === name);
+                                if (attr && typeof attr.value === 'number') {
+                                    attr.value = (attr.value as number) + change;
+                                    updated = true;
+                                    break;
+                                }
+                            }
+                            if (updated) {
+                                addStoryEntry({ type: 'system', content: `[${name} ${change > 0 ? `+${change}` : change}]` });
+                                return { ...pc, attributes: newAttributes };
+                            }
+                            return pc;
+                        });
                         break;
                     }
                 }
