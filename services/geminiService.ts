@@ -1,7 +1,7 @@
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
-import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe } from '../types';
+import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe, ModCustomPanel } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL } from "../constants";
 import {
   FaSun, FaMoon
@@ -473,6 +473,7 @@ const getGameMasterSystemInstruction = (modContext?: ModContext): string => {
     - **Công Pháp (Techniques):** Là các kỹ năng nhân vật có thể sử dụng, có tiêu hao, hồi chiêu, và cấp bậc.
     - **Sự kiện (Events):** Là các tình huống có kịch bản với các lựa chọn, có thể yêu cầu kiểm tra thuộc tính (skill check) và dẫn đến các kết quả khác nhau (outcomes).
     - **Đan Phương (Recipes):** Là các công thức luyện đan.
+    - **Bảng Tùy Chỉnh (Custom Panels):** Cho phép tạo các tab mới trong UI để hiển thị các mục 'WorldBuilding'.
 
     **NHIỆM VỤ CỦA BẠN:**
     Phân tích yêu cầu của người dùng và chuyển đổi nó thành một hành động có cấu trúc (action) tương thích với các cơ chế trên.
@@ -563,6 +564,17 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
         required: ['name', 'description', 'icon', 'ingredients', 'result', 'requiredAttribute', 'qualityCurve']
     };
 
+    const customPanelSchema = {
+        type: Type.OBJECT,
+        properties: {
+            title: { type: Type.STRING, description: 'Tên của tab sẽ hiển thị trong UI.' },
+            iconName: { type: Type.STRING, enum: ['FaUser', 'FaBoxOpen', 'FaGlobe', 'FaBook', 'FaScroll', 'FaSun', 'FaGopuram', 'GiCauldron'], description: 'Tên của icon từ danh sách cho phép.'},
+            content: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Danh sách các `title` của mục WorldBuilding để hiển thị trong bảng này.'},
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } }
+        },
+        required: ['title', 'iconName', 'content']
+    };
+
     const responseSchema = {
         oneOf: [
             { properties: { action: { const: 'CHAT' }, data: { type: Type.OBJECT, properties: { response: { type: Type.STRING } } } } },
@@ -585,6 +597,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
             { properties: { action: { const: 'CREATE_MULTIPLE_EVENTS' }, data: { type: Type.ARRAY, items: eventSchema } } },
             { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
             { properties: { action: { const: 'CREATE_MULTIPLE_RECIPES' }, data: { type: Type.ARRAY, items: recipeSchema } } },
+            { properties: { action: { const: 'CREATE_CUSTOM_PANEL' }, data: customPanelSchema } },
             { properties: { action: { const: 'BATCH_ACTIONS' }, data: { type: Type.ARRAY, items: {
                  oneOf: [
                     { properties: { action: { const: 'CREATE_ITEM' }, data: itemSchema } },
@@ -594,6 +607,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
                     { properties: { action: { const: 'CREATE_NPC' }, data: npcSchema } },
                     { properties: { action: { const: 'CREATE_EVENT' }, data: eventSchema } },
                     { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
+                    { properties: { action: { const: 'CREATE_CUSTOM_PANEL' }, data: customPanelSchema } },
                  ]
             } } } }
         ],

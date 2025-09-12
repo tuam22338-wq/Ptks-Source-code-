@@ -1,14 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup } from '../types';
+import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup, CultivationPath } from '../types';
 import StoryLog from './StoryLog';
 import PlayerInput from './PlayerInput';
 import Sidebar from './Sidebar';
 import Timeline from './Timeline';
 import EventPanel from './EventPanel';
 import ShopModal from './ShopModal';
+import CultivationPathModal from './CultivationPathModal';
+import CustomStoryPlayer from './CustomStoryPlayer';
 import { FaArrowLeft, FaBars, FaTimes, FaExclamationTriangle, FaCog, FaSave } from 'react-icons/fa';
 import { generateStoryContinuationStream, generateGameEvent, generateDynamicLocation, analyzeActionForTechnique, generateBreakthroughNarrative, generateWorldEvent } from '../services/geminiService';
-import { SHICHEN_LIST, REALM_SYSTEM, TIMEOFDAY_DETAILS, NPC_LIST, INNATE_TALENT_RANKS } from '../constants';
+import { SHICHEN_LIST, REALM_SYSTEM, TIMEOFDAY_DETAILS, NPC_LIST, INNATE_TALENT_RANKS, CULTIVATION_PATHS } from '../constants';
 
 
 interface GamePlayScreenProps {
@@ -182,6 +184,31 @@ const deepCopyAttributes = (attributeGroups: AttributeGroup[]): AttributeGroup[]
     }));
 };
 
+const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add' | 'subtract'): PlayerCharacter => {
+    const newAttributes = deepCopyAttributes(pc.attributes);
+    const multiplier = operation === 'add' ? 1 : -1;
+
+    bonuses.forEach(bonus => {
+        for (const group of newAttributes) {
+            const attr = group.attributes.find(a => a.name === bonus.attribute);
+            if (attr && typeof attr.value === 'number') {
+                const newValue = (attr.value as number) + (bonus.value * multiplier);
+                attr.value = newValue;
+                if (attr.maxValue !== undefined) {
+                    const newMaxValue = (attr.maxValue as number) + (bonus.value * multiplier);
+                    attr.maxValue = newMaxValue;
+                    // Ensure current value doesn't exceed new max value on unequip
+                    if (operation === 'subtract' && attr.value > newMaxValue) {
+                        attr.value = newMaxValue;
+                    }
+                }
+                break;
+            }
+        }
+    });
+    return { ...pc, attributes: newAttributes };
+};
+
 
 const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState, onSaveGame, onBack }) => {
     const [isAILoading, setIsAILoading] = useState(false);
@@ -194,9 +221,9 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     const [isGameMenuOpen, setIsGameMenuOpen] = useState(false);
     const [notification, setNotification] = useState<string | null>(null);
     const [activeShopId, setActiveShopId] = useState<string | null>(null);
+    const [pendingPathChoice, setPendingPathChoice] = useState<CultivationPath[] | null>(null);
     
-    // FIX: Destructure `realmSystem` from `gameState` to pass it down to the Sidebar component.
-    const { playerCharacter, activeNpcs, gameDate, discoveredLocations, worldState, storyLog, encounteredNpcIds, realmSystem } = gameState;
+    const { playerCharacter, activeNpcs, gameDate, discoveredLocations, worldState, storyLog, encounteredNpcIds, realmSystem, activeMods, activeStory } = gameState;
     
     useEffect(() => {
         if (notification) {
@@ -429,7 +456,6 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     }
                     case 'UPDATE_RELATIONSHIP': {
                         const { npcName, change } = data;
-                        // FIX: Access npc.identity.name instead of npc.name to correctly find the target NPC.
                         const targetNpc = activeNpcs.find(n => n.identity.name === npcName);
                         if (targetNpc) {
                             setPlayerCharacter(pc => {
@@ -599,231 +625,172 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
         if (type !== 'continue') {
             addStoryEntry(playerEntry);
         }
-
+        
         const techniqueUsed = await analyzeActionForTechnique(text, playerCharacter.techniques);
-        let canProceed = true;
-
-        if (techniqueUsed) {
-            const costAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === techniqueUsed.cost.type);
-            if (costAttr && (costAttr.value as number) >= techniqueUsed.cost.value) {
+        if(techniqueUsed) {
+            const cost = techniqueUsed.cost;
+            const hasEnough = (playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === cost.type)?.value as number) >= cost.value;
+            if (hasEnough) {
                  setPlayerCharacter(pc => {
-                    const newAttributes = pc.attributes.map(group => ({
-                        ...group,
-                        attributes: group.attributes.map(attr => {
-                            if (attr.name === techniqueUsed.cost.type) {
-                                return { ...attr, value: (attr.value as number) - techniqueUsed.cost.value };
-                            }
-                            return attr;
-                        })
-                    }));
-                    return {...pc, attributes: newAttributes};
+                    const newAttributes = deepCopyAttributes(pc.attributes);
+                    const attr = newAttributes.flatMap(g => g.attributes).find(a => a.name === cost.type);
+                    if (attr && typeof attr.value === 'number') {
+                        (attr.value as number) -= cost.value;
+                    }
+                    return { ...pc, attributes: newAttributes };
                 });
-                addStoryEntry({ type: 'system', content: `Bạn sử dụng [${techniqueUsed.name}], tiêu hao ${techniqueUsed.cost.value} ${techniqueUsed.cost.type}.` });
+                addStoryEntry({type: 'system', content: `Bạn đã sử dụng [${techniqueUsed.name}], tiêu hao ${cost.value} ${cost.type}.`});
+                await handleStreamedAIResponse(playerEntry, undefined, techniqueUsed);
             } else {
-                addStoryEntry({ type: 'system', content: `${techniqueUsed.cost.type} không đủ để thi triển [${techniqueUsed.name}]!` });
-                canProceed = false;
+                addStoryEntry({type: 'system', content: `Không đủ ${cost.type} để sử dụng ${techniqueUsed.name}!`});
             }
-        }
 
-        if (canProceed) {
-            handleStreamedAIResponse(playerEntry, undefined, techniqueUsed);
+        } else {
+            await handleStreamedAIResponse(playerEntry);
         }
     };
     
-    const handleEventChoice = async (choice: EventChoice) => {
-        if (isAILoading) return;
-
-        const isDemonEvent = currentEvent?.id === 'inner_demon_event';
-        setCurrentEvent(null);
-
+    const handleEventChoice = (choice: EventChoice) => {
         let result: 'success' | 'failure' | 'no_check' = 'no_check';
-        let outcomeText = `Bạn chọn: "${choice.text}".`;
-
         if (choice.check) {
-            const attribute = playerCharacter.attributes
-                .flatMap(g => g.attributes)
-                .find(a => a.name === choice.check!.attribute);
+            const attribute = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === choice.check!.attribute);
             const attributeValue = (attribute?.value as number) || 10;
             const modifier = Math.floor((attributeValue - 10) / 2);
             const roll = Math.floor(Math.random() * 20) + 1;
             const total = roll + modifier;
-            const success = total >= choice.check.difficulty;
-            result = success ? 'success' : 'failure';
-
-            outcomeText += `\n(Kiểm tra ${choice.check.attribute}: ${total} [${roll > 0 ? roll : `(${roll})`}${modifier >= 0 ? `+${modifier}`: modifier}] vs DC ${choice.check.difficulty} -> ${success ? 'Thành Công' : 'Thất Bại'})`;
+            result = total >= choice.check.difficulty ? 'success' : 'failure';
         }
-        
-        const playerActionEntry: StoryEntry = { id: Date.now() + 0.1, type: 'player-action', content: choice.text };
 
-        addStoryEntry({ type: 'system', content: outcomeText });
+        const playerActionEntry: StoryEntry = { id: Date.now(), type: 'player-action', content: choice.text };
         addStoryEntry(playerActionEntry);
+        
+        setCurrentEvent(null);
+        handleStreamedAIResponse(playerActionEntry, { choiceText: choice.text, result });
+    };
 
-        if (isDemonEvent) {
-            setIsAILoading(true);
-            if (result === 'success') {
-                setPlayerCharacter(pc => {
-                    const newAttributes = pc.attributes.map(group => {
-                        if (group.title === 'Thông Tin Tu Luyện') {
-                            return {
-                                ...group,
-                                attributes: group.attributes.map(attr => {
-                                    if (attr.name === 'Đạo Tâm') {
-                                        return { ...attr, value: (attr.value as number) + 5 }; // Thưởng vĩnh viễn
-                                    }
-                                    return attr;
-                                })
-                            };
-                        }
-                        return group;
-                    });
-                    return {
-                        ...pc,
-                        attributes: newAttributes,
-                        cultivation: { ...pc.cultivation, hasConqueredInnerDemon: true, spiritualQi: 0 } // Reset Linh khí sau trận chiến
-                    };
-                });
-                addStoryEntry({ type: 'system', content: 'Bạn gầm lên một tiếng, dùng ý chí sắc như kiếm chém tan bóng đen! Tâm ma đã bị trảm, đạo tâm của bạn trở nên kiên định và không gì có thể lay chuyển. Dù lần này đột phá không thành, nền tảng của bạn đã vững chắc hơn bao giờ hết.' });
-                setIsAILoading(false);
-            } else { // Thất bại
-                setIsGameOver(true);
-                setIsAILoading(false);
+    const handleBreakthrough = async () => {
+        if (!currentRealmData || !currentStageData || !playerCharacter.cultivation) return;
+        
+        const currentStageIndex = currentRealmData.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId);
+        const isLastStage = currentStageIndex === currentRealmData.stages.length - 1;
+        
+        const newCultivation = { ...playerCharacter.cultivation, spiritualQi: 0 };
+        const oldRealmName = currentRealmData.name;
+        
+        if (isLastStage) {
+            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealmData.id);
+            const newRealm = realmSystem[currentRealmIndex + 1];
+            if (newRealm) {
+                newCultivation.currentRealmId = newRealm.id;
+                newCultivation.currentStageId = newRealm.stages[0].id;
+
+                 // Check for new destiny paths
+                const availablePaths = CULTIVATION_PATHS.filter(p => p.requiredRealmId === newRealm.id && !playerCharacter.chosenPathIds.includes(p.id));
+                if (availablePaths.length > 0) {
+                    setPendingPathChoice(availablePaths);
+                }
+
+            } else {
+                addStoryEntry({ type: 'system', content: "Bạn đã đạt đến đỉnh cao của thế giới này!" });
+                return;
             }
         } else {
-             handleStreamedAIResponse(playerActionEntry, { choiceText: choice.text, result });
+            newCultivation.currentStageId = currentRealmData.stages[currentStageIndex + 1].id;
+        }
+
+        setGameState(gs => {
+            if (!gs) return null;
+            let newPc = { ...gs.playerCharacter, cultivation: newCultivation };
+            const newRealmData = realmSystem.find(r => r.id === newCultivation.currentRealmId)!;
+            const newStageData = newRealmData.stages.find(s => s.id === newCultivation.currentStageId)!;
+            
+            // Apply all bonuses up to and including the new stage
+            newPc = applyBonuses(newPc, newStageData.bonuses, 'add');
+            
+            generateBreakthroughNarrative(newPc, oldRealmName, newRealmData, newStageData).then(narrative => addStoryEntry({ type: 'narrative', content: narrative }));
+            
+            return { ...gs, playerCharacter: newPc };
+        });
+    };
+
+    const handleSelectPath = (path: CultivationPath) => {
+        setPlayerCharacter(pc => {
+            const newPc = applyBonuses(pc, path.bonuses, 'add');
+            return {
+                ...newPc,
+                chosenPathIds: [...newPc.chosenPathIds, path.id]
+            }
+        });
+        setPendingPathChoice(null);
+        showNotification(`Bạn đã bước đi trên con đường: ${path.name}!`);
+    };
+
+    const showNotification = (message: string) => {
+        setNotification(message);
+    };
+    
+    const handleSaveAndNotify = () => {
+        onSaveGame(gameState, showNotification);
+        setIsGameMenuOpen(false);
+    };
+
+    const handleExit = () => {
+        if(window.confirm("Bạn có chắc muốn thoát về menu chính? Mọi tiến trình chưa lưu sẽ bị mất.")) {
+            onBack();
         }
     };
     
-    const handleBreakthrough = async () => {
-        if (!currentRealmData || !currentStageData || playerCharacter.cultivation.spiritualQi < currentStageData.qiRequired) return;
-        
-        const isTribulationRealm = currentRealmData.hasTribulation || (realmSystem[realmSystem.findIndex(r => r.id === currentRealmData.id) + 1]?.hasTribulation);
-
-        const canCo = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Nhục Thân')?.value as number || 10;
-        const coDuyen = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Cơ Duyên')?.value as number || 10;
-        const daoTam = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Đạo Tâm')?.value as number || 10;
-        const baseChance = 0.7; // 70%
-        const successChance = Math.min(0.95, baseChance + ((canCo - 10) * 0.015) + ((coDuyen - 10) * 0.005) + ((daoTam - 10) * 0.01));
-        const successRoll = Math.random() < successChance;
-
-        if (successRoll) {
-            const currentStageIndex = currentRealmData.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId);
-            let nextStageData = currentRealmData.stages[currentStageIndex + 1];
-            let nextRealmData = currentRealmData;
-            if (!nextStageData) {
-                const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealmData.id);
-                const nextRealm = realmSystem[currentRealmIndex + 1];
-                if (nextRealm) {
-                    nextRealmData = nextRealm;
-                    nextStageData = nextRealm.stages[0];
-                } else {
-                    addStoryEntry({ type: 'system', content: "Bạn đã đạt đến đỉnh cao của thế giới này, không thể đột phá thêm."});
-                    return;
-                }
-            }
-            const bonuses = nextStageData.bonuses;
-            setPlayerCharacter(prev => {
-                const newAttributes = prev.attributes.map(group => ({
-                    ...group,
-                    attributes: group.attributes.map(attr => {
-                        const bonus = bonuses.find(b => b.attribute === attr.name);
-                        if (bonus) {
-                            const newValue = (attr.value as number) + bonus.value;
-                            const newMaxValue = attr.maxValue ? attr.maxValue + bonus.value : undefined;
-                            return { ...attr, value: newValue, maxValue: newMaxValue };
-                        }
-                        return attr;
-                    })
-                }));
-                return { ...prev, attributes: newAttributes, cultivation: { ...prev.cultivation, currentRealmId: nextRealmData.id, currentStageId: nextStageData.id, spiritualQi: 0 }};
-            });
-            const oldRealmName = currentRealmData.name;
-            const breakthroughNarrative = await generateBreakthroughNarrative(playerCharacter, oldRealmName, nextRealmData, nextStageData);
-            addStoryEntry({ type: 'narrative', content: breakthroughNarrative});
-
-        } else {
-            if (isTribulationRealm && !playerCharacter.cultivation.hasConqueredInnerDemon) {
-                const demonEvent: GameEvent = {
-                    id: 'inner_demon_event',
-                    description: 'Đột phá thất bại, linh khí hỗn loạn dẫn động tâm ma từ sâu trong thức hải! Một bóng đen mang hình hài của chính bạn với đôi mắt đỏ ngầu xuất hiện, nó gào thét muốn chiếm đoạt thân thể này.',
-                    choices: [{
-                        id: 'confront_demon', text: 'Đối mặt và trảm nó!',
-                        check: { attribute: 'Đạo Tâm', difficulty: 15 + Math.floor(daoTam / 2) }
-                    }]
-                };
-                setCurrentEvent(demonEvent);
-                addStoryEntry({ type: 'system', content: 'Thiên kiếp chưa tới, tâm ma đã đến trước! Đây là kiếp nạn của bạn!' });
-            } else {
-                setPlayerCharacter(pc => ({
-                    ...pc, cultivation: { ...pc.cultivation, spiritualQi: pc.cultivation.spiritualQi / 2 }
-                }));
-                addStoryEntry({ type: 'system', content: `Đột phá thất bại! Linh khí trong cơ thể hỗn loạn, bạn bị phản phệ, tu vi tổn hại.` });
-            }
-        }
-    };
-
     return (
-        <div className="w-full h-screen bg-transparent flex flex-col animate-fade-in">
-             {notification && (
-                <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] bg-green-600/90 text-white px-6 py-2 rounded-full shadow-lg animate-fade-in">
+        <div className="w-full h-screen flex flex-col bg-black">
+            {notification && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600/90 text-white px-6 py-2 rounded-full shadow-lg animate-fade-in">
                     {notification}
                 </div>
             )}
-             {activeShopId && <ShopModal shopId={activeShopId} gameState={gameState} setGameState={setGameState} showNotification={setNotification} onClose={() => setActiveShopId(null)} />}
-            <GameMenuModal 
-                isOpen={isGameMenuOpen}
-                onClose={() => setIsGameMenuOpen(false)}
-                onSave={() => { onSaveGame(gameState, setNotification); setIsGameMenuOpen(false); }}
-                onExit={onBack}
-            />
-            {viewingNpc && <NpcInfoModal npc={viewingNpc} allNpcs={activeNpcs} onClose={() => setViewingNpc(null)} />}
              {isGameOver && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }}>
-                    <div className="themed-panel border-red-500/50 rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4 p-8 text-center">
-                        <div className="flex justify-center mb-4">
-                            <FaExclamationTriangle className="text-red-500 text-5xl" />
-                        </div>
-                        <h3 className="text-2xl text-red-400 font-bold font-title">Hành Trình Kết Thúc</h3>
-                        <p className="text-gray-300 mt-4">Lý trí của bạn đã bị tâm ma nuốt chửng, hoặc thọ nguyên đã cạn. Hành trình tu tiên đã kết thúc trong bi kịch.</p>
-                        <button onClick={onBack} className="mt-8 px-8 py-3 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors">
-                           Về Menu Chính
-                        </button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="text-center p-8">
+                        <FaExclamationTriangle className="text-7xl text-red-500 mx-auto mb-4" />
+                        <h2 className="text-4xl font-bold text-red-400 font-title">Hành Trình Kết Thúc</h2>
+                        <button onClick={onBack} className="mt-8 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg">Về Menu Chính</button>
                     </div>
                 </div>
             )}
-            <header className="w-full bg-black/30 backdrop-blur-sm p-3 border-b border-gray-700/50 z-20 flex-shrink-0 space-y-3">
+            <div className="flex-shrink-0 p-2 sm:p-4 bg-black/40 backdrop-blur-sm border-b border-gray-700/50">
                 <div className="flex justify-between items-center">
-                    <button onClick={() => setIsGameMenuOpen(true)} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Tùy chọn">
-                        <FaCog className="w-5 h-5" />
-                    </button>
-                    <div className="text-center">
-                        <h1 className="text-xl sm:text-2xl font-bold text-gray-200 font-title" style={{textShadow: '0 1px 3px rgba(0,0,0,0.5)'}}>
-                            {playerCharacter.identity.name} ({playerCharacter.identity.age} tuổi)
-                        </h1>
-                        <p className="text-xs text-amber-300 font-semibold">{currentRealmState}</p>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsGameMenuOpen(true)} className="p-3 bg-gray-800/60 rounded-full text-gray-300 hover:bg-gray-700/60" title="Menu">
+                            <FaCog />
+                        </button>
                     </div>
-                    <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors lg:hidden" title="Thông tin nhân vật">
-                        {isSidebarOpen ? <FaTimes /> : <FaBars />}
-                    </button>
+                    <div className="flex-grow">
+                        <Timeline gameDate={gameDate} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-3 bg-gray-800/60 rounded-full text-gray-300 hover:bg-gray-700/60" title="Bảng điều khiển">
+                           {isSidebarOpen ? <FaTimes /> : <FaBars />}
+                        </button>
+                    </div>
                 </div>
-                <Timeline gameDate={gameDate} />
-            </header>
-            <div className="w-full flex-grow grid grid-cols-1 lg:grid-cols-4 overflow-hidden relative">
-                <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-                    <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} techniques={playerCharacter.techniques} />
-                    {currentEvent ? (
-                        <EventPanel 
-                            key={currentEvent.id} 
-                            event={currentEvent} 
-                            onChoice={handleEventChoice} 
-                            playerAttributes={playerCharacter.attributes.flatMap(g => g.attributes)}
-                        />
-                    ) : (
-                        <PlayerInput onAction={handlePlayerAction} disabled={isAILoading} />
-                    )}
+            </div>
+
+            <div className="flex-grow flex min-h-0">
+                {/* Main content panel */}
+                <div className={`transition-all duration-500 ${isSidebarOpen ? 'w-full md:w-2/3 lg:w-3/4' : 'w-full'}`}>
+                    <div className="h-full flex flex-col bg-stone-900/50">
+                        <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} techniques={playerCharacter.techniques} />
+                        {currentEvent ? (
+                            <EventPanel event={currentEvent} onChoice={handleEventChoice} playerAttributes={playerCharacter.attributes.flatMap(g => g.attributes)} />
+                        ) : activeStory ? (
+                            <CustomStoryPlayer gameState={gameState} setGameState={setGameState} />
+                        ) : (
+                            <PlayerInput onAction={handlePlayerAction} disabled={isAILoading || isGameOver} />
+                        )}
+                    </div>
                 </div>
-                {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
-                <aside className={`fixed top-0 right-0 h-full w-full max-w-sm bg-black/60 backdrop-blur-lg border-l border-gray-700/50 overflow-y-auto z-30 transform transition-transform duration-300 ease-in-out lg:static lg:transform-none lg:col-span-1 lg:max-w-none lg:bg-black/30 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <Sidebar 
+                {/* Sidebar */}
+                <div className={`fixed top-0 right-0 h-full bg-stone-900/80 backdrop-blur-md border-l border-gray-700/50 shadow-2xl transition-transform duration-500 z-30 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} w-full md:w-1/3 lg:w-1/4`}>
+                    <Sidebar
                         playerCharacter={playerCharacter}
                         setPlayerCharacter={setPlayerCharacter}
                         onBreakthrough={handleBreakthrough}
@@ -838,10 +805,19 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         encounteredNpcIds={encounteredNpcIds}
                         discoveredLocations={discoveredLocations}
                         realmSystem={realmSystem}
-                        showNotification={setNotification}
+                        showNotification={showNotification}
+                        activeMods={activeMods}
                     />
-                </aside>
+                </div>
             </div>
+            {viewingNpc && <NpcInfoModal npc={viewingNpc} allNpcs={activeNpcs} onClose={() => setViewingNpc(null)} />}
+            <GameMenuModal isOpen={isGameMenuOpen} onClose={() => setIsGameMenuOpen(false)} onSave={handleSaveAndNotify} onExit={handleExit} />
+            {activeShopId && <ShopModal shopId={activeShopId} gameState={gameState} setGameState={setGameState} showNotification={showNotification} onClose={() => setActiveShopId(null)} />}
+             <CultivationPathModal 
+                isOpen={!!pendingPathChoice}
+                paths={pendingPathChoice || []}
+                onSelectPath={handleSelectPath}
+            />
         </div>
     );
 };

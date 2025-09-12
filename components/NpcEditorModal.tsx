@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash } from 'react-icons/fa';
 import type { ModNpc, NpcRelationshipInput } from '../types';
 import TagEditor from './TagEditor';
-import { WORLD_MAP } from '../constants';
+import { WORLD_MAP, FACTION_NAMES } from '../constants';
 
 interface NpcEditorModalProps {
     isOpen: boolean;
@@ -92,6 +92,12 @@ const NpcEditorModal: React.FC<NpcEditorModalProps> = ({ isOpen, onClose, onSave
                            </select>
                         </FieldWrapper>
                     </div>
+                    <FieldWrapper label="Phe Phái">
+                       <select value={npc.faction || ''} onChange={e => handleChange('faction', e.target.value || undefined)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200">
+                           <option value="">Không có</option>
+                           {FACTION_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
+                       </select>
+                    </FieldWrapper>
                     <FieldWrapper label="Trạng Thái Hiện Tại">
                         <input type="text" value={npc.status} onChange={e => handleChange('status', e.target.value)} placeholder="Ví dụ: Đang câu cá bên bờ sông Vị Thủy" className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                     </FieldWrapper>

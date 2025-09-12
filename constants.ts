@@ -1,4 +1,4 @@
-import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe } from './types';
+import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -26,6 +26,16 @@ export const FACTIONS: Faction[] = [
     imageUrl: "https://images.unsplash.com/photo-1596779350257-259654823FF8?q=80&w=2670&auto=format-fit-crop",
   },
 ];
+export const FACTION_NAMES = FACTIONS.map(f => f.name);
+
+export const FACTION_REPUTATION_TIERS: { threshold: number; status: FactionReputationStatus }[] = [
+    { threshold: -101, status: 'Kẻ Địch' }, // -100 to -51
+    { threshold: -50, status: 'Lạnh Nhạt' }, // -50 to -1
+    { threshold: 0, status: 'Trung Lập' }, // 0 to 49
+    { threshold: 50, status: 'Thân Thiện' }, // 50 to 99
+    { threshold: 100, status: 'Đồng Minh' }, // 100
+];
+
 
 // URL for the community mod manifest. Using a Gist is a great way to host this.
 // For this example, it points to a sample manifest.
@@ -496,6 +506,30 @@ export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
     },
 ];
 
+export const CULTIVATION_PATHS: CultivationPath[] = [
+  {
+    id: 'path_trucco_kiemdao',
+    name: 'Vô Tình Kiếm Đạo',
+    description: 'Lấy kiếm làm bạn, lấy giết chóc để chứng đạo. Con đường này tập trung vào sức mạnh hủy diệt thuần túy, nhưng sẽ khiến đạo tâm dần trở nên lạnh lẽo.',
+    requiredRealmId: 'truc_co',
+    bonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Kiếm Pháp', value: 10 }, { attribute: 'Ma Đạo', value: 5 }],
+  },
+  {
+    id: 'path_trucco_vongtinh',
+    name: 'Thái Thượng Vong Tình',
+    description: 'Dứt bỏ thất tình lục dục, coi vạn vật là cỏ rác. Con đường này giúp chống lại tâm ma, đạo tâm vững chắc, phòng ngự vô song.',
+    requiredRealmId: 'truc_co',
+    bonuses: [{ attribute: 'Nguyên Thần', value: 5 }, { attribute: 'Phòng Ngự', value: 10 }, { attribute: 'Đạo Tâm', value: 10 }],
+  },
+  {
+    id: 'path_trucco_hongtran',
+    name: 'Hồng Trần Luyện Tâm',
+    description: 'Nhập thế để tu hành, trải nghiệm hỉ nộ ái ố của nhân gian để tìm kiếm đại đạo. Con đường này giúp tăng cơ duyên và khả năng cảm ngộ.',
+    requiredRealmId: 'truc_co',
+    bonuses: [{ attribute: 'Cảm Ngộ', value: 5 }, { attribute: 'Cơ Duyên', value: 10 }, { attribute: 'Chính Đạo', value: 5 }],
+  }
+];
+
 export const PREMADE_MODS: FullMod[] = [
     {
         modInfo: {
@@ -544,6 +578,7 @@ export const NPC_LIST: NPC[] = [
         attributes: [],
         talents: [],
         locationId: 'song_vi_thuy',
+        faction: 'Xiển Giáo',
         cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_3', spiritualQi: 0, hasConqueredInnerDemon: true },
         techniques: [],
         inventory: { items: [], weightCapacity: 20 },

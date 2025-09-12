@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import type { PlayerCharacter, Attribute, RealmConfig } from '../types';
-import { INNATE_TALENT_RANKS } from '../constants';
-import { FaBolt, FaCoins, FaGem } from 'react-icons/fa';
+import { INNATE_TALENT_RANKS, CULTIVATION_PATHS } from '../constants';
+import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers } from 'react-icons/fa';
 
 interface CharacterPanelProps {
     character: PlayerCharacter;
@@ -35,7 +35,7 @@ const ProgressBar: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, talents, cultivation, currencies } = character;
+    const { identity, attributes, talents, cultivation, currencies, chosenPathIds, reputation } = character;
 
     const currentRealmData = realmSystem.find(r => r.id === cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === cultivation.currentStageId);
@@ -57,7 +57,8 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
     
     const sinhMenh = attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh') as Attribute & { value: number; maxValue: number };
     const linhLuc = attributes.flatMap(g => g.attributes).find(a => a.name === 'Linh Lực') as Attribute & { value: number; maxValue: number };
-
+    
+    const chosenPaths = CULTIVATION_PATHS.filter(path => chosenPathIds.includes(path.id));
 
     return (
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
@@ -109,6 +110,26 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                 </div>
             </div>
 
+            {/* Faction Reputation */}
+            {reputation && reputation.length > 0 && (
+                <div>
+                    <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
+                        <FaUsers /> Danh Vọng
+                    </h3>
+                    <div className="space-y-2">
+                        {reputation.map(rep => (
+                            <div key={rep.factionName} className="flex justify-between items-center bg-black/20 px-3 py-2 rounded-lg border border-gray-700/60 text-sm">
+                                <span className="text-gray-300">{rep.factionName}</span>
+                                <div className="text-right">
+                                    <span className="font-bold text-amber-300">{rep.status}</span>
+                                    <span className="text-xs text-gray-400 ml-2">({rep.value})</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Talents */}
             <div>
                 <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Tiên Tư</h3>
@@ -130,6 +151,24 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                     })}
                 </div>
             </div>
+
+            {/* Destiny Paths */}
+            {chosenPaths.length > 0 && (
+                <div>
+                    <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
+                        <FaRoute /> Thiên Mệnh Lộ
+                    </h3>
+                    <div className="space-y-3">
+                        {chosenPaths.map(path => (
+                            <div key={path.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
+                                <h4 className="font-bold font-title text-amber-300">{path.name}</h4>
+                                <p className="text-xs text-gray-400">{path.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
 
             {/* Attributes */}
             <div>

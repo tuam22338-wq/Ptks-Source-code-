@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig } from '../types';
+import React, { useState, useMemo } from 'react';
+import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, ModCustomPanel } from '../types';
 import CharacterPanel from './CharacterPanel';
 import InventoryPanel from './InventoryPanel';
 import WorldPanel from './WorldPanel';
@@ -8,7 +8,9 @@ import WikiPanel from './WikiPanel';
 import RealmPanel from './RealmPanel';
 import LorePanel from './LorePanel';
 import AlchemyPanel from './AlchemyPanel';
-import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram } from 'react-icons/fa';
+import CustomContentPanel from './CustomContentPanel';
+import MapView from './MapView';
+import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt } from 'react-icons/fa';
 import { GiCauldron } from 'react-icons/gi';
 
 interface SidebarProps {
@@ -27,33 +29,57 @@ interface SidebarProps {
     discoveredLocations: Location[];
     realmSystem: RealmConfig[];
     showNotification: (message: string) => void;
+    activeMods: FullMod[];
 }
-type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy';
+type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | string; // Allow custom string IDs for modded panels
+
+// A map for moddable icons
+const ICON_MAP: { [key: string]: React.ElementType } = {
+    FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, GiCauldron
+};
+
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification } = props;
+    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods } = props;
     const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     
-    const tabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
+    const baseTabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
         {id: 'character', label: 'Nhân Vật', icon: FaUser },
         {id: 'techniques', label: 'Công Pháp', icon: FaScroll },
         {id: 'inventory', label: 'Hành Trang', icon: FaBoxOpen },
         {id: 'alchemy', label: 'Luyện Đan', icon: GiCauldron },
         {id: 'world', label: 'Thế Giới', icon: FaGlobe },
+        {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt },
         {id: 'wiki', label: 'Wiki', icon: FaBook },
         {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
         {id: 'lore', label: 'Thiên Mệnh', icon: FaSun },
     ];
 
+    const moddedTabs = useMemo(() => {
+        if (!activeMods) return [];
+        return activeMods.flatMap(mod => 
+            mod.content.customPanels?.map((panel: Omit<ModCustomPanel, 'id'>, index: number) => ({
+                id: `modpanel-${mod.modInfo.id}-${index}`,
+                label: panel.title,
+                icon: ICON_MAP[panel.iconName] || FaQuestionCircle,
+                panelConfig: { ...panel, id: `modpanel-${mod.modInfo.id}-${index}` } // Re-add a temporary stable ID
+            })) || []
+        );
+    }, [activeMods]);
+
+    const allTabs = [...baseTabs, ...moddedTabs];
+    const activeModPanelConfig = moddedTabs.find(tab => tab.id === activeTab)?.panelConfig;
+
+
     return (
         <div className="w-full h-full flex flex-col p-4">
             <div className="flex-shrink-0 mb-4">
-                <div className="grid grid-cols-4 gap-1 p-1 bg-black/30 rounded-lg border border-gray-700/60">
-                    {tabs.map(tab => (
+                <div className="flex flex-wrap gap-1 p-1 bg-black/30 rounded-lg border border-gray-700/60">
+                    {allTabs.map(tab => (
                          <button 
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 text-xs font-bold rounded-md transition-colors ${
+                            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 text-xs font-bold rounded-md transition-colors min-w-[60px] ${
                                 activeTab === tab.id 
                                 ? 'bg-[color:var(--primary-accent-color)]/20 text-[color:var(--primary-accent-color)]' 
                                 : 'text-[color:var(--text-muted-color)] hover:bg-black/20'
@@ -105,6 +131,13 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                         onNpcSelect={onNpcSelect}
                     />
                 )}
+                {activeTab === 'map' && (
+                    <MapView
+                        discoveredLocations={discoveredLocations}
+                        playerCharacter={playerCharacter}
+                        onTravel={onTravel}
+                    />
+                )}
                 {activeTab === 'wiki' && (
                     <WikiPanel
                         playerCharacter={playerCharacter}
@@ -121,6 +154,12 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 )}
                 {activeTab === 'lore' && (
                     <LorePanel />
+                )}
+                {activeModPanelConfig && (
+                    <CustomContentPanel 
+                        panelConfig={activeModPanelConfig}
+                        activeMods={activeMods}
+                    />
                 )}
             </div>
         </div>

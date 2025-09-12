@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     FaArrowLeft, FaBoxOpen, FaUserShield, FaStar, FaPlus, FaEdit, FaTrash, FaCogs, FaGlobe, FaFilter,
-    FaTimes, FaCode, FaList, FaExclamationTriangle, FaRobot, FaFileSignature, FaBoxes, FaScroll, FaUserFriends, FaMagic
+    FaTimes, FaCode, FaList, FaExclamationTriangle, FaRobot, FaFileSignature, FaBoxes, FaScroll, FaUserFriends, FaMagic, FaColumns
 } from 'react-icons/fa';
 import { GiCastle } from 'react-icons/gi';
 import { ALL_ATTRIBUTES, INNATE_TALENT_PROBABILITY, INNATE_TALENT_RANKS } from '../constants';
 import GameMasterChat from './GameMasterChat';
-import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, AIAction, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent } from '../types';
+import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, AIAction, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel } from '../types';
 import TalentEditorModal from './TalentEditorModal';
 import CharacterEditorModal from './CharacterEditorModal';
 import ItemEditorModal from './ItemEditorModal';
@@ -24,7 +24,7 @@ interface CreateModScreenProps {
 }
 
 type ModCreationTab = 'info' | 'content' | 'system' | 'ai';
-type ContentType = 'item' | 'character' | 'talent' | 'realm' | 'talentSystem' | 'worldBuilding' | 'realmSystem' | 'sect' | 'npc' | 'technique' | 'event';
+type ContentType = 'item' | 'character' | 'talent' | 'realm' | 'talentSystem' | 'worldBuilding' | 'realmSystem' | 'sect' | 'npc' | 'technique' | 'event' | 'customPanel';
 
 const CONTENT_TYPE_INFO: Record<Exclude<ContentType, 'realm' | 'realmSystem' | 'talentSystem'>, { label: string; icon: React.ElementType; color: string }> = {
     item: { label: 'Vật Phẩm', icon: FaBoxOpen, color: 'bg-sky-500/80' },
@@ -35,6 +35,7 @@ const CONTENT_TYPE_INFO: Record<Exclude<ContentType, 'realm' | 'realmSystem' | '
     npc: { label: 'NPC', icon: FaUserFriends, color: 'bg-cyan-500/80' },
     technique: { label: 'Công Pháp', icon: FaMagic, color: 'bg-amber-500/80' },
     event: { label: 'Sự Kiện', icon: FaScroll, color: 'bg-orange-500/80' },
+    customPanel: { label: 'Bảng UI', icon: FaColumns, color: 'bg-indigo-500/80' },
 };
 
 const DEFAULT_REALMS: RealmConfig[] = [
@@ -65,7 +66,8 @@ type AddedContentUnion =
     (ModWorldBuilding & { contentType: 'worldBuilding' }) |
     (ModNpc & { contentType: 'npc' }) |
     (ModTechnique & { contentType: 'technique' }) |
-    (ModEvent & { contentType: 'event' });
+    (ModEvent & { contentType: 'event' }) |
+    (ModCustomPanel & { contentType: 'customPanel' });
 
 
 
@@ -177,6 +179,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                     if(parsedData.content.npcs) newAddedContent.push(...parsedData.content.npcs.map((n: any) => ({...n, id: n.id || timestamp(), contentType: 'npc' as const})));
                     if(parsedData.content.techniques) newAddedContent.push(...parsedData.content.techniques.map((t: any) => ({...t, id: t.id || timestamp(), contentType: 'technique' as const})));
                     if(parsedData.content.events) newAddedContent.push(...parsedData.content.events.map((e: any) => ({...e, id: e.id || timestamp(), contentType: 'event' as const})));
+                    if(parsedData.content.customPanels) newAddedContent.push(...parsedData.content.customPanels.map((p: any) => ({...p, id: p.id || timestamp(), contentType: 'customPanel' as const})));
                     setAddedContent(newAddedContent);
 
                     setRealms(parsedData.content.realmConfigs || DEFAULT_REALMS);
@@ -239,6 +242,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 case 'CREATE_MULTIPLE_TECHNIQUES': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'technique' })); break;
                 case 'CREATE_EVENT': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'event' }); break;
                 case 'CREATE_MULTIPLE_EVENTS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'event' })); break;
+                case 'CREATE_CUSTOM_PANEL': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'customPanel' }); break;
             }
         });
 
@@ -319,7 +323,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
 
     const packageModData = () => {
         const content: Record<string, any[]> = {
-            items: [], talents: [], characters: [], worldBuilding: [], sects: [], npcs: [], techniques: [], events: [],
+            items: [], talents: [], characters: [], worldBuilding: [], sects: [], npcs: [], techniques: [], events: [], customPanels: []
         };
         
         addedContent.forEach(c => {
@@ -329,6 +333,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                  content[key].push(data);
             } else if (contentType === 'worldBuilding') {
                  content.worldBuilding.push(data);
+            } else if (contentType === 'customPanel') {
+                content.customPanels.push(data);
             }
         });
 
@@ -500,6 +506,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 case 'npc': return handleOpenNpcEditor(content);
                 case 'technique': return handleOpenTechniqueEditor(content);
                 case 'event': return handleOpenEventEditor(content);
+                // Custom panels are not manually editable for now
+                case 'customPanel': return alert("Bảng Tùy Chỉnh chỉ có thể được tạo bởi AI và chỉnh sửa qua JSON.");
             }
         };
 
@@ -522,6 +530,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             case 'npc': description = content.status; break;
             case 'technique': description = content.type; break;
             case 'event': description = `${content.choices.length} lựa chọn`; break;
+            case 'customPanel': description = `${content.content.length} mục`; break;
         }
 
 

@@ -18,6 +18,7 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
             {relationship && (
                 <p><strong className="text-gray-400">Quan hệ:</strong> <span className="text-yellow-300 font-semibold">{relationship.status} ({relationship.value})</span></p>
             )}
+             {npc.faction && <p><strong className="text-gray-400">Phe phái:</strong> <span className="text-gray-300 font-semibold">{npc.faction}</span></p>}
             <p><strong className="text-gray-400">Trạng thái:</strong> <em className="text-gray-300">"{npc.status}"</em></p>
             {/* FIX: Access npc.identity.appearance instead of npc.description. */}
             <p><strong className="text-gray-400">Ngoại hình:</strong> <span className="text-gray-300">{npc.identity.appearance}</span></p>

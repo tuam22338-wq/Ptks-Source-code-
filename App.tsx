@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -12,7 +11,7 @@ import LoadingScreen from './components/LoadingScreen';
 import LoreScreen from './components/LoreScreen';
 import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo } from './types';
 // FIX: Added NPC_DENSITY_LEVELS and INITIAL_TECHNIQUES to imports as they will be added to constants.ts to resolve module export errors.
-import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from './constants';
+import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, FACTIONS } from './constants';
 import { generateDynamicNpcs, reloadApiKeys } from './services/geminiService';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'lore';
@@ -41,9 +40,11 @@ const migrateGameState = (savedGame: any): GameState => {
         migratedData.activeMods = migratedData.activeMods ?? [];
         migratedData.realmSystem = migratedData.realmSystem ?? REALM_SYSTEM;
         migratedData.encounteredNpcIds = migratedData.encounteredNpcIds ?? [];
+        migratedData.activeStory = migratedData.activeStory ?? null;
 
         if (migratedData.playerCharacter) {
             migratedData.playerCharacter.relationships = migratedData.playerCharacter.relationships ?? [];
+            migratedData.playerCharacter.reputation = migratedData.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
             migratedData.playerCharacter.chosenPathIds = migratedData.playerCharacter.chosenPathIds ?? [];
             migratedData.playerCharacter.knownRecipeIds = migratedData.playerCharacter.knownRecipeIds ?? [];
         }
@@ -279,7 +280,7 @@ const App: React.FC = () => {
   };
 
   const handleGameStart = async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation'>,
       npcDensity: NpcDensity
   }) => {
     if (currentSlotId === null) {
@@ -389,6 +390,7 @@ const App: React.FC = () => {
             equipment: {},
             techniques: INITIAL_TECHNIQUES,
             relationships: [],
+            reputation: FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),
             chosenPathIds: [],
             knownRecipeIds: [],
         };
@@ -420,6 +422,7 @@ const App: React.FC = () => {
             encounteredNpcIds: [],
             activeMods: activeMods,
             realmSystem: realmSystemToUse,
+            activeStory: null,
         };
         
         // Initial save

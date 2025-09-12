@@ -211,6 +211,7 @@ export interface ModWorldBuilding {
     description: string;
     data: Record<string, any>;
     tags: string[];
+    storySystemId?: string;
 }
 
 export type SectMemberRank = 'Tông Chủ' | 'Trưởng Lão' | 'Đệ Tử Chân Truyền' | 'Đệ Tử Nội Môn' | 'Đệ Tử Ngoại Môn';
@@ -271,6 +272,7 @@ export type ModNpc = {
     locationId: string;
     relationships?: NpcRelationshipInput[];
     talentNames?: string[];
+    faction?: string;
     tags: string[];
 };
 
@@ -280,7 +282,7 @@ export interface EventTrigger {
     details: Record<string, any>;
 }
 
-export type EventOutcomeType = 'GIVE_ITEM' | 'REMOVE_ITEM' | 'CHANGE_STAT' | 'ADD_RUMOR' | 'START_EVENT';
+export type EventOutcomeType = 'GIVE_ITEM' | 'REMOVE_ITEM' | 'CHANGE_STAT' | 'ADD_RUMOR' | 'START_EVENT' | 'START_STORY' | 'UPDATE_REPUTATION';
 export interface EventOutcome {
     type: EventOutcomeType;
     details: Record<string, any>;
@@ -305,6 +307,44 @@ export interface AlchemyRecipe {
   qualityCurve: { threshold: number; quality: ItemQuality }[];
 }
 
+// --- New Deep Modding Types ---
+export type ModDeclaration = Record<string, string[]>;
+
+export interface StoryChoice {
+    text: string;
+    nextNodeId: string;
+    outcomes?: EventOutcome[];
+}
+
+export interface StoryNode {
+    id: string;
+    type: 'narrative' | 'choice' | 'check' | 'end';
+    content: string;
+    choices?: StoryChoice[];
+    check?: SkillCheck;
+    successNodeId?: string;
+    failureNodeId?: string;
+    nextNodeId?: string; // For narrative nodes
+    tags?: string[];
+}
+
+export interface ModStorySystem {
+    id: string;
+    name: string;
+    description: string;
+    entryPoint: string; // ID of the first story node
+    nodes: Record<string, Omit<StoryNode, 'id'>>; // Nodes keyed by their ID
+    tags?: string[];
+}
+
+export interface ModCustomPanel {
+    id: string;
+    title: string;
+    iconName: string; // e.g., "FaScroll", must match a key in a predefined map
+    content: string[]; // Array of WorldBuilding entry titles
+    tags?: string[];
+}
+
 export interface ModContent {
     items?: Omit<ModItem, 'id'>[];
     talents?: Omit<ModTalent, 'id'>[];
@@ -318,6 +358,9 @@ export interface ModContent {
     realmConfigs?: Omit<RealmConfig, 'id'>[];
     talentSystemConfig?: TalentSystemConfig;
     talentRanks?: Omit<ModTalentRank, 'id'>[];
+    declarations?: ModDeclaration;
+    storySystems?: Omit<ModStorySystem, 'id'>[];
+    customPanels?: Omit<ModCustomPanel, 'id'>[];
 }
 
 export interface FullMod {
@@ -345,6 +388,10 @@ export type CreateTechniqueData = Omit<ModTechnique, 'id'>;
 export type CreateNpcData = Omit<ModNpc, 'id'>;
 export type CreateEventData = Omit<ModEvent, 'id'>;
 export type CreateRecipeData = Omit<AlchemyRecipe, 'id'>;
+export type CreateDeclarationData = ModDeclaration;
+export type CreateStorySystemData = Omit<ModStorySystem, 'id'>;
+export type CreateCustomPanelData = Omit<ModCustomPanel, 'id'>;
+
 
 
 export type AIAction =
@@ -368,6 +415,10 @@ export type AIAction =
     | { action: 'DEFINE_WORLD_BUILDING'; data: DefineWorldBuildingData }
     | { action: 'CREATE_REALM_SYSTEM'; data: CreateRealmSystemData }
     | { action: 'CONFIGURE_TALENT_SYSTEM'; data: ConfigureTalentSystemData }
+    | { action: 'CREATE_DECLARATIONS'; data: CreateDeclarationData }
+    | { action: 'CREATE_STORY_SYSTEM'; data: CreateStorySystemData }
+    | { action: 'CREATE_CUSTOM_PANEL'; data: CreateCustomPanelData }
+    | { action: 'UPDATE_REPUTATION', data: { factionName: string, change: number } }
     | { 
         action: 'BATCH_ACTIONS'; 
         data: Array<
@@ -390,6 +441,10 @@ export type AIAction =
             | { action: 'DEFINE_WORLD_BUILDING'; data: DefineWorldBuildingData }
             | { action: 'CREATE_REALM_SYSTEM'; data: CreateRealmSystemData }
             | { action: 'CONFIGURE_TALENT_SYSTEM'; data: ConfigureTalentSystemData }
+            | { action: 'CREATE_DECLARATIONS'; data: CreateDeclarationData }
+            | { action: 'CREATE_STORY_SYSTEM'; data: CreateStorySystemData }
+            | { action: 'CREATE_CUSTOM_PANEL'; data: CreateCustomPanelData }
+            | { action: 'UPDATE_REPUTATION', data: { factionName: string, change: number } }
         > 
       };
 
@@ -428,6 +483,7 @@ export interface NPC {
     inventory: Inventory;
     currencies: Currency;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
+    faction?: string;
     // FIX: Add optional properties to align with AI-generated data and context building.
     ChinhDao?: number;
     MaDao?: number;
@@ -491,6 +547,15 @@ export interface PlayerNpcRelationship {
     status: 'Thù địch' | 'Lạnh nhạt' | 'Trung lập' | 'Thân thiện' | 'Tri kỷ';
 }
 
+export type FactionReputationStatus = 'Kẻ Địch' | 'Lạnh Nhạt' | 'Trung Lập' | 'Thân Thiện' | 'Đồng Minh';
+
+export interface PlayerReputation {
+  factionName: string;
+  value: number; // -100 to 100
+  status: FactionReputationStatus;
+}
+
+
 export interface CultivationPath {
   id: string;
   name: string;
@@ -511,6 +576,7 @@ export interface PlayerCharacter {
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     techniques: CultivationTechnique[];
     relationships: PlayerNpcRelationship[];
+    reputation: PlayerReputation[];
     chosenPathIds: string[];
     knownRecipeIds: string[];
 }
@@ -531,6 +597,12 @@ export interface WorldState {
     rumors: Rumor[];
 }
 
+export interface ActiveStoryState {
+    systemId: string;
+    currentNodeId: string;
+}
+
+
 export interface GameState {
     version?: string;
     playerCharacter: PlayerCharacter;
@@ -543,6 +615,7 @@ export interface GameState {
     encounteredNpcIds: string[];
     activeMods: FullMod[];
     realmSystem: RealmConfig[];
+    activeStory: ActiveStoryState | null;
 }
 
 // --- Gameplay Event Types ---
