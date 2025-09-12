@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
 import CharacterCreationScreen from './components/CharacterCreationScreen';
@@ -96,6 +97,18 @@ const migrateGameState = (savedGame: any): GameState => {
     return dataToProcess as GameState;
 };
 
+const MAX_LOCAL_STORAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const formatBytes = (bytes: number): string => {
+    if (bytes < 1024) {
+        return `${bytes} B`;
+    } else if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(2)} KB`;
+    } else {
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+};
+
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('mainMenu');
@@ -113,10 +126,56 @@ const App: React.FC = () => {
         return DEFAULT_SETTINGS;
     }
   });
+  const [storageUsage, setStorageUsage] = useState({ usageString: `0 B / ${formatBytes(MAX_LOCAL_STORAGE_BYTES)}`, percentage: 0 });
+
+  const calculateLocalStorageUsage = useCallback((): { usageString: string; percentage: number } => {
+    let totalBytes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+            const value = localStorage.getItem(key);
+            if (value) {
+                totalBytes += (key.length + value.length) * 2; // Each char is 2 bytes (UTF-16)
+            }
+        }
+    }
+    
+    const usageString = `${formatBytes(totalBytes)} / ${formatBytes(MAX_LOCAL_STORAGE_BYTES)}`;
+    const percentage = Math.min(100, (totalBytes / MAX_LOCAL_STORAGE_BYTES) * 100);
+    
+    return { usageString, percentage };
+  }, []);
+
+
+  const updateStorageUsage = useCallback(() => {
+    setStorageUsage(calculateLocalStorageUsage());
+  }, [calculateLocalStorageUsage]);
+
+  const loadSaveSlots = useCallback(() => {
+    const loadedSlots: SaveSlot[] = [];
+    for (let i = 1; i <= 9; i++) {
+        try {
+            const savedGameRaw = localStorage.getItem(`phongthan-gs-slot-${i}`);
+            if (savedGameRaw) {
+                const savedGame: any = JSON.parse(savedGameRaw);
+                const migratedGame = migrateGameState(savedGame);
+                loadedSlots.push({ id: i, data: migratedGame });
+            } else {
+                loadedSlots.push({ id: i, data: null });
+            }
+        } catch (error) {
+            console.error(`Slot ${i} is corrupted or incompatible and will be cleared. Error:`, error);
+            localStorage.removeItem(`phongthan-gs-slot-${i}`);
+            loadedSlots.push({ id: i, data: null });
+        }
+    }
+    setSaveSlots(loadedSlots);
+    updateStorageUsage();
+  }, [updateStorageUsage]);
 
   useEffect(() => {
     loadSaveSlots();
-  }, []);
+  }, [loadSaveSlots]);
   
   // Real-time auto-save
   useEffect(() => {
@@ -135,6 +194,7 @@ const App: React.FC = () => {
                 ));
                 
                 console.log(`Đã tự động lưu vào ô ${currentSlotId} lúc ${new Date().toLocaleTimeString()}`);
+                updateStorageUsage();
             } catch (error) {
                 console.error("Tự động lưu thất bại", error);
             }
@@ -142,7 +202,7 @@ const App: React.FC = () => {
 
         return () => clearTimeout(debounceSave);
     }
-  }, [gameState, view, currentSlotId]);
+  }, [gameState, view, currentSlotId, updateStorageUsage]);
 
 
   useEffect(() => {
@@ -181,6 +241,7 @@ const App: React.FC = () => {
     try {
         localStorage.setItem('game-settings', JSON.stringify(settings));
         reloadApiKeys();
+        updateStorageUsage();
         alert('Cài đặt đã được lưu!');
     } catch (error) {
         console.error("Failed to save settings to localStorage", error);
@@ -189,27 +250,6 @@ const App: React.FC = () => {
   };
 
 
-  const loadSaveSlots = () => {
-    const loadedSlots: SaveSlot[] = [];
-    for (let i = 1; i <= 9; i++) {
-        try {
-            const savedGameRaw = localStorage.getItem(`phongthan-gs-slot-${i}`);
-            if (savedGameRaw) {
-                const savedGame: any = JSON.parse(savedGameRaw);
-                const migratedGame = migrateGameState(savedGame);
-                loadedSlots.push({ id: i, data: migratedGame });
-            } else {
-                loadedSlots.push({ id: i, data: null });
-            }
-        } catch (error) {
-            console.error(`Slot ${i} is corrupted or incompatible and will be cleared. Error:`, error);
-            localStorage.removeItem(`phongthan-gs-slot-${i}`);
-            loadedSlots.push({ id: i, data: null });
-        }
-    }
-    setSaveSlots(loadedSlots);
-  };
-  
   const handleSlotSelection = (slotId: number) => {
     const selectedSlot = saveSlots.find(s => s.id === slotId);
 
@@ -503,7 +543,7 @@ const App: React.FC = () => {
 
     switch (view) {
       case 'mainMenu':
-        return <MainMenu onNavigate={handleNavigate} />;
+        return <MainMenu onNavigate={handleNavigate} storageUsage={storageUsage} />;
       case 'saveSlots':
         return <SaveSlotScreen slots={saveSlots} onSelectSlot={handleSlotSelection} onBack={() => handleNavigate('mainMenu')} onDeleteSlot={handleDeleteGame} onVerifySlot={handleVerifyAndRepairSlot} />;
       case 'characterCreation':
@@ -528,7 +568,7 @@ const App: React.FC = () => {
             onBack={() => { setGameState(null); setCurrentSlotId(null); handleNavigate('mainMenu'); }} 
         />;
       default:
-        return <MainMenu onNavigate={handleNavigate} />;
+        return <MainMenu onNavigate={handleNavigate} storageUsage={storageUsage} />;
     }
   };
   

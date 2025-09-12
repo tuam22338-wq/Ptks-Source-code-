@@ -14,7 +14,6 @@ import WorldBuildingEditorModal from './WorldBuildingEditorModal';
 import SectEditorModal from './SectEditorModal';
 import RealmEditorModal from './RealmEditorModal';
 import NpcEditorModal from './NpcEditorModal';
-// FIX: Changed import to a named import as TechniqueEditorModal does not have a default export.
 import TechniqueEditorModal from './TechniqueEditorModal';
 import EventEditorModal from './EventEditorModal';
 import RecipeEditorModal from './RecipeEditorModal';
@@ -224,7 +223,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             }
         }
         
-        // FIX: Pass the full realm and talent rank objects, including the temporary `id`, to conform to the `GameMasterModContext` type which expects it.
         return {
             modInfo: {
                 name: modName,
@@ -265,6 +263,11 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             const actions: AIAction[] = action.action === 'BATCH_ACTIONS' ? (action.data as AIAction[]) : [action];
     
             actions.forEach(act => {
+                if (!act || typeof act.action !== 'string' || act.data === undefined) {
+                    console.warn('Skipping invalid action from AI:', act);
+                    return; 
+                }
+                
                 const data = act.data as any;
                 switch (act.action) {
                     case 'CREATE_ITEM': currentContent.push({ ...data, id: timestamp(), contentType: 'item' }); break;

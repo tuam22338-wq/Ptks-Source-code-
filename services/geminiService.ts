@@ -141,17 +141,12 @@ const performApiCall = async <T>(
 };
 
 
-// FIX: Add an explicit return type `Promise<GenerateContentResponse>` to `generateWithRetry`.
-// This resolves multiple downstream errors where the compiler could not infer the type of the awaited response,
-// thus treating `response.text` as an access on an `unknown` type.
 const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateContentResponse> => {
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
     
-    // Explicitly use the model from the request to fix the bug where it was being ignored.
     const modelToUse = generationRequest.model || settings.mainTaskModel;
 
-    // Build the thinking config based on settings
     const thinkingConfig = modelToUse.includes('flash') 
         ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
         : {};
@@ -172,9 +167,6 @@ const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<Gene
     return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest, maxRetries);
 };
 
-// FIX: Add an explicit return type `Promise<GenerateImagesResponse>` to `generateImagesWithRetry`.
-// This fixes an error where `response.generatedImages` was accessed on an `unknown` type because the
-// compiler could not infer the response type.
 const generateImagesWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateImagesResponse> => {
     const settings = getSettings();
     const finalRequest = { ...generationRequest, model: settings.imageGenerationModel };
@@ -227,7 +219,6 @@ export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
 };
 
 
-// FIX: Add interface for mod talent configuration to be used in character generation.
 interface ModTalentConfig {
     systemConfig: TalentSystemConfig;
     ranks: ModTalentRank[];
@@ -797,8 +788,6 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
                 if (action.response && action.data === null) {
                     return { action: 'CHAT', data: { response: action.response } };
                 }
-                // FIX: Handle cases where the AI returns the chat response as a string in the 'data' field,
-                // instead of an object with a 'response' property.
                 if (typeof action.data === 'string') {
                     return { action: 'CHAT', data: { response: action.data } };
                 }
@@ -819,7 +808,6 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
     }
 };
 
-// FIX: Add generateGameEvent function and export it
 export const generateGameEvent = async (
     player: PlayerCharacter,
     date: GameDate,
@@ -991,7 +979,6 @@ export const generateStoryContinuationStream = async function* (
 };
 
 
-// FIX: Add generateDynamicLocation function and export it
 export const generateDynamicLocation = async (parentLocation: Location): Promise<{ name: string; description: string }> => {
     const responseSchema = {
         type: Type.OBJECT,
@@ -1020,7 +1007,6 @@ export const generateDynamicLocation = async (parentLocation: Location): Promise
     return JSON.parse(response.text);
 };
 
-// FIX: Add analyzeActionForTechnique function and export it
 export const analyzeActionForTechnique = async (actionText: string, availableTechniques: CultivationTechnique[]): Promise<CultivationTechnique | null> => {
     if (availableTechniques.length === 0) return null;
 
@@ -1058,7 +1044,6 @@ export const analyzeActionForTechnique = async (actionText: string, availableTec
     return null;
 };
 
-// FIX: Add generateBreakthroughNarrative function and export it
 export const generateBreakthroughNarrative = async (
     player: PlayerCharacter,
     oldRealmName: string,
@@ -1080,7 +1065,6 @@ export const generateBreakthroughNarrative = async (
     return response.text;
 };
 
-// FIX: Add generateWorldEvent function and export it
 export const generateWorldEvent = async (gameState: GameState): Promise<Rumor> => {
     const { discoveredLocations, worldState } = gameState;
 

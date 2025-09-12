@@ -150,9 +150,13 @@ const GameMasterChat: React.FC<GameMasterChatProps> = ({ onActionRequest, modCon
             case 'BATCH_ACTIONS': {
                 const counts: Record<string, number> = {};
                 (suggestion.data as any[]).forEach(subAction => {
-                    const actionType = subAction.action.split('_').map((word: string, i: number) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(''); // e.g., CREATE_ITEM -> createItem
+                    if (!subAction || typeof subAction.action !== 'string') {
+                        console.warn('Skipping invalid sub-action in batch:', subAction);
+                        return;
+                    }
                     const key = subAction.action.replace(/CREATE_|UPDATE_|DELETE_|MULTIPLE_/, '').toLowerCase();
-                    counts[key] = (counts[key] || 0) + (Array.isArray(subAction.data) ? subAction.data.length : 1);
+                    const count = Array.isArray(subAction.data) ? subAction.data.length : 1;
+                    counts[key] = (counts[key] || 0) + count;
                 });
                 const summaryParts = Object.entries(counts).map(([key, value]) => `${value} ${key}`);
                 return `AI đề xuất thực hiện nhiều hành động: ${summaryParts.join(', ')}.`;

@@ -1,11 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import type { View } from '../App';
 import { GiSeaDragon } from 'react-icons/gi';
 import { FaDatabase } from 'react-icons/fa';
 
 interface MainMenuProps {
   onNavigate: (view: View) => void;
+  storageUsage: {
+    usageString: string;
+    percentage: number;
+  };
 }
 
 const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> = ({ label, onClick, delay }) => (
@@ -22,35 +26,7 @@ const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> 
     </button>
 );
 
-const MainMenu: React.FC<MainMenuProps> = ({ onNavigate }) => {
-  const [storageUsage, setStorageUsage] = useState('');
-
-  const calculateLocalStorageUsage = (): string => {
-    let totalBytes = 0;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-            const value = localStorage.getItem(key);
-            if (value) {
-                totalBytes += (key.length + value.length) * 2; // Each char is 2 bytes (UTF-16)
-            }
-        }
-    }
-    
-    if (totalBytes < 1024) {
-        return `${totalBytes} B`;
-    } else if (totalBytes < 1024 * 1024) {
-        return `${(totalBytes / 1024).toFixed(2)} KB`;
-    } else {
-        return `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
-    }
-  };
-
-  useEffect(() => {
-    setStorageUsage(calculateLocalStorageUsage());
-  }, []);
-
-
+const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center animate-fade-in-menu">
         <div className="relative text-center animate-menu-item" style={{ animationDelay: '100ms' }}>
@@ -84,9 +60,20 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate }) => {
             <MenuItem label="Cài Đặt" onClick={() => onNavigate('settings')} delay={950} />
         </div>
 
-        <div className="absolute bottom-4 left-4 text-xs flex items-center gap-2 text-[var(--text-muted-color)] animate-menu-item" style={{ animationDelay: '1200ms' }}>
-            <FaDatabase />
-            <span>Dung lượng lưu trữ ước tính: <strong>{storageUsage}</strong></span>
+        <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1200ms' }}>
+            <div className="flex items-center justify-between gap-2 text-[var(--text-muted-color)] mb-1">
+                <div className="flex items-center gap-1">
+                    <FaDatabase />
+                    <span>Dung lượng lưu trữ:</span>
+                </div>
+                <strong className="font-mono">{storageUsage.usageString}</strong>
+            </div>
+            <div className="w-full bg-black/30 rounded-full h-1.5 border border-gray-700">
+                <div 
+                    className="bg-gradient-to-r from-teal-500 to-amber-500 h-1 rounded-full transition-all duration-500" 
+                    style={{ width: `${storageUsage.percentage}%` }}
+                ></div>
+            </div>
         </div>
     </div>
   );
