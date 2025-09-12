@@ -1,4 +1,3 @@
-
 import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus } from './types';
 import {
   GiCauldron, GiBroadsword,
@@ -40,7 +39,7 @@ export const FACTION_REPUTATION_TIERS: { threshold: number; status: FactionReput
 
 // URL for the community mod manifest. Using a Gist is a great way to host this.
 // For this example, it points to a sample manifest.
-export const COMMUNITY_MODS_URL = 'https://gist.githubusercontent.com/anonymous/832128e932a3a0e6b52865917b2b3563/raw/phongthan-community-mods.json';
+export const COMMUNITY_MODS_URL = 'https://gist.githubusercontent.com/world-class-dev/893c597818788478f7e2c60e34c565c6/raw/phongthan-community-mods.json';
 
 export const NARRATIVE_STYLES: { value: NarrativeStyle; label: string }[] = [
     { value: 'classic_wuxia', label: 'Cổ điển Tiên hiệp' },
@@ -98,6 +97,9 @@ export const DEFAULT_SETTINGS: GameSettings = {
     apiKeys: [],
     useKeyRotation: false,
     enablePerformanceMode: true,
+    temperature: 1,
+    enableThinking: true,
+    thinkingBudget: 2500,
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [

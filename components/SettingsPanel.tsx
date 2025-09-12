@@ -257,6 +257,28 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                             <NumberInput value={settings.autoSummaryFrequency} onChange={e => onChange('autoSummaryFrequency', parseInt(e.target.value))} min={1} />
                         </SettingsRow>
                     </SettingsSection>
+                    <SettingsSection title="Cấu hình Model Nâng cao">
+                        <SettingsRow label="Nhiệt độ (Temperature)" description="Kiểm soát sự sáng tạo của AI. Giá trị cao hơn (vd: 1.2) cho kết quả sáng tạo hơn, giá trị thấp hơn (vd: 0.5) cho kết quả chặt chẽ hơn. Mặc định: 1.">
+                            <div className="flex items-center gap-2 w-full max-w-xs">
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="2" 
+                                    step="0.1" 
+                                    value={settings.temperature} 
+                                    onChange={e => onChange('temperature', parseFloat(e.target.value))}
+                                    className="w-full"
+                                />
+                                <span className="font-mono text-sm w-12 text-center">{settings.temperature.toFixed(1)}</span>
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Bật Chế độ Suy Nghĩ (Thinking)" description="Chỉ áp dụng cho model Flash. Bật để có chất lượng cao hơn, tắt để có độ trễ thấp hơn.">
+                            <Toggle checked={settings.enableThinking} onChange={e => onChange('enableThinking', e.target.checked)} />
+                        </SettingsRow>
+                        <SettingsRow label="Ngân sách Suy Nghĩ (Thinking Budget)" description="Số token tối đa model có thể dùng để suy nghĩ trước khi trả lời. Chỉ áp dụng khi 'Thinking' được bật.">
+                            <NumberInput value={settings.thinkingBudget} onChange={e => onChange('thinkingBudget', parseInt(e.target.value))} min={0} />
+                        </SettingsRow>
+                    </SettingsSection>
                 </div>
             )}
         </div>

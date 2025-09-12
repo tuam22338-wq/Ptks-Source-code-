@@ -64,6 +64,9 @@ export interface GameSettings {
     apiKeys: string[];
     useKeyRotation: boolean;
     enablePerformanceMode: boolean;
+    temperature: number;
+    enableThinking: boolean;
+    thinkingBudget: number;
 }
 
 // --- Character Creation & Stats Types ---

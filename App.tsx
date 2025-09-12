@@ -9,10 +9,11 @@ import CreateModScreen from './components/CreateModScreen';
 import GamePlayScreen from './components/GamePlayScreen';
 import LoadingScreen from './components/LoadingScreen';
 import LoreScreen from './components/LoreScreen';
-import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo } from './types';
+import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo, AttributeGroup, Attribute } from './types';
 // FIX: Added NPC_DENSITY_LEVELS and INITIAL_TECHNIQUES to imports as they will be added to constants.ts to resolve module export errors.
-import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, FACTIONS } from './constants';
+import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, FACTIONS, ATTRIBUTES_CONFIG } from './constants';
 import { generateDynamicNpcs, reloadApiKeys } from './services/geminiService';
+import { FaQuestionCircle } from 'react-icons/fa';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'lore';
 
@@ -27,37 +28,72 @@ const initialStory: StoryEntry[] = [
 ];
 
 const migrateGameState = (savedGame: any): GameState => {
-    if (savedGame.version === CURRENT_GAME_VERSION) {
-        return savedGame as GameState;
-    }
+    let dataToProcess = { ...savedGame };
 
-    let migratedData = { ...savedGame };
-    let version = savedGame.version || "1.0.0";
+    // --- Version Migration ---
+    if (dataToProcess.version !== CURRENT_GAME_VERSION) {
+        let version = dataToProcess.version || "1.0.0";
 
-    if (version === "1.0.0") {
-        console.log("Migrating save from v1.0.0 to v1.1.0...");
-        
-        migratedData.activeMods = migratedData.activeMods ?? [];
-        migratedData.realmSystem = migratedData.realmSystem ?? REALM_SYSTEM;
-        migratedData.encounteredNpcIds = migratedData.encounteredNpcIds ?? [];
-        migratedData.activeStory = migratedData.activeStory ?? null;
+        if (version === "1.0.0") {
+            console.log("Migrating save from v1.0.0 to v1.1.0...");
+            
+            dataToProcess.activeMods = dataToProcess.activeMods ?? [];
+            dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
+            dataToProcess.encounteredNpcIds = dataToProcess.encounteredNpcIds ?? [];
+            dataToProcess.activeStory = dataToProcess.activeStory ?? null;
 
-        if (migratedData.playerCharacter) {
-            migratedData.playerCharacter.relationships = migratedData.playerCharacter.relationships ?? [];
-            migratedData.playerCharacter.reputation = migratedData.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
-            migratedData.playerCharacter.chosenPathIds = migratedData.playerCharacter.chosenPathIds ?? [];
-            migratedData.playerCharacter.knownRecipeIds = migratedData.playerCharacter.knownRecipeIds ?? [];
+            if (dataToProcess.playerCharacter) {
+                dataToProcess.playerCharacter.relationships = dataToProcess.playerCharacter.relationships ?? [];
+                dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
+                dataToProcess.playerCharacter.chosenPathIds = dataToProcess.playerCharacter.chosenPathIds ?? [];
+                dataToProcess.playerCharacter.knownRecipeIds = dataToProcess.playerCharacter.knownRecipeIds ?? [];
+            }
+            
+            dataToProcess.version = "1.1.0";
+            version = "1.1.0";
         }
-        
-        migratedData.version = "1.1.0";
-        version = "1.1.0";
+    
+        if (version !== CURRENT_GAME_VERSION) {
+            throw new Error(`Migration failed. Could not migrate from ${savedGame.version || 'unversioned'} to ${CURRENT_GAME_VERSION}.`);
+        }
     }
 
-    if (version !== CURRENT_GAME_VERSION) {
-        throw new Error(`Migration failed. Could not migrate from ${savedGame.version || 'unversioned'} to ${CURRENT_GAME_VERSION}.`);
+    // --- Rehydration Logic (runs for all loaded games) ---
+    const allAttributesConfig = new Map<string, any>();
+    ATTRIBUTES_CONFIG.forEach(group => {
+        group.attributes.forEach(attr => {
+            allAttributesConfig.set(attr.name, attr);
+        });
+    });
+
+    const rehydrateAttributes = (groups: AttributeGroup[]): AttributeGroup[] => {
+        return groups.map((group: AttributeGroup) => ({
+            ...group,
+            attributes: group.attributes.map((attr: Attribute) => {
+                const config = allAttributesConfig.get(attr.name);
+                return {
+                    ...attr,
+                    icon: config ? config.icon : FaQuestionCircle,
+                    description: config ? config.description : attr.description,
+                };
+            }),
+        }));
+    };
+
+    if (dataToProcess.playerCharacter?.attributes) {
+        dataToProcess.playerCharacter.attributes = rehydrateAttributes(dataToProcess.playerCharacter.attributes);
     }
-    
-    return migratedData as GameState;
+
+    if (dataToProcess.activeNpcs) {
+        dataToProcess.activeNpcs = dataToProcess.activeNpcs.map((npc: any) => {
+             if (npc.attributes) {
+                npc.attributes = rehydrateAttributes(npc.attributes);
+             }
+             return npc;
+        });
+    }
+
+    return dataToProcess as GameState;
 };
 
 
@@ -342,6 +378,11 @@ const App: React.FC = () => {
         setLoadingMessage('Đang tạo ra chúng sinh...');
         const densitySetting = NPC_DENSITY_LEVELS.find(d => d.id === npcDensity);
         const generatedNpcs = await generateDynamicNpcs(densitySetting?.count ?? 15);
+        
+        if (!generatedNpcs || generatedNpcs.length === 0) {
+            throw new Error("AI không thể tạo ra chúng sinh cho thế giới này. Vui lòng kiểm tra API Key hoặc thử lại.");
+        }
+        
         const allNpcs = [...generatedNpcs];
         
         setLoadingMessage('Đang định hình Thiên Mệnh...');
@@ -449,7 +490,7 @@ const App: React.FC = () => {
 
     } catch (error) {
         console.error("Failed to start new game:", error);
-        alert("Lỗi nghiêm trọng khi tạo thế giới. Vui lòng thử lại.");
+        alert(`Lỗi nghiêm trọng khi tạo thế giới: ${(error as Error).message}. Vui lòng thử lại.`);
     } finally {
         setIsLoading(false);
     }

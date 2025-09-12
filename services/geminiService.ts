@@ -1,8 +1,3 @@
-
-
-
-
-
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
@@ -155,11 +150,21 @@ const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<Gene
     
     // Explicitly use the model from the request to fix the bug where it was being ignored.
     const modelToUse = generationRequest.model || settings.mainTaskModel;
+
+    // Build the thinking config based on settings
+    const thinkingConfig = modelToUse.includes('flash') 
+        ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
+        : {};
     
     const finalRequest = {
         ...generationRequest,
         model: modelToUse,
-        config: { ...generationRequest.config, safetySettings }
+        config: { 
+            ...generationRequest.config, 
+            safetySettings,
+            temperature: settings.temperature,
+            ...thinkingConfig,
+        }
     };
     
     return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest, maxRetries);
@@ -214,7 +219,7 @@ export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
                 description: 'Không thể tải danh sách mod cộng đồng. Đây là một ví dụ mẫu có sẵn.',
                 version: '1.0.0',
             },
-            downloadUrl: 'https://gist.githubusercontent.com/anonymous/a8238210332845a720f4cb1f1c73a213/raw/phongthan-thanbinh-loikhi.json'
+            downloadUrl: 'https://gist.githubusercontent.com/world-class-dev/2c1b2c6e6152a5a5d852c0021c32c4e2/raw/phongthan-thanbinh-loikhi.json'
         }];
     }
 };
@@ -563,7 +568,7 @@ ${existingContentSummary}
 
 **NHIỆM VỤ CỦA BẠN:**
 Phân tích yêu cầu của người dùng và chuyển đổi nó thành một hoặc nhiều hành động có cấu trúc (\`action\`) tương thích với game. Luôn trả lời ở định dạng JSON.
-*   **Trò chuyện:** Nếu người dùng chỉ đang trò chuyện hoặc hỏi, hãy sử dụng hành động 'CHAT'.
+*   **Trò chuyện:** Nếu người dùng chỉ đang trò chuyện hoặc hỏi, hãy sử dụng hành động 'CHAT'. **Phản hồi trong \`data.response\` phải là một câu trả lời đầy đủ và hữu ích, không bao giờ được để trống.**
 *   **Nhiều yêu cầu:** Nếu họ yêu cầu nhiều thứ, hãy dùng 'BATCH_ACTIONS'.
 *   **Chỉnh sửa:** Để chỉnh sửa một mục đã có, hãy sử dụng hành động \`UPDATE_[TYPE]\` (ví dụ: \`UPDATE_ITEM\`). **QUAN TRỌNG:** Bạn phải cung cấp lại TOÀN BỘ dữ liệu mới cho mục đó, bao gồm cả những phần không thay đổi. Xác định mục cần sửa bằng thuộc tính \`name\` (hoặc \`title\` cho WorldBuilding).
 *   **Xóa:** Để xóa, hãy sử dụng \`DELETE_[TYPE]\` và cung cấp \`name\` (hoặc \`title\`).
@@ -616,6 +621,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
     const worldBuildingSchema = { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, data: { type: Type.OBJECT, description: "Đối tượng JSON tự do" }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['title', 'data'] };
     const realmSystemSchema = { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, hasTribulation: { type: Type.BOOLEAN }, stages: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, qiRequired: { type: Type.NUMBER }, bonuses: { type: Type.ARRAY, items: statBonusSchema } } } } } } };
     const talentSystemConfigSchema = { type: Type.OBJECT, properties: { systemName: { type: Type.STRING }, choicesPerRoll: { type: Type.NUMBER }, maxSelectable: { type: Type.NUMBER } } };
+    const updateReputationSchema = { type: Type.OBJECT, properties: { factionName: { type: Type.STRING }, change: { type: Type.NUMBER } }, required: ['factionName', 'change']};
     
     const techniqueSchema = {
         type: Type.OBJECT,
@@ -700,7 +706,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
 
     const responseSchema = {
         oneOf: [
-            { properties: { action: { const: 'CHAT' }, data: { type: Type.OBJECT, properties: { response: { type: Type.STRING } } } } },
+            { properties: { action: { const: 'CHAT' }, data: { type: Type.OBJECT, properties: { response: { type: Type.STRING, description: "Một câu trả lời trò chuyện thân thiện và hữu ích cho người dùng. Không được để trống." } }, required: ['response'] } } },
             { properties: { action: { const: 'CREATE_ITEM' }, data: itemSchema } },
             { properties: { action: { const: 'CREATE_MULTIPLE_ITEMS' }, data: { type: Type.ARRAY, items: itemSchema } } },
             { properties: { action: { const: 'CREATE_TALENT' }, data: talentSchema } },
@@ -741,6 +747,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
             { properties: { action: { const: 'DELETE_WORLD_BUILDING' }, data: deleteByTitleSchema } },
             { properties: { action: { const: 'UPDATE_CUSTOM_PANEL' }, data: customPanelSchema } },
             { properties: { action: { const: 'DELETE_CUSTOM_PANEL' }, data: deleteByTitleSchema } },
+            { properties: { action: { const: 'UPDATE_REPUTATION' }, data: updateReputationSchema } },
             { properties: { action: { const: 'BATCH_ACTIONS' }, data: { type: Type.ARRAY, items: {
                  oneOf: [
                     { properties: { action: { const: 'CREATE_ITEM' }, data: itemSchema } },
@@ -755,6 +762,7 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
                     { properties: { action: { const: 'DELETE_ITEM' }, data: deleteByNameSchema } },
                     { properties: { action: { const: 'UPDATE_TALENT' }, data: talentSchema } },
                     { properties: { action: { const: 'DELETE_TALENT' }, data: deleteByNameSchema } },
+                    { properties: { action: { const: 'UPDATE_REPUTATION' }, data: updateReputationSchema } },
                  ]
             } } } }
         ],
@@ -780,14 +788,32 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
     try {
         const jsonText = response.text.trim();
         const action = JSON.parse(jsonText);
-        if (action && action.action && action.data) {
-            return action as AIAction;
+        if (action && action.action) {
+            if (action.action === 'CHAT') {
+                // The AI sometimes incorrectly returns "response" at the top level with "data": null.
+                // We'll normalize this to match our expected AIAction type.
+                if (action.response && action.data === null) {
+                    return { action: 'CHAT', data: { response: action.response } };
+                }
+                // FIX: Handle cases where the AI returns the chat response as a string in the 'data' field,
+                // instead of an object with a 'response' property.
+                if (typeof action.data === 'string') {
+                    return { action: 'CHAT', data: { response: action.data } };
+                }
+                // Handle the case where data is correct or data.response exists.
+                if (action.data && action.data.response) {
+                    return action as AIAction;
+                }
+            } else if (action.data) {
+                // For all other actions, data should exist.
+                return action as AIAction;
+            }
         }
         throw new Error("Invalid action format received from AI.");
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to parse AI action response:", e);
         console.error("Raw AI response:", response.text);
-        return { action: 'CHAT', data: { response: "Tôi không thể xử lý yêu cầu đó thành một hành động cụ thể. Bạn có thể diễn đạt lại không?" } };
+        return { action: 'CHAT', data: { response: `Rất tiếc, tôi không thể thực hiện hành động đó. Phản hồi từ AI không hợp lệ hoặc không thể phân tích được. Vui lòng thử diễn đạt lại yêu cầu của bạn.` } };
     }
 };
 
@@ -929,14 +955,18 @@ export const generateStoryContinuationStream = async function* (
     
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
+
+    const thinkingConfig = settings.mainTaskModel.includes('flash') 
+        ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
+        : {};
     
     const finalRequest = {
         model: settings.mainTaskModel,
         contents: prompt,
         config: { 
             safetySettings,
-            temperature: 0.9,
-            thinkingConfig: { thinkingBudget: 2500 }
+            temperature: settings.temperature,
+            ...thinkingConfig,
         }
     };
     

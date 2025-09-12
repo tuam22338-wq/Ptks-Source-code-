@@ -69,7 +69,7 @@ const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> 
                     <h4 className="text-md text-gray-300 font-title font-semibold mb-2">Tiên Tư</h4>
                     <div className="space-y-3">
                         {npc.talents.length > 0 ? npc.talents.map(talent => {
-                            const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
+                            const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Tư'];
                             return (
                                 <div key={talent.name} className="bg-black/20 p-3 rounded-lg border border-gray-700/60" title={talent.effect}>
                                     <h5 className={`font-bold font-title ${rankStyle.color}`}>{talent.name} <span className="text-xs">[{talent.rank}]</span></h5>
@@ -814,6 +814,9 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                 </div>
                 {/* Sidebar */}
                 <div className={`fixed top-0 right-0 h-full bg-stone-900/80 backdrop-blur-md border-l border-gray-700/50 shadow-2xl transition-transform duration-500 z-30 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} w-full md:w-1/3 lg:w-1/4`}>
+                    {/* FIX: Pass the correct handler function `handleBreakthrough` to the `onBreakthrough` prop. */}
+                    {/* FIX: Pass the correct handler function `handleTravel` to the `onTravel` prop. */}
+                    {/* FIX: Pass the correct handler function `handleExplore` to the `onExplore` prop. */}
                     <Sidebar
                         playerCharacter={playerCharacter}
                         setPlayerCharacter={setPlayerCharacter}
@@ -822,7 +825,6 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         npcsAtLocation={npcsAtLocation}
                         neighbors={neighbors}
                         rumors={worldState.rumors}
-                        storyLog={storyLog}
                         onTravel={handleTravel}
                         onExplore={handleExplore}
                         onNpcSelect={setViewingNpc}

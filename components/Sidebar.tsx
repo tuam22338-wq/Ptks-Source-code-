@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, ModCustomPanel } from '../types';
+import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, ModCustomPanel, StoryEntry } from '../types';
 import CharacterPanel from './CharacterPanel';
 import InventoryPanel from './InventoryPanel';
 import WorldPanel from './WorldPanel';
@@ -10,7 +10,8 @@ import LorePanel from './LorePanel';
 import AlchemyPanel from './AlchemyPanel';
 import CustomContentPanel from './CustomContentPanel';
 import MapView from './MapView';
-import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt } from 'react-icons/fa';
+import StoryGraphPanel from './StoryGraphPanel';
+import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaSitemap } from 'react-icons/fa';
 import { GiCauldron } from 'react-icons/gi';
 
 interface SidebarProps {
@@ -21,6 +22,7 @@ interface SidebarProps {
     npcsAtLocation: NPC[];
     neighbors: Location[];
     rumors: Rumor[];
+    storyLog: StoryEntry[];
     onTravel: (destinationId: string) => void;
     onExplore: () => void;
     onNpcSelect: (npc: NPC) => void;
@@ -31,7 +33,7 @@ interface SidebarProps {
     showNotification: (message: string) => void;
     activeMods: FullMod[];
 }
-type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | string; // Allow custom string IDs for modded panels
+type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | 'storyGraph' | string; // Allow custom string IDs for modded panels
 
 // A map for moddable icons
 const ICON_MAP: { [key: string]: React.ElementType } = {
@@ -40,7 +42,7 @@ const ICON_MAP: { [key: string]: React.ElementType } = {
 
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods } = props;
+    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog } = props;
     const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     
     const baseTabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
@@ -50,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         {id: 'alchemy', label: 'Luyện Đan', icon: GiCauldron },
         {id: 'world', label: 'Thế Giới', icon: FaGlobe },
         {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt },
+        {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaSitemap },
         {id: 'wiki', label: 'Wiki', icon: FaBook },
         {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
         {id: 'lore', label: 'Thiên Mệnh', icon: FaSun },
@@ -137,6 +140,9 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                         playerCharacter={playerCharacter}
                         onTravel={onTravel}
                     />
+                )}
+                 {activeTab === 'storyGraph' && (
+                    <StoryGraphPanel storyLog={storyLog} />
                 )}
                 {activeTab === 'wiki' && (
                     <WikiPanel
