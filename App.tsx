@@ -80,6 +80,33 @@ const App: React.FC = () => {
   useEffect(() => {
     loadSaveSlots();
   }, []);
+  
+  // Real-time auto-save
+  useEffect(() => {
+    if (view === 'gamePlay' && gameState && currentSlotId !== null) {
+        const debounceSave = setTimeout(() => {
+            try {
+                const gameStateToSave: GameState = { 
+                    ...gameState, 
+                    version: CURRENT_GAME_VERSION,
+                    lastSaved: new Date().toISOString() 
+                };
+                localStorage.setItem(`phongthan-gs-slot-${currentSlotId}`, JSON.stringify(gameStateToSave));
+                
+                setSaveSlots(prevSlots => prevSlots.map(slot => 
+                    slot.id === currentSlotId ? { ...slot, data: gameStateToSave } : slot
+                ));
+                
+                console.log(`Đã tự động lưu vào ô ${currentSlotId} lúc ${new Date().toLocaleTimeString()}`);
+            } catch (error) {
+                console.error("Tự động lưu thất bại", error);
+            }
+        }, 1500); // Debounce for 1.5 seconds
+
+        return () => clearTimeout(debounceSave);
+    }
+  }, [gameState, view, currentSlotId]);
+
 
   useEffect(() => {
     // Apply font family directly
@@ -153,11 +180,27 @@ const App: React.FC = () => {
         setLoadingMessage('Đang tải hành trình...');
         setIsLoading(true);
         setTimeout(() => {
-            // The data in `selectedSlot` is now migrated and up-to-date.
-            // We immediately re-save it to persist the migration.
-            localStorage.setItem(`phongthan-gs-slot-${slotId}`, JSON.stringify(selectedSlot.data));
+            const loadedData = selectedSlot.data;
 
-            setGameState(selectedSlot.data);
+            // VALIDATION LOGIC to prevent black screen bug
+            const isValid = 
+                loadedData &&
+                loadedData.playerCharacter &&
+                loadedData.discoveredLocations && loadedData.discoveredLocations.length > 0 &&
+                loadedData.storyLog &&
+                loadedData.gameDate &&
+                loadedData.realmSystem && loadedData.realmSystem.length > 0;
+
+            if (!isValid) {
+                console.error("Dữ liệu save không hợp lệ hoặc bị hỏng sau khi di chuyển. Không thể tải.", loadedData);
+                alert("Không thể tải dữ liệu. Dữ liệu có thể đã bị hỏng. Vui lòng thử chức năng 'Kiểm tra và sửa lỗi' trên ô save này.");
+                setIsLoading(false);
+                return;
+            }
+
+            localStorage.setItem(`phongthan-gs-slot-${slotId}`, JSON.stringify(loadedData));
+
+            setGameState(loadedData);
             setCurrentSlotId(slotId);
             setView('gamePlay');
             setIsLoading(false);
