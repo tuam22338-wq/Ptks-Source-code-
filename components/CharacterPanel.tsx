@@ -135,7 +135,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                 <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Tiên Tư</h3>
                 <div className="space-y-3">
                     {talents.map(talent => {
-                        const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Tư'];
+                        const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
                         const detailTooltip = [
                             `Hiệu ứng: ${talent.effect}`,
                             talent.triggerCondition ? `Kích hoạt: ${talent.triggerCondition}` : null,
@@ -144,7 +144,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
 
                         return (
                             <div key={talent.name} className="bg-black/20 p-3 rounded-lg border border-gray-700/60" title={detailTooltip}>
-                                <h4 className={`font-bold font-title ${rankStyle.color}`}>{talent.name}</h4>
+                                <h4 className={`font-bold font-title ${rankStyle.color} ${rankStyle.glow || ''}`}>{talent.name}</h4>
                                 <p className="text-xs text-gray-400">{talent.description}</p>
                             </div>
                         )

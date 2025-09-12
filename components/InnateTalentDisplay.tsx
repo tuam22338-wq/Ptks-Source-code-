@@ -10,7 +10,8 @@ interface InnateTalentCardProps {
 }
 
 const InnateTalentCard: React.FC<InnateTalentCardProps> = ({ talent, isSelected, isSelectable, showDetails }) => {
-  const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Tư'];
+  const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
+  const glowClass = rankStyle.glow || '';
 
   const borderClass = isSelected 
     ? `border-amber-400 ring-2 ring-amber-400/50` 
@@ -24,7 +25,7 @@ const InnateTalentCard: React.FC<InnateTalentCardProps> = ({ talent, isSelected,
   return (
     <div className={`relative w-full h-full bg-black/30 p-3 rounded-lg border-2 flex flex-col items-center justify-center text-center shadow-lg transition-all duration-300 ${borderClass} ${opacityClass} ${cursorClass}`}>
       {/* Compact View */}
-      <h4 className={`text-lg font-bold font-title ${rankStyle.color}`} style={{textShadow: '0 0 6px currentColor'}}>
+      <h4 className={`text-lg font-bold font-title ${rankStyle.color} ${glowClass}`}>
           {talent.name}
       </h4>
       <p className={`mt-1 text-xs font-semibold ${rankStyle.color}`}>
@@ -37,7 +38,7 @@ const InnateTalentCard: React.FC<InnateTalentCardProps> = ({ talent, isSelected,
              style={{ animationDuration: '150ms' }}
         >
           <div className="text-center">
-            <h4 className={`text-xl font-bold font-title ${rankStyle.color}`} style={{textShadow: '0 0 8px currentColor'}}>
+            <h4 className={`text-xl font-bold font-title ${rankStyle.color} ${glowClass}`}>
                 {talent.name}
             </h4>
             <p className={`mt-1 text-sm font-semibold ${rankStyle.color}`}>

@@ -198,21 +198,25 @@ export const ALL_ATTRIBUTES = ATTRIBUTES_CONFIG.flatMap(g => g.attributes.map(a 
 
 
 export const INNATE_TALENT_PROBABILITY: { rank: InnateTalentRank, weight: number }[] = [
-    { rank: 'Phàm Tư', weight: 40 },
-    { rank: 'Tiểu Tư', weight: 30 },
-    { rank: 'Đại Tư', weight: 15 },
-    { rank: 'Siêu Tư', weight: 10 },
-    { rank: 'Thiên Tư', weight: 5 },
+    { rank: 'Phàm Giai', weight: 35 },
+    { rank: 'Siêu Phàm Giai', weight: 25 },
+    { rank: 'Sơ Tiên Giai', weight: 20 },
+    { rank: 'Trung Tiên Giai', weight: 10 },
+    { rank: 'Hậu Tiên Giai', weight: 5 },
+    { rank: 'Đại Tiên Giai', weight: 3 },
+    { rank: 'Thánh Giai', weight: 2 },
 ];
 
 export const TALENT_RANK_NAMES: InnateTalentRank[] = INNATE_TALENT_PROBABILITY.map(p => p.rank);
 
-export const INNATE_TALENT_RANKS: Record<InnateTalentRank, { color: string }> = {
-    'Phàm Tư': { color: 'text-gray-400' },
-    'Tiểu Tư': { color: 'text-green-400' },
-    'Đại Tư': { color: 'text-blue-400' },
-    'Siêu Tư': { color: 'text-purple-400' },
-    'Thiên Tư': { color: 'text-amber-400' },
+export const INNATE_TALENT_RANKS: Record<InnateTalentRank, { color: string; glow?: string }> = {
+    'Phàm Giai': { color: 'text-gray-400' },
+    'Siêu Phàm Giai': { color: 'text-green-400' },
+    'Sơ Tiên Giai': { color: 'text-blue-400' },
+    'Trung Tiên Giai': { color: 'text-purple-400' },
+    'Hậu Tiên Giai': { color: 'text-cyan-400' },
+    'Đại Tiên Giai': { color: 'text-amber-400' },
+    'Thánh Giai': { color: 'text-red-400', glow: 'talent-saint-glow' },
 };
 
 export const MAJOR_EVENTS: MajorEvent[] = [
@@ -603,8 +607,8 @@ export const NPC_LIST: NPC[] = [
         status: 'Trấn thủ tại Quán Giang Khẩu, nghe theo điều lệnh của Xiển Giáo.',
         attributes: [],
         talents: [
-            { name: 'Thất Thập Nhị Biến', description: '72 phép biến hóa thần thông, thiên biến vạn hóa.', rank: 'Thiên Tư', effect: 'Tăng mạnh khả năng thích ứng trong mọi tình huống.' },
-            { name: 'Thiên Nhãn', description: 'Con mắt thứ ba giữa trán có thể nhìn thấu bản chất vạn vật, phân biệt yêu ma.', rank: 'Siêu Tư', effect: 'Tăng mạnh khả năng nhận biết và sát thương lên yêu ma.' }
+            { name: 'Thất Thập Nhị Biến', description: '72 phép biến hóa thần thông, thiên biến vạn hóa.', rank: 'Đại Tiên Giai', effect: 'Tăng mạnh khả năng thích ứng trong mọi tình huống.' },
+            { name: 'Thiên Nhãn', description: 'Con mắt thứ ba giữa trán có thể nhìn thấu bản chất vạn vật, phân biệt yêu ma.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh khả năng nhận biết và sát thương lên yêu ma.' }
         ],
         locationId: 'con_lon_son',
         faction: 'Xiển Giáo',
@@ -624,8 +628,8 @@ export const NPC_LIST: NPC[] = [
         status: 'Sau khi tái tạo thân thể bằng hoa sen, đi theo phò trợ Khương Tử Nha.',
         attributes: [],
         talents: [
-            { name: 'Liên Hoa Hóa Thân', description: 'Thân thể làm từ hoa sen, miễn nhiễm với nhiều loại độc và pháp thuật linh hồn.', rank: 'Thiên Tư', effect: 'Kháng tất cả các hiệu ứng bất lợi.' },
-            { name: 'Tam Đầu Lục Tí', description: 'Khi chiến đấu có thể hóa ra ba đầu sáu tay, sức mạnh tăng vọt.', rank: 'Siêu Tư', effect: 'Tăng mạnh số lần tấn công trong một lượt.' }
+            { name: 'Liên Hoa Hóa Thân', description: 'Thân thể làm từ hoa sen, miễn nhiễm với nhiều loại độc và pháp thuật linh hồn.', rank: 'Đại Tiên Giai', effect: 'Kháng tất cả các hiệu ứng bất lợi.' },
+            { name: 'Tam Đầu Lục Tí', description: 'Khi chiến đấu có thể hóa ra ba đầu sáu tay, sức mạnh tăng vọt.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh số lần tấn công trong một lượt.' }
         ],
         locationId: 'tran_duong_quan',
         faction: 'Xiển Giáo',
@@ -645,7 +649,7 @@ export const NPC_LIST: NPC[] = [
         status: 'Tu luyện tại núi Chung Nam, sẵn sàng xuống núi giúp nhà Chu.',
         attributes: [],
         talents: [
-            { name: 'Phong Lôi Song Dực', description: 'Đôi cánh có sức mạnh của gió và sấm sét, tốc độ kinh người.', rank: 'Siêu Tư', effect: 'Tăng mạnh chỉ số Thân Pháp, có thể bay lượn.' }
+            { name: 'Phong Lôi Song Dực', description: 'Đôi cánh có sức mạnh của gió và sấm sét, tốc độ kinh người.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh chỉ số Thân Pháp, có thể bay lượn.' }
         ],
         locationId: 'tay_ky',
         faction: 'Xiển Giáo',
@@ -665,7 +669,7 @@ export const NPC_LIST: NPC[] = [
         status: 'Đang ở bên cạnh Trụ Vương tại Triều Ca, khuynh đảo triều chính.',
         attributes: [],
         talents: [
-            { name: 'Khuynh Thế Mị Hoặc', description: 'Năng lực mê hoặc trời sinh của Cửu Vỹ Hồ, khiến đối phương khó lòng chống cự.', rank: 'Thiên Tư', effect: 'Giảm mạnh ý chí và phòng ngự của kẻ địch.' }
+            { name: 'Khuynh Thế Mị Hoặc', description: 'Năng lực mê hoặc trời sinh của Cửu Vỹ Hồ, khiến đối phương khó lòng chống cự.', rank: 'Đại Tiên Giai', effect: 'Giảm mạnh ý chí và phòng ngự của kẻ địch.' }
         ],
         locationId: 'trieu_ca',
         faction: 'Nhà Thương',
@@ -685,7 +689,7 @@ export const NPC_LIST: NPC[] = [
         status: 'Đang đi chinh phạt các thế lực phản loạn ở Bắc Hải.',
         attributes: [],
         talents: [
-            { name: 'Pháp Thiên Tượng Địa', description: 'Có khả năng thay đổi kích thước cơ thể, trở thành người khổng lồ.', rank: 'Siêu Tư', effect: 'Tăng mạnh Lực Lượng và Nhục Thân trong thời gian ngắn.' }
+            { name: 'Pháp Thiên Tượng Địa', description: 'Có khả năng thay đổi kích thước cơ thể, trở thành người khổng lồ.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh Lực Lượng và Nhục Thân trong thời gian ngắn.' }
         ],
         locationId: 'trieu_ca',
         faction: 'Triệt Giáo',
@@ -705,7 +709,7 @@ export const NPC_LIST: NPC[] = [
         status: 'Đang chu du khắp nơi, tìm kiếm dị nhân giúp đỡ nhà Thương.',
         attributes: [],
         talents: [
-            { name: 'Đạo Hữu Xin Dừng Bước', description: 'Lời nói có sức mạnh mê hoặc, có thể thuyết phục người khác làm theo ý mình, thường đem lại tai họa.', rank: 'Siêu Tư', effect: 'Có khả năng lôi kéo NPC khác vào trận chiến.' }
+            { name: 'Đạo Hữu Xin Dừng Bước', description: 'Lời nói có sức mạnh mê hoặc, có thể thuyết phục người khác làm theo ý mình, thường đem lại tai họa.', rank: 'Hậu Tiên Giai', effect: 'Có khả năng lôi kéo NPC khác vào trận chiến.' }
         ],
         locationId: 'rung_co_thu',
         faction: 'Triệt Giáo',
@@ -725,7 +729,7 @@ export const NPC_LIST: NPC[] = [
         status: 'Đang tu luyện tại đảo Tam Tiên.',
         attributes: [],
         talents: [
-            { name: 'Hỗn Nguyên Kim Đấu', description: 'Sở hữu pháp bảo Hỗn Nguyên Kim Đấu, có thể làm mất tu vi của tiên nhân.', rank: 'Thiên Tư', effect: 'Có khả năng xóa bỏ mọi trạng thái có lợi và gây suy yếu kẻ địch.' }
+            { name: 'Hỗn Nguyên Kim Đấu', description: 'Sở hữu pháp bảo Hỗn Nguyên Kim Đấu, có thể làm mất tu vi của tiên nhân.', rank: 'Đại Tiên Giai', effect: 'Có khả năng xóa bỏ mọi trạng thái có lợi và gây suy yếu kẻ địch.' }
         ],
         locationId: 'dong_hai',
         faction: 'Triệt Giáo',

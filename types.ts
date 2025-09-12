@@ -80,7 +80,7 @@ export interface AttributeGroup {
   attributes: Attribute[];
 }
 
-export type InnateTalentRank = string;
+export type InnateTalentRank = 'Phàm Giai' | 'Siêu Phàm Giai' | 'Sơ Tiên Giai' | 'Trung Tiên Giai' | 'Hậu Tiên Giai' | 'Đại Tiên Giai' | 'Thánh Giai';
 
 export interface InnateTalent {
   name: string;

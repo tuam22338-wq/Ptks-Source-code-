@@ -1,10 +1,10 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter } from '../types';
-import { FaArrowLeft, FaSyncAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaSyncAlt, FaDice } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill } from "react-icons/gi";
 import Timeline from './Timeline';
-import { generateCharacterFoundation } from '../services/geminiService';
+import { generateCharacterIdentity, generateTalentChoices } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
 import InnateTalentSelection from './InnateTalentSelection';
 import CharacterIdentityDisplay from './CharacterIdentityDisplay';
@@ -62,6 +62,8 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
   
   // Step 'generating'
   const [loadingMessage, setLoadingMessage] = useState(GENERATING_MESSAGES[0]);
+  const [isRerolling, setIsRerolling] = useState(false);
+
 
   // Step 'review'
   const [baseAttributes, setBaseAttributes] = useState<AttributeGroup[]>(ATTRIBUTES_CONFIG);
@@ -192,9 +194,14 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
             ranks: finalTalentRanks.length > 0 ? finalTalentRanks : [],
             availableTalents: finalAvailableTalents
         };
+        
+        setLoadingMessage('Đang định hình thân phận...');
+        const generatedIdentity = await generateCharacterIdentity(characterConcept, gender);
+        const fullIdentity = { ...generatedIdentity, gender, age: 18 };
+        setIdentity(fullIdentity);
 
-        const { identity: generatedIdentity, talents } = await generateCharacterFoundation(characterConcept, gender, modTalentConfig);
-        setIdentity({ ...generatedIdentity, gender, age: 18 });
+        setLoadingMessage('Đang gieo quẻ tiên tư...');
+        const talents = await generateTalentChoices(fullIdentity, characterConcept, modTalentConfig);
         setTalentChoices(talents);
         
         const rolledAttributes = ATTRIBUTES_CONFIG.map(group => ({
@@ -214,6 +221,48 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         setStep('idea');
     }
   }, [characterConcept, gender]);
+
+  const handleRerollTalents = async () => {
+    if (!identity) return;
+
+    setIsRerolling(true);
+    setSelectedTalents([]); // Clear selection on reroll
+    setError(null);
+    try {
+        const modLibrary: {modInfo: {id: string}, isEnabled: boolean}[] = JSON.parse(localStorage.getItem('mod-library') || '[]');
+        const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
+        const activeMods: FullMod[] = [];
+        for (const modInfo of enabledModsInfo) {
+            const modContentRaw = localStorage.getItem(`mod-content-${modInfo.modInfo.id}`);
+            if (modContentRaw) activeMods.push(JSON.parse(modContentRaw));
+        }
+        
+        let finalTalentSystemConfig: TalentSystemConfig | null = null;
+        const finalTalentRanks: ModTalentRank[] = [];
+        const finalAvailableTalents: ModTalent[] = [];
+
+        activeMods.forEach(mod => {
+            if (mod.content.talentSystemConfig) finalTalentSystemConfig = mod.content.talentSystemConfig;
+            if (mod.content.talentRanks) finalTalentRanks.push(...mod.content.talentRanks.map((r, i) => ({...r, id: r.name + i})));
+            if (mod.content.talents) finalAvailableTalents.push(...mod.content.talents.map((t, i) => ({...t, id: t.name + i})));
+        });
+
+        const modTalentConfig = {
+            systemConfig: finalTalentSystemConfig || { systemName: 'default', choicesPerRoll: 6, maxSelectable: 3, allowAIGeneratedTalents: true },
+            ranks: finalTalentRanks.length > 0 ? finalTalentRanks : [],
+            availableTalents: finalAvailableTalents
+        };
+        
+        const newTalents = await generateTalentChoices(identity, characterConcept, modTalentConfig);
+        setTalentChoices(newTalents);
+    } catch (err) {
+        setError("Không thể gieo quẻ. Vui lòng thử lại.");
+        console.error(err);
+    } finally {
+        setIsRerolling(false);
+    }
+  };
+
 
     const handleStartAsRoleplayChar = async () => {
         if (!selectedRoleplayChar) return;
@@ -427,12 +476,30 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
     <div className="space-y-6">
         {identity && <CharacterIdentityDisplay identity={identity} onIdentityChange={handleIdentityChange} />}
         
-        <InnateTalentSelection 
-          talents={talentChoices} 
-          selectedTalents={selectedTalents}
-          onSelectionChange={setSelectedTalents}
-          maxSelectable={talentSystemConfig.maxSelectable}
-        />
+        <div className="bg-black/20 p-4 rounded-lg border border-gray-700/60">
+            <div className="flex justify-between items-center mb-1">
+                <div>
+                    <h3 className="text-xl text-gray-300 font-title font-semibold">Lựa chọn Tiên Tư</h3>
+                    <p className="text-sm text-gray-400">Ấn giữ để xem chi tiết. Chọn tối đa {talentSystemConfig.maxSelectable}.</p>
+                </div>
+                <button onClick={handleRerollTalents} disabled={isRerolling} className="p-3 rounded-full text-gray-300 hover:text-white hover:bg-gray-700/50 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors" title="Gieo Quẻ Lại">
+                    {isRerolling ? <FaSyncAlt className="w-5 h-5 animate-spin" /> : <FaDice className="w-5 h-5" />}
+                </button>
+            </div>
+            {isRerolling ? (
+                <div className="h-[150px] flex items-center justify-center">
+                    <LoadingSpinner message="Đang gieo quẻ..."/>
+                </div>
+            ) : (
+                <InnateTalentSelection 
+                    talents={talentChoices} 
+                    selectedTalents={selectedTalents}
+                    onSelectionChange={setSelectedTalents}
+                    maxSelectable={talentSystemConfig.maxSelectable}
+                />
+            )}
+        </div>
+
 
         <div className="bg-black/20 p-4 rounded-lg border border-gray-700/60">
           <h3 className="text-xl font-title font-semibold mb-4 text-center" style={{color: 'var(--text-muted-color)'}}>Bảng Thuộc Tính</h3>
@@ -470,7 +537,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
             <button onClick={() => setStep('idea')} className="flex items-center justify-center gap-3 w-52 h-16 bg-gray-700 text-white text-xl font-bold font-title rounded-md border-2 border-gray-600 transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-gray-600">
                 <FaSyncAlt />
-                <span>Gieo Quẻ Lại</span>
+                <span>Kiến Tạo Lại</span>
             </button>
             <button onClick={handleConfirmFreeCharacter} className="themed-button-primary w-52 h-16 text-xl font-bold font-title rounded-md disabled:bg-gray-600/70 disabled:text-gray-400 disabled:cursor-not-allowed disabled:transform-none">
                 Xác Nhận

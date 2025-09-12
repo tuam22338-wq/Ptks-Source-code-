@@ -1,5 +1,8 @@
 
 
+
+
+
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
@@ -224,25 +227,46 @@ interface ModTalentConfig {
     availableTalents: ModTalent[];
 }
 
-// FIX: Update function signature to accept `modTalentConfig` and use it to dynamically generate character talents based on active mods.
-// This resolves the error in CharacterCreationScreen.tsx where a third argument was passed to a function that only accepted two.
-export const generateCharacterFoundation = async (concept: string, gender: Gender, modTalentConfig: ModTalentConfig): Promise<{ identity: Omit<CharacterIdentity, 'gender'>, talents: InnateTalent[] }> => {
+export const generateCharacterIdentity = async (concept: string, gender: Gender): Promise<Omit<CharacterIdentity, 'gender' | 'age'>> => {
+    const identitySchema = {
+        type: Type.OBJECT,
+        properties: {
+            name: { type: Type.STRING, description: 'Tên Hán Việt, phù hợp bối cảnh tiên hiệp. Ví dụ: "Lý Thanh Vân", "Hàn Lập".' },
+            origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật, chi tiết và lôi cuốn.' },
+            appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo.' },
+            personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê.' },
+        },
+        required: ['name', 'origin', 'appearance', 'personality'],
+    };
+
+    const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Phong Thần, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
+    - **Bối cảnh:** Phong Thần Diễn Nghĩa, thế giới huyền huyễn, tiên hiệp.
+    - **Giới tính nhân vật:** ${gender}
+    - **Ý tưởng gốc từ người chơi:** "${concept}"
+    
+    Nhiệm vụ: Sáng tạo ra một cái tên, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
+    `;
+    
+    const response = await generateWithRetry({
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: identitySchema,
+        }
+    });
+
+    const json = JSON.parse(response.text);
+    return json as Omit<CharacterIdentity, 'gender' | 'age'>;
+};
+
+export const generateTalentChoices = async (identity: CharacterIdentity, concept: string, modTalentConfig: ModTalentConfig): Promise<InnateTalent[]> => {
     const talentRanks = modTalentConfig.ranks.length > 0 ? modTalentConfig.ranks.map(r => r.name) : TALENT_RANK_NAMES;
     const choicesPerRoll = modTalentConfig.systemConfig.choicesPerRoll || 6;
     
-    const characterFoundationSchema = {
+    const talentsSchema = {
         type: Type.OBJECT,
         properties: {
-            identity: {
-                type: Type.OBJECT,
-                properties: {
-                    name: { type: Type.STRING, description: 'Tên Hán Việt, phù hợp bối cảnh tiên hiệp. Ví dụ: "Lý Thanh Vân", "Hàn Lập".' },
-                    origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật, chi tiết và lôi cuốn.' },
-                    appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo.' },
-                    personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê.' },
-                },
-                required: ['name', 'origin', 'appearance', 'personality'],
-            },
             talents: {
                 type: Type.ARRAY,
                 description: `Một danh sách gồm chính xác ${choicesPerRoll} tiên tư độc đáo.`,
@@ -272,21 +296,25 @@ export const generateCharacterFoundation = async (concept: string, gender: Gende
                 },
             }
         },
-        required: ['identity', 'talents'],
+        required: ['talents'],
     };
 
     const talentInstructions = modTalentConfig.systemConfig.allowAIGeneratedTalents !== false
     ? `Tạo ra ${choicesPerRoll} tiên tư độc đáo, có liên quan mật thiết đến thân phận và ý tưởng gốc của nhân vật. Phân bổ cấp bậc của chúng một cách ngẫu nhiên và hợp lý (sử dụng các cấp bậc: ${talentRanks.join(', ')}). Các tiên tư phải có chiều sâu, có thể có điều kiện kích hoạt hoặc tương tác đặc biệt.`
     : `CHỈ được chọn ${choicesPerRoll} tiên tư từ danh sách có sẵn sau: ${modTalentConfig.availableTalents.map(t => t.name).join(', ')}.`;
 
-    const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Phong Thần, hãy tạo ra một nhân vật hoàn chỉnh.
-    - **Bối cảnh:** Phong Thần Diễn Nghĩa, thế giới huyền huyễn, tiên hiệp.
-    - **Giới tính nhân vật:** ${gender}
-    - **Ý tưởng gốc từ người chơi:** "${concept}"
+    const prompt = `Dựa trên thông tin về nhân vật, hãy tạo ra một bộ Tiên Tư (Innate Talents) cho họ.
+    - **Bối cảnh:** Game tu tiên Phong Thần.
+    - **Ý tưởng gốc:** "${concept}"
+    - **Thân phận nhân vật:**
+        - Tên: ${identity.name}
+        - Giới tính: ${identity.gender}
+        - Xuất thân: ${identity.origin}
+        - Ngoại hình: ${identity.appearance}
+        - Tính cách: ${identity.personality}
 
     Nhiệm vụ:
-    1.  **Tạo Thân Phận (Identity):** Dựa vào ý tưởng gốc, hãy sáng tạo ra một cái tên, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
-    2.  **Tạo Tiên Tư (Innate Talents):** ${talentInstructions}
+    ${talentInstructions}
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
     `;
@@ -295,13 +323,14 @@ export const generateCharacterFoundation = async (concept: string, gender: Gende
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: characterFoundationSchema,
+            responseSchema: talentsSchema,
         }
     });
 
     const json = JSON.parse(response.text);
-    return json as { identity: Omit<CharacterIdentity, 'gender'>, talents: InnateTalent[] };
+    return json.talents as InnateTalent[];
 };
+
 
 export const generateCharacterAvatar = async (identity: CharacterIdentity): Promise<string> => {
     const prompt = `Tạo ảnh chân dung (portrait) cho một nhân vật trong game tu tiên.
@@ -347,6 +376,14 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
                 TienLuc: { type: Type.NUMBER, description: 'Chỉ số Tiên Lực chiến đấu.' },
                 PhongNgu: { type: Type.NUMBER, description: 'Chỉ số Phòng Ngự chiến đấu.' },
                 SinhMenh: { type: Type.NUMBER, description: 'Chỉ số Sinh Mệnh chiến đấu.' },
+                currencies: {
+                    type: Type.OBJECT,
+                    description: 'Số tiền NPC sở hữu. Có thể để trống nếu là người thường.',
+                    properties: {
+                        linhThach: { type: Type.NUMBER, description: 'Số Linh thạch hạ phẩm.' },
+                        bac: { type: Type.NUMBER, description: 'Số Bạc.' },
+                    }
+                },
                 talents: {
                     type: Type.ARRAY,
                     description: "Một danh sách từ 0 đến 3 tiên tư độc đáo.",
@@ -374,7 +411,7 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
                 },
                 locationId: { type: Type.STRING, enum: availableLocations },
             },
-            required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'realmName', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'TienLuc', 'PhongNgu', 'SinhMenh'],
+            required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'realmName', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'TienLuc', 'PhongNgu', 'SinhMenh', 'currencies'],
         },
     };
     
@@ -386,7 +423,7 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
     1.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu (Tiên Lực, Phòng Ngự, Sinh Mệnh). Ví dụ, một 'ma đầu' sẽ có Ma Đạo cao, trong khi một 'đại hiệp' sẽ có Chính Đạo cao.
     2.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp từ danh sách. Một lão nông bình thường sẽ là "Phàm Nhân", trong khi một trưởng lão tông môn có thể là "Kết Đan Kỳ" hoặc "Nguyên Anh Kỳ".
     3.  **Tiên Tư:** Tạo ra 1-2 tiên tư (talents) độc đáo và phù hợp cho mỗi NPC tu sĩ. Các tiên tư nên có cấp bậc (rank) và hiệu ứng (effect) rõ ràng, có thể cộng thêm chỉ số (bonuses).
-    `;
+    4.  **Tài Sản:** Gán cho họ một lượng tiền tệ (Linh thạch, Bạc) phù hợp. Một trưởng lão có thể giàu có, trong khi một tán tu có thể nghèo khó.`;
     
     const settings = getSettings();
     const response = await generateWithRetry({
@@ -401,7 +438,7 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
     const npcsData = JSON.parse(response.text);
 
     return npcsData.map((npcData: any): NPC => {
-        const { name, gender, description, origin, personality, talents, realmName, ...stats } = npcData;
+        const { name, gender, description, origin, personality, talents, realmName, currencies, ...stats } = npcData;
         
         // Determine cultivation state
         const targetRealm = REALM_SYSTEM.find(r => r.name === realmName) || REALM_SYSTEM[0];
@@ -454,7 +491,10 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
             // Fill required properties with defaults
             techniques: [],
             inventory: { items: [], weightCapacity: 15 },
-            currencies: {},
+            currencies: {
+                'Linh thạch hạ phẩm': currencies?.linhThach || 0,
+                'Bạc': currencies?.bac || 0,
+            },
             equipment: {},
         };
     });
@@ -895,6 +935,8 @@ export const generateStoryContinuationStream = async function* (
         contents: prompt,
         config: { 
             safetySettings,
+            temperature: 0.9,
+            thinkingConfig: { thinkingBudget: 2500 }
         }
     };
     
