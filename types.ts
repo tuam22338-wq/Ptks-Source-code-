@@ -421,6 +421,26 @@ export type AIAction =
     | { action: 'CREATE_DECLARATIONS'; data: CreateDeclarationData }
     | { action: 'CREATE_STORY_SYSTEM'; data: CreateStorySystemData }
     | { action: 'CREATE_CUSTOM_PANEL'; data: CreateCustomPanelData }
+    | { action: 'UPDATE_ITEM', data: CreateItemData }
+    | { action: 'DELETE_ITEM', data: { name: string } }
+    | { action: 'UPDATE_TALENT', data: CreateTalentData }
+    | { action: 'DELETE_TALENT', data: { name: string } }
+    | { action: 'UPDATE_SECT', data: CreateSectData }
+    | { action: 'DELETE_SECT', data: { name: string } }
+    | { action: 'UPDATE_CHARACTER', data: CreateCharacterData }
+    | { action: 'DELETE_CHARACTER', data: { name: string } }
+    | { action: 'UPDATE_TECHNIQUE', data: CreateTechniqueData }
+    | { action: 'DELETE_TECHNIQUE', data: { name: string } }
+    | { action: 'UPDATE_NPC', data: CreateNpcData }
+    | { action: 'DELETE_NPC', data: { name: string } }
+    | { action: 'UPDATE_EVENT', data: CreateEventData }
+    | { action: 'DELETE_EVENT', data: { name: string } }
+    | { action: 'UPDATE_RECIPE', data: CreateRecipeData }
+    | { action: 'DELETE_RECIPE', data: { name: string } }
+    | { action: 'UPDATE_WORLD_BUILDING', data: DefineWorldBuildingData }
+    | { action: 'DELETE_WORLD_BUILDING', data: { title: string } }
+    | { action: 'UPDATE_CUSTOM_PANEL', data: CreateCustomPanelData }
+    | { action: 'DELETE_CUSTOM_PANEL', data: { title: string } }
     | { action: 'UPDATE_REPUTATION', data: { factionName: string, change: number } }
     | { 
         action: 'BATCH_ACTIONS'; 
@@ -447,6 +467,26 @@ export type AIAction =
             | { action: 'CREATE_DECLARATIONS'; data: CreateDeclarationData }
             | { action: 'CREATE_STORY_SYSTEM'; data: CreateStorySystemData }
             | { action: 'CREATE_CUSTOM_PANEL'; data: CreateCustomPanelData }
+            | { action: 'UPDATE_ITEM', data: CreateItemData }
+            | { action: 'DELETE_ITEM', data: { name: string } }
+            | { action: 'UPDATE_TALENT', data: CreateTalentData }
+            | { action: 'DELETE_TALENT', data: { name: string } }
+            | { action: 'UPDATE_SECT', data: CreateSectData }
+            | { action: 'DELETE_SECT', data: { name: string } }
+            | { action: 'UPDATE_CHARACTER', data: CreateCharacterData }
+            | { action: 'DELETE_CHARACTER', data: { name: string } }
+            | { action: 'UPDATE_TECHNIQUE', data: CreateTechniqueData }
+            | { action: 'DELETE_TECHNIQUE', data: { name: string } }
+            | { action: 'UPDATE_NPC', data: CreateNpcData }
+            | { action: 'DELETE_NPC', data: { name: string } }
+            | { action: 'UPDATE_EVENT', data: CreateEventData }
+            | { action: 'DELETE_EVENT', data: { name: string } }
+            | { action: 'UPDATE_RECIPE', data: CreateRecipeData }
+            | { action: 'DELETE_RECIPE', data: { name: string } }
+            | { action: 'UPDATE_WORLD_BUILDING', data: DefineWorldBuildingData }
+            | { action: 'DELETE_WORLD_BUILDING', data: { title: string } }
+            | { action: 'UPDATE_CUSTOM_PANEL', data: CreateCustomPanelData }
+            | { action: 'DELETE_CUSTOM_PANEL', data: { title: string } }
             | { action: 'UPDATE_REPUTATION', data: { factionName: string, change: number } }
         > 
       };

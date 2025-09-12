@@ -100,50 +100,62 @@ const GameMasterChat: React.FC<GameMasterChatProps> = ({ onActionRequest, modCon
     };
 
     const getSuggestionSummary = (suggestion: AIAction): string => {
+        const data = suggestion.data as any;
         switch (suggestion.action) {
-            case 'CREATE_ITEM':
-                return `AI đề xuất tạo vật phẩm: "${suggestion.data.name}"`;
-            case 'CREATE_MULTIPLE_ITEMS':
-                return `AI đề xuất tạo ${suggestion.data.length} vật phẩm mới.`;
-            case 'CREATE_TALENT':
-                return `AI đề xuất tạo Tiên Tư: "${suggestion.data.name}"`;
-             case 'CREATE_MULTIPLE_TALENTS':
-                return `AI đề xuất tạo ${suggestion.data.length} Tiên Tư mới.`;
-            case 'CREATE_SECT':
-                return `AI đề xuất tạo tông môn: "${suggestion.data.name}"`;
-            case 'CREATE_MULTIPLE_SECTS':
-                return `AI đề xuất tạo ${suggestion.data.length} tông môn mới.`;
-            case 'CREATE_REALM_SYSTEM':
-                 return `AI đề xuất **thay thế** Hệ Thống Cảnh Giới hiện tại bằng một hệ thống mới gồm ${suggestion.data.length} cảnh giới.`;
-            case 'CONFIGURE_TALENT_SYSTEM':
-                 return `AI đề xuất **thay thế** cấu hình hệ thống "${suggestion.data.systemName}" hiện tại.`;
-            case 'CREATE_CHARACTER':
-                 return `AI đề xuất tạo nhân vật: "${suggestion.data.name}".`;
-            case 'CREATE_MULTIPLE_CHARACTERS':
-                return `AI đề xuất tạo ${suggestion.data.length} nhân vật mới.`;
-            case 'DEFINE_WORLD_BUILDING':
-                return `AI đề xuất tạo một khối dữ liệu xây dựng thế giới với tiêu đề: "${suggestion.data.title}".`;
+            // Create
+            case 'CREATE_ITEM': return `AI đề xuất tạo vật phẩm: "${data.name}"`;
+            case 'CREATE_MULTIPLE_ITEMS': return `AI đề xuất tạo ${data.length} vật phẩm mới.`;
+            case 'CREATE_TALENT': return `AI đề xuất tạo Tiên Tư: "${data.name}"`;
+            case 'CREATE_MULTIPLE_TALENTS': return `AI đề xuất tạo ${data.length} Tiên Tư mới.`;
+            case 'CREATE_SECT': return `AI đề xuất tạo tông môn: "${data.name}"`;
+            case 'CREATE_MULTIPLE_SECTS': return `AI đề xuất tạo ${data.length} tông môn mới.`;
+            case 'CREATE_CHARACTER': return `AI đề xuất tạo nhân vật: "${data.name}".`;
+            case 'CREATE_MULTIPLE_CHARACTERS': return `AI đề xuất tạo ${data.length} nhân vật mới.`;
+            case 'DEFINE_WORLD_BUILDING': return `AI đề xuất tạo dữ liệu thế giới: "${data.title}".`;
+            case 'CREATE_TECHNIQUE': return `AI đề xuất tạo công pháp: "${data.name}".`;
+            case 'CREATE_NPC': return `AI đề xuất tạo NPC: "${data.name}".`;
+            case 'CREATE_EVENT': return `AI đề xuất tạo sự kiện: "${data.name}".`;
+            case 'CREATE_RECIPE': return `AI đề xuất tạo đan phương: "${data.name}".`;
+            case 'CREATE_CUSTOM_PANEL': return `AI đề xuất tạo bảng UI: "${data.title}".`;
+            
+            // Update
+            case 'UPDATE_ITEM': return `AI đề xuất cập nhật vật phẩm: "${data.name}"`;
+            case 'UPDATE_TALENT': return `AI đề xuất cập nhật Tiên Tư: "${data.name}"`;
+            case 'UPDATE_SECT': return `AI đề xuất cập nhật tông môn: "${data.name}"`;
+            case 'UPDATE_CHARACTER': return `AI đề xuất cập nhật nhân vật: "${data.name}"`;
+            case 'UPDATE_TECHNIQUE': return `AI đề xuất cập nhật công pháp: "${data.name}"`;
+            case 'UPDATE_NPC': return `AI đề xuất cập nhật NPC: "${data.name}"`;
+            case 'UPDATE_EVENT': return `AI đề xuất cập nhật sự kiện: "${data.name}"`;
+            case 'UPDATE_RECIPE': return `AI đề xuất cập nhật đan phương: "${data.name}"`;
+            case 'UPDATE_WORLD_BUILDING': return `AI đề xuất cập nhật dữ liệu thế giới: "${data.title}"`;
+            case 'UPDATE_CUSTOM_PANEL': return `AI đề xuất cập nhật bảng UI: "${data.title}"`;
+            
+            // Delete
+            case 'DELETE_ITEM': return `AI đề xuất XÓA vật phẩm: "${data.name}"`;
+            case 'DELETE_TALENT': return `AI đề xuất XÓA Tiên Tư: "${data.name}"`;
+            case 'DELETE_SECT': return `AI đề xuất XÓA tông môn: "${data.name}"`;
+            case 'DELETE_CHARACTER': return `AI đề xuất XÓA nhân vật: "${data.name}"`;
+            case 'DELETE_TECHNIQUE': return `AI đề xuất XÓA công pháp: "${data.name}"`;
+            case 'DELETE_NPC': return `AI đề xuất XÓA NPC: "${data.name}"`;
+            case 'DELETE_EVENT': return `AI đề xuất XÓA sự kiện: "${data.name}"`;
+            case 'DELETE_RECIPE': return `AI đề xuất XÓA đan phương: "${data.name}"`;
+            case 'DELETE_WORLD_BUILDING': return `AI đề xuất XÓA dữ liệu thế giới: "${data.title}"`;
+            case 'DELETE_CUSTOM_PANEL': return `AI đề xuất XÓA bảng UI: "${data.title}"`;
+
+            // System
+            case 'CREATE_REALM_SYSTEM': return `AI đề xuất **thay thế** Hệ Thống Cảnh Giới hiện tại bằng một hệ thống mới gồm ${data.length} cảnh giới.`;
+            case 'CONFIGURE_TALENT_SYSTEM': return `AI đề xuất **thay thế** cấu hình hệ thống "${data.systemName}" hiện tại.`;
+            
+            // Batch
             case 'BATCH_ACTIONS': {
                 const counts: Record<string, number> = {};
-                suggestion.data.forEach(subAction => {
-                    // This is a type guard to help TypeScript understand the structure
-                    if ('action' in subAction && 'data' in subAction) {
-                        const key = 
-                            subAction.action.includes('ITEM') ? 'vật phẩm' :
-                            subAction.action.includes('TALENT') ? 'tiên tư' :
-                            subAction.action.includes('CHARACTER') ? 'nhân vật' :
-                            subAction.action.includes('SECT') ? 'tông môn' :
-                            subAction.action.includes('REALM') ? 'hệ thống cảnh giới' :
-                            subAction.action.includes('WORLD') ? 'dữ liệu thế giới' :
-                            'nội dung';
-                        
-                        const data = subAction.data as any; // Cast to any to access length property
-                        counts[key] = (counts[key] || 0) + (Array.isArray(data) ? data.length : 1);
-                    }
+                (suggestion.data as any[]).forEach(subAction => {
+                    const actionType = subAction.action.split('_').map((word: string, i: number) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(''); // e.g., CREATE_ITEM -> createItem
+                    const key = subAction.action.replace(/CREATE_|UPDATE_|DELETE_|MULTIPLE_/, '').toLowerCase();
+                    counts[key] = (counts[key] || 0) + (Array.isArray(subAction.data) ? subAction.data.length : 1);
                 });
-            
                 const summaryParts = Object.entries(counts).map(([key, value]) => `${value} ${key}`);
-                return `AI đề xuất tạo: ${summaryParts.join(', ')}.`;
+                return `AI đề xuất thực hiện nhiều hành động: ${summaryParts.join(', ')}.`;
             }
             default:
                 return "AI có một đề xuất.";

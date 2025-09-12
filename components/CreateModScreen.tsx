@@ -284,6 +284,30 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 case 'CREATE_RECIPE': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'recipe' }); break;
                 case 'CREATE_MULTIPLE_RECIPES': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'recipe' })); break;
                 case 'CREATE_CUSTOM_PANEL': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'customPanel' }); break;
+                
+                // Update Actions
+                case 'UPDATE_ITEM': setAddedContent(prev => prev.map(c => (c.contentType === 'item' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'item' } : c)); break;
+                case 'UPDATE_TALENT': setAddedContent(prev => prev.map(c => (c.contentType === 'talent' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'talent' } : c)); break;
+                case 'UPDATE_SECT': setAddedContent(prev => prev.map(c => (c.contentType === 'sect' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'sect' } : c)); break;
+                case 'UPDATE_CHARACTER': setAddedContent(prev => prev.map(c => (c.contentType === 'character' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'character' } : c)); break;
+                case 'UPDATE_TECHNIQUE': setAddedContent(prev => prev.map(c => (c.contentType === 'technique' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'technique' } : c)); break;
+                case 'UPDATE_NPC': setAddedContent(prev => prev.map(c => (c.contentType === 'npc' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'npc' } : c)); break;
+                case 'UPDATE_EVENT': setAddedContent(prev => prev.map(c => (c.contentType === 'event' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'event' } : c)); break;
+                case 'UPDATE_RECIPE': setAddedContent(prev => prev.map(c => (c.contentType === 'recipe' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'recipe' } : c)); break;
+                case 'UPDATE_WORLD_BUILDING': setAddedContent(prev => prev.map(c => (c.contentType === 'worldBuilding' && c.title === (act.data as any).title) ? { ...(act.data as any), id: c.id, contentType: 'worldBuilding' } : c)); break;
+                case 'UPDATE_CUSTOM_PANEL': setAddedContent(prev => prev.map(c => (c.contentType === 'customPanel' && c.title === (act.data as any).title) ? { ...(act.data as any), id: c.id, contentType: 'customPanel' } : c)); break;
+
+                // Delete Actions
+                case 'DELETE_ITEM': setAddedContent(prev => prev.filter(c => !(c.contentType === 'item' && c.name === (act.data as any).name))); break;
+                case 'DELETE_TALENT': setAddedContent(prev => prev.filter(c => !(c.contentType === 'talent' && c.name === (act.data as any).name))); break;
+                case 'DELETE_SECT': setAddedContent(prev => prev.filter(c => !(c.contentType === 'sect' && c.name === (act.data as any).name))); break;
+                case 'DELETE_CHARACTER': setAddedContent(prev => prev.filter(c => !(c.contentType === 'character' && c.name === (act.data as any).name))); break;
+                case 'DELETE_TECHNIQUE': setAddedContent(prev => prev.filter(c => !(c.contentType === 'technique' && c.name === (act.data as any).name))); break;
+                case 'DELETE_NPC': setAddedContent(prev => prev.filter(c => !(c.contentType === 'npc' && c.name === (act.data as any).name))); break;
+                case 'DELETE_EVENT': setAddedContent(prev => prev.filter(c => !(c.contentType === 'event' && c.name === (act.data as any).name))); break;
+                case 'DELETE_RECIPE': setAddedContent(prev => prev.filter(c => !(c.contentType === 'recipe' && c.name === (act.data as any).name))); break;
+                case 'DELETE_WORLD_BUILDING': setAddedContent(prev => prev.filter(c => !(c.contentType === 'worldBuilding' && c.title === (act.data as any).title))); break;
+                case 'DELETE_CUSTOM_PANEL': setAddedContent(prev => prev.filter(c => !(c.contentType === 'customPanel' && c.title === (act.data as any).title))); break;
             }
         });
 

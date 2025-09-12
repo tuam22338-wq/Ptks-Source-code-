@@ -497,12 +497,12 @@ const getGameMasterSystemInstruction = (modContext?: GameMasterModContext): stri
     }
 
 
-    return `Bạn là một GameMaster AI thông minh, sáng tạo, và là một chuyên gia về bối cảnh Phong Thần Diễn Nghĩa, giúp người dùng tạo mod cho game tu tiên Phong Thần Ký Sự.
+    return `Bạn là một GameMaster AI thông minh, sáng tạo, và là một chuyên gia về bối cảnh Phong Thần Diễn Nghĩa, giúp người dùng tạo và CHỈNH SỬA mod cho game tu tiên Phong Thần Ký Sự.
 
 **TƯ DUY CỦA BẠN:**
-1.  **Phân tích từng bước:** Trước khi đưa ra JSON cuối cùng, hãy suy nghĩ từng bước để phân tích yêu cầu của người dùng.
+1.  **Phân tích từng bước:** Trước khi đưa ra JSON cuối cùng, hãy suy nghĩ từng bước để phân tích yêu cầu của người dùng, xác định họ muốn TẠO, SỬA, hay XÓA.
 2.  **Hiểu sâu bối cảnh:** Luôn bám sát không khí tu tiên, huyền huyễn của Phong Thần. Tên gọi, mô tả phải mang đậm văn phong Hán Việt cổ điển.
-3.  **Nhất quán là trên hết:** Khi tạo nội dung mới, hãy tham khảo các hệ thống đã được định nghĩa (cảnh giới, tiên tư, các vật phẩm đã có) để đảm bảo sự nhất quán.
+3.  **Nhất quán là trên hết:** Khi tạo hoặc sửa nội dung, hãy tham khảo các hệ thống và nội dung đã có để đảm bảo sự nhất quán.
 
 **HIỂU BIẾT VỀ CƠ CHẾ GAME & MOD HIỆN TẠI:**
 *   **Thông tin Mod:** Tên: "${modContext?.modInfo.name || 'Chưa có tên'}", Tác giả: "${modContext?.modInfo.author || 'Chưa có'}", Mô tả: "${modContext?.modInfo.description || 'Chưa có'}"
@@ -512,94 +512,49 @@ const getGameMasterSystemInstruction = (modContext?: GameMasterModContext): stri
 *   **Cấu hình Tiên Tư:** Số lựa chọn mỗi lần gieo quẻ: ${modContext?.talentSystemConfig.choicesPerRoll}, Tối đa có thể chọn: ${modContext?.talentSystemConfig.maxSelectable}.
 *   **Nội dung đã thêm:**
 ${existingContentSummary}
-*   **Vật phẩm (Items):** Gồm các loại: Vũ Khí, Phòng Cụ, Đan Dược, Pháp Bảo, Tạp Vật, Đan Lô, Linh Dược, Đan Phương. Chúng có phẩm chất, trọng lượng, và có thể cộng chỉ số.
-*   **Công Pháp (Techniques):** Là các kỹ năng nhân vật có thể sử dụng, có tiêu hao, hồi chiêu, và cấp bậc.
-*   **Sự kiện (Events):** Là các tình huống có kịch bản với các lựa chọn, có thể yêu cầu kiểm tra thuộc tính (skill check) và dẫn đến các kết quả khác nhau (outcomes).
-*   **Bảng Tùy Chỉnh (Custom Panels):** Cho phép tạo các tab mới trong UI để hiển thị các mục 'WorldBuilding'.
+*   **Vật phẩm (Items), Công Pháp (Techniques), Sự kiện (Events), etc.:** Có thể được TẠO, SỬA, hoặc XÓA.
 
 **NHIỆM VỤ CỦA BẠN:**
-Phân tích yêu cầu của người dùng và chuyển đổi nó thành một hoặc nhiều hành động có cấu trúc (\`action\`) tương thích với game. Luôn trả lời ở định dạng JSON. Nếu người dùng chỉ đang trò chuyện hoặc hỏi, hãy sử dụng hành động 'CHAT'. Nếu họ yêu cầu nhiều thứ, hãy dùng 'BATCH_ACTIONS'.
+Phân tích yêu cầu của người dùng và chuyển đổi nó thành một hoặc nhiều hành động có cấu trúc (\`action\`) tương thích với game. Luôn trả lời ở định dạng JSON.
+*   **Trò chuyện:** Nếu người dùng chỉ đang trò chuyện hoặc hỏi, hãy sử dụng hành động 'CHAT'.
+*   **Nhiều yêu cầu:** Nếu họ yêu cầu nhiều thứ, hãy dùng 'BATCH_ACTIONS'.
+*   **Chỉnh sửa:** Để chỉnh sửa một mục đã có, hãy sử dụng hành động \`UPDATE_[TYPE]\` (ví dụ: \`UPDATE_ITEM\`). **QUAN TRỌNG:** Bạn phải cung cấp lại TOÀN BỘ dữ liệu mới cho mục đó, bao gồm cả những phần không thay đổi. Xác định mục cần sửa bằng thuộc tính \`name\` (hoặc \`title\` cho WorldBuilding).
+*   **Xóa:** Để xóa, hãy sử dụng \`DELETE_[TYPE]\` và cung cấp \`name\` (hoặc \`title\`).
 
 ---
 
-**HƯỚNG DẪN TẠO NỘI DUNG PHỨC TẠP:**
+**VÍ DỤ VỀ CHỈNH SỬA VÀ XÓA:**
 
-**1. Hướng dẫn tạo \`ModEvent\` có chiều sâu:**
-Khi người dùng yêu cầu tạo một sự kiện, hãy ưu tiên tạo ra các chuỗi logic thú vị.
-*   **Kiểm tra thuộc tính (\`check\`):** Sử dụng \`check\` để các lựa chọn trở nên thử thách hơn. Độ khó (difficulty) nên hợp lý: 10 (dễ), 15 (trung bình), 20 (khó).
-*   **Nhiều kết quả (\`outcomes\`):** Một lựa chọn có thể dẫn đến nhiều kết quả. Ví dụ: nhận được vật phẩm VÀ tăng danh vọng.
-*   **Sự kiện nối tiếp (\`START_EVENT\`):** Để tạo chuỗi nhiệm vụ, hãy dùng outcome \`START_EVENT\` và trỏ đến \`name\` của một sự kiện khác.
+*   **Yêu cầu người dùng:** "Hãy sửa vật phẩm 'Phiên Thiên Ấn', tăng Lực Lượng lên 30."
+*   **Tư duy của bạn:** Người dùng muốn sửa một vật phẩm. Tôi cần tìm dữ liệu hiện tại của 'Phiên Thiên Ấn' trong context, thay đổi giá trị Lực Lượng, và sau đó trả về toàn bộ đối tượng vật phẩm đã được cập nhật bằng action \`UPDATE_ITEM\`.
+*   **JSON mẫu bạn nên tạo:**
+    \`\`\`json
+    {
+      "action": "UPDATE_ITEM",
+      "data": {
+        "name": "Phiên Thiên Ấn",
+        "description": "Một pháp bảo của Quảng Thành Tử, có sức mạnh lật trời, một khi tung ra, vạn vật đều khó chống đỡ.",
+        "type": "Pháp Bảo",
+        "quality": "Tiên Phẩm",
+        "weight": 5.0,
+        "bonuses": [
+          { "attribute": "Lực Lượng", "value": 30 }, 
+          { "attribute": "Tiên Lực", "value": 50 }
+        ],
+        "tags": ["Xiển Giáo", "Pháp Bảo Mạnh"]
+      }
+    }
+    \`\`\`
 
-*   **Ví dụ về \`ModEvent\` phức tạp:**
-    *   *Yêu cầu người dùng:* "Tạo một sự kiện nhỏ tại Thanh Hà Trấn, người chơi gặp một lão ăn mày bí ẩn."
-    *   *Tư duy của bạn:* Lão ăn mày này có thể là một cao nhân đang thử lòng. Lựa chọn "cho tiền" có thể dẫn đến một kỳ ngộ. Lựa chọn "xua đuổi" có thể giảm Chính Đạo.
-    *   *JSON mẫu bạn nên tạo:*
-        \`\`\`json
-        {
-          "action": "CREATE_EVENT",
-          "data": {
-            "name": "su_kien_lao_an_may",
-            "description": "Khi đang đi dạo trong Thanh Hà Trấn, bạn thấy một lão ăn mày quần áo rách rưới, ánh mắt lại sáng như sao, đang chìa chiếc bát vỡ về phía bạn.",
-            "choices": [
-              {
-                "text": "Đưa cho ông lão một ít bạc lẻ.",
-                "check": null,
-                "outcomes": [
-                  { "type": "REMOVE_ITEM", "details": { "name": "Bạc", "quantity": 10 } },
-                  { "type": "CHANGE_STAT", "details": { "attribute": "Chính Đạo", "change": 2 } },
-                  { "type": "START_EVENT", "details": { "eventName": "su_kien_an_may_cam_ta" } }
-                ]
-              },
-              {
-                "text": "Kiểm tra khí tức của ông ta. (Yêu cầu Cảm Ngộ)",
-                "check": { "attribute": "Cảm Ngộ", "difficulty": 15 },
-                "outcomes": [
-                   { "type": "ADD_RUMOR", "details": { "locationId": "thanh_ha_tran", "text": "Nghe nói có một cao nhân đang ẩn mình tại Thanh Hà Trấn." } }
-                ]
-              },
-              {
-                "text": "Xua đuổi ông ta đi.",
-                "check": null,
-                "outcomes": [
-                  { "type": "CHANGE_STAT", "details": { "attribute": "Chính Đạo", "change": -5 } }
-                ]
-              }
-            ],
-            "tags": ["Thanh Hà Trấn", "Kỳ Ngộ"]
-          }
-        }
-        \`\`\`
-
-**2. Hướng dẫn tạo \`worldBuilding\` có cấu trúc:**
-Khi người dùng yêu cầu định nghĩa một khía cạnh của thế giới, **KHÔNG** tạo JSON tự do. Thay vào đó, hãy **TỰ SUY RA MỘT CẤU TRÚC** hợp lý dựa trên chủ đề và áp dụng nó.
-*   **Chủ đề về sinh vật/yêu thú:** Cấu trúc nên có các trường như \`habitat\` (môi trường sống), \`abilities\` (khả năng), \`weaknesses\` (điểm yếu), \`lore\` (truyền thuyết).
-*   **Chủ đề về lịch sử/địa danh:** Cấu trúc nên có các trường như \`era\` (thời đại), \`keyFigures\` (nhân vật chủ chốt), \`majorEvents\` (sự kiện lớn).
-*   **Chủ đề về hệ thống (luyện đan, trận pháp):** Cấu trúc nên có các trường như \`principles\` (nguyên tắc), \`levels\` (cấp độ), \`materials\` (vật liệu).
-
-*   **Ví dụ về \`worldBuilding\` có cấu trúc:**
-    *   *Yêu cầu người dùng:* "Hãy viết về Hỏa Lân, một thần thú trong truyền thuyết."
-    *   *Tư duy của bạn:* Đây là một sinh vật. Tôi sẽ tạo một cấu trúc dữ liệu cho yêu thú.
-    *   *JSON mẫu bạn nên tạo:*
-        \`\`\`json
-        {
-          "action": "DEFINE_WORLD_BUILDING",
-          "data": {
-            "title": "Thần Thú: Hỏa Lân",
-            "description": "Hỏa Lân là một trong tứ đại thần thú, biểu tượng của điềm lành và lửa.",
-            "data": {
-              "type": "Thần Thú",
-              "habitat": "Các ngọn núi lửa cổ xưa, nơi có địa hỏa dồi dào.",
-              "appearance": "Hình dáng giống kỳ lân, toàn thân bao phủ bởi vảy màu đỏ rực, bốn vó đạp trên lửa, có khả năng phun ra tam muội chân hỏa.",
-              "abilities": [
-                "Tam Muội Chân Hỏa: Ngọn lửa có thể đốt cháy cả linh hồn.",
-                "Điềm Lành Chi Quang: Sự xuất hiện của nó có thể mang lại may mắn."
-              ],
-              "lore": "Tương truyền, Hỏa Lân là thú cưỡi của Viêm Đế, sau này ẩn mình trong nhân gian. Máu của nó là một loại thần dược, có thể cải tử hoàn sinh và tăng công lực cực lớn."
-            },
-            "tags": ["Thần Thú", "Lửa"]
-          }
-        }
-        \`\`\`
+*   **Yêu cầu người dùng:** "Xóa tông môn 'Triệt Giáo' đi."
+*   **Tư duy của bạn:** Người dùng muốn xóa một tông môn. Tôi sẽ sử dụng action \`DELETE_SECT\` và cung cấp tên.
+*   **JSON mẫu bạn nên tạo:**
+    \`\`\`json
+    {
+      "action": "DELETE_SECT",
+      "data": { "name": "Triệt Giáo" }
+    }
+    \`\`\`
 `;
 };
 
@@ -692,6 +647,9 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
         },
         required: ['title', 'iconName', 'content']
     };
+    
+    const deleteByNameSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING } }, required: ['name'] };
+    const deleteByTitleSchema = { type: Type.OBJECT, properties: { title: { type: Type.STRING } }, required: ['title'] };
 
     const responseSchema = {
         oneOf: [
@@ -716,6 +674,26 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
             { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
             { properties: { action: { const: 'CREATE_MULTIPLE_RECIPES' }, data: { type: Type.ARRAY, items: recipeSchema } } },
             { properties: { action: { const: 'CREATE_CUSTOM_PANEL' }, data: customPanelSchema } },
+            { properties: { action: { const: 'UPDATE_ITEM' }, data: itemSchema } },
+            { properties: { action: { const: 'DELETE_ITEM' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_TALENT' }, data: talentSchema } },
+            { properties: { action: { const: 'DELETE_TALENT' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_SECT' }, data: sectSchema } },
+            { properties: { action: { const: 'DELETE_SECT' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_CHARACTER' }, data: characterSchema } },
+            { properties: { action: { const: 'DELETE_CHARACTER' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_TECHNIQUE' }, data: techniqueSchema } },
+            { properties: { action: { const: 'DELETE_TECHNIQUE' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_NPC' }, data: npcSchema } },
+            { properties: { action: { const: 'DELETE_NPC' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_EVENT' }, data: eventSchema } },
+            { properties: { action: { const: 'DELETE_EVENT' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_RECIPE' }, data: recipeSchema } },
+            { properties: { action: { const: 'DELETE_RECIPE' }, data: deleteByNameSchema } },
+            { properties: { action: { const: 'UPDATE_WORLD_BUILDING' }, data: worldBuildingSchema } },
+            { properties: { action: { const: 'DELETE_WORLD_BUILDING' }, data: deleteByTitleSchema } },
+            { properties: { action: { const: 'UPDATE_CUSTOM_PANEL' }, data: customPanelSchema } },
+            { properties: { action: { const: 'DELETE_CUSTOM_PANEL' }, data: deleteByTitleSchema } },
             { properties: { action: { const: 'BATCH_ACTIONS' }, data: { type: Type.ARRAY, items: {
                  oneOf: [
                     { properties: { action: { const: 'CREATE_ITEM' }, data: itemSchema } },
@@ -726,6 +704,10 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
                     { properties: { action: { const: 'CREATE_EVENT' }, data: eventSchema } },
                     { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
                     { properties: { action: { const: 'CREATE_CUSTOM_PANEL' }, data: customPanelSchema } },
+                    { properties: { action: { const: 'UPDATE_ITEM' }, data: itemSchema } },
+                    { properties: { action: { const: 'DELETE_ITEM' }, data: deleteByNameSchema } },
+                    { properties: { action: { const: 'UPDATE_TALENT' }, data: talentSchema } },
+                    { properties: { action: { const: 'DELETE_TALENT' }, data: deleteByNameSchema } },
                  ]
             } } } }
         ],
