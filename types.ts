@@ -277,7 +277,7 @@ export type ModNpc = {
 };
 
 // FIX: Define and export ContentType to resolve import error in CreateModScreen.tsx.
-export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'worldBuilding' | 'npc' | 'technique' | 'event' | 'customPanel' | 'realm' | 'realmSystem' | 'talentSystem';
+export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'worldBuilding' | 'npc' | 'technique' | 'event' | 'customPanel' | 'realm' | 'realmSystem' | 'talentSystem' | 'recipe';
 
 export type EventTriggerType = 'ON_ENTER_LOCATION' | 'ON_TALK_TO_NPC' | 'ON_GAME_DATE';
 export interface EventTrigger {

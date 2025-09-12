@@ -3,10 +3,10 @@ import {
     FaArrowLeft, FaBoxOpen, FaUserShield, FaStar, FaPlus, FaEdit, FaTrash, FaCogs, FaGlobe, FaFilter,
     FaTimes, FaCode, FaList, FaExclamationTriangle, FaRobot, FaFileSignature, FaBoxes, FaScroll, FaUserFriends, FaMagic, FaColumns
 } from 'react-icons/fa';
-import { GiCastle } from 'react-icons/gi';
+import { GiCastle, GiScrollQuill } from 'react-icons/gi';
 import { ALL_ATTRIBUTES, INNATE_TALENT_PROBABILITY, INNATE_TALENT_RANKS } from '../constants';
 import GameMasterChat from './GameMasterChat';
-import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, AIAction, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel, ContentType } from '../types';
+import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, AIAction, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel, ContentType, AlchemyRecipe } from '../types';
 import TalentEditorModal from './TalentEditorModal';
 import CharacterEditorModal from './CharacterEditorModal';
 import ItemEditorModal from './ItemEditorModal';
@@ -17,6 +17,7 @@ import NpcEditorModal from './NpcEditorModal';
 // FIX: Changed import to a named import as TechniqueEditorModal does not have a default export.
 import TechniqueEditorModal from './TechniqueEditorModal';
 import EventEditorModal from './EventEditorModal';
+import RecipeEditorModal from './RecipeEditorModal';
 
 
 interface CreateModScreenProps {
@@ -35,6 +36,7 @@ const CONTENT_TYPE_INFO: Record<Exclude<ContentType, 'realm' | 'realmSystem' | '
     technique: { label: 'Công Pháp', icon: FaMagic, color: 'bg-amber-500/80' },
     event: { label: 'Sự Kiện', icon: FaScroll, color: 'bg-orange-500/80' },
     customPanel: { label: 'Bảng UI', icon: FaColumns, color: 'bg-indigo-500/80' },
+    recipe: { label: 'Đan Phương', icon: GiScrollQuill, color: 'bg-yellow-500/80' },
 };
 
 const DEFAULT_REALMS: RealmConfig[] = [
@@ -66,6 +68,7 @@ type AddedContentUnion =
     (ModNpc & { contentType: 'npc' }) |
     (ModTechnique & { contentType: 'technique' }) |
     (ModEvent & { contentType: 'event' }) |
+    (AlchemyRecipe & { contentType: 'recipe' }) |
     (ModCustomPanel & { contentType: 'customPanel' });
 
 
@@ -146,6 +149,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const [editingTechnique, setEditingTechnique] = useState<ModTechnique | null>(null);
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<ModEvent | null>(null);
+    const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
+    const [editingRecipe, setEditingRecipe] = useState<AlchemyRecipe | null>(null);
 
     
     // UI State for view/filter
@@ -179,6 +184,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                     if(parsedData.content.techniques) newAddedContent.push(...parsedData.content.techniques.map((t: any) => ({...t, id: t.id || timestamp(), contentType: 'technique' as const})));
                     if(parsedData.content.events) newAddedContent.push(...parsedData.content.events.map((e: any) => ({...e, id: e.id || timestamp(), contentType: 'event' as const})));
                     if(parsedData.content.customPanels) newAddedContent.push(...parsedData.content.customPanels.map((p: any) => ({...p, id: p.id || timestamp(), contentType: 'customPanel' as const})));
+                    if(parsedData.content.recipes) newAddedContent.push(...parsedData.content.recipes.map((r: any) => ({...r, id: r.id || timestamp(), contentType: 'recipe' as const})));
                     setAddedContent(newAddedContent);
 
                     setRealms(parsedData.content.realmConfigs || DEFAULT_REALMS);
@@ -275,6 +281,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 case 'CREATE_MULTIPLE_TECHNIQUES': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'technique' })); break;
                 case 'CREATE_EVENT': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'event' }); break;
                 case 'CREATE_MULTIPLE_EVENTS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'event' })); break;
+                case 'CREATE_RECIPE': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'recipe' }); break;
+                case 'CREATE_MULTIPLE_RECIPES': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'recipe' })); break;
                 case 'CREATE_CUSTOM_PANEL': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'customPanel' }); break;
             }
         });
@@ -310,6 +318,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const handleOpenNpcEditor = (npc: ModNpc | null) => { setEditingNpc(npc); setIsNpcModalOpen(true); };
     const handleOpenTechniqueEditor = (technique: ModTechnique | null) => { setEditingTechnique(technique); setIsTechniqueModalOpen(true); };
     const handleOpenEventEditor = (event: ModEvent | null) => { setEditingEvent(event); setIsEventModalOpen(true); };
+    const handleOpenRecipeEditor = (recipe: AlchemyRecipe | null) => { setEditingRecipe(recipe); setIsRecipeModalOpen(true); };
 
 
     // Specific save handlers
@@ -321,6 +330,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const handleSaveNpc = (npcToSave: ModNpc) => { handleSaveContent({ ...npcToSave, contentType: 'npc' }); setIsNpcModalOpen(false); };
     const handleSaveTechnique = (techToSave: ModTechnique) => { handleSaveContent({ ...techToSave, contentType: 'technique' }); setIsTechniqueModalOpen(false); };
     const handleSaveEvent = (eventToSave: ModEvent) => { handleSaveContent({ ...eventToSave, contentType: 'event' }); setIsEventModalOpen(false); };
+    const handleSaveRecipe = (recipeToSave: AlchemyRecipe) => { handleSaveContent({ ...recipeToSave, contentType: 'recipe' }); setIsRecipeModalOpen(false); };
     
     const handleSaveRealm = (realmToSave: RealmConfig) => {
         const exists = realms.some(r => r.id === realmToSave.id);
@@ -356,7 +366,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
 
     const packageModData = () => {
         const content: Record<string, any[]> = {
-            items: [], talents: [], characters: [], worldBuilding: [], sects: [], npcs: [], techniques: [], events: [], customPanels: []
+            items: [], talents: [], characters: [], worldBuilding: [], sects: [], npcs: [], techniques: [], events: [], recipes: [], customPanels: []
         };
         
         addedContent.forEach(c => {
@@ -539,6 +549,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 case 'npc': return handleOpenNpcEditor(content);
                 case 'technique': return handleOpenTechniqueEditor(content);
                 case 'event': return handleOpenEventEditor(content);
+                case 'recipe': return handleOpenRecipeEditor(content);
                 // Custom panels are not manually editable for now
                 case 'customPanel': return alert("Bảng Tùy Chỉnh chỉ có thể được tạo bởi AI và chỉnh sửa qua JSON.");
             }
@@ -563,6 +574,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             case 'npc': description = content.status; break;
             case 'technique': description = content.type; break;
             case 'event': description = `${content.choices.length} lựa chọn`; break;
+            case 'recipe': description = `${content.ingredients.length} nguyên liệu`; break;
             case 'customPanel': description = `${content.content.length} mục`; break;
         }
 
@@ -605,6 +617,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             <NpcEditorModal isOpen={isNpcModalOpen} onClose={() => setIsNpcModalOpen(false)} onSave={handleSaveNpc} npcToEdit={editingNpc} suggestions={allUniqueTags} />
             <TechniqueEditorModal isOpen={isTechniqueModalOpen} onClose={() => setIsTechniqueModalOpen(false)} onSave={handleSaveTechnique} techniqueToEdit={editingTechnique} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <EventEditorModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} onSave={handleSaveEvent} eventToEdit={editingEvent} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
+            <RecipeEditorModal isOpen={isRecipeModalOpen} onClose={() => setIsRecipeModalOpen(false)} onSave={handleSaveRecipe} recipeToEdit={editingRecipe} />
             
             <div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold font-title">Trình Chỉnh Sửa Mod</h2><button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button></div>
 
@@ -665,6 +678,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                                 <a onClick={() => handleOpenNpcEditor(null)} className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700/80 cursor-pointer">NPC</a>
                                                 <a onClick={() => handleOpenTechniqueEditor(null)} className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700/80 cursor-pointer">Công Pháp</a>
                                                 <a onClick={() => handleOpenEventEditor(null)} className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700/80 cursor-pointer">Sự Kiện</a>
+                                                <a onClick={() => handleOpenRecipeEditor(null)} className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-700/80 cursor-pointer">Đan Phương</a>
                                             </div>
                                         </div>
                                     </div>
