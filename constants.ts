@@ -98,6 +98,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
     useKeyRotation: false,
     enablePerformanceMode: true,
     temperature: 1,
+    topK: 64,
+    topP: 0.95,
     enableThinking: true,
     thinkingBudget: 2500,
 };

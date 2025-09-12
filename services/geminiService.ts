@@ -163,6 +163,8 @@ const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<Gene
             ...generationRequest.config, 
             safetySettings,
             temperature: settings.temperature,
+            topK: settings.topK,
+            topP: settings.topP,
             ...thinkingConfig,
         }
     };
@@ -966,6 +968,8 @@ export const generateStoryContinuationStream = async function* (
         config: { 
             safetySettings,
             temperature: settings.temperature,
+            topK: settings.topK,
+            topP: settings.topP,
             ...thinkingConfig,
         }
     };

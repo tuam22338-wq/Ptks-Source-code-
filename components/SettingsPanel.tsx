@@ -272,6 +272,23 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                                 <span className="font-mono text-sm w-12 text-center">{settings.temperature.toFixed(1)}</span>
                             </div>
                         </SettingsRow>
+                         <SettingsRow label="Top-K" description="Giới hạn các token tiếp theo được chọn từ K token có xác suất cao nhất. Mặc định: 64.">
+                            <NumberInput value={settings.topK} onChange={e => onChange('topK', parseInt(e.target.value))} min={1} />
+                        </SettingsRow>
+                        <SettingsRow label="Top-P" description="Chọn các token từ có xác suất cao nhất có tổng xác suất tích lũy là P. Mặc định: 0.95.">
+                            <div className="flex items-center gap-2 w-full max-w-xs">
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="1" 
+                                    step="0.01" 
+                                    value={settings.topP} 
+                                    onChange={e => onChange('topP', parseFloat(e.target.value))}
+                                    className="w-full"
+                                />
+                                <span className="font-mono text-sm w-12 text-center">{settings.topP.toFixed(2)}</span>
+                            </div>
+                        </SettingsRow>
                         <SettingsRow label="Bật Chế độ Suy Nghĩ (Thinking)" description="Chỉ áp dụng cho model Flash. Bật để có chất lượng cao hơn, tắt để có độ trễ thấp hơn.">
                             <Toggle checked={settings.enableThinking} onChange={e => onChange('enableThinking', e.target.checked)} />
                         </SettingsRow>

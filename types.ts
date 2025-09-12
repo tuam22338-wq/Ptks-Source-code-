@@ -65,6 +65,8 @@ export interface GameSettings {
     useKeyRotation: boolean;
     enablePerformanceMode: boolean;
     temperature: number;
+    topK: number;
+    topP: number;
     enableThinking: boolean;
     thinkingBudget: number;
 }

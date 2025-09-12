@@ -259,61 +259,59 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             setPendingSystemAction(action);
             return;
         }
-
-        const actions: AIAction[] = action.action === 'BATCH_ACTIONS' ? (action.data as AIAction[]) : [action];
-
-        const newContent: AddedContentUnion[] = [];
-
-        actions.forEach(act => {
-             switch (act.action) {
-                case 'CREATE_ITEM': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'item' }); break;
-                case 'CREATE_MULTIPLE_ITEMS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'item' })); break;
-                case 'CREATE_TALENT': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'talent' }); break;
-                case 'CREATE_MULTIPLE_TALENTS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'talent' })); break;
-                case 'CREATE_CHARACTER': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'character' }); break;
-                case 'CREATE_MULTIPLE_CHARACTERS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'character' })); break;
-                case 'DEFINE_WORLD_BUILDING': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'worldBuilding' }); break;
-                case 'CREATE_SECT': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'sect' }); break;
-                case 'CREATE_MULTIPLE_SECTS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'sect' })); break;
-                case 'CREATE_NPC': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'npc' }); break;
-                case 'CREATE_MULTIPLE_NPCS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'npc' })); break;
-                case 'CREATE_TECHNIQUE': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'technique' }); break;
-                case 'CREATE_MULTIPLE_TECHNIQUES': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'technique' })); break;
-                case 'CREATE_EVENT': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'event' }); break;
-                case 'CREATE_MULTIPLE_EVENTS': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'event' })); break;
-                case 'CREATE_RECIPE': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'recipe' }); break;
-                case 'CREATE_MULTIPLE_RECIPES': (act.data as any[]).forEach(d => newContent.push({ ...d, id: timestamp(), contentType: 'recipe' })); break;
-                case 'CREATE_CUSTOM_PANEL': newContent.push({ ...(act.data as any), id: timestamp(), contentType: 'customPanel' }); break;
-                
-                // Update Actions
-                case 'UPDATE_ITEM': setAddedContent(prev => prev.map(c => (c.contentType === 'item' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'item' } : c)); break;
-                case 'UPDATE_TALENT': setAddedContent(prev => prev.map(c => (c.contentType === 'talent' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'talent' } : c)); break;
-                case 'UPDATE_SECT': setAddedContent(prev => prev.map(c => (c.contentType === 'sect' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'sect' } : c)); break;
-                case 'UPDATE_CHARACTER': setAddedContent(prev => prev.map(c => (c.contentType === 'character' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'character' } : c)); break;
-                case 'UPDATE_TECHNIQUE': setAddedContent(prev => prev.map(c => (c.contentType === 'technique' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'technique' } : c)); break;
-                case 'UPDATE_NPC': setAddedContent(prev => prev.map(c => (c.contentType === 'npc' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'npc' } : c)); break;
-                case 'UPDATE_EVENT': setAddedContent(prev => prev.map(c => (c.contentType === 'event' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'event' } : c)); break;
-                case 'UPDATE_RECIPE': setAddedContent(prev => prev.map(c => (c.contentType === 'recipe' && c.name === (act.data as any).name) ? { ...(act.data as any), id: c.id, contentType: 'recipe' } : c)); break;
-                case 'UPDATE_WORLD_BUILDING': setAddedContent(prev => prev.map(c => (c.contentType === 'worldBuilding' && c.title === (act.data as any).title) ? { ...(act.data as any), id: c.id, contentType: 'worldBuilding' } : c)); break;
-                case 'UPDATE_CUSTOM_PANEL': setAddedContent(prev => prev.map(c => (c.contentType === 'customPanel' && c.title === (act.data as any).title) ? { ...(act.data as any), id: c.id, contentType: 'customPanel' } : c)); break;
-
-                // Delete Actions
-                case 'DELETE_ITEM': setAddedContent(prev => prev.filter(c => !(c.contentType === 'item' && c.name === (act.data as any).name))); break;
-                case 'DELETE_TALENT': setAddedContent(prev => prev.filter(c => !(c.contentType === 'talent' && c.name === (act.data as any).name))); break;
-                case 'DELETE_SECT': setAddedContent(prev => prev.filter(c => !(c.contentType === 'sect' && c.name === (act.data as any).name))); break;
-                case 'DELETE_CHARACTER': setAddedContent(prev => prev.filter(c => !(c.contentType === 'character' && c.name === (act.data as any).name))); break;
-                case 'DELETE_TECHNIQUE': setAddedContent(prev => prev.filter(c => !(c.contentType === 'technique' && c.name === (act.data as any).name))); break;
-                case 'DELETE_NPC': setAddedContent(prev => prev.filter(c => !(c.contentType === 'npc' && c.name === (act.data as any).name))); break;
-                case 'DELETE_EVENT': setAddedContent(prev => prev.filter(c => !(c.contentType === 'event' && c.name === (act.data as any).name))); break;
-                case 'DELETE_RECIPE': setAddedContent(prev => prev.filter(c => !(c.contentType === 'recipe' && c.name === (act.data as any).name))); break;
-                case 'DELETE_WORLD_BUILDING': setAddedContent(prev => prev.filter(c => !(c.contentType === 'worldBuilding' && c.title === (act.data as any).title))); break;
-                case 'DELETE_CUSTOM_PANEL': setAddedContent(prev => prev.filter(c => !(c.contentType === 'customPanel' && c.title === (act.data as any).title))); break;
-            }
+    
+        setAddedContent(prevContent => {
+            let currentContent = [...prevContent];
+            const actions: AIAction[] = action.action === 'BATCH_ACTIONS' ? (action.data as AIAction[]) : [action];
+    
+            actions.forEach(act => {
+                const data = act.data as any;
+                switch (act.action) {
+                    case 'CREATE_ITEM': currentContent.push({ ...data, id: timestamp(), contentType: 'item' }); break;
+                    case 'CREATE_MULTIPLE_ITEMS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'item' })); break;
+                    case 'CREATE_TALENT': currentContent.push({ ...data, id: timestamp(), contentType: 'talent' }); break;
+                    case 'CREATE_MULTIPLE_TALENTS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'talent' })); break;
+                    case 'CREATE_SECT': currentContent.push({ ...data, id: timestamp(), contentType: 'sect' }); break;
+                    case 'CREATE_MULTIPLE_SECTS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'sect' })); break;
+                    case 'CREATE_CHARACTER': currentContent.push({ ...data, id: timestamp(), contentType: 'character' }); break;
+                    case 'CREATE_MULTIPLE_CHARACTERS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'character' })); break;
+                    case 'CREATE_TECHNIQUE': currentContent.push({ ...data, id: timestamp(), contentType: 'technique' }); break;
+                    case 'CREATE_MULTIPLE_TECHNIQUES': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'technique' })); break;
+                    case 'CREATE_NPC': currentContent.push({ ...data, id: timestamp(), contentType: 'npc' }); break;
+                    case 'CREATE_MULTIPLE_NPCS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'npc' })); break;
+                    case 'CREATE_EVENT': currentContent.push({ ...data, id: timestamp(), contentType: 'event' }); break;
+                    case 'CREATE_MULTIPLE_EVENTS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'event' })); break;
+                    case 'CREATE_RECIPE': currentContent.push({ ...data, id: timestamp(), contentType: 'recipe' }); break;
+                    case 'CREATE_MULTIPLE_RECIPES': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'recipe' })); break;
+                    case 'DEFINE_WORLD_BUILDING': currentContent.push({ ...data, id: timestamp(), contentType: 'worldBuilding' }); break;
+                    case 'CREATE_CUSTOM_PANEL': currentContent.push({ ...data, id: timestamp(), contentType: 'customPanel' }); break;
+    
+                    case 'UPDATE_ITEM': { const index = currentContent.findIndex(c => c.contentType === 'item' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'item' }; break; }
+                    case 'UPDATE_TALENT': { const index = currentContent.findIndex(c => c.contentType === 'talent' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'talent' }; break; }
+                    case 'UPDATE_SECT': { const index = currentContent.findIndex(c => c.contentType === 'sect' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'sect' }; break; }
+                    case 'UPDATE_CHARACTER': { const index = currentContent.findIndex(c => c.contentType === 'character' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'character' }; break; }
+                    case 'UPDATE_TECHNIQUE': { const index = currentContent.findIndex(c => c.contentType === 'technique' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'technique' }; break; }
+                    case 'UPDATE_NPC': { const index = currentContent.findIndex(c => c.contentType === 'npc' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'npc' }; break; }
+                    case 'UPDATE_EVENT': { const index = currentContent.findIndex(c => c.contentType === 'event' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'event' }; break; }
+                    case 'UPDATE_RECIPE': { const index = currentContent.findIndex(c => c.contentType === 'recipe' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'recipe' }; break; }
+                    case 'UPDATE_WORLD_BUILDING': { const index = currentContent.findIndex(c => c.contentType === 'worldBuilding' && c.title === data.title); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'worldBuilding' }; break; }
+                    case 'UPDATE_CUSTOM_PANEL': { const index = currentContent.findIndex(c => c.contentType === 'customPanel' && c.title === data.title); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'customPanel' }; break; }
+    
+                    case 'DELETE_ITEM': currentContent = currentContent.filter(c => !(c.contentType === 'item' && c.name === data.name)); break;
+                    case 'DELETE_TALENT': currentContent = currentContent.filter(c => !(c.contentType === 'talent' && c.name === data.name)); break;
+                    case 'DELETE_SECT': currentContent = currentContent.filter(c => !(c.contentType === 'sect' && c.name === data.name)); break;
+                    case 'DELETE_CHARACTER': currentContent = currentContent.filter(c => !(c.contentType === 'character' && c.name === data.name)); break;
+                    case 'DELETE_TECHNIQUE': currentContent = currentContent.filter(c => !(c.contentType === 'technique' && c.name === data.name)); break;
+                    case 'DELETE_NPC': currentContent = currentContent.filter(c => !(c.contentType === 'npc' && c.name === data.name)); break;
+                    case 'DELETE_EVENT': currentContent = currentContent.filter(c => !(c.contentType === 'event' && c.name === data.name)); break;
+                    case 'DELETE_RECIPE': currentContent = currentContent.filter(c => !(c.contentType === 'recipe' && c.name === data.name)); break;
+                    case 'DELETE_WORLD_BUILDING': currentContent = currentContent.filter(c => !(c.contentType === 'worldBuilding' && c.title === data.title)); break;
+                    case 'DELETE_CUSTOM_PANEL': currentContent = currentContent.filter(c => !(c.contentType === 'customPanel' && c.title === data.title)); break;
+                }
+            });
+    
+            return currentContent;
         });
-
-        if (newContent.length > 0) {
-            setAddedContent(prev => [...prev, ...newContent]);
-        }
     };
     
     const handleSaveContent = (contentToSave: AddedContentUnion) => {
