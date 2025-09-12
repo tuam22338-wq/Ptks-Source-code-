@@ -188,6 +188,48 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteGame = (slotId: number) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn dữ liệu ở ô ${slotId}? Hành động này không thể hoàn tác.`)) {
+      try {
+        localStorage.removeItem(`phongthan-gs-slot-${slotId}`);
+        loadSaveSlots();
+        alert(`Đã xóa dữ liệu ở ô ${slotId}.`);
+      } catch (error) {
+        console.error("Failed to delete save slot", error);
+        alert('Lỗi: Không thể xóa dữ liệu.');
+      }
+    }
+  };
+
+  const handleVerifyAndRepairSlot = (slotId: number) => {
+    setLoadingMessage(`Đang kiểm tra ô ${slotId}...`);
+    setIsLoading(true);
+    setTimeout(() => {
+        try {
+            const savedGameRaw = localStorage.getItem(`phongthan-gs-slot-${slotId}`);
+            if (!savedGameRaw) {
+                throw new Error("Không có dữ liệu để kiểm tra.");
+            }
+            const savedGame: any = JSON.parse(savedGameRaw);
+            const migratedGame = migrateGameState(savedGame);
+
+            const gameStateToSave: GameState = {
+                ...migratedGame,
+                version: CURRENT_GAME_VERSION,
+            };
+            localStorage.setItem(`phongthan-gs-slot-${slotId}`, JSON.stringify(gameStateToSave));
+            
+            loadSaveSlots();
+            alert(`Ô ${slotId} đã được kiểm tra và cập nhật thành công!`);
+        } catch (error) {
+            console.error(`Error verifying/repairing slot ${slotId}:`, error);
+            alert(`Ô ${slotId} bị lỗi không thể sửa. Dữ liệu có thể đã bị hỏng nặng.`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, 500);
+  };
+
 
   const handleNavigate = (targetView: View) => {
     setView(targetView);
@@ -362,7 +404,7 @@ const App: React.FC = () => {
       case 'mainMenu':
         return <MainMenu onNavigate={handleNavigate} />;
       case 'saveSlots':
-        return <SaveSlotScreen slots={saveSlots} onSelectSlot={handleSlotSelection} onBack={() => handleNavigate('mainMenu')} />;
+        return <SaveSlotScreen slots={saveSlots} onSelectSlot={handleSlotSelection} onBack={() => handleNavigate('mainMenu')} onDeleteSlot={handleDeleteGame} onVerifySlot={handleVerifyAndRepairSlot} />;
       case 'characterCreation':
         return <CharacterCreationScreen onBack={() => handleNavigate('saveSlots')} onGameStart={handleGameStart} />;
       case 'settings':

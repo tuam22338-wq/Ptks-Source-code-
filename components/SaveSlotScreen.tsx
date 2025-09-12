@@ -1,15 +1,15 @@
 
-
-
 import React from 'react';
 import type { SaveSlot } from '../types';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaTrash, FaTools } from 'react-icons/fa';
 import { REALM_SYSTEM, CURRENT_GAME_VERSION } from '../constants';
 
 interface SaveSlotScreenProps {
   slots: SaveSlot[];
   onSelectSlot: (slotId: number) => void;
   onBack: () => void;
+  onDeleteSlot: (slotId: number) => void;
+  onVerifySlot: (slotId: number) => void;
 }
 
 const formatSaveDate = (isoDate?: string) => {
@@ -28,7 +28,12 @@ const formatSaveDate = (isoDate?: string) => {
     }
 }
 
-const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slot, onSelect }) => {
+const SaveSlotCard: React.FC<{
+    slot: SaveSlot;
+    onSelect: () => void;
+    onDelete: () => void;
+    onVerify: () => void;
+}> = ({ slot, onSelect, onDelete, onVerify }) => {
     const isNew = slot.data === null;
     const isOutdated = !isNew && slot.data?.version !== CURRENT_GAME_VERSION;
     const character = slot.data?.playerCharacter;
@@ -42,50 +47,70 @@ const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slo
     }
 
     return (
-        <button
-          onClick={onSelect}
-          className={`group aspect-[3/4] p-4 rounded-lg border-2
-                     flex flex-col items-center justify-center text-center
-                     transition-all duration-300 ease-in-out transform hover:scale-105
-                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-                     ${isNew ? 'bg-black/20 border-gray-700/80 hover:border-gray-400 hover:bg-black/30 focus:ring-gray-400' 
-                             : 'bg-[color:var(--primary-accent-color)]/10 border-[color:var(--primary-accent-color)]/50 hover:border-[color:var(--primary-accent-color)] hover:bg-[color:var(--primary-accent-color)]/20 focus:ring-[var(--primary-accent-color)]'}`}
+        <div className={`group relative aspect-[3/4] rounded-lg border-2
+                        transition-all duration-300 ease-in-out
+                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
+                        ${isNew ? 'bg-black/20 border-gray-700/80 hover:border-gray-400 hover:bg-black/30 focus:ring-gray-400' 
+                                : 'bg-[color:var(--primary-accent-color)]/10 border-[color:var(--primary-accent-color)]/50 hover:border-[color:var(--primary-accent-color)] hover:bg-[color:var(--primary-accent-color)]/20 focus:ring-[var(--primary-accent-color)]'}`}
         >
-          {isNew ? (
-            <>
-              <span className="text-5xl text-gray-500 group-hover:text-gray-300 transition-colors duration-300">
-                ?
-              </span>
-              <h3 className="mt-4 font-title text-xl text-[color:var(--text-muted-color)] group-hover:text-[color:var(--text-color)] transition-colors duration-300">
-                Hành Trình Mới
-              </h3>
-              <p className="text-sm text-gray-500">Bắt đầu một định mệnh mới</p>
-            </>
-          ) : (
-             <div className="flex flex-col h-full justify-between w-full">
-                <div>
-                    <h3 className="font-title text-xl text-[var(--primary-accent-color)]">{character?.identity.name}</h3>
-                    <p className="text-xs text-cyan-300">{realmDisplay}</p>
-                </div>
-                <div className="text-center">
-                    {isOutdated && (
-                        <div className="mb-1">
-                            <span className="text-[10px] bg-amber-700/80 text-amber-200 rounded-full px-2 py-0.5 font-semibold">
-                                Cần cập nhật
-                            </span>
-                        </div>
-                    )}
-                    <p className="text-[10px] text-gray-400">Lần cuối lưu:</p>
-                    <p className="text-xs text-gray-300">{formatSaveDate(slot.data?.lastSaved)}</p>
-                </div>
-             </div>
-          )}
-        </button>
+            <button
+              onClick={onSelect}
+              className="w-full h-full flex flex-col items-center justify-center text-center p-4"
+            >
+              {isNew ? (
+                <>
+                  <span className="text-5xl text-gray-500 group-hover:text-gray-300 transition-colors duration-300">
+                    ?
+                  </span>
+                  <h3 className="mt-4 font-title text-xl text-[color:var(--text-muted-color)] group-hover:text-[color:var(--text-color)] transition-colors duration-300">
+                    Hành Trình Mới
+                  </h3>
+                  <p className="text-sm text-gray-500">Bắt đầu một định mệnh mới</p>
+                </>
+              ) : (
+                 <div className="flex flex-col h-full justify-between w-full">
+                    <div>
+                        <h3 className="font-title text-xl text-[var(--primary-accent-color)]">{character?.identity.name}</h3>
+                        <p className="text-xs text-cyan-300">{realmDisplay}</p>
+                    </div>
+                    <div className="text-center">
+                        {isOutdated && (
+                            <div className="mb-1">
+                                <span className="text-[10px] bg-amber-700/80 text-amber-200 rounded-full px-2 py-0.5 font-semibold">
+                                    Cần cập nhật
+                                </span>
+                            </div>
+                        )}
+                        <p className="text-[10px] text-gray-400">Lần cuối lưu:</p>
+                        <p className="text-xs text-gray-300">{formatSaveDate(slot.data?.lastSaved)}</p>
+                    </div>
+                 </div>
+              )}
+            </button>
+            {!isNew && (
+              <div className="absolute top-1.5 right-1.5 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onVerify(); }}
+                  className="p-1.5 bg-black/50 rounded-full text-gray-300 hover:bg-blue-600/80 hover:text-white transition-colors"
+                  title="Kiểm tra và sửa lỗi"
+                >
+                  <FaTools size={12} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                  className="p-1.5 bg-black/50 rounded-full text-gray-300 hover:bg-red-600/80 hover:text-white transition-colors"
+                  title="Xóa"
+                >
+                  <FaTrash size={12} />
+                </button>
+              </div>
+            )}
+        </div>
     );
 };
 
 
-const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, onBack }) => {
+const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, onBack, onDeleteSlot, onVerifySlot }) => {
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-2">
@@ -106,6 +131,8 @@ const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, on
             key={slot.id} 
             slot={slot} 
             onSelect={() => onSelectSlot(slot.id)}
+            onDelete={() => onDeleteSlot(slot.id)}
+            onVerify={() => onVerifySlot(slot.id)}
           />
         ))}
       </div>
