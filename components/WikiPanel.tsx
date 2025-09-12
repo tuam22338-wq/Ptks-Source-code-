@@ -12,7 +12,6 @@ interface WikiPanelProps {
 
 const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerNpcRelationship }> = ({ npc, allNpcs, relationship }) => (
     <div className="p-4 bg-black/20 rounded-lg border border-gray-700/60 animate-fade-in" style={{animationDuration: '300ms'}}>
-        {/* FIX: Access npc.identity.name instead of npc.name. */}
         <h3 className="text-xl text-amber-300 font-bold font-title">{npc.identity.name}</h3>
         <div className="mt-4 space-y-4 text-sm">
             {relationship && (
@@ -20,11 +19,8 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
             )}
              {npc.faction && <p><strong className="text-gray-400">Phe phái:</strong> <span className="text-gray-300 font-semibold">{npc.faction}</span></p>}
             <p><strong className="text-gray-400">Trạng thái:</strong> <em className="text-gray-300">"{npc.status}"</em></p>
-            {/* FIX: Access npc.identity.appearance instead of npc.description. */}
             <p><strong className="text-gray-400">Ngoại hình:</strong> <span className="text-gray-300">{npc.identity.appearance}</span></p>
-            {/* FIX: Access npc.identity.origin instead of npc.origin. */}
             <p><strong className="text-gray-400">Xuất thân:</strong> <span className="text-gray-300">{npc.identity.origin}</span></p>
-            {/* FIX: Access npc.identity.personality instead of npc.personality. */}
             <p><strong className="text-gray-400">Tính cách:</strong> <span className="text-gray-300">{npc.identity.personality}</span></p>
             
             {npc.relationships && npc.relationships.length > 0 && (
@@ -37,7 +33,6 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
                             return (
                                 <div key={index} className="text-sm text-gray-300 bg-black/20 px-3 py-2 rounded-md border border-gray-700/60">
                                     <p className="font-semibold text-purple-300">
-                                        {/* FIX: Access targetNpc.identity.name instead of targetNpc.name. */}
                                         {rel.type} với <span className="text-amber-300">{targetNpc.identity.name}</span>
                                     </p>
                                     <p className="text-xs italic text-gray-400">{rel.description}</p>
@@ -52,7 +47,7 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
                 <h4 className="font-semibold text-gray-300 mb-2">Tiên Tư:</h4>
                 <div className="space-y-2">
                     {npc.talents.length > 0 ? npc.talents.map(talent => {
-                        const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Tư'];
+                        const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
                         return (
                             <div key={talent.name} className="p-2 bg-black/20 rounded-lg border border-gray-700/60" title={talent.effect}>
                                 <h5 className={`font-bold font-title text-sm ${rankStyle.color}`}>{talent.name} <span className="text-xs">[{talent.rank}]</span></h5>
@@ -92,7 +87,6 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ playerCharacter, allNpcs, encount
         allNpcs.forEach(npc => npcMap.set(npc.id, npc));
         // Add lore NPCs, potentially overwriting if IDs match, but usually they are distinct
         NPC_LIST.forEach(npc => npcMap.set(npc.id, npc));
-        // FIX: Access npc.identity.name for sorting.
         return Array.from(npcMap.values()).sort((a, b) => a.identity.name.localeCompare(b.identity.name));
     }, [allNpcs]);
     
@@ -149,7 +143,6 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ playerCharacter, allNpcs, encount
                             return (
                                 <button key={npc.id} onClick={() => handleSelectNpc(npc)} className="w-full text-left bg-black/20 p-2 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-cyan-400/50 transition-colors">
                                     <div className="flex justify-between items-center">
-                                        {/* FIX: Access npc.identity.name instead of npc.name. */}
                                         <h4 className={`font-bold font-title text-sm ${isEncountered ? 'text-cyan-300' : 'text-gray-400'}`}>{npc.identity.name}</h4>
                                         <div className="flex items-center gap-2">
                                             {rel && <span className="text-xs text-yellow-300">{rel.status}</span>}

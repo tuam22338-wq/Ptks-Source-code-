@@ -16,7 +16,6 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, setGam
         if (!activeStory) return { storySystem: null, currentNode: null };
 
         for (const mod of activeMods) {
-            // FIX: Assumed the Story System ID is its name, as the `id` field is stripped from saved mods.
             const system = mod.content.storySystems?.find(s => s.name === activeStory.systemId);
             if (system) {
                 const node = system.nodes[activeStory.currentNodeId];

@@ -69,7 +69,7 @@ const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> 
                     <h4 className="text-md text-gray-300 font-title font-semibold mb-2">Tiên Tư</h4>
                     <div className="space-y-3">
                         {npc.talents.length > 0 ? npc.talents.map(talent => {
-                            const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Tư'];
+                            const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
                             return (
                                 <div key={talent.name} className="bg-black/20 p-3 rounded-lg border border-gray-700/60" title={talent.effect}>
                                     <h5 className={`font-bold font-title ${rankStyle.color}`}>{talent.name} <span className="text-xs">[{talent.rank}]</span></h5>

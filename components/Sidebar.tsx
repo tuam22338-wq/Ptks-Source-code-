@@ -11,8 +11,9 @@ import AlchemyPanel from './AlchemyPanel';
 import CustomContentPanel from './CustomContentPanel';
 import MapView from './MapView';
 import StoryGraphPanel from './StoryGraphPanel';
+import SectPanel from './SectPanel';
 import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaSitemap } from 'react-icons/fa';
-import { GiCauldron } from 'react-icons/gi';
+import { GiCauldron, GiDoubleDragon } from 'react-icons/gi';
 
 interface SidebarProps {
     playerCharacter: PlayerCharacter;
@@ -33,13 +34,11 @@ interface SidebarProps {
     showNotification: (message: string) => void;
     activeMods: FullMod[];
 }
-type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | 'storyGraph' | string; // Allow custom string IDs for modded panels
+type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | 'storyGraph' | 'sect' | string;
 
-// A map for moddable icons
 const ICON_MAP: { [key: string]: React.ElementType } = {
     FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, GiCauldron
 };
-
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
     const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog } = props;
@@ -53,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         {id: 'world', label: 'Thế Giới', icon: FaGlobe },
         {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt },
         {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaSitemap },
+        {id: 'sect', label: 'Tông Môn', icon: GiDoubleDragon },
         {id: 'wiki', label: 'Wiki', icon: FaBook },
         {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
         {id: 'lore', label: 'Thiên Mệnh', icon: FaSun },
@@ -61,18 +61,17 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     const moddedTabs = useMemo(() => {
         if (!activeMods) return [];
         return activeMods.flatMap(mod => 
-            mod.content.customPanels?.map((panel: Omit<ModCustomPanel, 'id'>, index: number) => ({
+            mod.content.customPanels?.map((panel, index) => ({
                 id: `modpanel-${mod.modInfo.id}-${index}`,
                 label: panel.title,
                 icon: ICON_MAP[panel.iconName] || FaQuestionCircle,
-                panelConfig: { ...panel, id: `modpanel-${mod.modInfo.id}-${index}` } // Re-add a temporary stable ID
+                panelConfig: { ...panel, id: `modpanel-${mod.modInfo.id}-${index}` }
             })) || []
         );
     }, [activeMods]);
 
     const allTabs = [...baseTabs, ...moddedTabs];
     const activeModPanelConfig = moddedTabs.find(tab => tab.id === activeTab)?.panelConfig;
-
 
     return (
         <div className="w-full h-full flex flex-col p-4">
@@ -95,78 +94,19 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                     ))}
                 </div>
             </div>
-
             <div className="flex-grow overflow-y-auto pr-2">
-                {activeTab === 'character' && (
-                    <CharacterPanel 
-                        character={playerCharacter}
-                        onBreakthrough={onBreakthrough}
-                        realmSystem={realmSystem}
-                    />
-                )}
-                {activeTab === 'techniques' && (
-                    <TechniquesPanel 
-                        character={playerCharacter}
-                    />
-                )}
-                {activeTab === 'inventory' && (
-                    <InventoryPanel 
-                        playerCharacter={playerCharacter} 
-                        setPlayerCharacter={setPlayerCharacter}
-                        showNotification={showNotification}
-                    />
-                )}
-                 {activeTab === 'alchemy' && (
-                    <AlchemyPanel
-                        playerCharacter={playerCharacter}
-                        setPlayerCharacter={setPlayerCharacter}
-                        showNotification={showNotification}
-                    />
-                 )}
-                 {activeTab === 'world' && (
-                    <WorldPanel 
-                        currentLocation={currentLocation}
-                        npcsAtLocation={npcsAtLocation}
-                        neighbors={neighbors}
-                        rumors={rumors}
-                        onTravel={onTravel}
-                        onExplore={onExplore}
-                        onNpcSelect={onNpcSelect}
-                    />
-                )}
-                {activeTab === 'map' && (
-                    <MapView
-                        discoveredLocations={discoveredLocations}
-                        playerCharacter={playerCharacter}
-                        onTravel={onTravel}
-                    />
-                )}
-                 {activeTab === 'storyGraph' && (
-                    <StoryGraphPanel storyLog={storyLog} />
-                )}
-                {activeTab === 'wiki' && (
-                    <WikiPanel
-                        playerCharacter={playerCharacter}
-                        allNpcs={allNpcs}
-                        encounteredNpcIds={encounteredNpcIds}
-                        discoveredLocations={discoveredLocations}
-                    />
-                )}
-                 {activeTab === 'realms' && (
-                    <RealmPanel
-                        playerCharacter={playerCharacter}
-                        realmSystem={realmSystem}
-                    />
-                )}
-                {activeTab === 'lore' && (
-                    <LorePanel />
-                )}
-                {activeModPanelConfig && (
-                    <CustomContentPanel 
-                        panelConfig={activeModPanelConfig}
-                        activeMods={activeMods}
-                    />
-                )}
+                {activeTab === 'character' && <CharacterPanel character={playerCharacter} onBreakthrough={onBreakthrough} realmSystem={realmSystem} />}
+                {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} />}
+                {activeTab === 'inventory' && <InventoryPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
+                {activeTab === 'alchemy' && <AlchemyPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
+                {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={onNpcSelect} />}
+                {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} />}
+                {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}
+                {activeTab === 'sect' && <SectPanel />}
+                {activeTab === 'wiki' && <WikiPanel playerCharacter={playerCharacter} allNpcs={allNpcs} encounteredNpcIds={encounteredNpcIds} discoveredLocations={discoveredLocations} />}
+                {activeTab === 'realms' && <RealmPanel playerCharacter={playerCharacter} realmSystem={realmSystem} />}
+                {activeTab === 'lore' && <LorePanel />}
+                {activeModPanelConfig && <CustomContentPanel panelConfig={activeModPanelConfig} activeMods={activeMods} />}
             </div>
         </div>
     );

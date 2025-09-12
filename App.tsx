@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -519,6 +520,9 @@ const App: React.FC = () => {
             activeMods: activeMods,
             realmSystem: realmSystemToUse,
             activeStory: null,
+// FIX: Added missing properties `combatState` and `dialogueWithNpcId` to satisfy the GameState type.
+combatState: null,
+dialogueWithNpcId: null,
         };
         
         // Initial save

@@ -23,7 +23,6 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
-// FIX: Add 'theme-celestial-light' to the Theme type to resolve the type error in constants.ts.
 export type Theme = 'theme-amber' | 'theme-jade-green' | 'theme-amethyst-purple' | 'theme-celestial-light';
 
 
@@ -136,7 +135,7 @@ export interface MajorEvent {
 
 // --- Modding Types ---
 
-export type ItemType = 'Vũ Khí' | 'Phòng Cụ' | 'Đan Dược' | 'Pháp Bảo' | 'Tạp Vật' | 'Đan Lô' | 'Linh Dược' | 'Đan Phương';
+export type ItemType = 'Vũ Khí' | 'Phòng Cụ' | 'Đan Dược' | 'Pháp Bảo' | 'Tạp Vật' | 'Đan Lô' | 'Linh Dược' | 'Đan Phương' | 'Nguyên Liệu';
 export type PhapBaoRank = 'Phàm Giai' | 'Tiểu Giai' | 'Trung Giai' | 'Cao Giai' | 'Siêu Giai' | 'Địa Giai' | 'Thiên Giai' | 'Thánh Giai';
 export type ItemQuality = 'Phàm Phẩm' | 'Linh Phẩm' | 'Pháp Phẩm' | 'Bảo Phẩm' | 'Tiên Phẩm' | 'Tuyệt Phẩm';
 export type EquipmentSlot = 'Vũ Khí' | 'Thượng Y' | 'Hạ Y' | 'Giày' | 'Phụ Kiện 1' | 'Phụ Kiện 2';
@@ -265,7 +264,6 @@ export type NpcRelationshipInput = {
     description: string; 
 };
 
-// FIX: Redefined ModNpc to be a flat structure for mod creation, resolving editor component errors.
 // This type represents a template for an NPC in a mod file.
 export type ModNpc = {
     id: string;
@@ -281,7 +279,6 @@ export type ModNpc = {
     tags: string[];
 };
 
-// FIX: Define and export ContentType to resolve import error in CreateModScreen.tsx.
 export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'worldBuilding' | 'npc' | 'technique' | 'event' | 'customPanel' | 'realm' | 'realmSystem' | 'talentSystem' | 'recipe';
 
 export type EventTriggerType = 'ON_ENTER_LOCATION' | 'ON_TALK_TO_NPC' | 'ON_GAME_DATE';
@@ -501,6 +498,15 @@ export interface Currency {
     [key: string]: number;
 }
 
+export interface ResourceNode {
+    id: string;
+    name: string;
+    description: string;
+    itemYield: string; // Name of the item
+    requiredSkill: { attribute: string; value: number };
+    apCost: number;
+}
+
 export interface Location {
     id: string;
     name: string;
@@ -510,6 +516,7 @@ export interface Location {
     factionInfluence?: { name: string; level: 'Mạnh' | 'Trung bình' | 'Yếu' | 'Không có' }[];
     isExplorable?: boolean;
     coordinates: { x: number; y: number; };
+    resources?: ResourceNode[];
 }
 
 export interface Relationship {
@@ -532,7 +539,9 @@ export interface NPC {
     currencies: Currency;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     faction?: string;
-    // FIX: Add optional properties to align with AI-generated data and context building.
+    isHostile?: boolean;
+    dialogueTreeId?: string;
+    shopId?: string;
     ChinhDao?: number;
     MaDao?: number;
     TienLuc?: number;
@@ -631,7 +640,7 @@ export interface PlayerCharacter {
 
 export interface StoryEntry {
     id: number;
-    type: 'narrative' | 'dialogue' | 'action-result' | 'system' | 'player-action' | 'player-dialogue';
+    type: 'narrative' | 'dialogue' | 'action-result' | 'system' | 'player-action' | 'player-dialogue' | 'combat';
     content: string;
 }
 
@@ -650,6 +659,13 @@ export interface ActiveStoryState {
     currentNodeId: string;
 }
 
+export interface CombatState {
+    enemies: NPC[];
+    turnOrder: string[]; // Array of IDs ('player' or NPC IDs)
+    currentTurnIndex: number;
+    combatLog: { turn: number; message: string }[];
+}
+
 
 export interface GameState {
     version?: string;
@@ -664,6 +680,8 @@ export interface GameState {
     activeMods: FullMod[];
     realmSystem: RealmConfig[];
     activeStory: ActiveStoryState | null;
+    combatState: CombatState | null;
+    dialogueWithNpcId: string | null;
 }
 
 // --- Gameplay Event Types ---

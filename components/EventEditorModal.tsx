@@ -21,7 +21,6 @@ const FieldWrapper: React.FC<{ label: string; children: React.ReactNode }> = ({ 
     </div>
 );
 
-// FIX: Define a local type for the component's state to include a temporary `id` for each choice, resolving type errors.
 type EditableChoice = Omit<EventChoice, 'id'> & { id: string, outcomes?: EventOutcome[] };
 type EditableModEvent = Omit<ModEvent, 'choices'> & { choices: EditableChoice[] };
 
@@ -31,7 +30,6 @@ const EventEditorModal: React.FC<EventEditorModalProps> = ({ isOpen, onClose, on
 
     useEffect(() => {
         if (isOpen) {
-            // FIX: When initializing state, add a unique temporary `id` to each choice for UI management.
             const initialEvent = eventToEdit 
                 ? {
                     ...JSON.parse(JSON.stringify(eventToEdit)),
@@ -109,7 +107,6 @@ const EventEditorModal: React.FC<EventEditorModalProps> = ({ isOpen, onClose, on
             alert("Tên và Mô tả sự kiện không được để trống.");
             return;
         }
-        // FIX: Strip the temporary `id` from choices before saving to conform to the `ModEvent` type.
         const eventToSave: ModEvent = {
             ...event,
             choices: event.choices.map(({ id, ...rest }) => rest)

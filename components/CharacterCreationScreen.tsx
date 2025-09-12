@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter } from '../types';
 import { FaArrowLeft, FaSyncAlt, FaDice } from 'react-icons/fa';
@@ -119,7 +120,6 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
                 const mod: FullMod = JSON.parse(modContentRaw);
                 if (mod.content.characters) {
                     mod.content.characters.forEach((char, index) => {
-                        // FIX: Ensure the object spread includes all required properties from `char`.
                         modChars.push({
                             id: `${mod.modInfo.id}-char-${index}`,
                             source: 'mod',
@@ -128,7 +128,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
                                 gender: char.gender,
                                 origin: char.origin,
                                 appearance: char.appearance,
-                                personality: char.personality
+                                personality: char.personality,
                             },
                             bonuses: char.bonuses || [],
                             talents: []

@@ -24,7 +24,6 @@ const NpcEditorModal: React.FC<NpcEditorModalProps> = ({ isOpen, onClose, onSave
 
     useEffect(() => {
         if (isOpen) {
-            // FIX: Initialize state with the correct flat structure of ModNpc.
             const initialNpc = npcToEdit 
                 ? JSON.parse(JSON.stringify(npcToEdit))
                 : { 
@@ -65,7 +64,6 @@ const NpcEditorModal: React.FC<NpcEditorModalProps> = ({ isOpen, onClose, onSave
     };
 
     const handleSaveChanges = () => {
-        // FIX: Access npc.name directly as ModNpc is a flat type.
         if (!npc.name.trim()) {
             alert("Tên NPC không được để trống.");
             return;

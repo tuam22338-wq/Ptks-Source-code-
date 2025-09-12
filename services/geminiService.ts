@@ -1,6 +1,4 @@
-// FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
-// FIX: Import additional types required for mod-based character generation.
 import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe, ModCustomPanel, ModItem, ModCharacter, ModSect, ModWorldBuilding } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL } from "../constants";
 import {
@@ -1099,4 +1097,37 @@ export const generateWorldEvent = async (gameState: GameState): Promise<Rumor> =
         id: `rumor-${Date.now()}`,
         ...rumorData,
     };
+};
+export const generateCombatNarrative = async (
+    gameState: GameState,
+    combatActionDescription: string
+): Promise<string> => {
+    const { playerCharacter, combatState } = gameState;
+    if (!combatState) return "Lỗi: Không tìm thấy trạng thái chiến đấu.";
+
+    const currentActorId = combatState.turnOrder[combatState.currentTurnIndex];
+    const isPlayerTurn = currentActorId === 'player';
+    const actor = isPlayerTurn ? playerCharacter : combatState.enemies.find(e => e.id === currentActorId);
+
+    if (!actor) {
+        return `Lỗi: Không tìm thấy người hành động (ID: ${currentActorId}).`;
+    }
+
+    const actorName = actor.identity.name;
+    const enemyNames = isPlayerTurn 
+        ? combatState.enemies.map(e => e.identity.name).join(', ') 
+        : playerCharacter.identity.name;
+
+    const prompt = `Trong game tu tiên Phong Thần, hãy viết một đoạn văn tường thuật hành động chiến đấu.
+    Bối cảnh: ${actorName} đang chiến đấu với ${enemyNames}.
+    Hành động: ${combatActionDescription}
+    
+    Hãy mô tả kết quả một cách sống động và kịch tính. Giữ cho nó ngắn gọn.`;
+
+    const response = await generateWithRetry({
+        contents: prompt,
+        config: {}
+    });
+
+    return response.text;
 };

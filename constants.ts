@@ -36,6 +36,104 @@ export const FACTION_REPUTATION_TIERS: { threshold: number; status: FactionReput
     { threshold: 100, status: 'Đồng Minh' }, // 100
 ];
 
+// FIX: Added CULTIVATION_PATHS constant to resolve missing export error.
+export const CULTIVATION_PATHS: CultivationPath[] = [
+    {
+        id: 'path_sword_immortal',
+        name: 'Kiếm Tiên Chi Lộ',
+        description: 'Tập trung vào việc tu luyện kiếm pháp, lấy công làm thủ, một kiếm phá vạn pháp.',
+        requiredRealmId: 'truc_co', // Offered when entering Foundation Establishment
+        bonuses: [
+            { attribute: 'Kiếm Pháp', value: 20 },
+            { attribute: 'Tiên Lực', value: 10 },
+        ]
+    },
+    {
+        id: 'path_alchemy_master',
+        name: 'Đan Đạo Tông Sư',
+        description: 'Chuyên tâm vào việc luyện đan, cứu người giúp đời hoặc luyện chế độc dược hại người.',
+        requiredRealmId: 'truc_co',
+        bonuses: [
+            { attribute: 'Đan Thuật', value: 20 },
+            { attribute: 'Nguyên Thần', value: 10 },
+        ]
+    }
+];
+
+// FIX: Added NPC_LIST constant to resolve missing export error.
+export const NPC_LIST: NPC[] = [
+  {
+    id: 'npc_khuong_tu_nha',
+    identity: {
+      name: 'Khương Tử Nha',
+      gender: 'Nam',
+      appearance: 'Một lão ông râu tóc bạc phơ, ánh mắt tinh anh, phong thái thoát tục, thường mặc đạo bào màu xám.',
+      origin: 'Đệ tử của Nguyên Thủy Thiên Tôn ở núi Côn Lôn, phụng mệnh xuống núi phò Chu diệt Thương.',
+      personality: 'Chính Trực',
+    },
+    status: 'Đang câu cá bên bờ sông Vị Thủy, chờ đợi minh chủ.',
+    attributes: [],
+    talents: [
+        { name: 'Phong Thần Bảng', description: 'Nắm giữ thiên cơ, có quyền phong thần.', rank: 'Thánh Giai', effect: 'Có khả năng nhìn thấu vận mệnh.' },
+        { name: 'Đả Thần Tiên', description: 'Pháp bảo do sư tôn ban tặng, chuyên đánh tiên nhân.', rank: 'Đại Tiên Giai', effect: 'Tăng mạnh sát thương lên kẻ địch có tu vi cao.' }
+    ],
+    locationId: 'song_vi_thuy',
+    cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_3', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [],
+    inventory: { weightCapacity: 100, items: [] },
+    currencies: { 'Bạc': 100 },
+    equipment: {},
+  },
+];
+
+// FIX: Added SHOPS constant to resolve missing export error.
+export const SHOPS: Shop[] = [
+    {
+        id: 'van_bao_lau',
+        name: 'Vạn Bảo Lâu',
+        description: 'Cửa hàng pháp bảo nổi tiếng nhất Triều Ca, có bán đủ mọi thứ từ linh dược đến pháp khí.',
+        inventory: [
+            { 
+                name: 'Hồi Khí Đan', 
+                description: 'Đan dược hạ phẩm giúp hồi phục một lượng nhỏ linh lực.',
+                type: 'Đan Dược',
+                quality: 'Linh Phẩm',
+                weight: 0.1,
+                price: { currency: 'Linh thạch hạ phẩm', amount: 10 },
+                stock: 'infinite'
+            },
+            {
+                name: 'Linh Thạch Hạ Phẩm',
+                description: 'Đơn vị tiền tệ cơ bản trong giới tu tiên, chứa một lượng nhỏ linh khí.',
+                type: 'Tạp Vật',
+                quality: 'Phàm Phẩm',
+                weight: 0.1,
+                price: { currency: 'Bạc', amount: 50 },
+                stock: 'infinite'
+            }
+        ]
+    }
+];
+
+// FIX: Added ALCHEMY_RECIPES constant to resolve missing export error.
+export const ALCHEMY_RECIPES: AlchemyRecipe[] = [
+    {
+        id: 'recipe_hoi_khi_dan_ha_pham',
+        name: 'Hồi Khí Đan - Hạ Phẩm Đan Phương',
+        description: 'Ghi lại phương pháp luyện chế Hồi Khí Đan Hạ Phẩm, giúp hồi phục linh lực.',
+        ingredients: [
+            { name: 'Linh Tâm Thảo', quantity: 3 },
+            { name: 'Thanh Diệp Hoa', quantity: 1 },
+        ],
+        result: { name: 'Hồi Khí Đan', quantity: 1 },
+        requiredAttribute: { name: 'Đan Thuật', value: 15 },
+        icon: '💊',
+        qualityCurve: [
+            { threshold: 50, quality: 'Linh Phẩm' },
+            { threshold: 25, quality: 'Phàm Phẩm' },
+        ]
+    }
+];
 
 // URL for the community mod manifest. Using a Gist is a great way to host this.
 // For this example, it points to a sample manifest.
@@ -486,335 +584,22 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
     { id: 'high', name: 'Đông Đúc', description: 'Nhiều NPC, thế giới hỗn loạn.', count: 35 },
 ];
 
+// FIX: Completed the definition for INITIAL_TECHNIQUES to satisfy the CultivationTechnique type.
 export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
     {
         id: 'tech_basic_meditation',
-        name: 'Sơ Cấp Dẫn Khí Quyết',
-        description: 'Một tâm pháp cơ bản để dẫn linh khí trời đất vào cơ thể, củng cố nền tảng tu luyện.',
+        name: 'Tĩnh Tọa Cơ Bản',
+        description: 'Phương pháp cơ bản để dẫn khí nhập thể, tĩnh tâm凝神.',
         type: 'Linh Kỹ',
-        cost: { type: 'Linh Lực', value: 5 },
+        cost: {
+            type: 'Linh Lực',
+            value: 0
+        },
         cooldown: 0,
-        effectDescription: 'Tăng nhẹ tốc độ hấp thụ linh khí khi đả tọa trong 1 canh giờ.',
+        effectDescription: 'Tăng tốc độ hấp thụ linh khí khi tu luyện.',
         rank: 'Phàm Giai',
         icon: '🧘',
         level: 1,
-        maxLevel: 5,
-    },
-    {
-        id: 'tech_basic_strike',
-        name: 'Ngưng Khí Chỉ',
-        description: 'Ngưng tụ một lượng nhỏ linh lực ở đầu ngón tay và bắn ra, gây sát thương cho kẻ địch ở cự ly gần.',
-        type: 'Linh Kỹ',
-        cost: { type: 'Linh Lực', value: 10 },
-        cooldown: 1,
-        effectDescription: 'Gây một lượng nhỏ sát thương Tiên Lực.',
-        rank: 'Phàm Giai',
-        icon: '👉',
-        level: 1,
-        maxLevel: 10,
-    },
-];
-
-export const CULTIVATION_PATHS: CultivationPath[] = [
-  {
-    id: 'path_trucco_kiemdao',
-    name: 'Vô Tình Kiếm Đạo',
-    description: 'Lấy kiếm làm bạn, lấy giết chóc để chứng đạo. Con đường này tập trung vào sức mạnh hủy diệt thuần túy, nhưng sẽ khiến đạo tâm dần trở nên lạnh lẽo.',
-    requiredRealmId: 'truc_co',
-    bonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Kiếm Pháp', value: 10 }, { attribute: 'Ma Đạo', value: 5 }],
-  },
-  {
-    id: 'path_trucco_vongtinh',
-    name: 'Thái Thượng Vong Tình',
-    description: 'Dứt bỏ thất tình lục dục, coi vạn vật là cỏ rác. Con đường này giúp chống lại tâm ma, đạo tâm vững chắc, phòng ngự vô song.',
-    requiredRealmId: 'truc_co',
-    bonuses: [{ attribute: 'Nguyên Thần', value: 5 }, { attribute: 'Phòng Ngự', value: 10 }, { attribute: 'Đạo Tâm', value: 10 }],
-  },
-  {
-    id: 'path_trucco_hongtran',
-    name: 'Hồng Trần Luyện Tâm',
-    description: 'Nhập thế để tu hành, trải nghiệm hỉ nộ ái ố của nhân gian để tìm kiếm đại đạo. Con đường này giúp tăng cơ duyên và khả năng cảm ngộ.',
-    requiredRealmId: 'truc_co',
-    bonuses: [{ attribute: 'Cảm Ngộ', value: 5 }, { attribute: 'Cơ Duyên', value: 10 }, { attribute: 'Chính Đạo', value: 5 }],
-  }
-];
-
-export const PREMADE_MODS: FullMod[] = [
-    {
-        modInfo: {
-            id: 'phongthan-thanbinh',
-            name: 'Thần Binh Lợi Khí',
-            author: 'Game Master',
-            description: 'Bổ sung một số thần binh và pháp bảo nổi tiếng trong thế giới Phong Thần.',
-            version: '1.0.0',
-        },
-        content: {
-            items: [
-                {
-                    name: 'Phiên Thiên Ấn',
-                    description: 'Một pháp bảo của Quảng Thành Tử, có sức mạnh lật trời, một khi tung ra, vạn vật đều khó chống đỡ.',
-                    type: 'Pháp Bảo',
-                    quality: 'Tiên Phẩm',
-                    weight: 5.0,
-                    bonuses: [{ attribute: 'Lực Lượng', value: 25 }, { attribute: 'Tiên Lực', value: 50 }],
-                    tags: ['Xiển Giáo', 'Pháp Bảo Mạnh'],
-                },
-                {
-                    name: 'Hỗn Nguyên Kim Đấu',
-                    description: 'Bảo vật trấn động của Tam Tiêu Nương Nương, có thể thu nhiếp vạn vật, làm mất đi tu vi của tiên nhân.',
-                    type: 'Pháp Bảo',
-                    quality: 'Tiên Phẩm',
-                    weight: 3.0,
-                    bonuses: [{ attribute: 'Nguyên Thần', value: 30 }, { attribute: 'Phòng Ngự', value: 40 }],
-                    tags: ['Triệt Giáo', 'Khống Chế'],
-                },
-            ],
-        },
-    },
-];
-
-export const NPC_LIST: NPC[] = [
-    {
-        id: 'canon-npc-kzy',
-        identity: {
-            name: 'Khương Tử Nha',
-            gender: 'Nam',
-            origin: 'Đệ tử Xiển Giáo, phụng mệnh xuống núi phò Chu diệt Thương.',
-            appearance: 'Một lão ông râu tóc bạc phơ, tướng mạo phi phàm, ánh mắt tinh anh, thường mặc đạo bào màu xám.',
-            personality: 'Thông tuệ, kiên nhẫn, có tầm nhìn xa trông rộng.',
-        },
-        status: 'Đang câu cá bên bờ sông Vị Thủy.',
-        attributes: [],
-        talents: [],
-        locationId: 'song_vi_thuy',
-        faction: 'Xiển Giáo',
-        cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [],
-        inventory: { items: [], weightCapacity: 20 },
-        currencies: {},
-        equipment: {},
-        ChinhDao: 95,
-        MaDao: 0,
-        TienLuc: 350,
-        PhongNgu: 280,
-        SinhMenh: 2000,
-    },
-    {
-        id: 'canon-npc-dt',
-        identity: {
-            name: 'Dương Tiễn',
-            gender: 'Nam',
-            origin: 'Con trai của Dương Thiên Hựu và Dao Cơ tiên tử (em gái Ngọc Đế), đệ tử của Ngọc Đỉnh Chân Nhân, sở hữu 72 phép thần thông.',
-            appearance: 'Một vị tướng quân trẻ tuổi, anh tuấn phi thường, giữa trán có thiên nhãn, tay cầm Tam Tiêm Lưỡng Nhận Đao, bên cạnh có Hao Thiên Khuyển.',
-            personality: 'Kiêu ngạo, chiến đấu mạnh mẽ nhưng trọng tình nghĩa, một lòng phò Chu.',
-        },
-        status: 'Trấn thủ tại Quán Giang Khẩu, nghe theo điều lệnh của Xiển Giáo.',
-        attributes: [],
-        talents: [
-            { name: 'Thất Thập Nhị Biến', description: '72 phép biến hóa thần thông, thiên biến vạn hóa.', rank: 'Đại Tiên Giai', effect: 'Tăng mạnh khả năng thích ứng trong mọi tình huống.' },
-            { name: 'Thiên Nhãn', description: 'Con mắt thứ ba giữa trán có thể nhìn thấu bản chất vạn vật, phân biệt yêu ma.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh khả năng nhận biết và sát thương lên yêu ma.' }
-        ],
-        locationId: 'con_lon_son',
-        faction: 'Xiển Giáo',
-        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [], inventory: { items: [], weightCapacity: 30 }, currencies: {}, equipment: {},
-        ChinhDao: 80, MaDao: 5, TienLuc: 500, PhongNgu: 450, SinhMenh: 4000,
-    },
-    {
-        id: 'canon-npc-nt',
-        identity: {
-            name: 'Na Tra',
-            gender: 'Nam',
-            origin: 'Linh Châu Tử chuyển thế, con trai thứ ba của Lý Tịnh, đệ tử của Thái Ất Chân Nhân.',
-            appearance: 'Hình hài thiếu niên, chân đi Phong Hỏa Luân, tay cầm Hỏa Tiêm Thương, thân đeo Càn Khôn Quyển và Hỗn Thiên Lăng.',
-            personality: 'Nóng nảy, kiêu ngạo, sức mạnh vô song nhưng cũng rất hiếu thảo.',
-        },
-        status: 'Sau khi tái tạo thân thể bằng hoa sen, đi theo phò trợ Khương Tử Nha.',
-        attributes: [],
-        talents: [
-            { name: 'Liên Hoa Hóa Thân', description: 'Thân thể làm từ hoa sen, miễn nhiễm với nhiều loại độc và pháp thuật linh hồn.', rank: 'Đại Tiên Giai', effect: 'Kháng tất cả các hiệu ứng bất lợi.' },
-            { name: 'Tam Đầu Lục Tí', description: 'Khi chiến đấu có thể hóa ra ba đầu sáu tay, sức mạnh tăng vọt.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh số lần tấn công trong một lượt.' }
-        ],
-        locationId: 'tran_duong_quan',
-        faction: 'Xiển Giáo',
-        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [], inventory: { items: [], weightCapacity: 25 }, currencies: {}, equipment: {},
-        ChinhDao: 70, MaDao: 20, TienLuc: 600, PhongNgu: 350, SinhMenh: 3500,
-    },
-    {
-        id: 'canon-npc-lct',
-        identity: {
-            name: 'Lôi Chấn Tử',
-            gender: 'Nam',
-            origin: 'Con nuôi của Chu Văn Vương, đệ tử của Vân Trung Tử. Từng ăn một quả hạnh tiên mà mọc ra đôi cánh.',
-            appearance: 'Thân xanh, mặt như đe, tóc đỏ, hai cánh mọc sau lưng, tay cầm hoàng kim côn.',
-            personality: 'Tính cách nóng như lửa, trung thành, sức mạnh kinh người.',
-        },
-        status: 'Tu luyện tại núi Chung Nam, sẵn sàng xuống núi giúp nhà Chu.',
-        attributes: [],
-        talents: [
-            { name: 'Phong Lôi Song Dực', description: 'Đôi cánh có sức mạnh của gió và sấm sét, tốc độ kinh người.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh chỉ số Thân Pháp, có thể bay lượn.' }
-        ],
-        locationId: 'tay_ky',
-        faction: 'Xiển Giáo',
-        cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [], inventory: { items: [], weightCapacity: 28 }, currencies: {}, equipment: {},
-        ChinhDao: 75, MaDao: 5, TienLuc: 400, PhongNgu: 400, SinhMenh: 3800,
-    },
-    {
-        id: 'canon-npc-dk',
-        identity: {
-            name: 'Đát Kỷ',
-            gender: 'Nữ',
-            origin: 'Cửu Vỹ Hồ Ly Tinh (Hồ Ly Tinh ngàn năm) phụng mệnh Nữ Oa chiếm đoạt thân xác con gái Tô Hộ để làm loạn nhà Thương.',
-            appearance: 'Tuyệt thế mỹ nhân, dung mạo khuynh quốc khuynh thành, mỗi cử chỉ đều toát ra vẻ quyến rũ chết người.',
-            personality: 'Xảo quyệt, tàn nhẫn, giỏi mê hoặc lòng người.',
-        },
-        status: 'Đang ở bên cạnh Trụ Vương tại Triều Ca, khuynh đảo triều chính.',
-        attributes: [],
-        talents: [
-            { name: 'Khuynh Thế Mị Hoặc', description: 'Năng lực mê hoặc trời sinh của Cửu Vỹ Hồ, khiến đối phương khó lòng chống cự.', rank: 'Đại Tiên Giai', effect: 'Giảm mạnh ý chí và phòng ngự của kẻ địch.' }
-        ],
-        locationId: 'trieu_ca',
-        faction: 'Nhà Thương',
-        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [], inventory: { items: [], weightCapacity: 15 }, currencies: {}, equipment: {},
-        ChinhDao: 0, MaDao: 95, TienLuc: 300, PhongNgu: 300, SinhMenh: 3000,
-    },
-    {
-        id: 'canon-npc-vt',
-        identity: {
-            name: 'Văn Trọng',
-            gender: 'Nam',
-            origin: 'Thái sư nhà Thương, đệ tử của Kim Linh Thánh Mẫu, thuộc Triệt Giáo. Là trụ cột của triều đình.',
-            appearance: 'Lão tướng uy nghiêm, giữa trán có thần nhãn, cưỡi Mặc Kỳ Lân, tay cầm Gi雌雄 kim tiên.',
-            personality: 'Cương trực, trung quân ái quốc, nhưng bảo thủ, hết lòng vì nhà Thương.',
-        },
-        status: 'Đang đi chinh phạt các thế lực phản loạn ở Bắc Hải.',
-        attributes: [],
-        talents: [
-            { name: 'Pháp Thiên Tượng Địa', description: 'Có khả năng thay đổi kích thước cơ thể, trở thành người khổng lồ.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh Lực Lượng và Nhục Thân trong thời gian ngắn.' }
-        ],
-        locationId: 'trieu_ca',
-        faction: 'Triệt Giáo',
-        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [], inventory: { items: [], weightCapacity: 35 }, currencies: {}, equipment: {},
-        ChinhDao: 40, MaDao: 40, TienLuc: 550, PhongNgu: 500, SinhMenh: 4500,
-    },
-    {
-        id: 'canon-npc-tcb',
-        identity: {
-            name: 'Thân Công Báo',
-            gender: 'Nam',
-            origin: 'Bạn đồng môn của Khương Tử Nha, nhưng vì đố kỵ mà chống lại thiên mệnh, đi khắp nơi mời gọi đạo hữu giúp nhà Thương.',
-            appearance: 'Một đạo sĩ gầy gò, cưỡi cọp trắng, tướng mạo gian xảo.',
-            personality: 'Ghen ghét, đố kỵ, giỏi ăn nói, miệng lưỡi xảo trá.',
-        },
-        status: 'Đang chu du khắp nơi, tìm kiếm dị nhân giúp đỡ nhà Thương.',
-        attributes: [],
-        talents: [
-            { name: 'Đạo Hữu Xin Dừng Bước', description: 'Lời nói có sức mạnh mê hoặc, có thể thuyết phục người khác làm theo ý mình, thường đem lại tai họa.', rank: 'Hậu Tiên Giai', effect: 'Có khả năng lôi kéo NPC khác vào trận chiến.' }
-        ],
-        locationId: 'rung_co_thu',
-        faction: 'Triệt Giáo',
-        cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [], inventory: { items: [], weightCapacity: 20 }, currencies: {}, equipment: {},
-        ChinhDao: 10, MaDao: 70, TienLuc: 320, PhongNgu: 250, SinhMenh: 2200,
-    },
-    {
-        id: 'canon-npc-vtt',
-        identity: {
-            name: 'Vân Tiêu Tiên Tử',
-            gender: 'Nữ',
-            origin: 'Một trong Tam Tiêu Nương Nương (cùng Quỳnh Tiêu, Bích Tiêu), tu luyện tại đảo Tam Tiên, là đệ tử của Thông Thiên Giáo Chủ.',
-            appearance: 'Nữ tiên tử xinh đẹp, khí chất thoát tục, nhưng khi nổi giận thì vô cùng đáng sợ.',
-            personality: 'Bình thường ôn hòa, nhưng rất coi trọng tình nghĩa chị em.',
-        },
-        status: 'Đang tu luyện tại đảo Tam Tiên.',
-        attributes: [],
-        talents: [
-            { name: 'Hỗn Nguyên Kim Đấu', description: 'Sở hữu pháp bảo Hỗn Nguyên Kim Đấu, có thể làm mất tu vi của tiên nhân.', rank: 'Đại Tiên Giai', effect: 'Có khả năng xóa bỏ mọi trạng thái có lợi và gây suy yếu kẻ địch.' }
-        ],
-        locationId: 'dong_hai',
-        faction: 'Triệt Giáo',
-        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-        techniques: [], inventory: { items: [], weightCapacity: 20 }, currencies: {}, equipment: {},
-        ChinhDao: 30, MaDao: 50, TienLuc: 480, PhongNgu: 420, SinhMenh: 3600,
+        maxLevel: 1,
     }
-];
-
-export const ALCHEMY_RECIPES: AlchemyRecipe[] = [
-    {
-        id: 'recipe_hoi_khi_dan_ha_pham',
-        name: 'Hồi Khí Đan - Hạ Phẩm',
-        description: 'Loại đan dược cơ bản nhất, giúp hồi phục một lượng nhỏ linh lực đã tiêu hao.',
-        ingredients: [
-            { name: 'Linh Tinh Thảo', quantity: 2 },
-        ],
-        result: { name: 'Hạ Phẩm Hồi Khí Đan', quantity: 1 },
-        requiredAttribute: { name: 'Đan Thuật', value: 10 },
-        icon: '💊',
-        qualityCurve: [
-            { threshold: 50, quality: 'Linh Phẩm' },
-            { threshold: 20, quality: 'Pháp Phẩm' }
-        ]
-    }
-];
-
-export const SHOPS: Shop[] = [
-    {
-        id: 'thien_co_cac',
-        name: 'Thiên Cơ Các',
-        description: 'Một cửa hàng bí ẩn bán đủ loại vật phẩm kỳ lạ, từ pháp bảo đến tin tức.',
-        inventory: [
-            {
-                name: 'La Bàn Tìm Rồng',
-                description: 'Một la bàn có khả năng chỉ dẫn đến nơi có long mạch hoặc bảo vật ẩn giấu.',
-                type: 'Pháp Bảo',
-                quality: 'Pháp Phẩm',
-                weight: 0.5,
-                price: { currency: 'Linh thạch hạ phẩm', amount: 150 },
-                stock: 1,
-            },
-            {
-                name: 'Tẩy Tủy Đan',
-                description: 'Đan dược giúp tẩy trừ tạp chất trong cơ thể, tăng nhẹ tư chất tu luyện.',
-                type: 'Đan Dược',
-                quality: 'Linh Phẩm',
-                weight: 0.1,
-                bonuses: [{ attribute: 'Cảm Ngộ', value: 1 }],
-                price: { currency: 'Linh thạch hạ phẩm', amount: 50 },
-                stock: 5,
-            },
-            {
-                name: 'Thanh Đồng Đan Lô',
-                description: 'Một lò luyện đan bằng đồng, chất lượng phổ thông, thích hợp cho người mới bắt đầu.',
-                type: 'Đan Lô',
-                quality: 'Phàm Phẩm',
-                weight: 5.0,
-                bonuses: [{ attribute: 'Đan Thuật', value: 5 }],
-                price: { currency: 'Bạc', amount: 200 },
-                stock: 3
-            },
-            {
-                name: 'Linh Tinh Thảo',
-                description: 'Loại linh thảo phổ biến, chứa một lượng linh khí mỏng manh, là nguyên liệu chính cho nhiều loại đan dược cấp thấp.',
-                type: 'Linh Dược',
-                quality: 'Phàm Phẩm',
-                weight: 0.1,
-                price: { currency: 'Bạc', amount: 10 },
-                stock: 'infinite'
-            },
-            {
-                name: 'Hồi Khí Đan - Đan Phương',
-                description: 'Ghi lại phương pháp luyện chế Hồi Khí Đan Hạ Phẩm.',
-                type: 'Đan Phương',
-                quality: 'Phàm Phẩm',
-                weight: 0.1,
-                recipeId: 'recipe_hoi_khi_dan_ha_pham',
-                price: { currency: 'Bạc', amount: 100 },
-                stock: 1
-            }
-        ],
-    },
 ];
