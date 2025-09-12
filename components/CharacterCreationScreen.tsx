@@ -15,7 +15,7 @@ interface CharacterCreationScreenProps {
   onGameStart: (gameStartData: {
       characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation'>,
       npcDensity: NpcDensity
-  }) => void;
+  }) => Promise<void>;
 }
 
 interface PlayableCharacterTemplate {
@@ -215,41 +215,53 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
     }
   }, [characterConcept, gender]);
 
-    const handleStartAsRoleplayChar = () => {
+    const handleStartAsRoleplayChar = async () => {
         if (!selectedRoleplayChar) return;
 
-        const baseAttributes = ATTRIBUTES_CONFIG.map(group => ({
-            ...group,
-            attributes: group.attributes.map(attr => {
-                const fixedAttributes = ['Sinh Mệnh', 'Linh Lực', 'Tuổi Thọ', 'Cảnh Giới', 'Nhân Quả', 'Đạo Tâm'];
-                if (fixedAttributes.includes(attr.name) || typeof attr.value !== 'number') return attr;
-                return { ...attr, value: Math.floor(Math.random() * 11) + 5 };
-            })
-        }));
+        setStep('generating');
+        setLoadingMessage('Đang kiến tạo thế giới...');
+        setError(null);
 
-        const attributesWithBonuses = JSON.parse(JSON.stringify(baseAttributes));
-        const attributeMap: Map<string, { groupIndex: number; attrIndex: number; }> = new Map();
-        attributesWithBonuses.forEach((group: AttributeGroup, groupIndex: number) => {
-            group.attributes.forEach((attr, attrIndex) => {
-                attributeMap.set(attr.name, { groupIndex, attrIndex });
+        try {
+            const baseAttributes = ATTRIBUTES_CONFIG.map(group => ({
+                ...group,
+                attributes: group.attributes.map(attr => {
+                    const fixedAttributes = ['Sinh Mệnh', 'Linh Lực', 'Tuổi Thọ', 'Cảnh Giới', 'Nhân Quả', 'Đạo Tâm'];
+                    if (fixedAttributes.includes(attr.name) || typeof attr.value !== 'number') return attr;
+                    return { ...attr, value: Math.floor(Math.random() * 11) + 5 };
+                })
+            }));
+
+            const attributesWithBonuses = JSON.parse(JSON.stringify(baseAttributes));
+            const attributeMap: Map<string, { groupIndex: number; attrIndex: number; }> = new Map();
+            attributesWithBonuses.forEach((group: AttributeGroup, groupIndex: number) => {
+                group.attributes.forEach((attr, attrIndex) => {
+                    attributeMap.set(attr.name, { groupIndex, attrIndex });
+                });
             });
-        });
 
-        selectedRoleplayChar.bonuses.forEach(bonus => {
-            const loc = attributeMap.get(bonus.attribute);
-            if (loc) {
-                const attr = attributesWithBonuses[loc.groupIndex].attributes[loc.attrIndex];
-                if (typeof attr.value === 'number') (attr.value as number) += bonus.value;
-            }
-        });
-        
-        const characterData = {
-          identity: { ...selectedRoleplayChar.identity, age: 18 },
-          attributes: attributesWithBonuses,
-          talents: selectedRoleplayChar.talents,
-        };
+            selectedRoleplayChar.bonuses.forEach(bonus => {
+                const loc = attributeMap.get(bonus.attribute);
+                if (loc) {
+                    const attr = attributesWithBonuses[loc.groupIndex].attributes[loc.attrIndex];
+                    if (typeof attr.value === 'number') (attr.value as number) += bonus.value;
+                }
+            });
+            
+            const characterData = {
+              identity: { ...selectedRoleplayChar.identity, age: 18 },
+              attributes: attributesWithBonuses,
+              talents: selectedRoleplayChar.talents,
+            };
 
-        onGameStart({ characterData, npcDensity });
+            await new Promise(resolve => setTimeout(resolve, 50));
+            await onGameStart({ characterData, npcDensity });
+
+        } catch (err: any) {
+             setError(err.message || "Không thể bắt đầu hành trình. Vui lòng thử lại.");
+             console.error("Error starting roleplay game:", err);
+             setStep('roleplay');
+        }
     };
 
   useEffect(() => {
@@ -285,7 +297,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
     setIdentity(prev => prev ? { ...prev, ...updatedIdentity } : null);
   }, []);
 
-  const handleConfirmFreeCharacter = () => {
+  const handleConfirmFreeCharacter = async () => {
     if (!identity || selectedTalents.length === 0) {
         alert("Vui lòng chọn ít nhất một Tiên Tư.");
         return;
@@ -295,7 +307,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
       attributes,
       talents: selectedTalents,
     };
-    onGameStart({ characterData, npcDensity });
+    await onGameStart({ characterData, npcDensity });
   };
   
   const handleInternalBack = () => {
@@ -371,6 +383,8 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
           <h3 className="text-2xl font-bold font-title text-center" style={{ color: 'var(--text-color)' }}>Lựa Chọn Nhân Vật</h3>
           <p className="text-center max-w-2xl" style={{ color: 'var(--text-muted-color)' }}>Chọn một định mệnh đã được an bài và viết tiếp câu chuyện của họ.</p>
           
+          {error && <div className="bg-red-800/20 border border-red-500/50 text-red-200 p-4 rounded-lg text-center my-4">{error}</div>}
+
           <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[40vh] overflow-y-auto p-2">
               {availableRoleplayChars.map(char => (
                   <button 

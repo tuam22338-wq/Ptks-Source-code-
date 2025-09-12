@@ -1,3 +1,5 @@
+
+
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
@@ -147,11 +149,16 @@ const performApiCall = async <T>(
 const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateContentResponse> => {
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
+    
+    // Explicitly use the model from the request to fix the bug where it was being ignored.
+    const modelToUse = generationRequest.model || settings.mainTaskModel;
+    
     const finalRequest = {
         ...generationRequest,
-        model: settings.mainTaskModel,
+        model: modelToUse,
         config: { ...generationRequest.config, safetySettings }
     };
+    
     return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest, maxRetries);
 };
 
@@ -888,7 +895,6 @@ export const generateStoryContinuationStream = async function* (
         contents: prompt,
         config: { 
             safetySettings,
-            thinkingConfig: { thinkingBudget: 0 }
         }
     };
     

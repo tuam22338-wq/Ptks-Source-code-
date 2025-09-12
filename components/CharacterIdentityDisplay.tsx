@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useEffect, useRef } from 'react';
 import type { CharacterIdentity, Gender } from '../types';
 import { PERSONALITY_TRAITS } from '../constants';
 // FIX: Replaced non-existent icon 'GiMysteryMan' with 'GiHoodedFigure' to resolve import error.
@@ -18,11 +18,27 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
     const [isLoadingAvatar, setIsLoadingAvatar] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
 
+    // Local state for text inputs to prevent re-renders on every keystroke
+    const [name, setName] = useState(identity.name);
+    const [origin, setOrigin] = useState(identity.origin);
+    const [appearance, setAppearance] = useState(identity.appearance);
+    const isMounted = useRef(false);
+
+    useEffect(() => {
+        // Sync local state if props change from outside (e.g., initial generation)
+        setName(identity.name);
+        setOrigin(identity.origin);
+        setAppearance(identity.appearance);
+        isMounted.current = true;
+    }, [identity]);
+
     const handleGenerateAvatar = async () => {
         setIsLoadingAvatar(true);
         setAvatarError(null);
         try {
-            const imageUrl = await generateCharacterAvatar(identity);
+            // Use the most up-to-date identity for avatar generation
+            const currentIdentity: CharacterIdentity = { ...identity, name, origin, appearance };
+            const imageUrl = await generateCharacterAvatar(currentIdentity);
             setAvatarUrl(imageUrl);
         } catch (err: any) {
             setAvatarError(err.message || 'Lỗi không xác định.');
@@ -31,33 +47,12 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
         }
     };
 
-    const InputField = ({ label, id, value, onChange, placeholder }: { label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; }) => (
-        <div>
-            <label htmlFor={id} className="block text-xs text-gray-400 mb-1">{label}</label>
-            <input
-                id={id}
-                type="text"
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-amber-300 font-bold text-base font-title focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
-            />
-        </div>
-    );
-
-    const TextAreaField = ({ label, id, value, onChange, placeholder, rows = 3 }: { label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; placeholder?: string; rows?: number; }) => (
-         <div>
-            <label htmlFor={id} className="block text-xs text-gray-400 mb-1">{label}</label>
-            <textarea
-                id={id}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                rows={rows}
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
-            />
-        </div>
-    );
+    const handleBlur = () => {
+        // Only call the parent state update on blur to avoid excessive re-renders
+        if(isMounted.current) {
+            onIdentityChange({ name, origin, appearance });
+        }
+    };
 
     return (
         <div className="bg-black/20 p-4 rounded-lg border border-gray-700/60 animate-talent-reveal flex flex-col sm:flex-row gap-4 md:gap-6">
@@ -91,13 +86,18 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
             {/* Identity Fields - Right Side */}
             <div className="flex-grow space-y-3">
                 <div className="flex flex-col gap-3">
-                     <InputField 
-                        label="Tên"
-                        id="characterName"
-                        value={identity.name}
-                        onChange={(e) => onIdentityChange({ name: e.target.value })}
-                        placeholder="Nhập tên nhân vật"
-                    />
+                     <div>
+                        <label htmlFor="characterName" className="block text-xs text-gray-400 mb-1">Tên</label>
+                        <input
+                            id="characterName"
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            onBlur={handleBlur}
+                            placeholder="Nhập tên nhân vật"
+                            className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-amber-300 font-bold text-base font-title focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+                        />
+                    </div>
                     <div>
                         <p className="text-xs text-gray-400 mb-1">Giới Tính</p>
                         <div className="flex items-center gap-2 h-full">
@@ -117,22 +117,30 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                         </div>
                     </div>
                 </div>
-                <TextAreaField
-                    label="Xuất Thân"
-                    id="characterOrigin"
-                    value={identity.origin}
-                    onChange={(e) => onIdentityChange({ origin: e.target.value })}
-                    placeholder="VD: Đệ tử ngoại môn của một sơn phái bí ẩn..."
-                    rows={2}
-                />
-                <TextAreaField
-                    label="Ngoại Hình"
-                    id="characterAppearance"
-                    value={identity.appearance}
-                    onChange={(e) => onIdentityChange({ appearance: e.target.value })}
-                    placeholder="VD: Thiếu nữ áo trắng, dung mạo thanh lệ, đôi mắt trong như nước hồ thu..."
-                    rows={2}
-                />
+                 <div>
+                    <label htmlFor="characterOrigin" className="block text-xs text-gray-400 mb-1">Xuất Thân</label>
+                    <textarea
+                        id="characterOrigin"
+                        value={origin}
+                        onChange={(e) => setOrigin(e.target.value)}
+                        onBlur={handleBlur}
+                        placeholder="VD: Đệ tử ngoại môn của một sơn phái bí ẩn..."
+                        rows={2}
+                        className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+                    />
+                </div>
+                 <div>
+                    <label htmlFor="characterAppearance" className="block text-xs text-gray-400 mb-1">Ngoại Hình</label>
+                    <textarea
+                        id="characterAppearance"
+                        value={appearance}
+                        onChange={(e) => setAppearance(e.target.value)}
+                        onBlur={handleBlur}
+                        placeholder="VD: Thiếu nữ áo trắng, dung mạo thanh lệ, đôi mắt trong như nước hồ thu..."
+                        rows={2}
+                        className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+                    />
+                </div>
                  <div>
                     <p className="text-xs text-gray-400 mb-1">Tính Cách</p>
                     <div className="flex justify-start items-center gap-1 bg-gray-900/60 p-1 rounded-full border border-gray-700 max-w-full overflow-x-auto">

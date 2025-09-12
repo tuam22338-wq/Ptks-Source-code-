@@ -1,3 +1,4 @@
+
 import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus } from './types';
 import {
   GiCauldron, GiBroadsword,
@@ -590,6 +591,148 @@ export const NPC_LIST: NPC[] = [
         PhongNgu: 280,
         SinhMenh: 2000,
     },
+    {
+        id: 'canon-npc-dt',
+        identity: {
+            name: 'Dương Tiễn',
+            gender: 'Nam',
+            origin: 'Con trai của Dương Thiên Hựu và Dao Cơ tiên tử (em gái Ngọc Đế), đệ tử của Ngọc Đỉnh Chân Nhân, sở hữu 72 phép thần thông.',
+            appearance: 'Một vị tướng quân trẻ tuổi, anh tuấn phi thường, giữa trán có thiên nhãn, tay cầm Tam Tiêm Lưỡng Nhận Đao, bên cạnh có Hao Thiên Khuyển.',
+            personality: 'Kiêu ngạo, chiến đấu mạnh mẽ nhưng trọng tình nghĩa, một lòng phò Chu.',
+        },
+        status: 'Trấn thủ tại Quán Giang Khẩu, nghe theo điều lệnh của Xiển Giáo.',
+        attributes: [],
+        talents: [
+            { name: 'Thất Thập Nhị Biến', description: '72 phép biến hóa thần thông, thiên biến vạn hóa.', rank: 'Thiên Tư', effect: 'Tăng mạnh khả năng thích ứng trong mọi tình huống.' },
+            { name: 'Thiên Nhãn', description: 'Con mắt thứ ba giữa trán có thể nhìn thấu bản chất vạn vật, phân biệt yêu ma.', rank: 'Siêu Tư', effect: 'Tăng mạnh khả năng nhận biết và sát thương lên yêu ma.' }
+        ],
+        locationId: 'con_lon_son',
+        faction: 'Xiển Giáo',
+        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [], inventory: { items: [], weightCapacity: 30 }, currencies: {}, equipment: {},
+        ChinhDao: 80, MaDao: 5, TienLuc: 500, PhongNgu: 450, SinhMenh: 4000,
+    },
+    {
+        id: 'canon-npc-nt',
+        identity: {
+            name: 'Na Tra',
+            gender: 'Nam',
+            origin: 'Linh Châu Tử chuyển thế, con trai thứ ba của Lý Tịnh, đệ tử của Thái Ất Chân Nhân.',
+            appearance: 'Hình hài thiếu niên, chân đi Phong Hỏa Luân, tay cầm Hỏa Tiêm Thương, thân đeo Càn Khôn Quyển và Hỗn Thiên Lăng.',
+            personality: 'Nóng nảy, kiêu ngạo, sức mạnh vô song nhưng cũng rất hiếu thảo.',
+        },
+        status: 'Sau khi tái tạo thân thể bằng hoa sen, đi theo phò trợ Khương Tử Nha.',
+        attributes: [],
+        talents: [
+            { name: 'Liên Hoa Hóa Thân', description: 'Thân thể làm từ hoa sen, miễn nhiễm với nhiều loại độc và pháp thuật linh hồn.', rank: 'Thiên Tư', effect: 'Kháng tất cả các hiệu ứng bất lợi.' },
+            { name: 'Tam Đầu Lục Tí', description: 'Khi chiến đấu có thể hóa ra ba đầu sáu tay, sức mạnh tăng vọt.', rank: 'Siêu Tư', effect: 'Tăng mạnh số lần tấn công trong một lượt.' }
+        ],
+        locationId: 'tran_duong_quan',
+        faction: 'Xiển Giáo',
+        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [], inventory: { items: [], weightCapacity: 25 }, currencies: {}, equipment: {},
+        ChinhDao: 70, MaDao: 20, TienLuc: 600, PhongNgu: 350, SinhMenh: 3500,
+    },
+    {
+        id: 'canon-npc-lct',
+        identity: {
+            name: 'Lôi Chấn Tử',
+            gender: 'Nam',
+            origin: 'Con nuôi của Chu Văn Vương, đệ tử của Vân Trung Tử. Từng ăn một quả hạnh tiên mà mọc ra đôi cánh.',
+            appearance: 'Thân xanh, mặt như đe, tóc đỏ, hai cánh mọc sau lưng, tay cầm hoàng kim côn.',
+            personality: 'Tính cách nóng như lửa, trung thành, sức mạnh kinh người.',
+        },
+        status: 'Tu luyện tại núi Chung Nam, sẵn sàng xuống núi giúp nhà Chu.',
+        attributes: [],
+        talents: [
+            { name: 'Phong Lôi Song Dực', description: 'Đôi cánh có sức mạnh của gió và sấm sét, tốc độ kinh người.', rank: 'Siêu Tư', effect: 'Tăng mạnh chỉ số Thân Pháp, có thể bay lượn.' }
+        ],
+        locationId: 'tay_ky',
+        faction: 'Xiển Giáo',
+        cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_3', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [], inventory: { items: [], weightCapacity: 28 }, currencies: {}, equipment: {},
+        ChinhDao: 75, MaDao: 5, TienLuc: 400, PhongNgu: 400, SinhMenh: 3800,
+    },
+    {
+        id: 'canon-npc-dk',
+        identity: {
+            name: 'Đát Kỷ',
+            gender: 'Nữ',
+            origin: 'Cửu Vỹ Hồ Ly Tinh (Hồ Ly Tinh ngàn năm) phụng mệnh Nữ Oa chiếm đoạt thân xác con gái Tô Hộ để làm loạn nhà Thương.',
+            appearance: 'Tuyệt thế mỹ nhân, dung mạo khuynh quốc khuynh thành, mỗi cử chỉ đều toát ra vẻ quyến rũ chết người.',
+            personality: 'Xảo quyệt, tàn nhẫn, giỏi mê hoặc lòng người.',
+        },
+        status: 'Đang ở bên cạnh Trụ Vương tại Triều Ca, khuynh đảo triều chính.',
+        attributes: [],
+        talents: [
+            { name: 'Khuynh Thế Mị Hoặc', description: 'Năng lực mê hoặc trời sinh của Cửu Vỹ Hồ, khiến đối phương khó lòng chống cự.', rank: 'Thiên Tư', effect: 'Giảm mạnh ý chí và phòng ngự của kẻ địch.' }
+        ],
+        locationId: 'trieu_ca',
+        faction: 'Nhà Thương',
+        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [], inventory: { items: [], weightCapacity: 15 }, currencies: {}, equipment: {},
+        ChinhDao: 0, MaDao: 95, TienLuc: 300, PhongNgu: 300, SinhMenh: 3000,
+    },
+    {
+        id: 'canon-npc-vt',
+        identity: {
+            name: 'Văn Trọng',
+            gender: 'Nam',
+            origin: 'Thái sư nhà Thương, đệ tử của Kim Linh Thánh Mẫu, thuộc Triệt Giáo. Là trụ cột của triều đình.',
+            appearance: 'Lão tướng uy nghiêm, giữa trán có thần nhãn, cưỡi Mặc Kỳ Lân, tay cầm Gi雌雄 kim tiên.',
+            personality: 'Cương trực, trung quân ái quốc, nhưng bảo thủ, hết lòng vì nhà Thương.',
+        },
+        status: 'Đang đi chinh phạt các thế lực phản loạn ở Bắc Hải.',
+        attributes: [],
+        talents: [
+            { name: 'Pháp Thiên Tượng Địa', description: 'Có khả năng thay đổi kích thước cơ thể, trở thành người khổng lồ.', rank: 'Siêu Tư', effect: 'Tăng mạnh Lực Lượng và Nhục Thân trong thời gian ngắn.' }
+        ],
+        locationId: 'trieu_ca',
+        faction: 'Triệt Giáo',
+        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_3', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [], inventory: { items: [], weightCapacity: 35 }, currencies: {}, equipment: {},
+        ChinhDao: 40, MaDao: 40, TienLuc: 550, PhongNgu: 500, SinhMenh: 4500,
+    },
+    {
+        id: 'canon-npc-tcb',
+        identity: {
+            name: 'Thân Công Báo',
+            gender: 'Nam',
+            origin: 'Bạn đồng môn của Khương Tử Nha, nhưng vì đố kỵ mà chống lại thiên mệnh, đi khắp nơi mời gọi đạo hữu giúp nhà Thương.',
+            appearance: 'Một đạo sĩ gầy gò, cưỡi cọp trắng, tướng mạo gian xảo.',
+            personality: 'Ghen ghét, đố kỵ, giỏi ăn nói, miệng lưỡi xảo trá.',
+        },
+        status: 'Đang chu du khắp nơi, tìm kiếm dị nhân giúp đỡ nhà Thương.',
+        attributes: [],
+        talents: [
+            { name: 'Đạo Hữu Xin Dừng Bước', description: 'Lời nói có sức mạnh mê hoặc, có thể thuyết phục người khác làm theo ý mình, thường đem lại tai họa.', rank: 'Siêu Tư', effect: 'Có khả năng lôi kéo NPC khác vào trận chiến.' }
+        ],
+        locationId: 'rung_co_thu',
+        faction: 'Triệt Giáo',
+        cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [], inventory: { items: [], weightCapacity: 20 }, currencies: {}, equipment: {},
+        ChinhDao: 10, MaDao: 70, TienLuc: 320, PhongNgu: 250, SinhMenh: 2200,
+    },
+    {
+        id: 'canon-npc-vtt',
+        identity: {
+            name: 'Vân Tiêu Tiên Tử',
+            gender: 'Nữ',
+            origin: 'Một trong Tam Tiêu Nương Nương (cùng Quỳnh Tiêu, Bích Tiêu), tu luyện tại đảo Tam Tiên, là đệ tử của Thông Thiên Giáo Chủ.',
+            appearance: 'Nữ tiên tử xinh đẹp, khí chất thoát tục, nhưng khi nổi giận thì vô cùng đáng sợ.',
+            personality: 'Bình thường ôn hòa, nhưng rất coi trọng tình nghĩa chị em.',
+        },
+        status: 'Đang tu luyện tại đảo Tam Tiên.',
+        attributes: [],
+        talents: [
+            { name: 'Hỗn Nguyên Kim Đấu', description: 'Sở hữu pháp bảo Hỗn Nguyên Kim Đấu, có thể làm mất tu vi của tiên nhân.', rank: 'Thiên Tư', effect: 'Có khả năng xóa bỏ mọi trạng thái có lợi và gây suy yếu kẻ địch.' }
+        ],
+        locationId: 'dong_hai',
+        faction: 'Triệt Giáo',
+        cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+        techniques: [], inventory: { items: [], weightCapacity: 20 }, currencies: {}, equipment: {},
+        ChinhDao: 30, MaDao: 50, TienLuc: 480, PhongNgu: 420, SinhMenh: 3600,
+    }
 ];
 
 export const ALCHEMY_RECIPES: AlchemyRecipe[] = [

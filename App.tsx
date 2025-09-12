@@ -181,39 +181,45 @@ const App: React.FC = () => {
         setLoadingMessage('Đang tải hành trình...');
         setIsLoading(true);
         setTimeout(() => {
-            const loadedData = selectedSlot.data;
+            try {
+                const loadedData = selectedSlot.data;
 
-            // More robust validation to prevent blank screen bug
-            const isDataStructureValid = 
-                loadedData &&
-                typeof loadedData.playerCharacter === 'object' && loadedData.playerCharacter !== null &&
-                Array.isArray(loadedData.playerCharacter.attributes) &&
-                typeof loadedData.playerCharacter.inventory === 'object' && loadedData.playerCharacter.inventory !== null &&
-                Array.isArray(loadedData.playerCharacter.inventory.items) &&
-                typeof loadedData.playerCharacter.cultivation === 'object' && loadedData.playerCharacter.cultivation !== null &&
-                typeof loadedData.playerCharacter.currentLocationId === 'string' &&
-                Array.isArray(loadedData.activeNpcs) &&
-                Array.isArray(loadedData.discoveredLocations) && loadedData.discoveredLocations.length > 0 &&
-                typeof loadedData.worldState === 'object' && loadedData.worldState !== null &&
-                Array.isArray(loadedData.worldState.rumors) &&
-                typeof loadedData.gameDate === 'object' && loadedData.gameDate !== null &&
-                Array.isArray(loadedData.storyLog) &&
-                Array.isArray(loadedData.realmSystem) && loadedData.realmSystem.length > 0 &&
-                Array.isArray(loadedData.activeMods);
+                const isDataStructureValid = 
+                    loadedData &&
+                    typeof loadedData.playerCharacter === 'object' && loadedData.playerCharacter !== null &&
+                    Array.isArray(loadedData.playerCharacter.attributes) &&
+                    typeof loadedData.playerCharacter.inventory === 'object' && loadedData.playerCharacter.inventory !== null &&
+                    Array.isArray(loadedData.playerCharacter.inventory.items) &&
+                    typeof loadedData.playerCharacter.cultivation === 'object' && loadedData.playerCharacter.cultivation !== null &&
+                    typeof loadedData.playerCharacter.currentLocationId === 'string' &&
+                    Array.isArray(loadedData.activeNpcs) &&
+                    Array.isArray(loadedData.discoveredLocations) && loadedData.discoveredLocations.length > 0 &&
+                    typeof loadedData.worldState === 'object' && loadedData.worldState !== null &&
+                    Array.isArray(loadedData.worldState.rumors) &&
+                    typeof loadedData.gameDate === 'object' && loadedData.gameDate !== null &&
+                    Array.isArray(loadedData.storyLog) &&
+                    Array.isArray(loadedData.realmSystem) && loadedData.realmSystem.length > 0 &&
+                    Array.isArray(loadedData.activeMods);
 
-            if (!isDataStructureValid) {
-                console.error("Dữ liệu save không hợp lệ hoặc bị hỏng. Không thể tải.", loadedData);
-                alert("Không thể tải dữ liệu. Dữ liệu có thể đã bị hỏng. Vui lòng thử chức năng 'Kiểm tra và sửa lỗi' trên ô save này.");
+                if (!isDataStructureValid) {
+                    console.error("Dữ liệu save không hợp lệ hoặc bị hỏng. Không thể tải.", loadedData);
+                    alert("Không thể tải dữ liệu. Dữ liệu có thể đã bị hỏng. Vui lòng thử chức năng 'Kiểm tra và sửa lỗi' trên ô save này.");
+                    setIsLoading(false);
+                    return;
+                }
+
+                setGameState(loadedData);
+                setCurrentSlotId(slotId);
+                setView('gamePlay');
+            } catch (error) {
+                 console.error("Lỗi nghiêm trọng khi tải game:", error);
+                 alert("Gặp lỗi không xác định khi tải game. Dữ liệu có thể bị hỏng.");
+                 setGameState(null);
+                 setCurrentSlotId(null);
+                 setView('saveSlots');
+            } finally {
                 setIsLoading(false);
-                return;
             }
-
-            localStorage.setItem(`phongthan-gs-slot-${slotId}`, JSON.stringify(loadedData));
-
-            setGameState(loadedData);
-            setCurrentSlotId(slotId);
-            setView('gamePlay');
-            setIsLoading(false);
         }, 500);
     } else {
         // Start New Game for empty or invalid slots
@@ -439,13 +445,12 @@ const App: React.FC = () => {
         loadSaveSlots();
 
         setGameState(newGameState);
-
-        setIsLoading(false);
         setView('gamePlay');
 
     } catch (error) {
         console.error("Failed to start new game:", error);
         alert("Lỗi nghiêm trọng khi tạo thế giới. Vui lòng thử lại.");
+    } finally {
         setIsLoading(false);
     }
   };

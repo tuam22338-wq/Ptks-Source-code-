@@ -8,6 +8,7 @@ import EventPanel from './EventPanel';
 import ShopModal from './ShopModal';
 import CultivationPathModal from './CultivationPathModal';
 import CustomStoryPlayer from './CustomStoryPlayer';
+import LoadingScreen from './LoadingScreen';
 import { FaArrowLeft, FaBars, FaTimes, FaExclamationTriangle, FaCog, FaSave } from 'react-icons/fa';
 import { generateStoryContinuationStream, generateGameEvent, generateDynamicLocation, analyzeActionForTechnique, generateBreakthroughNarrative, generateWorldEvent } from '../services/geminiService';
 import { SHICHEN_LIST, REALM_SYSTEM, TIMEOFDAY_DETAILS, NPC_LIST, INNATE_TALENT_RANKS, CULTIVATION_PATHS } from '../constants';
@@ -211,6 +212,15 @@ const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add
 
 
 const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState, onSaveGame, onBack }) => {
+    if (!gameState || !gameState.playerCharacter || !Array.isArray(gameState.discoveredLocations) || gameState.discoveredLocations.length === 0 || !gameState.gameDate) {
+        console.error("Invalid gameState provided to GamePlayScreen, returning to menu.", gameState);
+        useEffect(() => {
+            onBack();
+            alert("Dữ liệu game bị lỗi, đã quay về menu chính.");
+        }, [onBack]);
+        return <LoadingScreen message="Dữ liệu game bị lỗi..." />;
+    }
+
     const [isAILoading, setIsAILoading] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
     const [locationMultiplier, setLocationMultiplier] = useState(1);
@@ -798,6 +808,9 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                 </div>
                 {/* Sidebar */}
                 <div className={`fixed top-0 right-0 h-full bg-stone-900/80 backdrop-blur-md border-l border-gray-700/50 shadow-2xl transition-transform duration-500 z-30 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} w-full md:w-1/3 lg:w-1/4`}>
+                    {/* FIX: Pass the correct handler function `handleBreakthrough` to the `onBreakthrough` prop. */}
+                    {/* FIX: Pass the correct handler function `handleTravel` to the `onTravel` prop. */}
+                    {/* FIX: Pass the correct handler function `handleExplore` to the `onExplore` prop. */}
                     <Sidebar
                         playerCharacter={playerCharacter}
                         setPlayerCharacter={setPlayerCharacter}
