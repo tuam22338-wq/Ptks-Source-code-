@@ -31,7 +31,13 @@ const WorldBuildingEditorModal: React.FC<WorldBuildingEditorModalProps> = ({ isO
             if (worldBuildingToEdit) {
                 setTitle(worldBuildingToEdit.title);
                 setDescription(worldBuildingToEdit.description || '');
-                setJsonString(JSON.stringify(worldBuildingToEdit.data, null, 2));
+                try {
+                    setJsonString(JSON.stringify(worldBuildingToEdit.data, null, 2));
+                    setParseError(null);
+                } catch (error: any) {
+                    setJsonString(`{\n  "error": "Không thể hiển thị dữ liệu JSON.",\n  "message": "${error.message}"\n}`);
+                    setParseError('Dữ liệu JSON không hợp lệ hoặc chứa cấu trúc không thể tuần tự hóa.');
+                }
                 setTags(worldBuildingToEdit.tags || []);
                 setId(worldBuildingToEdit.id);
             } else {
@@ -40,8 +46,8 @@ const WorldBuildingEditorModal: React.FC<WorldBuildingEditorModalProps> = ({ isO
                 setJsonString('{\n  "key": "value"\n}');
                 setTags([]);
                 setId(Date.now().toString());
+                setParseError(null);
             }
-            setParseError(null);
         }
     }, [isOpen, worldBuildingToEdit]);
 
