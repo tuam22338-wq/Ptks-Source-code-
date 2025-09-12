@@ -1,6 +1,3 @@
-
-
-
 import React, { useState } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../constants';
 import { testApiKeys } from '../services/geminiService';
@@ -100,7 +97,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
   const TabButton: React.FC<{ tabId: SettingsTab; label: string; icon: React.ElementType }> = ({ tabId, label, icon: Icon }) => (
     <button
       onClick={() => setActiveTab(tabId)}
-      className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 ${
+      className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 whitespace-nowrap sm:flex-1 ${
         activeTab === tabId
           ? 'bg-[color:var(--primary-accent-color)]/20 text-[color:var(--primary-accent-color)]'
           : 'text-[color:var(--text-muted-color)] hover:bg-black/10'
@@ -113,10 +110,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
 
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
-        <h2 className="text-3xl text-center font-bold font-title mb-6">Cài Đặt Game</h2>
+        <div className="mb-6 rounded-lg overflow-hidden border border-[var(--panel-border-color)]">
+            <div className="p-4 bg-gradient-to-r from-[var(--primary-accent-color)]/20 via-transparent to-transparent flex items-center gap-4">
+                <div className="p-3 bg-black/30 rounded-full">
+                    <FaCog className="w-6 h-6 text-[var(--primary-accent-color)]" />
+                </div>
+                <div>
+                    <h2 className="text-3xl font-bold font-title text-[var(--text-color)]">Cài Đặt Game</h2>
+                    <p className="text-sm text-[var(--text-muted-color)]">Tùy chỉnh trải nghiệm của bạn</p>
+                </div>
+            </div>
+        </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
+        <div className="flex items-stretch gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-6 overflow-x-auto">
             <TabButton tabId="api" label="API" icon={FaKey} />
             <TabButton tabId="interface" label="Giao Diện" icon={FaDesktop} />
             <TabButton tabId="ai_models" label="Model AI" icon={FaRobot} />

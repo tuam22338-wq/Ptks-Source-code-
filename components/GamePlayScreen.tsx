@@ -774,9 +774,17 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                 </div>
             </div>
 
-            <div className="flex-grow flex min-h-0">
+            <div className="flex-grow flex min-h-0 relative">
+                {/* Backdrop for mobile overlay */}
+                {isSidebarOpen && (
+                    <div 
+                        onClick={() => setIsSidebarOpen(false)} 
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden animate-fade-in"
+                        style={{ animationDuration: '300ms' }}
+                    ></div>
+                )}
                 {/* Main content panel */}
-                <div className={`transition-all duration-500 ${isSidebarOpen ? 'w-full md:w-2/3 lg:w-3/4' : 'w-full'}`}>
+                <div className={`transition-all duration-500 ${isSidebarOpen ? 'md:w-2/3 lg:w-3/4' : 'w-full'}`}>
                     <div className="h-full flex flex-col bg-stone-900/50">
                         <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} techniques={playerCharacter.techniques} />
                         {currentEvent ? (

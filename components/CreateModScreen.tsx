@@ -481,7 +481,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const TabButton: React.FC<{ tabId: ModCreationTab; label: string; icon: React.ElementType }> = ({ tabId, label, icon: Icon }) => (
         <button
           onClick={() => setActiveTab(tabId)}
-          className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 ${
+          className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 whitespace-nowrap sm:flex-1 ${
             activeTab === tabId
               ? 'bg-[color:var(--primary-accent-color)]/20 text-[color:var(--primary-accent-color)]'
               : 'text-[color:var(--text-muted-color)] hover:bg-black/10'
@@ -575,7 +575,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             
             <div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold font-title">Trình Chỉnh Sửa Mod</h2><button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button></div>
 
-            <div className="flex items-center gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-8">
+            <div className="flex items-stretch gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-8 overflow-x-auto">
                 <TabButton tabId="info" label="Thông Tin" icon={FaFileSignature} />
                 <TabButton tabId="content" label="Nội Dung" icon={FaBoxes} />
                 <TabButton tabId="system" label="Hệ Thống" icon={FaCogs} />
