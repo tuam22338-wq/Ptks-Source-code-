@@ -1,7 +1,8 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import type { View } from '../App';
-// FIX: Replaced non-existent icon 'GiEasternDragon' with 'GiSeaDragon' to resolve the import error, as suggested by the compiler.
 import { GiSeaDragon } from 'react-icons/gi';
+import { FaDatabase } from 'react-icons/fa';
 
 interface MainMenuProps {
   onNavigate: (view: View) => void;
@@ -22,6 +23,34 @@ const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> 
 );
 
 const MainMenu: React.FC<MainMenuProps> = ({ onNavigate }) => {
+  const [storageUsage, setStorageUsage] = useState('');
+
+  const calculateLocalStorageUsage = (): string => {
+    let totalBytes = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+            const value = localStorage.getItem(key);
+            if (value) {
+                totalBytes += (key.length + value.length) * 2; // Each char is 2 bytes (UTF-16)
+            }
+        }
+    }
+    
+    if (totalBytes < 1024) {
+        return `${totalBytes} B`;
+    } else if (totalBytes < 1024 * 1024) {
+        return `${(totalBytes / 1024).toFixed(2)} KB`;
+    } else {
+        return `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+  };
+
+  useEffect(() => {
+    setStorageUsage(calculateLocalStorageUsage());
+  }, []);
+
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center animate-fade-in-menu">
         <div className="relative text-center animate-menu-item" style={{ animationDelay: '100ms' }}>
@@ -53,6 +82,11 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate }) => {
             <MenuItem label="Mods" onClick={() => onNavigate('mods')} delay={650} />
             <MenuItem label="Thiên Mệnh" onClick={() => onNavigate('lore')} delay={800} />
             <MenuItem label="Cài Đặt" onClick={() => onNavigate('settings')} delay={950} />
+        </div>
+
+        <div className="absolute bottom-4 left-4 text-xs flex items-center gap-2 text-[var(--text-muted-color)] animate-menu-item" style={{ animationDelay: '1200ms' }}>
+            <FaDatabase />
+            <span>Dung lượng lưu trữ ước tính: <strong>{storageUsage}</strong></span>
         </div>
     </div>
   );
