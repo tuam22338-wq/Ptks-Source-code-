@@ -6,7 +6,7 @@ import {
 import { GiCastle } from 'react-icons/gi';
 import { ALL_ATTRIBUTES, INNATE_TALENT_PROBABILITY, INNATE_TALENT_RANKS } from '../constants';
 import GameMasterChat from './GameMasterChat';
-import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, AIAction, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel } from '../types';
+import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, AIAction, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel, ContentType } from '../types';
 import TalentEditorModal from './TalentEditorModal';
 import CharacterEditorModal from './CharacterEditorModal';
 import ItemEditorModal from './ItemEditorModal';
@@ -24,7 +24,6 @@ interface CreateModScreenProps {
 }
 
 type ModCreationTab = 'info' | 'content' | 'system' | 'ai';
-type ContentType = 'item' | 'character' | 'talent' | 'realm' | 'talentSystem' | 'worldBuilding' | 'realmSystem' | 'sect' | 'npc' | 'technique' | 'event' | 'customPanel';
 
 const CONTENT_TYPE_INFO: Record<Exclude<ContentType, 'realm' | 'realmSystem' | 'talentSystem'>, { label: string; icon: React.ElementType; color: string }> = {
     item: { label: 'Vật Phẩm', icon: FaBoxOpen, color: 'bg-sky-500/80' },
@@ -194,10 +193,44 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
         }
     }, []);
 
-    const modContextForAI = useMemo(() => ({
-        realms,
-        talentRanks,
-    }), [realms, talentRanks]);
+    const modContextForAI = useMemo(() => {
+        const contentByType: { [key: string]: any[] } = {};
+        
+        addedContent.forEach(c => {
+            const { contentType, ...data } = c;
+            const key = contentType === 'worldBuilding' ? 'worldBuilding' 
+                      : contentType === 'customPanel' ? 'customPanels'
+                      : `${contentType}s`;
+    
+            if (!contentByType[key]) {
+                contentByType[key] = [];
+            }
+            contentByType[key].push(data);
+        });
+    
+        const finalContent: any = {};
+        for (const key in contentByType) {
+            if (contentByType[key].length > 0) {
+                finalContent[key] = contentByType[key].map(item => {
+                    const { id, ...rest } = item;
+                    return rest;
+                });
+            }
+        }
+        
+        // FIX: Pass the full realm and talent rank objects, including the temporary `id`, to conform to the `GameMasterModContext` type which expects it.
+        return {
+            modInfo: {
+                name: modName,
+                author: modAuthor,
+                description: modDescription,
+            },
+            content: finalContent,
+            realmConfigs: realms,
+            talentRanks: talentRanks,
+            talentSystemConfig,
+        }
+    }, [modName, modAuthor, modDescription, addedContent, realms, talentRanks, talentSystemConfig]);
 
     const handleConfirmSystemReplacement = () => {
         if (!pendingSystemAction) return;

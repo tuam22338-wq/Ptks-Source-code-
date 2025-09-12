@@ -1,7 +1,7 @@
 // FIX: Import `GenerateContentResponse` and `GenerateImagesResponse` from `@google/genai` to correctly type the responses from the Gemini API.
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 // FIX: Import additional types required for mod-based character generation.
-import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe, ModCustomPanel } from '../types';
+import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe, ModCustomPanel, ModItem, ModCharacter, ModSect, ModWorldBuilding } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL } from "../constants";
 import {
   FaSun, FaMoon
@@ -453,26 +453,65 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
     });
 };
 
-interface ModContext {
-    realms: RealmConfig[];
+interface GameMasterModContext {
+    modInfo: {
+        name: string;
+        author: string;
+        description: string;
+    };
+    content: {
+        items?: Omit<ModItem, 'id'>[];
+        talents?: Omit<ModTalent, 'id'>[];
+        characters?: Omit<ModCharacter, 'id'>[];
+        sects?: Omit<ModSect, 'id'>[];
+        worldBuilding?: Omit<ModWorldBuilding, 'id'>[];
+        techniques?: Omit<ModTechnique, 'id'>[];
+        npcs?: Omit<ModNpc, 'id'>[];
+        events?: Omit<ModEvent, 'id'>[];
+        customPanels?: Omit<ModCustomPanel, 'id'>[];
+    };
+    realmConfigs: RealmConfig[];
     talentRanks: ModTalentRank[];
+    talentSystemConfig: TalentSystemConfig;
 }
 
-const getGameMasterSystemInstruction = (modContext?: ModContext): string => {
-    const customRealms = modContext?.realms.map(r => r.name).join(', ') || 'Mặc định';
+const getGameMasterSystemInstruction = (modContext?: GameMasterModContext): string => {
+    const customRealms = modContext?.realmConfigs.map(r => r.name).join(', ') || 'Mặc định';
     const customTalentRanks = modContext?.talentRanks.map(r => r.name).join(', ') || 'Mặc định';
+
+    let existingContentSummary = "Chưa có nội dung nào được thêm vào mod này.";
+    if (modContext?.content && Object.keys(modContext.content).length > 0) {
+        const contentParts = Object.entries(modContext.content)
+            .filter(([_, value]) => Array.isArray(value) && value.length > 0)
+            .map(([key, value]) => {
+                const names = (value as any[]).map(item => item.name || item.title).filter(Boolean);
+                if (names.length > 0) {
+                    return `*   **${key}:** ${names.join(', ')}`;
+                }
+                const contentType = key === 'customPanels' ? 'Bảng UI' : key;
+                return `*   **${contentType}:** ${value.length} mục`;
+            });
+        if (contentParts.length > 0) {
+            existingContentSummary = "Nội dung hiện có trong mod:\n" + contentParts.join('\n');
+        }
+    }
+
 
     return `Bạn là một GameMaster AI thông minh, sáng tạo, và là một chuyên gia về bối cảnh Phong Thần Diễn Nghĩa, giúp người dùng tạo mod cho game tu tiên Phong Thần Ký Sự.
 
 **TƯ DUY CỦA BẠN:**
 1.  **Phân tích từng bước:** Trước khi đưa ra JSON cuối cùng, hãy suy nghĩ từng bước để phân tích yêu cầu của người dùng.
 2.  **Hiểu sâu bối cảnh:** Luôn bám sát không khí tu tiên, huyền huyễn của Phong Thần. Tên gọi, mô tả phải mang đậm văn phong Hán Việt cổ điển.
-3.  **Nhất quán là trên hết:** Khi tạo nội dung mới, hãy tham khảo các hệ thống đã được định nghĩa (cảnh giới, tiên tư) để đảm bảo sự nhất quán.
+3.  **Nhất quán là trên hết:** Khi tạo nội dung mới, hãy tham khảo các hệ thống đã được định nghĩa (cảnh giới, tiên tư, các vật phẩm đã có) để đảm bảo sự nhất quán.
 
 **HIỂU BIẾT VỀ CƠ CHẾ GAME & MOD HIỆN TẠI:**
+*   **Thông tin Mod:** Tên: "${modContext?.modInfo.name || 'Chưa có tên'}", Tác giả: "${modContext?.modInfo.author || 'Chưa có'}", Mô tả: "${modContext?.modInfo.description || 'Chưa có'}"
 *   **Thuộc tính:** Danh sách đầy đủ: ${ALL_ATTRIBUTES.join(', ')}.
 *   **Hệ thống Tu Luyện:** Hệ thống cảnh giới hiện tại trong mod này là: ${customRealms}. Bạn có thể định nghĩa lại toàn bộ hệ thống này bằng \`CREATE_REALM_SYSTEM\`.
 *   **Phẩm chất Tiên Tư:** Các phẩm chất tiên tư hiện tại trong mod này là: ${customTalentRanks}.
+*   **Cấu hình Tiên Tư:** Số lựa chọn mỗi lần gieo quẻ: ${modContext?.talentSystemConfig.choicesPerRoll}, Tối đa có thể chọn: ${modContext?.talentSystemConfig.maxSelectable}.
+*   **Nội dung đã thêm:**
+${existingContentSummary}
 *   **Vật phẩm (Items):** Gồm các loại: Vũ Khí, Phòng Cụ, Đan Dược, Pháp Bảo, Tạp Vật, Đan Lô, Linh Dược, Đan Phương. Chúng có phẩm chất, trọng lượng, và có thể cộng chỉ số.
 *   **Công Pháp (Techniques):** Là các kỹ năng nhân vật có thể sử dụng, có tiêu hao, hồi chiêu, và cấp bậc.
 *   **Sự kiện (Events):** Là các tình huống có kịch bản với các lựa chọn, có thể yêu cầu kiểm tra thuộc tính (skill check) và dẫn đến các kết quả khác nhau (outcomes).
@@ -565,7 +604,7 @@ Khi người dùng yêu cầu định nghĩa một khía cạnh của thế gi�
 };
 
 
-export const getGameMasterActionableResponse = async (prompt: string, fileContent?: string, modContext?: ModContext): Promise<AIAction> => {
+export const getGameMasterActionableResponse = async (prompt: string, fileContent?: string, modContext?: GameMasterModContext): Promise<AIAction> => {
     const statBonusSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] };
 
     const itemSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, weight: { type: Type.NUMBER }, slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'] }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'type', 'quality', 'weight'] };

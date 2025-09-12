@@ -2,21 +2,38 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaPaperPlane, FaFileUpload, FaTimesCircle, FaCheck, FaTimes } from 'react-icons/fa';
 import { getGameMasterActionableResponse } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
-import type { AIAction, RealmConfig, ModTalentRank } from '../types';
+import type { AIAction, RealmConfig, ModTalentRank, TalentSystemConfig, ModItem, ModTalent, ModCharacter, ModSect, ModWorldBuilding, ModTechnique, ModNpc, ModEvent, ModCustomPanel } from '../types';
 
 interface Message {
     role: 'user' | 'model';
     text: string;
 }
 
-interface ModContext {
-    realms: RealmConfig[];
+interface GameMasterModContext {
+    modInfo: {
+        name: string;
+        author: string;
+        description: string;
+    };
+    content: {
+        items?: Omit<ModItem, 'id'>[];
+        talents?: Omit<ModTalent, 'id'>[];
+        characters?: Omit<ModCharacter, 'id'>[];
+        sects?: Omit<ModSect, 'id'>[];
+        worldBuilding?: Omit<ModWorldBuilding, 'id'>[];
+        techniques?: Omit<ModTechnique, 'id'>[];
+        npcs?: Omit<ModNpc, 'id'>[];
+        events?: Omit<ModEvent, 'id'>[];
+        customPanels?: Omit<ModCustomPanel, 'id'>[];
+    };
+    realmConfigs: RealmConfig[];
     talentRanks: ModTalentRank[];
+    talentSystemConfig: TalentSystemConfig;
 }
 
 interface GameMasterChatProps {
     onActionRequest: (action: AIAction) => void;
-    modContext: ModContext;
+    modContext: GameMasterModContext;
 }
 
 const GameMasterChat: React.FC<GameMasterChatProps> = ({ onActionRequest, modContext }) => {
