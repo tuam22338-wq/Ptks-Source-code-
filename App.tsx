@@ -183,17 +183,26 @@ const App: React.FC = () => {
         setTimeout(() => {
             const loadedData = selectedSlot.data;
 
-            // VALIDATION LOGIC to prevent black screen bug
-            const isValid = 
+            // More robust validation to prevent blank screen bug
+            const isDataStructureValid = 
                 loadedData &&
-                loadedData.playerCharacter &&
-                loadedData.discoveredLocations && loadedData.discoveredLocations.length > 0 &&
-                loadedData.storyLog &&
-                loadedData.gameDate &&
-                loadedData.realmSystem && loadedData.realmSystem.length > 0;
+                typeof loadedData.playerCharacter === 'object' && loadedData.playerCharacter !== null &&
+                Array.isArray(loadedData.playerCharacter.attributes) &&
+                typeof loadedData.playerCharacter.inventory === 'object' && loadedData.playerCharacter.inventory !== null &&
+                Array.isArray(loadedData.playerCharacter.inventory.items) &&
+                typeof loadedData.playerCharacter.cultivation === 'object' && loadedData.playerCharacter.cultivation !== null &&
+                typeof loadedData.playerCharacter.currentLocationId === 'string' &&
+                Array.isArray(loadedData.activeNpcs) &&
+                Array.isArray(loadedData.discoveredLocations) && loadedData.discoveredLocations.length > 0 &&
+                typeof loadedData.worldState === 'object' && loadedData.worldState !== null &&
+                Array.isArray(loadedData.worldState.rumors) &&
+                typeof loadedData.gameDate === 'object' && loadedData.gameDate !== null &&
+                Array.isArray(loadedData.storyLog) &&
+                Array.isArray(loadedData.realmSystem) && loadedData.realmSystem.length > 0 &&
+                Array.isArray(loadedData.activeMods);
 
-            if (!isValid) {
-                console.error("Dữ liệu save không hợp lệ hoặc bị hỏng sau khi di chuyển. Không thể tải.", loadedData);
+            if (!isDataStructureValid) {
+                console.error("Dữ liệu save không hợp lệ hoặc bị hỏng. Không thể tải.", loadedData);
                 alert("Không thể tải dữ liệu. Dữ liệu có thể đã bị hỏng. Vui lòng thử chức năng 'Kiểm tra và sửa lỗi' trên ô save này.");
                 setIsLoading(false);
                 return;
