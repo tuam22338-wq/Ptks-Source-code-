@@ -1,9 +1,10 @@
 
 
+
 import React from 'react';
 import type { SaveSlot } from '../types';
 import { FaArrowLeft } from 'react-icons/fa';
-import { REALM_SYSTEM } from '../constants';
+import { REALM_SYSTEM, CURRENT_GAME_VERSION } from '../constants';
 
 interface SaveSlotScreenProps {
   slots: SaveSlot[];
@@ -29,6 +30,7 @@ const formatSaveDate = (isoDate?: string) => {
 
 const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slot, onSelect }) => {
     const isNew = slot.data === null;
+    const isOutdated = !isNew && slot.data?.version !== CURRENT_GAME_VERSION;
     const character = slot.data?.playerCharacter;
     
     let realmDisplay = '...';
@@ -66,6 +68,13 @@ const SaveSlotCard: React.FC<{ slot: SaveSlot; onSelect: () => void; }> = ({ slo
                     <p className="text-xs text-cyan-300">{realmDisplay}</p>
                 </div>
                 <div className="text-center">
+                    {isOutdated && (
+                        <div className="mb-1">
+                            <span className="text-[10px] bg-amber-700/80 text-amber-200 rounded-full px-2 py-0.5 font-semibold">
+                                Cần cập nhật
+                            </span>
+                        </div>
+                    )}
                     <p className="text-[10px] text-gray-400">Lần cuối lưu:</p>
                     <p className="text-xs text-gray-300">{formatSaveDate(slot.data?.lastSaved)}</p>
                 </div>

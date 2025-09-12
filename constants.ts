@@ -7,6 +7,8 @@ import {
 } from 'react-icons/gi';
 import { FaSun, FaMoon } from 'react-icons/fa';
 
+export const CURRENT_GAME_VERSION = "1.1.0";
+
 export const FACTIONS: Faction[] = [
   {
     name: "Nhà Thương",
