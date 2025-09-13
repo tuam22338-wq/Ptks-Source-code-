@@ -110,7 +110,7 @@ const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter, setPlayerCharact
                                         return (
                                             <li key={req.attribute} className={`flex items-center gap-2 ${hasReq ? 'text-green-400' : 'text-red-400'}`}>
                                                 {hasReq ? <FaCheckCircle/> : <FaTimesCircle/>}
-                                                {req.attribute} >= {req.value} (Hiện tại: {attr?.value || 0})
+                                                {`${req.attribute} >= ${req.value} (Hiện tại: ${attr?.value || 0})`}
                                             </li>
                                         );
                                     })}
