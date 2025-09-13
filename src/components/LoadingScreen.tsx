@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 
 interface LoadingScreenProps {
@@ -13,4 +13,4 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ message }) => {
     );
 };
 
-export default LoadingScreen;
+export default memo(LoadingScreen);

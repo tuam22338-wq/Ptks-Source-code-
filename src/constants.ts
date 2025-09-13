@@ -142,6 +142,19 @@ export const CULTIVATION_PATHS: CultivationPath[] = [
     }
 ];
 
+const NPC_GENERATION_TEMPLATES = [
+    { id: 1, identity: { name: 'Lão Ăn Mày', gender: 'Nam' as const, appearance: 'Một lão già quần áo rách rưới, người bốc mùi chua, tay cầm một cái bát mẻ, ánh mắt đục ngầu nhưng thỉnh thoảng lại lóe lên tia sáng kỳ lạ.', origin: 'Không ai biết lão từ đâu tới, chỉ thấy lão đã ở Thanh Hà Trấn từ rất lâu rồi.', personality: 'Hỗn Loạn' }, status: 'Đang ngủ gật dưới gốc cây đa đầu trấn.', locationId: 'thanh_ha_tran', cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1' } },
+    { id: 2, identity: { name: 'A Kiều', gender: 'Nữ' as const, appearance: 'Một cô gái bán hoa có dung mạo xinh đẹp nhưng đôi mắt luôn đượm buồn.', origin: 'Mồ côi cha mẹ từ nhỏ, bị bán vào thanh lâu ở Triều Ca để kiếm sống.', personality: 'Trung Lập' }, status: 'Đang đứng trên lầu Vọng Nguyệt, nhìn ra dòng người tấp nập.', locationId: 'trieu_ca', cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1' } },
+    { id: 3, identity: { name: 'Thiết Tí Lý', gender: 'Nam' as const, appearance: 'Thợ rèn có thân hình vạm vỡ, cánh tay to như cột đình, mặt lúc nào cũng lấm lem bụi than.', origin: 'Gia đình có truyền thống rèn đúc vũ khí cho quân đội nhà Thương qua nhiều thế hệ.', personality: 'Chính Trực' }, status: 'Đang quai búa rèn một thanh bảo kiếm trong lò rèn của mình.', locationId: 'trieu_ca', cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_4' } },
+    { id: 4, identity: { name: 'Linh Hồ', gender: 'Nữ' as const, appearance: 'Một yêu hồ có hình người, dung mạo thanh tú, sau lưng có ba cái đuôi trắng muốt không thể che giấu.', origin: 'Một con hồ ly tu luyện ở Rừng Cổ Thụ, vừa mới hóa hình thành công.', personality: 'Hỗn Loạn' }, status: 'Đang tò mò nhìn ngó mọi thứ trong trấn, cố gắng học theo cách cư xử của con người.', locationId: 'thanh_ha_tran', cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_1' } },
+    { id: 5, identity: { name: 'Vong Hồn Trương Tam', gender: 'Nam' as const, appearance: 'Một bóng ma mờ ảo, không rõ hình hài, chỉ có thể cảm nhận được sự oán khí.', origin: 'Một thương nhân bị cướp giết trên đường, oán khí không tan nên vẫn vất vưởng ở Bãi Tha Ma.', personality: 'Tà Ác' }, status: 'Đang lởn vởn tìm kiếm kẻ đã hại mình.', locationId: 'bai_tha_ma', cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_7' } },
+    { id: 6, identity: { name: 'Thạch Lão Nhân', gender: 'Nam' as const, appearance: 'Một ông lão ngồi bất động trên một tảng đá, cơ thể dường như đã hòa làm một với đá núi.', origin: 'Một tán tu đã tọa quan ở Thanh Loan Sơn hàng trăm năm để lĩnh ngộ Thạch Trung Đạo.', personality: 'Trung Lập' }, status: 'Đang nhập định, không màng thế sự.', locationId: 'thanh_loan_son', cultivation: { currentRealmId: 'ket_dan', currentStageId: 'kd_3' } },
+    { id: 7, identity: { name: 'Thảo Dược Sư Vân Du', gender: 'Nữ' as const, appearance: 'Một nữ tu mặc áo xanh, lưng đeo giỏ thuốc, dung mạo bình thường nhưng toát lên vẻ gần gũi với thiên nhiên.', origin: 'Đệ tử của một tông môn ẩn thế chuyên về y dược, đang xuống núi tìm kiếm các loại linh dược quý hiếm.', personality: 'Chính Trực' }, status: 'Đang cẩn thận hái một gốc linh thảo trong Rừng Mê Vụ.', locationId: 'rung_me_vu', cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_2' } },
+    { id: 8, identity: { name: 'Ma Tu Huyết Lệ', gender: 'Nam' as const, appearance: 'Một tu sĩ mặc áo bào đen, khuôn mặt tái nhợt, đôi mắt đỏ ngầu, quanh thân tỏa ra ma khí.', origin: 'Kẻ sống sót duy nhất của một gia tộc bị kẻ thù diệt môn, vì báo thù mà đã tu luyện ma công.', personality: 'Tà Ác' }, status: 'Đang tìm kiếm sinh linh để hấp thụ tinh huyết.', locationId: 'ma_gioi_nhap_khau', cultivation: { currentRealmId: 'ket_dan', currentStageId: 'kd_1' } },
+    { id: 9, identity: { name: 'Cổ Thần Sông Vị', gender: 'Nam' as const, appearance: 'Một vị thần cổ xưa có hình dạng một con cá chép khổng lồ, râu dài bạc trắng.', origin: 'Là thần linh bản địa của Sông Vị Thủy, tồn tại từ trước khi các giáo phái xuất hiện.', personality: 'Trung Lập' }, status: 'Đang ẩn mình dưới đáy sông, quan sát sự thay đổi của đất trời.', locationId: 'song_vi_thuy', cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_1' } },
+    { id: 10, identity: { name: 'Độc Thủ Thư Sinh', gender: 'Nam' as const, appearance: 'Một thư sinh mặt trắng, dáng vẻ yếu đuối, luôn cầm một cây quạt giấy, nhưng móng tay lại có màu tím đen.', origin: 'Một luyện đan sư chuyên nghiên cứu độc dược, tính tình cổ quái.', personality: 'Hỗn Loạn' }, status: 'Đang thử nghiệm một loại độc mới ở Hắc Long Đàm.', locationId: 'hac_long_dam', cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_3' } },
+];
+
 export const NPC_LIST: NPC[] = [
   {
     id: 'npc_khuong_tu_nha',
@@ -292,26 +305,15 @@ export const NPC_LIST: NPC[] = [
     techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Bạc': 2500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
  ...[...Array(100)].map((_, i) => {
-    const data = [
-        { id: i + 1, identity: { name: 'Lão Ăn Mày', gender: 'Nam' as const, appearance: 'Một lão già quần áo rách rưới, người bốc mùi chua, tay cầm một cái bát mẻ, ánh mắt đục ngầu nhưng thỉnh thoảng lại lóe lên tia sáng kỳ lạ.', origin: 'Không ai biết lão từ đâu tới, chỉ thấy lão đã ở Thanh Hà Trấn từ rất lâu rồi.', personality: 'Hỗn Loạn' }, status: 'Đang ngủ gật dưới gốc cây đa đầu trấn.', locationId: 'thanh_ha_tran', cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1' } },
-        { id: i + 2, identity: { name: 'A Kiều', gender: 'Nữ' as const, appearance: 'Một cô gái bán hoa có dung mạo xinh đẹp nhưng đôi mắt luôn đượm buồn.', origin: 'Mồ côi cha mẹ từ nhỏ, bị bán vào thanh lâu ở Triều Ca để kiếm sống.', personality: 'Trung Lập' }, status: 'Đang đứng trên lầu Vọng Nguyệt, nhìn ra dòng người tấp nập.', locationId: 'trieu_ca', cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1' } },
-        { id: i + 3, identity: { name: 'Thiết Tí Lý', gender: 'Nam' as const, appearance: 'Thợ rèn có thân hình vạm vỡ, cánh tay to như cột đình, mặt lúc nào cũng lấm lem bụi than.', origin: 'Gia đình có truyền thống rèn đúc vũ khí cho quân đội nhà Thương qua nhiều thế hệ.', personality: 'Chính Trực' }, status: 'Đang quai búa rèn một thanh bảo kiếm trong lò rèn của mình.', locationId: 'trieu_ca', cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_4' } },
-        { id: i + 4, identity: { name: 'Linh Hồ', gender: 'Nữ' as const, appearance: 'Một yêu hồ có hình người, dung mạo thanh tú, sau lưng có ba cái đuôi trắng muốt không thể che giấu.', origin: 'Một con hồ ly tu luyện ở Rừng Cổ Thụ, vừa mới hóa hình thành công.', personality: 'Hỗn Loạn' }, status: 'Đang tò mò nhìn ngó mọi thứ trong trấn, cố gắng học theo cách cư xử của con người.', locationId: 'thanh_ha_tran', cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_1' } },
-        { id: i + 5, identity: { name: 'Vong Hồn Trương Tam', gender: 'Nam' as const, appearance: 'Một bóng ma mờ ảo, không rõ hình hài, chỉ có thể cảm nhận được sự oán khí.', origin: 'Một thương nhân bị cướp giết trên đường, oán khí không tan nên vẫn vất vưởng ở Bãi Tha Ma.', personality: 'Tà Ác' }, status: 'Đang lởn vởn tìm kiếm kẻ đã hại mình.', locationId: 'bai_tha_ma', cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_7' } },
-        { id: i + 6, identity: { name: 'Thạch Lão Nhân', gender: 'Nam' as const, appearance: 'Một ông lão ngồi bất động trên một tảng đá, cơ thể dường như đã hòa làm một với đá núi.', origin: 'Một tán tu đã tọa quan ở Thanh Loan Sơn hàng trăm năm để lĩnh ngộ Thạch Trung Đạo.', personality: 'Trung Lập' }, status: 'Đang nhập định, không màng thế sự.', locationId: 'thanh_loan_son', cultivation: { currentRealmId: 'ket_dan', currentStageId: 'kd_3' } },
-        { id: i + 7, identity: { name: 'Thảo Dược Sư Vân Du', gender: 'Nữ' as const, appearance: 'Một nữ tu mặc áo xanh, lưng đeo giỏ thuốc, dung mạo bình thường nhưng toát lên vẻ gần gũi với thiên nhiên.', origin: 'Đệ tử của một tông môn ẩn thế chuyên về y dược, đang xuống núi tìm kiếm các loại linh dược quý hiếm.', personality: 'Chính Trực' }, status: 'Đang cẩn thận hái một gốc linh thảo trong Rừng Mê Vụ.', locationId: 'rung_me_vu', cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_2' } },
-        { id: i + 8, identity: { name: 'Ma Tu Huyết Lệ', gender: 'Nam' as const, appearance: 'Một tu sĩ mặc áo bào đen, khuôn mặt tái nhợt, đôi mắt đỏ ngầu, quanh thân tỏa ra ma khí.', origin: 'Kẻ sống sót duy nhất của một gia tộc bị kẻ thù diệt môn, vì báo thù mà đã tu luyện ma công.', personality: 'Tà Ác' }, status: 'Đang tìm kiếm sinh linh để hấp thụ tinh huyết.', locationId: 'ma_gioi_nhap_khau', cultivation: { currentRealmId: 'ket_dan', currentStageId: 'kd_1' } },
-        { id: i + 9, identity: { name: 'Cổ Thần Sông Vị', gender: 'Nam' as const, appearance: 'Một vị thần cổ xưa có hình dạng một con cá chép khổng lồ, râu dài bạc trắng.', origin: 'Là thần linh bản địa của Sông Vị Thủy, tồn tại từ trước khi các giáo phái xuất hiện.', personality: 'Trung Lập' }, status: 'Đang ẩn mình dưới đáy sông, quan sát sự thay đổi của đất trời.', locationId: 'song_vi_thuy', cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_1' } },
-        { id: i + 10, identity: { name: 'Độc Thủ Thư Sinh', gender: 'Nam' as const, appearance: 'Một thư sinh mặt trắng, dáng vẻ yếu đuối, luôn cầm một cây quạt giấy, nhưng móng tay lại có màu tím đen.', origin: 'Một luyện đan sư chuyên nghiên cứu độc dược, tính tình cổ quái.', personality: 'Hỗn Loạn' }, status: 'Đang thử nghiệm một loại độc mới ở Hắc Long Đàm.', locationId: 'hac_long_dam', cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_3' } },
-    ][i % 10]; 
+    const template = NPC_GENERATION_TEMPLATES[i % 10]; 
     return {
-        id: `npc_ai_${data.id}_${Math.random().toString(16).slice(2)}`,
-        identity: {...data.identity, name: `${data.identity.name} ${i+1}`},
-        status: data.status,
+        id: `npc_ai_${template.id}_${i}_${Math.random().toString(16).slice(2)}`,
+        identity: {...template.identity, name: `${template.identity.name} ${i+1}`},
+        status: template.status,
         attributes: [],
         talents: [],
-        locationId: data.locationId,
-        cultivation: { ...data.cultivation, spiritualQi: 0, hasConqueredInnerDemon: Math.random() > 0.5 },
+        locationId: template.locationId,
+        cultivation: { ...template.cultivation, spiritualQi: 0, hasConqueredInnerDemon: Math.random() > 0.5 },
         techniques: [],
         inventory: { weightCapacity: 100, items: [] },
         currencies: { 'Bạc': Math.floor(Math.random() * 500) + 10 },
@@ -418,6 +420,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     historyTokenLimit: 8192,
     summarizeBeforePruning: true,
     itemsPerPage: 10,
+    storyLogItemsPerPage: 20,
     enableAiSoundSystem: false,
     masterSafetySwitch: false,
     safetyLevels: {
@@ -957,7 +960,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
 export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: string; count: number }[] = [
     { id: 'low', name: 'Thưa Thớt', description: 'Ít NPC, thế giới yên tĩnh.', count: 10 },
     { id: 'medium', name: 'Vừa Phải', description: 'Cân bằng, thế giới sống động.', count: 20 },
-    { id: 'high', name: 'Đông Đúc', description: 'Nhiều NPC, thế giới hỗn loạn.', count: 35 },
+    { id: 'high', name: 'Đông Đúc', description: 'Nhiều NPC, thế giới hỗn loạn.', count: 200 },
 ];
 
 export const INITIAL_TECHNIQUES: CultivationTechnique[] = [

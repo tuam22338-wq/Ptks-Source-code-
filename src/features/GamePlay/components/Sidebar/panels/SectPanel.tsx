@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { PlayerCharacter, Sect } from '../../../../../types';
 import { SECTS } from '../../../../../constants';
 import { FaUsers, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
@@ -128,4 +128,4 @@ const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter, setPlayerCharact
     );
 };
 
-export default SectPanel;
+export default memo(SectPanel);

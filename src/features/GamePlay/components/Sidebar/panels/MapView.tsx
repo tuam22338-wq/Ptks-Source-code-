@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { Location, PlayerCharacter } from '../../../../../types';
 import MapNode from './MapNode';
 
@@ -77,4 +77,4 @@ const MapView: React.FC<MapViewProps> = ({ discoveredLocations, playerCharacter,
     );
 };
 
-export default MapView;
+export default memo(MapView);

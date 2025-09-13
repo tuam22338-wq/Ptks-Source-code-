@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { Location } from '../../../../../types';
 import { GiStoneTower, GiVillage, GiMountains, GiAncientRuins, GiForest, GiBridge, GiCastle } from 'react-icons/gi';
 
@@ -51,4 +51,4 @@ const MapNode: React.FC<MapNodeProps> = ({ location, isCurrent, onTravel, style 
     );
 };
 
-export default MapNode;
+export default memo(MapNode);

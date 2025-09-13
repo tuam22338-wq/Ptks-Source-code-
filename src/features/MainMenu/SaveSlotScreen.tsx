@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { SaveSlot } from '../../types';
 import { FaArrowLeft, FaTrash, FaTools } from 'react-icons/fa';
 import { REALM_SYSTEM, CURRENT_GAME_VERSION } from '../../constants';
@@ -32,7 +32,7 @@ const SaveSlotCard: React.FC<{
     onSelect: () => void;
     onDelete: () => void;
     onVerify: () => void;
-}> = ({ slot, onSelect, onDelete, onVerify }) => {
+}> = memo(({ slot, onSelect, onDelete, onVerify }) => {
     const isNew = slot.data === null;
     const isOutdated = !isNew && slot.data?.version !== CURRENT_GAME_VERSION;
     const character = slot.data?.playerCharacter;
@@ -106,7 +106,7 @@ const SaveSlotCard: React.FC<{
             )}
         </div>
     );
-};
+});
 
 
 const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, onBack, onDeleteSlot, onVerifySlot }) => {
@@ -139,4 +139,4 @@ const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, on
   );
 };
 
-export default SaveSlotScreen;
+export default memo(SaveSlotScreen);

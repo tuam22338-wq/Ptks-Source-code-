@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { MAJOR_EVENTS } from '../../constants';
 
@@ -60,4 +60,4 @@ const LoreScreen: React.FC<LoreScreenProps> = ({ onBack }) => {
   );
 };
 
-export default LoreScreen;
+export default memo(LoreScreen);

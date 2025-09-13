@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface LoadingSpinnerProps {
     message?: string;
@@ -20,4 +20,4 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message, size = 'md' })
   );
 };
 
-export default LoadingSpinner;
+export default memo(LoadingSpinner);

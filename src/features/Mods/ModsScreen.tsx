@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
     FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch 
 } from 'react-icons/fa';
@@ -39,7 +39,7 @@ const MenuButton: React.FC<{
     title: string;
     description: string;
     onClick: () => void;
-}> = ({ icon: Icon, title, description, onClick }) => (
+}> = memo(({ icon: Icon, title, description, onClick }) => (
     <button 
         onClick={onClick}
         className="group flex flex-col items-center justify-center text-center p-6 bg-black/20 rounded-lg border-2 border-gray-700/80 hover:border-[var(--primary-accent-color)]/80 hover:bg-[var(--primary-accent-color)]/10 transition-all duration-300 transform hover:-translate-y-2"
@@ -48,7 +48,7 @@ const MenuButton: React.FC<{
         <h3 className="text-2xl font-bold font-title text-gray-200 group-hover:text-white">{title}</h3>
         <p className="text-sm text-gray-500 group-hover:text-gray-400 mt-2">{description}</p>
     </button>
-);
+));
 
 const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
     const [installedMods, setInstalledMods] = useState<ModInLibrary[]>([]);
@@ -309,4 +309,4 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
     );
 };
 
-export default ModsScreen;
+export default memo(ModsScreen);

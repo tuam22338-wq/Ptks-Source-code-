@@ -59,6 +59,7 @@ export interface GameSettings {
     historyTokenLimit: number;
     summarizeBeforePruning: boolean;
     itemsPerPage: number;
+    storyLogItemsPerPage: number;
     enableAiSoundSystem: boolean;
     masterSafetySwitch: boolean;
     safetyLevels: SafetySettings;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { View } from '../../App';
 import { GiSeaDragon } from 'react-icons/gi';
 import { FaDatabase } from 'react-icons/fa';
@@ -11,7 +11,7 @@ interface MainMenuProps {
   };
 }
 
-const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> = ({ label, onClick, delay }) => (
+const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> = memo(({ label, onClick, delay }) => (
     <button
         onClick={onClick}
         className="text-2xl font-title hover:scale-110 transition-all duration-300 ease-in-out animate-menu-item"
@@ -23,7 +23,7 @@ const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> 
     >
         {label}
     </button>
-);
+));
 
 const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
   return (
@@ -77,4 +77,4 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
   );
 };
 
-export default MainMenu;
+export default memo(MainMenu);

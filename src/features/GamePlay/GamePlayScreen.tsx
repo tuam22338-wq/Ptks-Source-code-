@@ -4,8 +4,15 @@
 
 
 
-import React, { useState, useMemo, useEffect } from 'react';
-import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup, CultivationPath, CombatState, Attribute, RealmConfig } from '../../types';
+
+
+
+
+
+
+import React, { useState, useMemo, useEffect, memo } from 'react';
+// FIX: Add GameSettings to the import from '../../types' to resolve the props type error.
+import type { GameState, GameSettings, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup, CultivationPath, CombatState, Attribute, RealmConfig } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -25,13 +32,15 @@ import { SHICHEN_LIST, REALM_SYSTEM, TIMEOFDAY_DETAILS, NPC_LIST, INNATE_TALENT_
 
 
 interface GamePlayScreenProps {
+    // FIX: Add the 'settings' prop to align with its usage in App.tsx.
+    settings: GameSettings;
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
     onSaveGame: (currentState: GameState, showNotification: (message: string) => void) => void;
     onBack: () => void;
 }
 
-const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> = ({ npc, allNpcs, onClose }) => {
+const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> = memo(({ npc, allNpcs, onClose }) => {
   const statusInfo = CHARACTER_STATUS_CONFIG[npc.healthStatus];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
@@ -98,14 +107,14 @@ const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> 
         </div>
     </div>
   );
-};
+});
 
 const GameMenuModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     onSave: () => void;
     onExit: () => void;
-}> = ({ isOpen, onClose, onSave, onExit }) => {
+}> = memo(({ isOpen, onClose, onSave, onExit }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
@@ -123,7 +132,7 @@ const GameMenuModal: React.FC<{
             </div>
         </div>
     );
-};
+});
 
 
 const TRAVEL_SPEED = 3;
@@ -227,7 +236,7 @@ const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add
 };
 
 
-const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState, onSaveGame, onBack }) => {
+const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameState, setGameState, onSaveGame, onBack }) => {
     if (!gameState || !gameState.playerCharacter || !Array.isArray(gameState.discoveredLocations) || gameState.discoveredLocations.length === 0 || !gameState.gameDate) {
         console.error("Invalid gameState provided to GamePlayScreen, returning to menu.", gameState);
         useEffect(() => {
@@ -656,7 +665,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
             `.trim();
     
             const aiResponseEntryId = Date.now() + Math.random();
-            setGameState(gs => gs ? { ...gs, storyLog: [...gs.storyLog, { id: aiResponseEntryId, type: 'narrative', content: '...' }] } : null);
+            setGameState(gs => gs ? { ...gs, storyLog: [...gs.storyLog, { id: aiResponseEntryId, type: 'narrative', content: '' }] } : null);
     
             let fullResponseText = '';
             const stream = generateStoryContinuationStream(
@@ -666,16 +675,32 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                 systemReports
             );
     
+            const updateFrequency = 100; // Update UI roughly 10 times per second
+            let lastUpdateTime = 0;
+
             for await (const chunk of stream) {
                 fullResponseText += chunk;
-                setGameState(gs => {
-                    if (!gs) return null;
-                    const newStoryLog = gs.storyLog.map(entry => 
-                        entry.id === aiResponseEntryId ? { ...entry, content: fullResponseText } : entry
-                    );
-                    return { ...gs, storyLog: newStoryLog };
-                });
+                const now = performance.now();
+                if (now - lastUpdateTime > updateFrequency) {
+                    setGameState(gs => {
+                        if (!gs) return null;
+                        const newStoryLog = gs.storyLog.map(entry => 
+                            entry.id === aiResponseEntryId ? { ...entry, content: fullResponseText } : entry
+                        );
+                        return { ...gs, storyLog: newStoryLog };
+                    });
+                    lastUpdateTime = now;
+                }
             }
+
+            // Final update to ensure the last chunks are rendered
+            setGameState(gs => {
+                if (!gs) return null;
+                const newStoryLog = gs.storyLog.map(entry => 
+                    entry.id === aiResponseEntryId ? { ...entry, content: fullResponseText } : entry
+                );
+                return { ...gs, storyLog: newStoryLog };
+            });
     
             processTags(fullResponseText, aiResponseEntryId);
     
@@ -812,4 +837,4 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     );
 };
 
-export default GamePlayScreen;
+export default memo(GamePlayScreen);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface NotificationAreaProps {
     notifications: { id: number; message: string }[];
@@ -21,4 +21,4 @@ const NotificationArea: React.FC<NotificationAreaProps> = ({ notifications, onDi
     );
 };
 
-export default NotificationArea;
+export default memo(NotificationArea);

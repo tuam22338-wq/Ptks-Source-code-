@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import type { PlayerCharacter, Location } from '../../../../../types';
 import { GiMountainCave, GiSprout, GiCauldron, GiAbstract050, GiTreasureMap } from 'react-icons/gi';
 
@@ -125,4 +125,4 @@ const CaveAbodePanel: React.FC<CaveAbodePanelProps> = ({ playerCharacter, setPla
     );
 };
 
-export default CaveAbodePanel;
+export default memo(CaveAbodePanel);

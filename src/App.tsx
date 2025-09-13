@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
 import SettingsPanel from './features/Settings/SettingsPanel';
@@ -265,11 +265,11 @@ const App: React.FC = () => {
     }
   }, [settings]);
 
-  const handleSettingChange = (key: keyof GameSettings, value: any) => {
+  const handleSettingChange = useCallback((key: keyof GameSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
-  };
+  }, []);
 
-  const handleSettingsSave = async () => {
+  const handleSettingsSave = useCallback(async () => {
     try {
         await db.saveSettings(settings);
         await reloadApiKeys();
@@ -279,10 +279,10 @@ const App: React.FC = () => {
         console.error("Failed to save settings to DB", error);
         alert('Lỗi: Không thể lưu cài đặt.');
     }
-  };
+  }, [settings, updateStorageUsage]);
 
 
-  const handleSlotSelection = (slotId: number) => {
+  const handleSlotSelection = useCallback((slotId: number) => {
     const selectedSlot = saveSlots.find(s => s.id === slotId);
 
     if (selectedSlot && selectedSlot.data && selectedSlot.data.playerCharacter) {
@@ -313,9 +313,9 @@ const App: React.FC = () => {
         setCurrentSlotId(slotId);
         setView('characterCreation');
     }
-  };
+  }, [saveSlots]);
 
-  const handleSaveGame = async (currentState: GameState, showNotification: (message: string) => void) => {
+  const handleSaveGame = useCallback(async (currentState: GameState, showNotification: (message: string) => void) => {
     if (currentState && currentSlotId !== null) {
         try {
             const gameStateToSave: GameState = { 
@@ -332,9 +332,9 @@ const App: React.FC = () => {
             showNotification('Lỗi: Không thể lưu game.');
         }
     }
-  };
+  }, [currentSlotId, loadSaveSlots]);
 
-  const handleDeleteGame = async (slotId: number) => {
+  const handleDeleteGame = useCallback(async (slotId: number) => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn dữ liệu ở ô ${slotId}? Hành động này không thể hoàn tác.`)) {
       try {
         await db.deleteGameState(slotId);
@@ -345,9 +345,9 @@ const App: React.FC = () => {
         alert('Lỗi: Không thể xóa dữ liệu.');
       }
     }
-  };
+  }, [loadSaveSlots]);
 
-  const handleVerifyAndRepairSlot = async (slotId: number) => {
+  const handleVerifyAndRepairSlot = useCallback(async (slotId: number) => {
     setLoadingMessage(`Đang kiểm tra ô ${slotId}...`);
     setIsLoading(true);
     try {
@@ -374,14 +374,14 @@ const App: React.FC = () => {
     } finally {
         setIsLoading(false);
     }
-  };
+  }, [loadSaveSlots]);
 
 
-  const handleNavigate = (targetView: View) => {
+  const handleNavigate = useCallback((targetView: View) => {
     setView(targetView);
-  };
+  }, []);
 
-  const handleGameStart = async (gameStartData: {
+  const handleGameStart = useCallback(async (gameStartData: {
       characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions'>,
       npcDensity: NpcDensity
   }) => {
@@ -420,7 +420,7 @@ const App: React.FC = () => {
     } finally {
         setIsLoading(false);
     }
-  };
+  }, [currentSlotId, loadSaveSlots]);
 
   const renderContent = () => {
     if (isMigratingData) {
@@ -450,6 +450,7 @@ const App: React.FC = () => {
             return <LoadingScreen message="Đang tải dữ liệu..." />;
         }
         return <GamePlayScreen 
+            settings={settings}
             gameState={gameState} 
             setGameState={setGameState} 
             onSaveGame={handleSaveGame}

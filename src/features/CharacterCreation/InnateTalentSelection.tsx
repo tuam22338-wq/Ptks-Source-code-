@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, memo } from 'react';
 import type { InnateTalent } from '../../types';
 import InnateTalentCard from './InnateTalentDisplay';
 
@@ -80,4 +80,4 @@ const InnateTalentSelection: React.FC<InnateTalentSelectionProps> = ({ talents, 
     );
 };
 
-export default InnateTalentSelection;
+export default memo(InnateTalentSelection);

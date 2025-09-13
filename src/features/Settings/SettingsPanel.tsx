@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../../constants';
 import { generateBackgroundImage, reloadApiKeys } from '../../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme, RagEmbeddingModel } from '../../types';
@@ -18,14 +18,14 @@ interface SettingsPanelProps {
 
 type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'api' | 'advanced';
 
-const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = memo(({ title, children }) => (
   <section className="mb-8">
     <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-muted-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
-);
+));
 
-const SettingsRow: React.FC<{ label: string; description: string; children: React.ReactNode }> = ({ label, description, children }) => (
+const SettingsRow: React.FC<{ label: string; description: string; children: React.ReactNode }> = memo(({ label, description, children }) => (
   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start py-2">
     <div className="md:col-span-1">
       <label className="block text-md font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
@@ -33,7 +33,7 @@ const SettingsRow: React.FC<{ label: string; description: string; children: Reac
     </div>
     <div className="md:col-span-2">{children}</div>
   </div>
-);
+));
 
 const TabButton: React.FC<{
   tabId: SettingsTab;
@@ -41,7 +41,7 @@ const TabButton: React.FC<{
   onClick: (tab: SettingsTab) => void;
   icon: React.ElementType;
   label: string;
-}> = ({ tabId, activeTab, onClick, icon: Icon, label }) => (
+}> = memo(({ tabId, activeTab, onClick, icon: Icon, label }) => (
   <button
     onClick={() => onClick(tabId)}
     className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 whitespace-nowrap sm:flex-1 ${
@@ -53,7 +53,7 @@ const TabButton: React.FC<{
     <Icon className="w-5 h-5 mb-1 sm:mb-0" />
     <span>{label}</span>
   </button>
-);
+));
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings, onChange }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
@@ -80,7 +80,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
             let keysToReset: (keyof GameSettings)[] = [];
             switch (section) {
                 case 'Giao Diện':
-                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage'];
+                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'storyLogItemsPerPage'];
                     break;
                 case 'AI & Models':
                     keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK'];
@@ -170,6 +170,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                             </SettingsRow>
                             <SettingsRow label="Vật phẩm mỗi trang" description="Số lượng vật phẩm hiển thị trên mỗi trang trong túi đồ.">
                                 <input type="number" value={settings.itemsPerPage} onChange={(e) => onChange('itemsPerPage', parseInt(e.target.value) || 10)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                            </SettingsRow>
+                            <SettingsRow label="Số mục truyện mỗi trang" description="Số lượng mục truyện hiển thị trên mỗi trang (mặc định: 20, min: 5, max: 100).">
+                                <input type="number" min="5" max="100" value={settings.storyLogItemsPerPage} onChange={(e) => onChange('storyLogItemsPerPage', parseInt(e.target.value) || 20)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
                             <SettingsRow label="Toàn màn hình" description="Bật chế độ toàn màn hình để có trải nghiệm tốt nhất.">
                                <button onClick={toggleFullScreen} className="flex items-center gap-2 px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors">
@@ -374,7 +377,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
     );
 };
 
-const ApiKeyManager: React.FC<{ settings: GameSettings, onChange: (key: keyof GameSettings, value: any) => void }> = ({ settings, onChange }) => {
+const ApiKeyManager: React.FC<{ settings: GameSettings, onChange: (key: keyof GameSettings, value: any) => void }> = memo(({ settings, onChange }) => {
     const [keys, setKeys] = useState<string[]>(() =>
         settings.apiKeys && settings.apiKeys.length > 0 ? settings.apiKeys : ['']
     );
@@ -479,6 +482,6 @@ const ApiKeyManager: React.FC<{ settings: GameSettings, onChange: (key: keyof Ga
             </SettingsRow>
         </SettingsSection>
     );
-};
+});
 
-export default SettingsPanel;
+export default memo(SettingsPanel);
