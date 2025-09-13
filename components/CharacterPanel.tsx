@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
-import type { PlayerCharacter, Attribute, RealmConfig } from '../types';
-import { INNATE_TALENT_RANKS, CULTIVATION_PATHS } from '../constants';
+import React, { memo, useMemo } from 'react';
+import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup } from '../types';
+import { INNATE_TALENT_RANKS, CULTIVATION_PATHS, CHARACTER_STATUS_CONFIG } from '../constants';
 import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers } from 'react-icons/fa';
 
 interface CharacterPanelProps {
@@ -33,9 +33,35 @@ const ProgressBar: React.FC<{
     );
 };
 
+const calculateFinalAttributes = (baseAttributes: AttributeGroup[], activeEffects: ActiveEffect[]): AttributeGroup[] => {
+    const finalAttributes = baseAttributes.map(group => ({
+        ...group,
+        attributes: group.attributes.map(attr => ({ ...attr }))
+    }));
+
+    const allBonuses = activeEffects.flatMap(effect => effect.bonuses);
+
+    allBonuses.forEach(bonus => {
+        for (const group of finalAttributes) {
+            const attr = group.attributes.find(a => a.name === bonus.attribute);
+            if (attr && typeof attr.value === 'number') {
+                (attr.value as number) += bonus.value;
+                if(attr.maxValue) {
+                    (attr.maxValue as number) += bonus.value;
+                }
+                break;
+            }
+        }
+    });
+
+    return finalAttributes;
+};
+
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, talents, cultivation, currencies, chosenPathIds, reputation } = character;
+    const { identity, attributes, talents, cultivation, currencies, chosenPathIds, reputation, healthStatus, activeEffects } = character;
+
+    const finalAttributes = useMemo(() => calculateFinalAttributes(attributes, activeEffects), [attributes, activeEffects]);
 
     const currentRealmData = realmSystem.find(r => r.id === cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === cultivation.currentStageId);
@@ -55,10 +81,11 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
         }
     }
     
-    const sinhMenh = attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh') as Attribute & { value: number; maxValue: number };
-    const linhLuc = attributes.flatMap(g => g.attributes).find(a => a.name === 'Linh Lực') as Attribute & { value: number; maxValue: number };
+    const sinhMenh = finalAttributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh') as Attribute & { value: number; maxValue: number };
+    const linhLuc = finalAttributes.flatMap(g => g.attributes).find(a => a.name === 'Linh Lực') as Attribute & { value: number; maxValue: number };
     
     const chosenPaths = CULTIVATION_PATHS.filter(path => chosenPathIds.includes(path.id));
+    const statusInfo = CHARACTER_STATUS_CONFIG[healthStatus];
 
     return (
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
@@ -66,7 +93,10 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
             <div className="text-center">
                 <h2 className="text-2xl font-bold text-amber-300 font-title">{identity.name} ({identity.age} tuổi)</h2>
                 <p className="text-sm text-gray-400 mb-2">{identity.origin}</p>
-                <p className="text-md font-semibold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-full inline-block border border-cyan-500/30">{currentRealmState}</p>
+                 <div className="flex items-center justify-center gap-4">
+                    <p className="text-md font-semibold text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-full inline-block border border-cyan-500/30">{currentRealmState}</p>
+                    <p className={`text-md font-semibold ${statusInfo.color} bg-black/20 px-3 py-1 rounded-full inline-block border border-gray-700`}>{statusInfo.label}</p>
+                </div>
             </div>
             
             {/* Main Stats Bars */}
@@ -174,7 +204,7 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
             <div>
                  <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Thuộc Tính Chi Tiết</h3>
                 <div className="space-y-4">
-                    {attributes.filter(g => !['Chỉ số Sinh Tồn', 'Thông Tin Tu Luyện'].includes(g.title)).map(group => (
+                    {finalAttributes.filter(g => !['Chỉ số Sinh Tồn', 'Thông Tin Tu Luyện'].includes(g.title)).map(group => (
                       <div key={group.title}>
                         <h4 className="text-md text-gray-400 font-title mb-2">{group.title}</h4>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">

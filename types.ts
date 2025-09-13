@@ -23,7 +23,7 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
-export type Theme = 'theme-amber' | 'theme-jade-green' | 'theme-amethyst-purple' | 'theme-celestial-light';
+export type Theme = 'theme-amber' | 'theme-jade-green' | 'theme-amethyst-purple' | 'theme-celestial-light' | 'theme-blood-moon' | 'theme-bamboo-forest';
 
 
 export interface SafetySettings {
@@ -105,6 +105,7 @@ export interface CharacterIdentity {
   gender: Gender;
   personality: string;
   age: number;
+  familyName?: string;
 }
 
 // --- Timeline Types ---
@@ -279,7 +280,7 @@ export type ModNpc = {
     tags: string[];
 };
 
-export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'worldBuilding' | 'npc' | 'technique' | 'event' | 'customPanel' | 'realm' | 'realmSystem' | 'talentSystem' | 'recipe';
+export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'worldBuilding' | 'npc' | 'technique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem';
 
 export type EventTriggerType = 'ON_ENTER_LOCATION' | 'ON_TALK_TO_NPC' | 'ON_GAME_DATE';
 export interface EventTrigger {
@@ -427,6 +428,16 @@ export type AddedContentUnion =
 
 
 // --- Gameplay Types ---
+export type CharacterStatus = 'HEALTHY' | 'LIGHTLY_INJURED' | 'HEAVILY_INJURED' | 'NEAR_DEATH';
+
+export interface ActiveEffect {
+    id: string;
+    source: string; // e.g., 'status_lightly_injured'
+    description: string;
+    bonuses: StatBonus[];
+    duration?: number; // in time units (e.g., shichen), undefined for permanent
+}
+
 export interface Currency {
     [key: string]: number;
 }
@@ -480,6 +491,8 @@ export interface NPC {
     TienLuc?: number;
     PhongNgu?: number;
     SinhMenh?: number;
+    healthStatus: CharacterStatus;
+    activeEffects: ActiveEffect[];
 }
 
 export interface InventoryItem {
@@ -567,6 +580,7 @@ export interface CaveAbode {
     spiritHerbFieldLevel: number;     // Linh Điền
     alchemyRoomLevel: number;         // Luyện Đan Thất
     storageUpgradeLevel: number;      // Kho chứa đồ
+    locationId: string;
 }
 
 export interface PlayerCharacter {
@@ -585,6 +599,8 @@ export interface PlayerCharacter {
     knownRecipeIds: string[];
     sect: PlayerSectInfo | null;
     caveAbode: CaveAbode;
+    healthStatus: CharacterStatus;
+    activeEffects: ActiveEffect[];
 }
 
 export interface StoryEntry {
@@ -631,6 +647,7 @@ export interface GameState {
     activeStory: ActiveStoryState | null;
     combatState: CombatState | null;
     dialogueWithNpcId: string | null;
+    worldSects?: Sect[];
 }
 
 // --- Gameplay Event Types ---

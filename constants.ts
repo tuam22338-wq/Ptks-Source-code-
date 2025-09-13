@@ -1,4 +1,4 @@
-import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode } from './types';
+import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -28,6 +28,14 @@ export const FACTIONS: Faction[] = [
   },
 ];
 export const FACTION_NAMES = FACTIONS.map(f => f.name);
+
+export const CHARACTER_STATUS_CONFIG: Record<CharacterStatus, { label: string; threshold: number; debuffs: StatBonus[]; color: string }> = {
+  HEALTHY: { label: 'Khỏe mạnh', threshold: 0.9, debuffs: [], color: 'text-green-400' },
+  LIGHTLY_INJURED: { label: 'Bị thương nhẹ', threshold: 0.5, debuffs: [{ attribute: 'Thân Pháp', value: -2 }, { attribute: 'Lực Lượng', value: -2 }], color: 'text-yellow-400' },
+  HEAVILY_INJURED: { label: 'Bị thương nặng', threshold: 0.1, debuffs: [{ attribute: 'Thân Pháp', value: -5 }, { attribute: 'Lực Lượng', value: -5 }, { attribute: 'Nguyên Thần', value: -3 }], color: 'text-orange-500' },
+  NEAR_DEATH: { label: 'Sắp chết', threshold: 0, debuffs: [{ attribute: 'Thân Pháp', value: -10 }, { attribute: 'Lực Lượng', value: -10 }, { attribute: 'Nguyên Thần', value: -5 }, { attribute: 'Cảm Ngộ', value: -5 }], color: 'text-red-600' },
+};
+
 
 export const SECTS: Sect[] = [
     {
@@ -67,6 +75,7 @@ export const DEFAULT_CAVE_ABODE: CaveAbode = {
     spiritHerbFieldLevel: 0,
     alchemyRoomLevel: 0,
     storageUpgradeLevel: 0,
+    locationId: 'dong_phu',
 };
 
 export const FACTION_REPUTATION_TIERS: { threshold: number; status: FactionReputationStatus }[] = [
@@ -108,18 +117,18 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Phong Thần Bảng', description: 'Nắm giữ thiên cơ, có quyền phong thần.', rank: 'Thánh Giai', effect: 'Có khả năng nhìn thấu vận mệnh.' }, { name: 'Đả Thần Tiên', description: 'Pháp bảo do sư tôn ban tặng, chuyên đánh tiên nhân.', rank: 'Đại Tiên Giai', effect: 'Tăng mạnh sát thương lên kẻ địch có tu vi cao.' } ],
     locationId: 'song_vi_thuy',
-    cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 100 }, equipment: {},
+    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 100 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_na_tra',
-    identity: { name: 'Na Tra', gender: 'Nam', appearance: 'Hình hài thiếu niên, mặt đẹp như ngọc, môi đỏ như son, mắt sáng tựa sao. Tay cầm Hỏa Tiễn Thương, chân đạp Phong Hỏa Luân, mình quấn Hỗn Thiên Lăng.', origin: 'Linh Châu Tử chuyển thế, con trai thứ ba của Lý Tịnh. Là đệ tử của Thái Ất Chân Nhân.', personality: 'Hỗn Loạn' },
+    identity: { name: 'Na Tra', gender: 'Nam', appearance: 'Hình hài thiếu niên, mặt đẹp như ngọc, môi đỏ như son, mắt sáng tựa sao. Tay cầm Hỏa Tiễn Thương, chân đạp Phong Hỏa Luân, mình quấn Hỗn Thiên Lăng.', origin: 'Linh Châu Tử chuyển thế, con trai thứ ba của Lý Tịnh. Là đệ tử của Thái Ất Chân Nhân.', personality: 'Hỗn Loạn', familyName: 'Lý gia' },
     status: 'Đang tuần tra tại Trần Đường Quan, tính tình nóng nảy.',
     attributes: [],
     talents: [ { name: 'Pháp Liên Hóa Thân', description: 'Thân thể được tái tạo từ hoa sen, miễn nhiễm với nhiều loại độc và tà thuật.', rank: 'Đại Tiên Giai', effect: 'Kháng tất cả hiệu ứng tiêu cực.' }, { name: 'Tam Đầu Lục Tý', description: 'Khi chiến đấu có thể hóa thành ba đầu sáu tay, sức mạnh tăng vọt.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh các chỉ số chiến đấu trong giao tranh.' } ],
     locationId: 'tran_duong_quan',
-    cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 50 }, equipment: {},
+    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 50 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_duong_tien',
@@ -128,8 +137,8 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Thiên Nhãn', description: 'Con mắt thứ ba giữa trán, có thể nhìn thấu bản chất, phá trừ ảo ảnh.', rank: 'Thánh Giai', effect: 'Nhìn thấu mọi ngụy trang và ẩn thân.' }, { name: 'Bát Cửu Huyền Công', description: 'Công pháp biến hóa vô song, có 72 phép biến hóa.', rank: 'Đại Tiên Giai', effect: 'Khả năng biến hóa thành vạn vật.' } ],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Bạc': 200 }, equipment: {},
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Bạc': 200 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_dat_ky',
@@ -138,8 +147,8 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Hồ Mị', description: 'Sức quyến rũ trời sinh của hồ ly, khiến người khác phái khó lòng chống cự.', rank: 'Đại Tiên Giai', effect: 'Giảm mạnh ý chí của đối thủ nam.' } ],
     locationId: 'loc_dai',
-    cultivation: { currentRealmId: 'ket_dan', currentStageId: 'kd_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 50, items: [] }, currencies: { 'Bạc': 10000 }, equipment: {},
+    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 50, items: [] }, currencies: { 'Bạc': 10000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_tru_vuong',
@@ -149,7 +158,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Thiên Tử Long Khí', description: 'Sở hữu khí vận của một triều đại, có khả năng áp chế kẻ địch.', rank: 'Trung Tiên Giai', effect: 'Tăng khả năng kháng hiệu ứng.' } ],
     locationId: 'loc_dai',
     cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_2', spiritualQi: 0, hasConqueredInnerDemon: false },
-    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: { 'Bạc': 999999 }, equipment: {},
+    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: { 'Bạc': 999999 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_van_trong',
@@ -158,8 +167,8 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Thần Mục', description: 'Con mắt thứ ba có thể phân biệt trắng đen, nhìn rõ trung gian.', rank: 'Hậu Tiên Giai', effect: 'Miễn nhiễm với ảo thuật và lừa dối.' } ],
     locationId: 'trieu_ca',
-    cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Bạc': 5000 }, equipment: {},
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Bạc': 5000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_than_cong_bao',
@@ -168,18 +177,18 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Miệng Lưỡi Sắc Sảo', description: 'Có tài ăn nói, dễ dàng thuyết phục người khác.', rank: 'Sơ Tiên Giai', effect: 'Tăng mạnh khả năng thuyết phục trong đối thoại.' } ],
     locationId: 'rung_me_vu',
-    cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_1', spiritualQi: 0, hasConqueredInnerDemon: false },
-    techniques: [], inventory: { weightCapacity: 80, items: [] }, currencies: { 'Bạc': 1000 }, equipment: {},
+    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: false },
+    techniques: [], inventory: { weightCapacity: 80, items: [] }, currencies: { 'Bạc': 1000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_co_xuong',
-    identity: { name: 'Cơ Xương', gender: 'Nam', appearance: 'Một vị hiền hầu, tuổi đã cao, râu tóc bạc trắng nhưng tinh thần minh mẫn, toát lên vẻ nhân từ đức độ.', origin: 'Tây Bá Hầu, một trong tứ đại chư hầu, tinh thông dịch lý, được lòng dân chúng.', personality: 'Chính Trực' },
+    identity: { name: 'Cơ Xương', gender: 'Nam', appearance: 'Một vị hiền hầu, tuổi đã cao, râu tóc bạc trắng nhưng tinh thần minh mẫn, toát lên vẻ nhân từ đức độ.', origin: 'Tây Bá Hầu, một trong tứ đại chư hầu, tinh thông dịch lý, được lòng dân chúng.', personality: 'Chính Trực', familyName: 'Cơ gia' },
     status: 'Đang cai quản Tây Kỳ, chiêu hiền đãi sĩ.',
     attributes: [],
     talents: [ { name: 'Hậu Thiên Bát Quái', description: 'Có khả năng suy diễn thiên cơ, biết trước họa phúc.', rank: 'Trung Tiên Giai', effect: 'Tăng chỉ số May Mắn.' } ],
     locationId: 'tay_ky',
     cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_dz', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 20000 }, equipment: {},
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 20000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_thai_at_chan_nhan',
@@ -188,8 +197,8 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 500, items: [] }, currencies: { 'Bạc': 1000 }, equipment: {},
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 500, items: [] }, currencies: { 'Bạc': 1000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_trieu_cong_minh',
@@ -198,8 +207,8 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Định Hải Châu', description: '24 viên ngọc có sức mạnh kinh thiên động địa.', rank: 'Đại Tiên Giai', effect: 'Sở hữu sức tấn công cực mạnh.' } ],
     locationId: 'dao_tam_tien',
-    cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 300, items: [] }, currencies: { 'Bạc': 3000 }, equipment: {},
+    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 300, items: [] }, currencies: { 'Bạc': 3000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_van_tieu',
@@ -208,8 +217,8 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Cửu Khúc Hoàng Hà Trận', description: 'Trận pháp thượng cổ, có thể gọt bỏ tu vi của tiên nhân.', rank: 'Thánh Giai', effect: 'Cực kỳ nguy hiểm, có thể làm người chơi mất cảnh giới.' } ],
     locationId: 'dao_tam_tien',
-    cultivation: { currentRealmId: 'hoa_than', currentStageId: 'ht_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 2000 }, equipment: {},
+    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 2000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_thach_co_nuong_nuong',
@@ -218,27 +227,27 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [],
     locationId: 'bach_cot_dong',
-    cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_1', spiritualQi: 0, hasConqueredInnerDemon: false },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 500 }, equipment: {},
+    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_1', spiritualQi: 0, hasConqueredInnerDemon: false },
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_ly_tinh',
-    identity: { name: 'Lý Tịnh', gender: 'Nam', appearance: 'Một vị tổng binh uy nghiêm, mày kiếm mắt sáng, tay luôn cầm Linh Lung Bảo Tháp.', origin: 'Tổng binh Trần Đường Quan, cha của Na Tra.', personality: 'Chính Trực' },
+    identity: { name: 'Lý Tịnh', gender: 'Nam', appearance: 'Một vị tổng binh uy nghiêm, mày kiếm mắt sáng, tay luôn cầm Linh Lung Bảo Tháp.', origin: 'Tổng binh Trần Đường Quan, cha của Na Tra.', personality: 'Chính Trực', familyName: 'Lý gia' },
     status: 'Đang đau đầu vì đứa con nghịch tử Na Tra.',
     attributes: [],
     talents: [ { name: 'Linh Lung Bảo Tháp', description: 'Pháp bảo do Nhiên Đăng Cổ Phật tặng để khắc chế Na Tra.', rank: 'Trung Tiên Giai', effect: 'Có khả năng trấn áp kẻ địch.' } ],
     locationId: 'tran_duong_quan',
-    cultivation: { currentRealmId: 'ket_dan', currentStageId: 'kd_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 120, items: [] }, currencies: { 'Bạc': 1500 }, equipment: {},
+    cultivation: { currentRealmId: 'nhan_tien', currentStageId: 'nt_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 120, items: [] }, currencies: { 'Bạc': 1500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   { id: 'npc_loi_chan_tu',
-    identity: { name: 'Lôi Chấn Tử', gender: 'Nam', appearance: 'Thân xanh, mặt nhọn, mọc cánh sau lưng, tay cầm côn vàng.', origin: 'Con nuôi của Cơ Xương, đệ tử của Vân Trung Tử.', personality: 'Hỗn Loạn' },
+    identity: { name: 'Lôi Chấn Tử', gender: 'Nam', appearance: 'Thân xanh, mặt nhọn, mọc cánh sau lưng, tay cầm côn vàng.', origin: 'Con nuôi của Cơ Xương, đệ tử của Vân Trung Tử.', personality: 'Hỗn Loạn', familyName: 'Cơ gia' },
     status: 'Bay lượn trên bầu trời Tây Kỳ.',
     attributes: [],
     talents: [ { name: 'Phong Lôi Dực', description: 'Đôi cánh có sức mạnh của gió và sấm sét, tốc độ cực nhanh.', rank: 'Hậu Tiên Giai', effect: 'Tốc độ di chuyển cực cao.' } ],
     locationId: 'tay_ky',
-    cultivation: { currentRealmId: 'nguyen_anh', currentStageId: 'na_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 300 }, equipment: {},
+    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 300 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   { id: 'npc_hoang_phi_ho',
     identity: { name: 'Hoàng Phi Hổ', gender: 'Nam', appearance: 'Võ tướng oai phong, mình mặc giáp trụ, cưỡi ngũ sắc thần ngưu.', origin: 'Trấn quốc Võ Thành Vương của nhà Thương, sau này phản lại Trụ Vương theo về nhà Chu.', personality: 'Chính Trực' },
@@ -247,39 +256,42 @@ export const NPC_LIST: NPC[] = [
     talents: [],
     locationId: 'tam_son_quan',
     cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Bạc': 2500 }, equipment: {},
+    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Bạc': 2500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   ...Array.from({ length: 35 }).map((_, i) => {
       const rand = Math.random();
       if (rand < 0.3) {
           return {
               id: `npc_tantien_${i}`,
-// FIX: Added 'as const' to the gender property to ensure TypeScript infers the correct literal type ('Nam') instead of the wider 'string' type, resolving the type incompatibility with the 'NPC' interface.
               identity: { name: `Tán Tu Giáp ${i}`, gender: 'Nam' as const, appearance: 'Một tu sĩ áo xám, mặt mũi bình thường, ánh mắt ẩn chứa sự từng trải.', origin: 'Không rõ lai lịch, tu luyện một mình.', personality: 'Trung Lập' },
               status: 'Đang tìm kiếm cơ duyên trong Rừng Cổ Thụ.',
               attributes: [], talents: [], locationId: 'rung_co_thu',
               cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_7', spiritualQi: 0, hasConqueredInnerDemon: false },
-              techniques: [], inventory: { weightCapacity: 70, items: [] }, currencies: { 'Bạc': Math.floor(Math.random() * 200) + 50 }, equipment: {},
+              // FIX: Add missing properties `healthStatus` and `activeEffects` to conform to the NPC type.
+              techniques: [], inventory: { weightCapacity: 70, items: [] }, currencies: { 'Bạc': Math.floor(Math.random() * 200) + 50 }, equipment: {}, // FIX: Added 'as const' to fix type inference issue.
+healthStatus: 'HEALTHY' as const, activeEffects: [],
           };
       } else if (rand < 0.6) {
           return {
               id: `npc_yeuquai_${i}`,
-// FIX: Added 'as const' to the gender property to ensure TypeScript infers the correct literal type ('Nữ') instead of the wider 'string' type, resolving the type incompatibility with the 'NPC' interface.
               identity: { name: `Tiểu Yêu ${i}`, gender: 'Nữ' as const, appearance: 'Hình người nhưng vẫn còn vài đặc điểm của yêu tộc, ánh mắt lanh lợi.', origin: 'Một con yêu quái nhỏ tu luyện thành hình người.', personality: 'Hỗn Loạn' },
               status: 'Đang ẩn nấp trong Rừng Mê Vụ.',
               attributes: [], talents: [], locationId: 'rung_me_vu',
               cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_4', spiritualQi: 0, hasConqueredInnerDemon: false },
-              techniques: [], inventory: { weightCapacity: 50, items: [] }, currencies: { 'Bạc': Math.floor(Math.random() * 100) }, equipment: {},
+              // FIX: Add missing properties `healthStatus` and `activeEffects` to conform to the NPC type.
+              techniques: [], inventory: { weightCapacity: 50, items: [] }, currencies: { 'Bạc': Math.floor(Math.random() * 100) }, equipment: {}, // FIX: Added 'as const' to fix type inference issue.
+healthStatus: 'HEALTHY' as const, activeEffects: [],
           };
       } else {
           return {
               id: `npc_thuongnhan_${i}`,
-// FIX: Added 'as const' to the gender property to ensure TypeScript infers the correct literal type ('Nam') instead of the wider 'string' type, resolving the type incompatibility with the 'NPC' interface.
               identity: { name: `Thương Nhân ${i}`, gender: 'Nam' as const, appearance: 'Ăn mặc sang trọng, vẻ mặt lanh lợi, luôn tươi cười.', origin: 'Một thương nhân đi lại giữa Triều Ca và Tây Kỳ.', personality: 'Trung Lập' },
               status: 'Đang bày hàng ở chợ Triều Ca.',
               attributes: [], talents: [], locationId: 'trieu_ca',
               cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: false },
-              techniques: [], inventory: { weightCapacity: 300, items: [] }, currencies: { 'Bạc': Math.floor(Math.random() * 1000) + 500 }, equipment: {},
+              // FIX: Add missing properties `healthStatus` and `activeEffects` to conform to the NPC type.
+              techniques: [], inventory: { weightCapacity: 300, items: [] }, currencies: { 'Bạc': Math.floor(Math.random() * 1000) + 500 }, equipment: {}, // FIX: Added 'as const' to fix type inference issue.
+healthStatus: 'HEALTHY' as const, activeEffects: [],
           };
       }
   })
@@ -355,6 +367,8 @@ export const THEME_OPTIONS: { value: Theme; label: string }[] = [
     { value: 'theme-jade-green', label: 'Bích Ngọc' },
     { value: 'theme-amethyst-purple', label: 'Tử Tinh' },
     { value: 'theme-celestial-light', label: 'Thiên Quang' },
+    { value: 'theme-blood-moon', label: 'Vong Xuyên Huyết Nguyệt' },
+    { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch' },
 ];
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -528,19 +542,11 @@ export const MAJOR_EVENTS: MajorEvent[] = [
     consequences: "Nữ Oa Nương Nương nổi giận, quyết định gieo mầm tai họa cho nhà Thương. Bà triệu hồi Tam Yêu tại Hiên Viên Mộ, ra lệnh cho chúng trà trộn vào cung cấm để mê hoặc Trụ Vương, làm cho cơ nghiệp nhà Thương sụp đổ, gieo mầm mống cho đại kiếp Phong Thần."
   },
   {
-    year: 5,
-    title: "Tô Hộ Phản Trụ",
-    location: "Ký Châu",
-    involvedParties: "Tô Hộ, Trụ Vương, Sùng Hầu Hổ",
-    summary: "Ký Châu hầu Tô Hộ bị yêu cầu phải dâng con gái là Tô Đát Kỷ cho Trụ Vương. Coi đây là một sự sỉ nhục, Tô Hộ đã viết thơ phản nghịch ngay tại cổng thành, quyết không tuân lệnh.",
-    consequences: "Trụ Vương tức giận, cử Sùng Hầu Hổ đem quân đi chinh phạt Ký Châu. Cuộc chiến này dẫn đến việc Tô Hộ thất bại và buộc phải dâng con gái, tạo cơ hội cho Hồ Ly Tinh chiếm đoạt thân xác Đát Kỷ."
-  },
-  {
     year: 7,
     title: "Đát Kỷ Nhập Cung",
     location: "Triều Ca",
     involvedParties: "Cửu Vỹ Hồ (trong thân xác Đát Kỷ), Trụ Vương",
-    summary: "Trên đường dâng đến Triều Ca, Tô Đát Kỷ thật đã bị Cửu Vỹ Hồ Ly Tinh (Hồ Ly Tinh ngàn năm) phụng mệnh Nữ Oa chiếm đoạt thân xác. Hồ Ly Tinh tiến cung và nhanh chóng mê hoặc Trụ Vương bằng sắc đẹp tuyệt trần.",
+    summary: "Trên đường dâng đến Triều Ca, Tô Đát Kỷ thật đã bị Cửu Vỹ Hồ Ly Tinh phụng mệnh Nữ Oa chiếm đoạt thân xác. Hồ Ly Tinh tiến cung và nhanh chóng mê hoặc Trụ Vương bằng sắc đẹp tuyệt trần.",
     consequences: "Triều chính nhà Thương bắt đầu một chuỗi ngày đen tối. Đát Kỷ xúi giục Trụ Vương làm những việc tàn bạo như xây Lộc Đài, thiêu Bào Lạc, giết hại trung thần, khiến lòng dân oán thán, đẩy nhanh sự sụp đổ của triều đại."
   },
     {
@@ -549,63 +555,87 @@ export const MAJOR_EVENTS: MajorEvent[] = [
     location: "Trần Đường Quan, Đông Hải",
     involvedParties: "Na Tra, Ngao Bính (Tam thái tử Đông Hải), Lý Tịnh",
     summary: "Na Tra, vốn là Linh Châu Tử chuyển thế, nghịch ngợm dùng Càn Khôn Quyển và Hỗn Thiên Lăng làm chấn động Đông Hải Long Cung. Tam thái tử Ngao Bính lên bờ hỏi tội, bị Na Tra đánh chết, rút cả gân rồng.",
-    consequences: "Đông Hải Long Vương Ngao Quảng nổi giận, dâng nước lên Trần Đường Quan, dọa dâng tấu lên Thiên Đình. Để cứu dân chúng, Na Tra lóc xương trả cha, lóc thịt trả mẹ. Sau được Thái Ất Chân Nhân dùng hoa sen tái tạo lại thân thể, trở nên mạnh mẽ hơn."
+    consequences: "Đông Hải Long Vương Ngao Quảng nổi giận, dâng nước lên Trần Đường Quan. Để cứu dân chúng, Na Tra lóc xương trả cha, lóc thịt trả mẹ. Sau được Thái Ất Chân Nhân dùng hoa sen tái tạo lại thân thể, trở nên mạnh mẽ hơn."
   },
   {
     year: 20,
     title: "Cơ Xương Thoát Nạn",
     location: "Dũ Lý, Triều Ca",
-    involvedParties: "Tây Bá Hầu Cơ Xương (sau là Chu Văn Vương), Trụ Vương",
-    summary: "Bị Trụ Vương nghi kỵ và giam cầm ở Dũ Lý suốt 7 năm, Cơ Xương đã nhẫn nhục chịu đựng, âm thầm diễn giải Bát Quái thành 64 quẻ. Các con trai và bề tôi của ông đã phải dâng mỹ nữ và bảo vật để chuộc ông ra.",
-    consequences: "Sau khi được thả về, Cơ Xương quyết tâm chiêu hiền đãi sĩ, tìm kiếm nhân tài để lật đổ nhà Thương. Ông đã tìm được Khương Tử Nha, đặt nền móng vững chắc cho cuộc phạt Trụ của con trai ông là Cơ Phát (Chu Vũ Vương) sau này."
+    involvedParties: "Tây Bá Hầu Cơ Xương, Trụ Vương",
+    summary: "Bị Trụ Vương nghi kỵ và giam cầm ở Dũ Lý suốt 7 năm, Cơ Xương đã nhẫn nhục chịu đựng, âm thầm diễn giải Bát Quái. Các con trai và bề tôi của ông đã phải dâng mỹ nữ và bảo vật để chuộc ông ra.",
+    consequences: "Sau khi được thả về, Cơ Xương quyết tâm chiêu hiền đãi sĩ, tìm kiếm nhân tài để lật đổ nhà Thương. Ông đã tìm được Khương Tử Nha, đặt nền móng cho cuộc phạt Trụ của con trai ông là Cơ Phát (Chu Vũ Vương)."
   },
   {
     year: 25,
     title: "Khương Tử Nha Xuống Núi",
     location: "Núi Côn Lôn, Sông Vị Thủy",
     involvedParties: "Khương Tử Nha, Nguyên Thủy Thiên Tôn, Cơ Xương",
-    summary: "Khương Tử Nha, đệ tử của Nguyên Thủy Thiên Tôn tại Xiển Giáo, tu đạo đến năm 72 tuổi vẫn chưa thành tiên. Ông phụng mệnh sư phụ xuống núi để phò Chu diệt Thương, hoàn thành đại nghiệp Phong Thần.",
-    consequences: "Khương Tử Nha đến bờ sông Vị Thủy buông câu, chờ đợi minh chủ. Cơ Xương tìm đến và phong ông làm thừa tướng, giao cho trọng trách quân sự. Điều này chính thức khởi động cuộc chiến giữa Chu và Thương, đồng thời mở ra màn chủ trì Phong Thần Bảng của Khương Tử Nha."
-  },
-   {
-    year: 28,
-    title: "Dương Tiễn Phách Sơn Cứu Mẫu",
-    location: "Đào Sơn",
-    involvedParties: "Dương Tiễn, Vân Hoa Tiên Tử (Dao Cơ)",
-    summary: "Dương Tiễn, con trai của Dương Thiên Hựu và em gái Ngọc Đế là Vân Hoa Tiên Tử, sau khi học thành tài nghệ từ Ngọc Đỉnh Chân Nhân, đã dùng rìu khai sơn để chẻ đôi Đào Sơn, cứu mẹ mình bị Ngọc Đế giam cầm.",
-    consequences: "Hành động này thể hiện sức mạnh và lòng hiếu thảo của Dương Tiễn, khiến ông nổi danh tam giới. Sau sự việc, ông trở thành một trong những chiến tướng đắc lực nhất của phe Xiển Giáo, phò trợ Khương Tử Nha."
-  },
-    {
-    year: 30,
-    title: "Văn Trọng Phạt Tây Kỳ",
-    location: "Tây Kỳ",
-    involvedParties: "Thái sư Văn Trọng, Khương Tử Nha, quân đội Thương và Chu",
-    summary: "Sau khi dẹp yên các cuộc nổi loạn ở Bắc Hải, Thái sư Văn Trọng trở về Triều Ca và nhận thấy sự suy đồi của triều đình. Ông tức giận và quyết định thân chinh dẫn đại quân chinh phạt Tây Kỳ để diệt trừ hậu họa.",
-    consequences: "Mở đầu cho một loạt các trận chiến lớn giữa hai phe. Văn Trọng mời nhiều kỳ nhân dị sĩ của Triệt Giáo tới trợ giúp, khiến cho cuộc chiến trở nên vô cùng khốc liệt, nhiều tiên nhân của cả hai giáo đều bị cuốn vào vòng xoáy đại kiếp."
+    summary: "Khương Tử Nha, đệ tử của Nguyên Thủy Thiên Tôn, phụng mệnh sư phụ xuống núi để phò Chu diệt Thương, hoàn thành đại nghiệp Phong Thần.",
+    consequences: "Khương Tử Nha đến bờ sông Vị Thủy buông câu, chờ đợi minh chủ. Cơ Xương tìm đến và phong ông làm thừa tướng, chính thức khởi động cuộc chiến giữa Chu và Thương."
   },
   {
+    year: 29,
+    title: "Hoàng Phi Hổ Phản Trụ",
+    location: "Triều Ca, Tây Kỳ",
+    involvedParties: "Hoàng Phi Hổ, Trụ Vương, Đát Kỷ",
+    summary: "Trấn quốc Võ Thành Vương Hoàng Phi Hổ vì vợ và em gái bị Trụ Vương và Đát Kỷ bức hại đến chết đã vô cùng phẫn nộ. Ông quyết định phản lại nhà Thương, vượt qua 5 cửa ải, mang theo gia quyến và thuộc hạ về với Tây Kỳ.",
+    consequences: "Nhà Thương mất đi một trụ cột quân sự quan trọng, trong khi nhà Chu có thêm một vị mãnh tướng. Sự kiện này làm rúng động triều đình và cho thấy sự mục nát của Trụ Vương, củng cố thêm tính chính danh cho cuộc phạt Trụ."
+  },
+    {
     year: 32,
     title: "Thập Tuyệt Trận",
     location: "Phía ngoài thành Tây Kỳ",
     involvedParties: "Thập Thiên Quân (Triệt Giáo), Xiển Giáo Thập Nhị Kim Tiên",
-    summary: "Thập Thiên Quân của Triệt Giáo đã bày ra mười trận pháp vô cùng lợi hại, mỗi trận mang một sức mạnh hủy diệt khác nhau, gây ra tổn thất nặng nề cho quân Chu và các đệ tử Xiển Giáo.",
-    consequences: "Để phá Thập Tuyệt Trận, Xiển Giáo đã phải nhờ đến các đại tiên, thậm chí cả Nguyên Thủy Thiên Tôn và Lão Tử cũng phải ra tay. Nhiều đạo hữu của Triệt Giáo đã phải lên Phong Thần Bảng trong trận chiến này, làm sâu sắc thêm mâu thuẫn giữa hai giáo."
+    summary: "Thập Thiên Quân của Triệt Giáo đã bày ra mười trận pháp vô cùng lợi hại, gây ra tổn thất nặng nề cho quân Chu và các đệ tử Xiển Giáo.",
+    consequences: "Để phá Thập Tuyệt Trận, Xiển Giáo đã phải nhờ đến các đại tiên, thậm chí cả Nguyên Thủy Thiên Tôn và Lão Tử. Nhiều đạo hữu của Triệt Giáo đã phải lên Phong Thần Bảng, làm sâu sắc thêm mâu thuẫn giữa hai giáo."
   },
   {
-    year: 35,
-    title: "Võ Vương Phạt Trụ",
-    location: "Từ Tây Kỳ đến Triều Ca",
-    involvedParties: "Cơ Phát (Chu Võ Vương), Khương Tử Nha, Trụ Vương",
-    summary: "Sau khi Chu Văn Vương qua đời, con trai là Cơ Phát lên ngôi, tức Chu Võ Vương. Ông cùng Khương Tử Nha và các chư hầu chính thức khởi binh phạt Trụ, tiến về kinh đô Triều Ca.",
-    consequences: "Cuộc chiến cuối cùng giữa hai triều đại bùng nổ. Quân Chu vượt qua nhiều cửa ải, chiến đấu với vô số tướng lĩnh và dị nhân trung thành với nhà Thương, từng bước tiến tới sự sụp đổ của Trụ Vương."
+    year: 33,
+    title: "Triệu Công Minh Trợ Trận",
+    location: "Tây Kỳ",
+    involvedParties: "Triệu Công Minh, Xiển Giáo Kim Tiên, Nhiên Đăng Đạo Nhân",
+    summary: "Nghe tin đồng môn bị hại, Triệu Công Minh cưỡi Hắc Hổ, mang theo Định Hải Châu và Thần Tiên đến trợ giúp Văn Trọng. Ông đã một mình đánh bại nhiều cao thủ Xiển Giáo, kể cả Thập Nhị Kim Tiên.",
+    consequences: "Sự xuất hiện của Triệu Công Minh đã đẩy cuộc chiến lên một tầm cao mới. Cuối cùng, ông bị Khương Tử Nha và Lục Áp Đạo Nhân dùng thuật 'Đinh Đầu Thất Tiễn' để ám hại. Cái chết của ông đã châm ngòi cho sự kiện kinh thiên động địa hơn: Tam Tiêu Bày Cửu Khúc Hoàng Hà Trận."
   },
   {
-    year: 36,
+    year: 34,
+    title: "Cửu Khúc Hoàng Hà Trận",
+    location: "Tây Kỳ",
+    involvedParties: "Vân Tiêu, Quỳnh Tiêu, Bích Tiêu (Tam Tiêu), Thập Nhị Kim Tiên",
+    summary: "Để báo thù cho anh trai Triệu Công Minh, Tam Tiêu đã bày ra Cửu Khúc Hoàng Hà Trận. Trận pháp này vô cùng lợi hại, đã bắt và gọt bỏ tu vi của toàn bộ Thập Nhị Kim Tiên, biến họ thành凡人.",
+    consequences: "Xiển Giáo gặp phải kiếp nạn lớn nhất từ trước đến nay. Nguyên Thủy Thiên Tôn và Lão Tử đã phải đích thân ra tay mới phá được trận, thu phục Tam Tiêu. Sự kiện này cho thấy mâu thuẫn giữa hai giáo đã không thể cứu vãn."
+  },
+  {
+    year: 37,
     title: "Vạn Tiên Trận",
     location: "Gần Giới Bài Quan",
     involvedParties: "Thông Thiên Giáo Chủ, Lão Tử, Nguyên Thủy Thiên Tôn, Tiếp Dẫn, Chuẩn Đề",
     summary: "Sau nhiều thất bại, Thông Thiên Giáo Chủ tức giận bày ra Vạn Tiên Trận, quy tụ hàng vạn tiên nhân của Triệt Giáo để quyết một trận sống mái với Xiển Giáo.",
-    consequences: "Đây là trận chiến lớn nhất và bi thảm nhất trong đại kiếp Phong Thần. Tứ Thánh (Lão Tử, Nguyên Thủy, Tiếp Dẫn, Chuẩn Đề) cùng nhau ra tay phá trận. Vạn Tiên Trận bị phá, Triệt Giáo tổn thất nặng nề, Thông Thiên Giáo Chủ bại trận, gần như toàn bộ đệ tử của ông đều phải lên Phong Thần Bảng hoặc bị bắt đi Tây Phương."
+    consequences: "Đây là trận chiến lớn nhất và bi thảm nhất. Tứ Thánh (Lão Tử, Nguyên Thủy, Tiếp Dẫn, Chuẩn Đề) cùng nhau ra tay phá trận. Vạn Tiên Trận bị phá, Triệt Giáo tổn thất nặng nề, gần như toàn bộ đệ tử của ông đều phải lên Phong Thần Bảng hoặc bị bắt đi Tây Phương."
+  },
+  {
+    year: 38,
+    title: "Văn Trọng Băng hà tại Tuyệt Long Lĩnh",
+    location: "Thung lũng Tuyệt Long",
+    involvedParties: "Thái sư Văn Trọng, Vân Trung Tử, Nhiên Đăng Đạo Nhân",
+    summary: "Thái sư Văn Trọng sau nhiều trận chiến đã bị dồn vào đường cùng tại Tuyệt Long Lĩnh. Dù chiến đấu anh dũng nhưng cuối cùng ông vẫn không thoát khỏi số kiếp, bị cột Thông Thiên Thần Hỏa của Vân Trung Tử thiêu chết.",
+    consequences: "Cái chết của Văn Trọng là dấu chấm hết cho hy vọng cuối cùng của nhà Thương. Triều đình mất đi vị thái sư trung thành và mạnh mẽ nhất, quân đội nhà Chu thừa thắng xông lên, tiến thẳng về kinh đô Triều Ca."
+  },
+  {
+    year: 39,
+    title: "Trụ Vương Tự Thiêu",
+    location: "Trích Tinh Lâu, Triều Ca",
+    involvedParties: "Trụ Vương, Cơ Phát (Chu Võ Vương)",
+    summary: "Đại quân nhà Chu công phá Triều Ca, Trụ Vương biết cơ nghiệp đã tận, bèn mặc thiên tử bào, gom hết châu báu lên Trích Tinh Lâu rồi tự thiêu. Đát Kỷ và các yêu hồ khác cũng bị Khương Tử Nha trảm giết.",
+    consequences: "Nhà Thương chính thức diệt vong. Chu Võ Vương Cơ Phát lên ngôi, lập ra nhà Chu, mở ra một triều đại mới kéo dài 800 năm."
+  },
+  {
+    year: 40,
+    title: "Khương Tử Nha Phong Thần",
+    location: "Phong Thần Đài, Tây Kỳ",
+    involvedParties: "Khương Tử Nha, các linh hồn trên Phong Thần Bảng",
+    summary: "Sau khi đại cục đã định, Khương Tử Nha vâng lệnh Nguyên Thủy Thiên Tôn, lên Phong Thần Đài, dùng Đả Thần Tiên và Phong Thần Bảng để sắc phong 365 vị chính thần, định lại trật tự Tam Giới.",
+    consequences: "Đại kiếp Phong Thần kết thúc. Các tiên nhân có tên trên bảng được phong làm thần, chịu sự quản lý của Thiên Đình. Thiên Đình từ đó có đủ nhân lực, trật tự Tam Giới được thiết lập lại. Những người không có tên trên bảng tiếp tục con đường tu tiên của mình."
   }
 ];
 
@@ -674,7 +704,7 @@ export const WORLD_MAP: Location[] = [
     { id: 'tam_son_quan', name: 'Tam Sơn Quan', description: 'Cửa ải quân sự trọng yếu của nhà Thương, canh gác con đường tiến vào kinh đô.', type: 'Quan Ải', neighbors: ['trieu_ca', 'dong_hai'], coordinates: { x: 15, y: 7 } },
     { id: 'dong_hai', name: 'Đông Hải', description: 'Vùng biển rộng lớn phía đông, là địa bàn của Long Tộc. Sóng to gió lớn, cực kỳ nguy hiểm.', type: 'Hoang Dã', neighbors: ['tam_son_quan', 'dao_ngao_binh', 'tran_duong_quan', 'bich_du_cung', 'dao_tam_tien'], coordinates: { x: 20, y: 8 } },
     { id: 'dao_ngao_binh', name: 'Đảo Ngao Binh', description: 'Một hòn đảo nhỏ ở Đông Hải, là tiền đồn của Long Cung.', type: 'Bí Cảnh', neighbors: ['dong_hai'], coordinates: { x: 22, y: 10 } },
-    { id: 'thanh_loan_son', name: 'Thanh Loan Sơn', description: 'Ngọn núi linh thiêng, quanh năm có mây mù bao phủ, là nơi tu luyện của các tán tu.', type: 'Sơn Mạch', neighbors: ['rung_co_thu', 'con_lon_son'], coordinates: { x: 2, y: 3 } },
+    { id: 'thanh_loan_son', name: 'Thanh Loan Sơn', description: 'Ngọn núi linh thiêng, quanh năm có mây mù bao phủ, là nơi tu luyện của các tán tu.', type: 'Sơn Mạch', neighbors: ['rung_co_thu', 'con_lon_son', 'dong_phu'], coordinates: { x: 2, y: 3 } },
     { id: 'tay_ky', name: 'Tây Kỳ', description: 'Kinh đô của nhà Chu, nơi Cơ Xương cai quản. Đất đai trù phú, lòng dân quy thuận, đang chiêu hiền đãi sĩ.', type: 'Thành Thị', neighbors: ['song_vi_thuy', 'gioi_bai_quan', 'tay_tho'], coordinates: { x: 8, y: 2 } },
     { id: 'con_lon_son', name: 'Côn Lôn Sơn', description: 'Dãy núi tổ của vạn sơn, là đạo trường của Xiển Giáo do Nguyên Thủy Thiên Tôn đứng đầu. Linh khí nồng đậm, tiên cảnh ngút ngàn.', type: 'Thánh Địa', neighbors: ['thanh_loan_son', 'ngoc_hu_cung'], coordinates: { x: 1, y: 1 } },
     { id: 'tran_duong_quan', name: 'Trần Đường Quan', description: 'Một cửa ải do Lý Tịnh trấn giữ, nằm gần Đông Hải.', type: 'Quan Ải', neighbors: ['dong_hai'], coordinates: { x: 18, y: 6 } },
@@ -698,6 +728,7 @@ export const WORLD_MAP: Location[] = [
     { id: 'thung_lung_tuyet_long', name: 'Thung lũng Tuyệt Long', description: 'Một thung lũng hiểm trở, nơi Thái sư Văn Trọng tử trận.', type: 'Bí Cảnh', neighbors: ['gioi_bai_quan'], coordinates: { x: 10, y: 4 } },
     { id: 'tay_tho', name: 'Tây Thổ', description: 'Vùng đất rộng lớn phía Tây, màu mỡ và trù phú, thuộc phạm vi cai quản của Tây Bá Hầu.', type: 'Thành Thị', neighbors: ['tay_ky', 'ngu_trang_quan', 'hoa_van_dong'], coordinates: { x: 8, y: 0 } },
     { id: 'bac_hai', name: 'Bắc Hải', description: 'Vùng đất phương Bắc lạnh giá, nơi các chư hầu thường xuyên nổi loạn.', type: 'Hoang Dã', neighbors: ['sung_thanh'], coordinates: { x: 17, y: -1 } },
+    { id: 'dong_phu', name: 'Động Phủ Bí Mật', description: 'Một nơi ẩn tu hẻo lánh, linh khí hội tụ, thích hợp để khai sơn lập phủ.', type: 'Bí Cảnh', neighbors: ['thanh_loan_son'], coordinates: { x: 1, y: 4 } },
 ];
 
 export const REALM_SYSTEM: RealmConfig[] = [
@@ -788,9 +819,81 @@ export const REALM_SYSTEM: RealmConfig[] = [
         id: 'do_kiep', name: 'Độ Kiếp Kỳ',
         description: 'Đối mặt với thiên kiếp cuối cùng, là thử thách để thoát ly phàm tục, phi thăng tiên giới. Thành công thì thành tiên, thất bại thì hồn phi phách tán.',
         stages: [
-            { id: 'dk_1', name: 'Thiên Lôi Kiếp', qiRequired: 10000000000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 99999 }], description: 'Vượt qua chín chín tám mươi mốt đạo thiên lôi.' },
-            { id: 'dk_2', name: 'Tâm Ma Kiếp', qiRequired: 20000000000000, bonuses: [{ attribute: 'Đạo Tâm', value: 100 }], description: 'Trảm phá tâm ma cuối cùng, đạo tâm viên mãn.' },
-            { id: 'dk_3', name: 'Phi Thăng', qiRequired: 50000000000000, bonuses: [{ attribute: 'May Mắn', value: 100 }], description: 'Phá vỡ hư không, phi thăng tiên giới.' },
+            { id: 'dk_1', name: 'Thiên Lôi Kiếp', qiRequired: 1e13, bonuses: [{ attribute: 'Tuổi Thọ', value: 99999 }], description: 'Vượt qua chín chín tám mươi mốt đạo thiên lôi.' },
+            { id: 'dk_2', name: 'Tâm Ma Kiếp', qiRequired: 2e13, bonuses: [{ attribute: 'Đạo Tâm', value: 100 }], description: 'Trảm phá tâm ma cuối cùng, đạo tâm viên mãn.' },
+            { id: 'dk_3', name: 'Phi Thăng', qiRequired: 5e13, bonuses: [{ attribute: 'May Mắn', value: 100 }], description: 'Phá vỡ hư không, phi thăng tiên giới.' },
+        ]
+    },
+    {
+        id: 'nhan_tien', name: 'Nhân Tiên',
+        description: 'Thoát khỏi vòng luân hồi, thân thể hóa thành tiên躯, không còn bị sinh lão bệnh tử trói buộc. Tuổi thọ vĩnh cửu, nhưng vẫn còn trong tam giới.',
+        stages: [
+            { id: 'nt_1', name: 'Sơ Kỳ', qiRequired: 1e14, bonuses: [{ attribute: 'Nhục Thân', value: 200 }, { attribute: 'Nguyên Thần', value: 200 }], description: 'Tiên lực sơ thành, có thể miễn cưỡng du hành trong hư không.' },
+            { id: 'nt_2', name: 'Hậu Kỳ', qiRequired: 5e14, bonuses: [{ attribute: 'Tiên Lực', value: 200 }, { attribute: 'Phòng Ngự', value: 200 }], description: 'Tiên thể vững chắc, thần thông bắt đầu hiển lộ.' },
+        ]
+    },
+    {
+        id: 'dia_tien', name: 'Địa Tiên',
+        description: 'Tiên nhân của mặt đất, hấp thụ địa khí để tu luyện, thần thông gắn liền với sơn xuyên đại địa. Sức mạnh bền bỉ, khó bị tiêu diệt.',
+        stages: [
+            { id: 'dtien_1', name: 'Sơ Kỳ', qiRequired: 1e15, bonuses: [{ attribute: 'Phòng Ngự', value: 300 }, { attribute: 'Sinh Mệnh', value: 5000 }], description: 'Có thể điều khiển sức mạnh của đất đá.' },
+            { id: 'dtien_2', name: 'Hậu Kỳ', qiRequired: 5e15, bonuses: [{ attribute: 'Phòng Ngự', value: 400 }, { attribute: 'Nhục Thân', value: 300 }], description: 'Thân thể cứng như kim cương, có thể mượn sức mạnh từ long mạch.' },
+        ]
+    },
+    {
+        id: 'thien_tien', name: 'Thiên Tiên',
+        description: 'Tiên nhân của trời cao, hấp thụ thiên địa linh khí, có thể tự do đi lại giữa các tầng trời. Pháp lực cao thâm, không bị trói buộc bởi mặt đất.',
+        stages: [
+            { id: 'tt_1', name: 'Sơ Kỳ', qiRequired: 1e16, bonuses: [{ attribute: 'Thân Pháp', value: 300 }, { attribute: 'Tiên Lực', value: 300 }], description: 'Ngự không phi hành, tốc độ như điện.' },
+            { id: 'tt_2', name: 'Hậu Kỳ', qiRequired: 5e16, bonuses: [{ attribute: 'Thân Pháp', value: 400 }, { attribute: 'Nguyên Thần', value: 300 }], description: 'Lĩnh ngộ pháp tắc không gian, thần thông biến hóa.' },
+        ]
+    },
+    {
+        id: 'nguyen_tien', name: 'Nguyên Tiên',
+        description: 'Bắt đầu chạm đến bản nguyên của đại đạo, pháp lực không chỉ mạnh mà còn ẩn chứa quy tắc lực. Thần thông tự sinh, uy lực khó lường.',
+        stages: [
+            { id: 'ngt_1', name: 'Sơ Kỳ', qiRequired: 1e17, bonuses: [{ attribute: 'Cảm Ngộ', value: 200 }, { attribute: 'Tiên Lực', value: 400 }], description: 'Mỗi chiêu thức đều mang theo một tia đạo vận.' },
+            { id: 'ngt_2', name: 'Hậu Kỳ', qiRequired: 5e17, bonuses: [{ attribute: 'Cảm Ngộ', value: 300 }, { attribute: 'Nguyên Thần', value: 400 }], description: 'Có thể tạo ra các thần thông của riêng mình.' },
+        ]
+    },
+    {
+        id: 'kim_tien', name: 'Kim Tiên',
+        description: 'Thân thể bất hoại, vạn kiếp không mài, là cảnh giới của phần lớn cao thủ trong tam giáo. Kim Tiên đã có tư cách khai tông lập phái, được người đời kính ngưỡng.',
+        stages: [
+            { id: 'kt_1', name: 'Sơ Kỳ', qiRequired: 1e18, bonuses: [{ attribute: 'Nhục Thân', value: 500 }, { attribute: 'Phòng Ngự', value: 500 }], description: 'Kim thân sơ thành, miễn nhiễm với phần lớn pháp thuật cấp thấp.' },
+            { id: 'kt_2', name: 'Viên Mãn', qiRequired: 5e18, bonuses: [{ attribute: 'Nhục Thân', value: 600 }, { attribute: 'Phòng Ngự', value: 600 }], description: 'Kim thân viên mãn, là trụ cột của các đại giáo.' },
+        ]
+    },
+    {
+        id: 'thai_at', name: 'Thái Ất Kim Tiên',
+        description: 'Kim Tiên đạt đến trình độ cao hơn, trên đỉnh đầu ngưng tụ tam hoa, trong lồng ngực kết thành ngũ khí. Là cấp bậc của Thập Nhị Kim Tiên Xiển Giáo.',
+        stages: [
+            { id: 'ta_1', name: 'Tam Hoa Tụ Đỉnh', qiRequired: 1e20, bonuses: [{ attribute: 'Nguyên Thần', value: 800 }, { attribute: 'Cảm Ngộ', value: 500 }], description: 'Tinh, Khí, Thần hóa thành ba đóa hoa sen trên đỉnh đầu, vạn pháp bất xâm.' },
+            { id: 'ta_2', name: 'Ngũ Khí Triều Nguyên', qiRequired: 5e20, bonuses: [{ attribute: 'Tiên Lực', value: 800 }, { attribute: 'Phòng Ngự', value: 800 }], description: 'Ngũ tạng tương ứng với ngũ hành, pháp lực vô biên, sinh sôi không ngừng.' },
+        ]
+    },
+    {
+        id: 'dai_la', name: 'Đại La Kim Tiên',
+        description: 'Nhảy ra khỏi tam giới, không còn trong ngũ hành. Đại La có nghĩa là tất cả không gian và thời gian, vĩnh hằng tự tại, là cảnh giới tối cao của tiên nhân.',
+        stages: [
+            { id: 'dl_1', name: 'Sơ Kỳ', qiRequired: 1e22, bonuses: [{ attribute: 'May Mắn', value: 200 }, { attribute: 'Đạo Tâm', value: 200 }], description: 'Thoát khỏi xiềng xích của số mệnh, không bị nhân quả trói buộc.' },
+            { id: 'dl_2', name: 'Viên Mãn', qiRequired: 5e22, bonuses: [{ attribute: 'Nhân Quả', value: 0 }], description: 'Bất tử bất diệt, ngao du trong dòng sông thời gian.' },
+        ]
+    },
+    {
+        id: 'chuan_thanh', name: 'Chuẩn Thánh',
+        description: 'Chém tam thi, đã bước một chân vào cảnh giới Thánh Nhân. Là những tồn tại kinh khủng nhất dưới Thánh Nhân, một ý niệm có thể hủy diệt vô số thế giới.',
+        stages: [
+            { id: 'ct_1', name: 'Trảm Nhất Thi', qiRequired: 1e25, bonuses: [{ attribute: 'Lực Lượng', value: 2000 }, { attribute: 'Tiên Lực', value: 2000 }], description: 'Chém bỏ một trong ba xác (thiện, ác, chấp niệm), sức mạnh tăng vọt.' },
+            { id: 'ct_2', name: 'Trảm Nhị Thi', qiRequired: 5e25, bonuses: [{ attribute: 'Nguyên Thần', value: 2000 }, { attribute: 'Phòng Ngự', value: 2000 }], description: 'Chém bỏ hai xác, đã có thể được gọi là Á Thánh.' },
+            { id: 'ct_3', name: 'Trảm Tam Thi', qiRequired: 1e26, bonuses: [{ attribute: 'Đạo Tâm', value: 1000 }, { attribute: 'Cảm Ngộ', value: 1000 }], description: 'Chém cả ba xác, chỉ còn một bước nữa là chứng đạo thành Thánh.' },
+        ]
+    },
+    {
+        id: 'thanh_nhan', name: 'Thánh Nhân',
+        description: 'Thiên đạo Thánh Nhân, vạn kiếp bất diệt, nguyên thần ký thác vào thiên đạo. Dưới thiên đạo đều là con kiến. Là những tồn tại tối cao, định ra quy luật của vũ trụ.',
+        stages: [
+            { id: 'tn_1', name: 'Thánh Nhân', qiRequired: Infinity, bonuses: [], description: 'Ngôn xuất pháp tùy, một lời nói có thể thay đổi thiên đạo.' },
         ]
     }
 ];

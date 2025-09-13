@@ -1,12 +1,12 @@
 import React from 'react';
-import type { PlayerCharacter } from '../types';
-// FIX: Replaced non-existent 'GiTemple' icon with 'GiMountainCave'.
+import type { PlayerCharacter, Location } from '../types';
 import { GiMountainCave, GiSprout, GiCauldron, GiAbstract050, GiTreasureMap } from 'react-icons/gi';
 
 interface CaveAbodePanelProps {
     playerCharacter: PlayerCharacter;
     setPlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
     showNotification: (message: string) => void;
+    currentLocation: Location;
 }
 
 const CAVE_FACILITIES_CONFIG = [
@@ -40,10 +40,16 @@ const CAVE_FACILITIES_CONFIG = [
     },
 ];
 
-const CaveAbodePanel: React.FC<CaveAbodePanelProps> = ({ playerCharacter, setPlayerCharacter, showNotification }) => {
+const CaveAbodePanel: React.FC<CaveAbodePanelProps> = ({ playerCharacter, setPlayerCharacter, showNotification, currentLocation }) => {
     const { caveAbode, currencies } = playerCharacter;
+    const canInteract = currentLocation.id === caveAbode.locationId;
 
     const handleUpgrade = (facilityId: keyof typeof caveAbode, cost: number) => {
+        if (!canInteract) {
+            showNotification("Bạn phải ở Động Phủ mới có thể nâng cấp.");
+            return;
+        }
+
         const currencyName = 'Linh thạch hạ phẩm';
         if ((currencies[currencyName] || 0) < cost) {
             showNotification(`Không đủ ${currencyName}!`);
@@ -82,9 +88,13 @@ const CaveAbodePanel: React.FC<CaveAbodePanelProps> = ({ playerCharacter, setPla
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
              <div>
                 <h3 className="flex items-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
-                    {/* FIX: Replaced non-existent 'GiTemple' icon with 'GiMountainCave'. */}
                     <GiMountainCave className="text-amber-300" /> {caveAbode.name} (Cấp {caveAbode.level})
                 </h3>
+                 {!canInteract && (
+                    <div className="p-3 text-center bg-yellow-900/30 border border-yellow-600/50 rounded-lg text-yellow-300 text-sm mb-4">
+                        Bạn phải trở về động phủ để quản lý.
+                    </div>
+                 )}
                 <div className="space-y-3">
                     {CAVE_FACILITIES_CONFIG.map(facility => {
                         const currentLevel = caveAbode[facility.id as keyof typeof caveAbode] as number;
@@ -101,6 +111,7 @@ const CaveAbodePanel: React.FC<CaveAbodePanelProps> = ({ playerCharacter, setPla
                                 <p className="text-xs text-gray-400 mt-2">{facility.description(currentLevel)}</p>
                                 <button 
                                     onClick={() => handleUpgrade(facility.id as keyof typeof caveAbode, cost)}
+                                    disabled={!canInteract}
                                     className="w-full mt-3 p-2 text-sm font-bold bg-teal-700/80 rounded text-white hover:bg-teal-600/80 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
                                 >
                                     Nâng Cấp ({cost.toLocaleString()} Linh Thạch)

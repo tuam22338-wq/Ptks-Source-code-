@@ -493,6 +493,9 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
                 'Bạc': currencies?.bac || 0,
             },
             equipment: {},
+// FIX: Add missing properties `healthStatus` and `activeEffects` to conform to the NPC type.
+healthStatus: 'HEALTHY' as const,
+activeEffects: [],
         };
     });
 };

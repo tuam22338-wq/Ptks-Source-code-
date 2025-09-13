@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter } from '../types';
 import { FaArrowLeft, FaSyncAlt, FaDice } from 'react-icons/fa';
@@ -304,6 +305,10 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
               identity: { ...selectedRoleplayChar.identity, age: 18 },
               attributes: attributesWithBonuses,
               talents: selectedRoleplayChar.talents,
+              // FIX: Add missing properties to conform to the PlayerCharacter type.
+// FIX: Added 'as const' to fix type inference issue.
+healthStatus: 'HEALTHY' as const,
+              activeEffects: [],
             };
 
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -358,6 +363,10 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
       identity,
       attributes,
       talents: selectedTalents,
+      // FIX: Add missing properties to conform to the PlayerCharacter type.
+// FIX: Added 'as const' to fix type inference issue.
+healthStatus: 'HEALTHY' as const,
+      activeEffects: [],
     };
     await onGameStart({ characterData, npcDensity });
   };

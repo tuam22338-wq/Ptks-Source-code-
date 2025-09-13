@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -61,6 +59,10 @@ const migrateGameState = (savedGame: any): GameState => {
             throw new Error(`Migration failed. Could not migrate from ${savedGame.version || 'unversioned'} to ${CURRENT_GAME_VERSION}.`);
         }
     }
+    
+    // Add new fields for migration if they don't exist
+    dataToProcess.worldSects = dataToProcess.worldSects ?? [];
+
 
     // --- Rehydration Logic (runs for all loaded games) ---
     const allAttributesConfig = new Map<string, any>();
@@ -475,6 +477,7 @@ const App: React.FC = () => {
         const initialCoreLocations = WORLD_MAP.filter(l => l.type === 'Thành Thị' || l.type === 'Thôn Làng');
         const randomStartIndex = Math.floor(Math.random() * initialCoreLocations.length);
         const startingLocation = initialCoreLocations.length > 0 ? initialCoreLocations[randomStartIndex] : WORLD_MAP[0];
+        const caveAbodeLocation = WORLD_MAP.find(l => l.id === DEFAULT_CAVE_ABODE.locationId);
 
         const finalPlayerCharacter: PlayerCharacter = {
             identity: { ...characterData.identity, age: 18 },
@@ -492,6 +495,9 @@ const App: React.FC = () => {
             knownRecipeIds: [],
             sect: null,
             caveAbode: DEFAULT_CAVE_ABODE,
+            // FIX: Add missing properties `healthStatus` and `activeEffects` to conform to the PlayerCharacter type.
+            healthStatus: 'HEALTHY',
+            activeEffects: [],
         };
         
         const initialGameDate: GameDate = {
@@ -510,12 +516,17 @@ const App: React.FC = () => {
             rumors: [],
         };
 
+        const discoveredLocations = [startingLocation, ...WORLD_MAP.filter(l => l.neighbors.includes(startingLocation.id))];
+        if (caveAbodeLocation && !discoveredLocations.some(l => l.id === caveAbodeLocation.id)) {
+            discoveredLocations.push(caveAbodeLocation);
+        }
+
         const newGameState: GameState = {
             version: CURRENT_GAME_VERSION,
             playerCharacter: finalPlayerCharacter,
             activeNpcs: allNpcs,
             gameDate: initialGameDate,
-            discoveredLocations: [startingLocation, ...WORLD_MAP.filter(l => l.neighbors.includes(startingLocation.id))],
+            discoveredLocations: discoveredLocations,
             worldState: initialWorldState,
             storyLog: initialStory,
             encounteredNpcIds: [],
@@ -524,6 +535,7 @@ const App: React.FC = () => {
             activeStory: null,
             combatState: null,
             dialogueWithNpcId: null,
+            worldSects: [], // Will be populated if any are generated
         };
         
         // Initial save

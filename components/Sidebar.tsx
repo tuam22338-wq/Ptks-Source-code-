@@ -104,7 +104,8 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {activeTab === 'inventory' && <InventoryPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'alchemy' && <AlchemyPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'sect' && <SectPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
-                {activeTab === 'caveAbode' && <CaveAbodePanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
+                {/* FIX: Pass missing 'currentLocation' prop to CaveAbodePanel. */}
+                {activeTab === 'caveAbode' && <CaveAbodePanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} currentLocation={currentLocation} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={onNpcSelect} />}
                 {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}
