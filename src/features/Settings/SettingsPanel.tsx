@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, memo } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../../constants';
 import { generateBackgroundImage, reloadApiKeys } from '../../services/geminiService';
@@ -171,7 +169,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                             <SettingsRow label="Vật phẩm mỗi trang" description="Số lượng vật phẩm hiển thị trên mỗi trang trong túi đồ.">
                                 <input type="number" value={settings.itemsPerPage} onChange={(e) => onChange('itemsPerPage', parseInt(e.target.value) || 10)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
-                            <SettingsRow label="Số mục truyện mỗi trang" description="Số lượng mục truyện hiển thị trên mỗi trang (mặc định: 20, min: 5, max: 100).">
+                             <SettingsRow label="Độ dài câu chuyện" description="Điều chỉnh độ dài phản hồi của AI kể chuyện. Số mục càng cao, AI sẽ viết càng dài và chi tiết hơn, giống như một trang tiểu thuyết.">
                                 <input type="number" min="5" max="100" value={settings.storyLogItemsPerPage} onChange={(e) => onChange('storyLogItemsPerPage', parseInt(e.target.value) || 20)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
                             <SettingsRow label="Toàn màn hình" description="Bật chế độ toàn màn hình để có trải nghiệm tốt nhất.">

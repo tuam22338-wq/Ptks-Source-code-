@@ -45,16 +45,18 @@ const SaveSlotCard: React.FC<{
         realmDisplay = `${realmData?.name || ''} ${stageData?.name || ''}`;
     }
 
+    const outdatedClass = isOutdated ? 'border-amber-500 ring-2 ring-amber-500/30 ring-offset-2 ring-offset-gray-900' : '';
+
     return (
         <div className={`group relative aspect-[3/4] rounded-lg border-2
                         transition-all duration-300 ease-in-out
                         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
                         ${isNew ? 'bg-black/20 border-gray-700/80 hover:border-gray-400 hover:bg-black/30 focus:ring-gray-400' 
-                                : 'bg-[color:var(--primary-accent-color)]/10 border-[color:var(--primary-accent-color)]/50 hover:border-[color:var(--primary-accent-color)] hover:bg-[color:var(--primary-accent-color)]/20 focus:ring-[var(--primary-accent-color)]'}`}
+                                : `bg-[color:var(--primary-accent-color)]/10 border-[color:var(--primary-accent-color)]/50 hover:border-[color:var(--primary-accent-color)] hover:bg-[color:var(--primary-accent-color)]/20 focus:ring-[var(--primary-accent-color)] ${outdatedClass}`}`}
         >
             <button
               onClick={onSelect}
-              className="w-full h-full flex flex-col items-center justify-center text-center p-4"
+              className="w-full h-full flex flex_col items-center justify-center text-center p-4"
             >
               {isNew ? (
                 <>
@@ -75,7 +77,7 @@ const SaveSlotCard: React.FC<{
                     <div className="text-center">
                         {isOutdated && (
                             <div className="mb-1">
-                                <span className="text-[10px] bg-amber-700/80 text-amber-200 rounded-full px-2 py-0.5 font-semibold">
+                                <span className="text-[10px] bg-amber-700/80 text-amber-200 rounded-full px-2 py-0.5 font-semibold animate-pulse">
                                     Cần cập nhật
                                 </span>
                             </div>
@@ -90,8 +92,8 @@ const SaveSlotCard: React.FC<{
               <div className="absolute top-1.5 right-1.5 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                   onClick={(e) => { e.stopPropagation(); onVerify(); }}
-                  className="p-1.5 bg-black/50 rounded-full text-gray-300 hover:bg-blue-600/80 hover:text-white transition-colors"
-                  title="Kiểm tra và sửa lỗi"
+                  className={`p-1.5 bg-black/50 rounded-full text-gray-300 hover:bg-blue-600/80 hover:text-white transition-colors ${isOutdated ? 'text-amber-300 animate-pulse' : ''}`}
+                  title={isOutdated ? "Cập nhật save file lên phiên bản mới" : "Kiểm tra và sửa lỗi"}
                 >
                   <FaTools size={12} />
                 </button>

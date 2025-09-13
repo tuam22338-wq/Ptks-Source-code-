@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute } from '../types';
@@ -718,7 +716,19 @@ export const generateStoryContinuationStream = async function* (
     const { playerCharacter, gameDate, discoveredLocations, activeNpcs } = gameState;
     const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!;
     const npcsAtLocation = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
-    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === getSettings().narrativeStyle)?.label || 'Classic Wuxia';
+    
+    const settings = getSettings();
+    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Classic Wuxia';
+
+    const storyLengthItems = settings.storyLogItemsPerPage || 20;
+    let lengthInstruction = '';
+    if (storyLengthItems <= 10) {
+        lengthInstruction = "Hãy viết phản hồi ngắn gọn, khoảng một đoạn văn.";
+    } else if (storyLengthItems <= 30) {
+        lengthInstruction = "Hãy viết phản hồi chi tiết vừa phải, khoảng 2-3 đoạn văn.";
+    } else {
+        lengthInstruction = "Hãy viết một phản hồi dài và chi tiết, văn phong như một trang tiểu thuyết, gồm nhiều đoạn văn.";
+    }
 
     const history = storyLog.slice(-15).map(entry => {
         if (entry.type === 'player-action' || entry.type === 'player-dialogue') {
@@ -730,7 +740,7 @@ export const generateStoryContinuationStream = async function* (
     const actionContext = `Người chơi vừa ${playerInput.type === 'player-dialogue' ? 'nói' : 'hành động'}: "${playerInput.content}".`;
 
     const prompt = `Bạn là một người kể chuyện (Game Master) cho game tu tiên Phong Thần Ký Sự.
-    **Văn phong:** ${narrativeStyle}. Hãy viết tiếp câu chuyện một cách hấp dẫn, giàu trí tưởng tượng.
+    **Văn phong:** ${narrativeStyle}. Hãy viết tiếp câu chuyện một cách hấp dẫn, giàu trí tưởng tượng, với các đoạn văn được phân chia hợp lý để dễ đọc, giống như một cuốn tiểu thuyết.
     
     **Bối cảnh hiện tại:**
     - Nhân vật: ${playerCharacter.identity.name}, ${playerCharacter.identity.appearance}, ${playerCharacter.identity.personality}.
@@ -750,6 +760,7 @@ export const generateStoryContinuationStream = async function* (
     
     **Quy Tắc & Tính Năng Game (Rules & Game Features):**
     - Bạn có thể chủ động bắt đầu một trận chiến nếu tình huống hợp lý (ví dụ: người chơi bị tấn công, hoặc khiêu khích kẻ thù). Dùng tag: \`[START_COMBAT:{"enemyNames": ["Tên NPC 1", "Tên NPC 2"]}]\`
+    - Bạn có thể giới thiệu NPC mới nếu hợp lý. Dùng tag: \`[CREATE_NPC:{"name": "Tên NPC", "description": "Mô tả ngoại hình", "origin": "Xuất thân", "personality": "Tính cách"}]\`. Hệ thống sẽ tự động thêm NPC này vào thế giới.
     - Bạn có thể bắt đầu một cuộc đối thoại giữa người chơi và một NPC. Dùng tag: \`[START_DIALOGUE:{"npcName": "Tên NPC"}]\`. Nếu bạn muốn NPC đưa ra lựa chọn, hãy dùng tag: \`[DIALOGUE_CHOICES: ["Lựa chọn 1", "Lựa chọn 2"]]\`.
     - Người chơi có thể sử dụng công pháp. Bạn hãy mô tả hiệu ứng hình ảnh, hệ thống sẽ xử lý kết quả.
     - Bạn có thể cho người chơi vật phẩm, tiền, hoặc thay đổi chỉ số. Dùng các tag sau:
@@ -762,7 +773,7 @@ export const generateStoryContinuationStream = async function* (
         -   \`[UPDATE_ATTRIBUTE:{"name": string, "change": number}]\`
 
     **Nhiệm vụ của bạn:**
-    1.  **Mô tả kết quả:** Dựa vào hành động của người chơi, bối cảnh, và thông tin hệ thống, hãy mô tả những gì xảy ra tiếp theo. Giữ cho câu chuyện liền mạch.
+    1.  **Mô tả kết quả:** Dựa vào hành động của người chơi, bối cảnh, và thông tin hệ thống, hãy mô tả những gì xảy ra tiếp theo. Giữ cho câu chuyện liền mạch. ${lengthInstruction}
     2.  **Sử dụng AI Tags (Cực kỳ Quan trọng):** Nếu hành động của người chơi dẫn đến thay đổi trạng thái game, BẮT BUỘC phải dùng các tag đã được liệt kê ở trên. Hệ thống sẽ tự động xử lý các tag này.
     
     **Ví dụ:**
@@ -773,7 +784,6 @@ export const generateStoryContinuationStream = async function* (
     Bây giờ, hãy viết tiếp câu chuyện. Chỉ trả về phần văn bản kể chuyện, bao gồm cả các tag nếu cần thiết.
     `;
     
-    const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
 
     const thinkingConfig = settings.mainTaskModel.includes('flash') 

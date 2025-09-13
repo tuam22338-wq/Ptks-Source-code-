@@ -1,15 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useState, useMemo, useEffect, memo } from 'react';
 // FIX: Add GameSettings to the import from '../../types' to resolve the props type error.
 import type { GameState, GameSettings, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup, CultivationPath, CombatState, Attribute, RealmConfig } from '../../types';
@@ -582,6 +570,39 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameState, se
                                 } else {
                                     addStoryEntry({ type: 'system', content: `Lỗi: không tìm thấy NPC tên "${jsonData.npcName}" để đối thoại.`})
                                 }
+                            }
+                            break;
+                        case 'CREATE_NPC':
+                             if (jsonData.name) {
+                                if (newGameState.activeNpcs.some(n => n.identity.name === jsonData.name)) {
+                                    console.warn(`Attempted to create a duplicate NPC: ${jsonData.name}`);
+                                    break;
+                                }
+
+                                const newNpc: NPC = {
+                                    id: `dynamic-npc-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                                    identity: {
+                                        name: jsonData.name,
+                                        gender: Math.random() > 0.5 ? 'Nam' : 'Nữ',
+                                        appearance: jsonData.description || 'Ngoại hình chưa rõ.',
+                                        origin: jsonData.origin || 'Xuất thân bí ẩn.',
+                                        personality: jsonData.personality || 'Trung Lập',
+                                    },
+                                    status: 'Vừa xuất hiện tại đây.',
+                                    attributes: [],
+                                    talents: [],
+                                    locationId: newGameState.playerCharacter.currentLocationId,
+                                    cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: false },
+                                    techniques: [],
+                                    inventory: { items: [], weightCapacity: 15 },
+                                    currencies: { 'Bạc': Math.floor(Math.random() * 50) },
+                                    equipment: {},
+                                    healthStatus: 'HEALTHY',
+                                    activeEffects: [],
+                                };
+
+                                newGameState.activeNpcs = [...newGameState.activeNpcs, newNpc];
+                                showNotification(`Nhân vật mới đã xuất hiện: ${jsonData.name}`);
                             }
                             break;
                         // TODO: Implement other tags like ADD_ITEM, ADD_CURRENCY etc.
