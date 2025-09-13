@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import type { GameState, InventoryItem, Shop, ShopItem } from '../types';
-// FIX: Added SHOPS to imports, which will be added to constants.ts to resolve module export error.
+import React from 'react';
+import type { GameState, InventoryItem, ShopItem } from '../types';
 import { SHOPS } from '../constants';
 import { ITEM_QUALITY_STYLES } from '../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';

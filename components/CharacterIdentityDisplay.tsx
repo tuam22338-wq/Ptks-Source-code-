@@ -1,7 +1,6 @@
 import React, { useState, memo, useEffect, useRef } from 'react';
 import type { CharacterIdentity, Gender } from '../types';
 import { PERSONALITY_TRAITS } from '../constants';
-// FIX: Replaced non-existent icon 'GiMysteryMan' with 'GiHoodedFigure' to resolve import error.
 import { GiHoodedFigure } from 'react-icons/gi';
 import { generateCharacterAvatar } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';

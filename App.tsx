@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import SettingsPanel from './components/SettingsPanel';
@@ -12,8 +13,7 @@ import GamePlayScreen from './components/GamePlayScreen';
 import LoadingScreen from './components/LoadingScreen';
 import LoreScreen from './components/LoreScreen';
 import type { PlayerCharacter, Inventory, Currency, CultivationState, GameState, NpcDensity, GameDate, SaveSlot, Location, WorldState, StoryEntry, GameSettings, FullMod, ModInfo, AttributeGroup, Attribute } from './types';
-// FIX: Added NPC_DENSITY_LEVELS and INITIAL_TECHNIQUES to imports as they will be added to constants.ts to resolve module export errors.
-import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, FACTIONS, ATTRIBUTES_CONFIG } from './constants';
+import { REALM_SYSTEM, NPC_DENSITY_LEVELS, INITIAL_TECHNIQUES, WORLD_MAP, DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, FACTIONS, ATTRIBUTES_CONFIG, DEFAULT_CAVE_ABODE } from './constants';
 import { generateDynamicNpcs, reloadApiKeys } from './services/geminiService';
 import { FaQuestionCircle } from 'react-icons/fa';
 
@@ -49,6 +49,8 @@ const migrateGameState = (savedGame: any): GameState => {
                 dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
                 dataToProcess.playerCharacter.chosenPathIds = dataToProcess.playerCharacter.chosenPathIds ?? [];
                 dataToProcess.playerCharacter.knownRecipeIds = dataToProcess.playerCharacter.knownRecipeIds ?? [];
+                dataToProcess.playerCharacter.sect = dataToProcess.playerCharacter.sect ?? null;
+                dataToProcess.playerCharacter.caveAbode = dataToProcess.playerCharacter.caveAbode ?? DEFAULT_CAVE_ABODE;
             }
             
             dataToProcess.version = "1.1.0";
@@ -372,7 +374,7 @@ const App: React.FC = () => {
   };
 
   const handleGameStart = async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode'>,
       npcDensity: NpcDensity
   }) => {
     if (currentSlotId === null) {
@@ -411,7 +413,6 @@ const App: React.FC = () => {
         // Determine Realm System
         const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
         const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
-            // FIX: The type for a mod's realm config omits the `id`. Generate a new ID from the name instead of trying to access a non-existent `id` property.
             ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
             : REALM_SYSTEM;
 
@@ -471,7 +472,6 @@ const App: React.FC = () => {
             return group;
         });
         
-        // FIX: Fixed typo "Thôn L làng" to "Thôn Làng" to correctly filter for starting locations.
         const initialCoreLocations = WORLD_MAP.filter(l => l.type === 'Thành Thị' || l.type === 'Thôn Làng');
         const randomStartIndex = Math.floor(Math.random() * initialCoreLocations.length);
         const startingLocation = initialCoreLocations.length > 0 ? initialCoreLocations[randomStartIndex] : WORLD_MAP[0];
@@ -490,6 +490,8 @@ const App: React.FC = () => {
             reputation: FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),
             chosenPathIds: [],
             knownRecipeIds: [],
+            sect: null,
+            caveAbode: DEFAULT_CAVE_ABODE,
         };
         
         const initialGameDate: GameDate = {
@@ -520,9 +522,8 @@ const App: React.FC = () => {
             activeMods: activeMods,
             realmSystem: realmSystemToUse,
             activeStory: null,
-// FIX: Added missing properties `combatState` and `dialogueWithNpcId` to satisfy the GameState type.
-combatState: null,
-dialogueWithNpcId: null,
+            combatState: null,
+            dialogueWithNpcId: null,
         };
         
         // Initial save

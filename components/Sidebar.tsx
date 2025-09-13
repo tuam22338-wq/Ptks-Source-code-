@@ -12,8 +12,10 @@ import CustomContentPanel from './CustomContentPanel';
 import MapView from './MapView';
 import StoryGraphPanel from './StoryGraphPanel';
 import SectPanel from './SectPanel';
+import CaveAbodePanel from './CaveAbodePanel';
 import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaSitemap } from 'react-icons/fa';
-import { GiCauldron, GiDoubleDragon } from 'react-icons/gi';
+// FIX: Replaced non-existent 'GiTemple' icon with 'GiMountainCave'.
+import { GiCauldron, GiDoubleDragon, GiMountainCave } from 'react-icons/gi';
 
 interface SidebarProps {
     playerCharacter: PlayerCharacter;
@@ -34,7 +36,7 @@ interface SidebarProps {
     showNotification: (message: string) => void;
     activeMods: FullMod[];
 }
-type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | 'storyGraph' | 'sect' | string;
+type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | 'storyGraph' | 'sect' | 'caveAbode' | string;
 
 const ICON_MAP: { [key: string]: React.ElementType } = {
     FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, GiCauldron
@@ -49,10 +51,12 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         {id: 'techniques', label: 'Công Pháp', icon: FaScroll },
         {id: 'inventory', label: 'Hành Trang', icon: FaBoxOpen },
         {id: 'alchemy', label: 'Luyện Đan', icon: GiCauldron },
+        {id: 'sect', label: 'Tông Môn', icon: GiDoubleDragon },
+        // FIX: Replaced non-existent 'GiTemple' icon with 'GiMountainCave'.
+        {id: 'caveAbode', label: 'Động Phủ', icon: GiMountainCave },
         {id: 'world', label: 'Thế Giới', icon: FaGlobe },
         {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt },
         {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaSitemap },
-        {id: 'sect', label: 'Tông Môn', icon: GiDoubleDragon },
         {id: 'wiki', label: 'Wiki', icon: FaBook },
         {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
         {id: 'lore', label: 'Thiên Mệnh', icon: FaSun },
@@ -99,10 +103,11 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} />}
                 {activeTab === 'inventory' && <InventoryPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'alchemy' && <AlchemyPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
+                {activeTab === 'sect' && <SectPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
+                {activeTab === 'caveAbode' && <CaveAbodePanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={onNpcSelect} />}
                 {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}
-                {activeTab === 'sect' && <SectPanel />}
                 {activeTab === 'wiki' && <WikiPanel playerCharacter={playerCharacter} allNpcs={allNpcs} encounteredNpcIds={encounteredNpcIds} discoveredLocations={discoveredLocations} />}
                 {activeTab === 'realms' && <RealmPanel playerCharacter={playerCharacter} realmSystem={realmSystem} />}
                 {activeTab === 'lore' && <LorePanel />}

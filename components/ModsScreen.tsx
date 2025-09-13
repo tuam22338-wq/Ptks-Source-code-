@@ -22,7 +22,6 @@ type LibraryView = 'main' | 'library';
 type ModFilter = 'all' | 'installed' | 'community';
 
 // Combined type for a unified list
-// FIX: Changed UnifiedMod to a discriminated union to correctly type properties for installed vs. community mods.
 type UnifiedMod =
     | {
         modInfo: ModInfo;
@@ -276,7 +275,6 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
                                     </button>
                                 </>
                             ) : (
-                                // FIX: Removed unsafe type assertion. `mod` is now correctly typed as a community mod in this branch.
                                 <button onClick={() => handleInstallCommunityMod(mod)} className="flex items-center gap-2 px-3 py-1.5 bg-teal-700/80 text-white text-xs font-bold rounded-lg hover:bg-teal-600/80">
                                     <FaCloudDownloadAlt /> Cài đặt
                                 </button>

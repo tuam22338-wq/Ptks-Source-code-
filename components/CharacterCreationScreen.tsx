@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter } from '../types';
 import { FaArrowLeft, FaSyncAlt, FaDice } from 'react-icons/fa';
@@ -9,12 +8,12 @@ import { generateCharacterIdentity, generateTalentChoices } from '../services/ge
 import LoadingSpinner from './LoadingSpinner';
 import InnateTalentSelection from './InnateTalentSelection';
 import CharacterIdentityDisplay from './CharacterIdentityDisplay';
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST } from '../constants';
+import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, DEFAULT_CAVE_ABODE } from '../constants';
 
 interface CharacterCreationScreenProps {
   onBack: () => void;
   onGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode'>,
       npcDensity: NpcDensity
   }) => Promise<void>;
 }
@@ -281,7 +280,11 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
                 })
             }));
 
-            const attributesWithBonuses = JSON.parse(JSON.stringify(baseAttributes));
+            const attributesWithBonuses = baseAttributes.map(group => ({
+                ...group,
+                attributes: group.attributes.map(attr => ({ ...attr }))
+            }));
+
             const attributeMap: Map<string, { groupIndex: number; attrIndex: number; }> = new Map();
             attributesWithBonuses.forEach((group: AttributeGroup, groupIndex: number) => {
                 group.attributes.forEach((attr, attrIndex) => {
@@ -351,7 +354,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ onBac
         alert("Vui lòng chọn ít nhất một Tiên Tư.");
         return;
     }
-    const characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation'> = {
+    const characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode'> = {
       identity,
       attributes,
       talents: selectedTalents,

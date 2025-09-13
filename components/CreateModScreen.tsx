@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     FaArrowLeft, FaBoxOpen, FaUserShield, FaStar, FaPlus, FaEdit, FaTrash, FaCogs, FaGlobe, FaFilter,
-    FaTimes, FaCode, FaList, FaExclamationTriangle, FaRobot, FaFileSignature, FaBoxes, FaScroll, FaUserFriends, FaMagic, FaColumns
+    FaTimes, FaCode, FaList, FaExclamationTriangle, FaRobot, FaFileSignature, FaBoxes, FaScroll, FaUserFriends,
+    FaMagic, FaColumns, FaCheckCircle, FaExclamationCircle
 } from 'react-icons/fa';
 import { GiCastle, GiScrollQuill } from 'react-icons/gi';
 import { ALL_ATTRIBUTES, INNATE_TALENT_PROBABILITY, INNATE_TALENT_RANKS } from '../constants';
-import GameMasterChat from './GameMasterChat';
-import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, AIAction, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel, ContentType, AlchemyRecipe } from '../types';
+import type { ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel, ContentType, AlchemyRecipe, AddedContentUnion, AiGeneratedModData } from '../types';
 import TalentEditorModal from './TalentEditorModal';
 import CharacterEditorModal from './CharacterEditorModal';
 import ItemEditorModal from './ItemEditorModal';
@@ -17,13 +17,14 @@ import NpcEditorModal from './NpcEditorModal';
 import TechniqueEditorModal from './TechniqueEditorModal';
 import EventEditorModal from './EventEditorModal';
 import RecipeEditorModal from './RecipeEditorModal';
+import AiContentGeneratorModal from './AiContentGeneratorModal';
 
 
 interface CreateModScreenProps {
   onBack: () => void;
 }
 
-type ModCreationTab = 'info' | 'content' | 'system' | 'ai';
+type ModCreationTab = 'info' | 'editor';
 
 const CONTENT_TYPE_INFO: Record<Exclude<ContentType, 'realm' | 'realmSystem' | 'talentSystem'>, { label: string; icon: React.ElementType; color: string }> = {
     item: { label: 'Vật Phẩm', icon: FaBoxOpen, color: 'bg-sky-500/80' },
@@ -56,20 +57,6 @@ const DEFAULT_TALENT_RANKS: ModTalentRank[] = INNATE_TALENT_PROBABILITY.map((p, 
     color: INNATE_TALENT_RANKS[p.rank as keyof typeof INNATE_TALENT_RANKS]?.color || 'text-gray-400',
     weight: p.weight,
 }));
-
-
-type AddedContentUnion = 
-    (ModItem & { contentType: 'item' }) |
-    (ModTalent & { contentType: 'talent' }) |
-    (ModCharacter & { contentType: 'character' }) |
-    (ModSect & { contentType: 'sect' }) |
-    (ModWorldBuilding & { contentType: 'worldBuilding' }) |
-    (ModNpc & { contentType: 'npc' }) |
-    (ModTechnique & { contentType: 'technique' }) |
-    (ModEvent & { contentType: 'event' }) |
-    (AlchemyRecipe & { contentType: 'recipe' }) |
-    (ModCustomPanel & { contentType: 'customPanel' });
-
 
 
 const ConfirmationModal: React.FC<{
@@ -150,6 +137,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const [editingEvent, setEditingEvent] = useState<ModEvent | null>(null);
     const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
     const [editingRecipe, setEditingRecipe] = useState<AlchemyRecipe | null>(null);
+    const [isAiGeneratorOpen, setIsAiGeneratorOpen] = useState(false);
 
     
     // UI State for view/filter
@@ -159,7 +147,16 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const [addedContentJsonText, setAddedContentJsonText] = useState('[]');
     const [addedContentJsonError, setAddedContentJsonError] = useState<string | null>(null);
     
-    const [pendingSystemAction, setPendingSystemAction] = useState<AIAction | null>(null);
+    const [pendingSystemAction, setPendingSystemAction] = useState<AiGeneratedModData | null>(null);
+    const [actionNotifications, setActionNotifications] = useState<{id: number, text: string, type: 'success' | 'error'}[]>([]);
+
+    const showActionNotification = (text: string, type: 'success' | 'error' = 'success') => {
+        const id = Date.now();
+        setActionNotifications(prev => [...prev.slice(-4), {id, text, type}]); // Keep max 5 notifications
+        setTimeout(() => {
+            setActionNotifications(prev => prev.filter(n => n.id !== id));
+        }, 5000);
+    };
 
     const timestamp = () => Date.now().toString() + Math.random().toString(36).substring(2, 7);
     
@@ -203,14 +200,29 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
         
         addedContent.forEach(c => {
             const { contentType, ...data } = c;
-            const key = contentType === 'worldBuilding' ? 'worldBuilding' 
-                      : contentType === 'customPanel' ? 'customPanels'
-                      : `${contentType}s`;
+            const keyMap: Record<ContentType, string> = {
+                item: 'items',
+                talent: 'talents',
+                character: 'characters',
+                sect: 'sects',
+                worldBuilding: 'worldBuilding',
+                npc: 'npcs',
+                technique: 'techniques',
+                event: 'events',
+                customPanel: 'customPanels',
+                recipe: 'recipes',
+                realm: 'realmConfigs',
+                realmSystem: 'realmConfigs',
+                talentSystem: 'talentSystemConfig',
+            };
+            const key = keyMap[contentType];
     
-            if (!contentByType[key]) {
-                contentByType[key] = [];
+            if (key) {
+                if (!contentByType[key]) {
+                    contentByType[key] = [];
+                }
+                contentByType[key].push(data);
             }
-            contentByType[key].push(data);
         });
     
         const finalContent: any = {};
@@ -239,82 +251,29 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const handleConfirmSystemReplacement = () => {
         if (!pendingSystemAction) return;
 
-        switch (pendingSystemAction.action) {
-            case 'CREATE_REALM_SYSTEM':
-                const newRealms = pendingSystemAction.data.map(realm => ({...realm, id: timestamp() }));
-                setRealms(newRealms);
-                break;
-            case 'CONFIGURE_TALENT_SYSTEM':
-                setTalentSystemConfig(pendingSystemAction.data);
-                break;
+        if (pendingSystemAction.realmConfigs) {
+            const newRealms = pendingSystemAction.realmConfigs.map(realm => ({...realm, id: timestamp() }));
+            setRealms(newRealms);
+            showActionNotification('Hệ thống cảnh giới đã được thay thế.');
         }
+        if (pendingSystemAction.talentSystemConfig) {
+            setTalentSystemConfig(pendingSystemAction.talentSystemConfig);
+            showActionNotification('Cấu hình hệ thống tiên tư đã được cập nhật.');
+        }
+        
         setPendingSystemAction(null);
     };
 
-    const handleAIAction = (action: AIAction) => {
-        const isSystemAction = action.action === 'CREATE_REALM_SYSTEM' || action.action === 'CONFIGURE_TALENT_SYSTEM';
-        if (isSystemAction) {
-            setPendingSystemAction(action);
-            return;
+    const handleAiGeneratedContent = (data: AiGeneratedModData) => {
+        if (data.realmConfigs || data.talentSystemConfig) {
+            setPendingSystemAction(data);
         }
-    
-        setAddedContent(prevContent => {
-            let currentContent = [...prevContent];
-            const actions: AIAction[] = action.action === 'BATCH_ACTIONS' ? (action.data as AIAction[]) : [action];
-    
-            actions.forEach(act => {
-                if (!act || typeof act.action !== 'string' || act.data === undefined) {
-                    console.warn('Skipping invalid action from AI:', act);
-                    return; 
-                }
-                
-                const data = act.data as any;
-                switch (act.action) {
-                    case 'CREATE_ITEM': currentContent.push({ ...data, id: timestamp(), contentType: 'item' }); break;
-                    case 'CREATE_MULTIPLE_ITEMS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'item' })); break;
-                    case 'CREATE_TALENT': currentContent.push({ ...data, id: timestamp(), contentType: 'talent' }); break;
-                    case 'CREATE_MULTIPLE_TALENTS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'talent' })); break;
-                    case 'CREATE_SECT': currentContent.push({ ...data, id: timestamp(), contentType: 'sect' }); break;
-                    case 'CREATE_MULTIPLE_SECTS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'sect' })); break;
-                    case 'CREATE_CHARACTER': currentContent.push({ ...data, id: timestamp(), contentType: 'character' }); break;
-                    case 'CREATE_MULTIPLE_CHARACTERS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'character' })); break;
-                    case 'CREATE_TECHNIQUE': currentContent.push({ ...data, id: timestamp(), contentType: 'technique' }); break;
-                    case 'CREATE_MULTIPLE_TECHNIQUES': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'technique' })); break;
-                    case 'CREATE_NPC': currentContent.push({ ...data, id: timestamp(), contentType: 'npc' }); break;
-                    case 'CREATE_MULTIPLE_NPCS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'npc' })); break;
-                    case 'CREATE_EVENT': currentContent.push({ ...data, id: timestamp(), contentType: 'event' }); break;
-                    case 'CREATE_MULTIPLE_EVENTS': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'event' })); break;
-                    case 'CREATE_RECIPE': currentContent.push({ ...data, id: timestamp(), contentType: 'recipe' }); break;
-                    case 'CREATE_MULTIPLE_RECIPES': data.forEach((d: any) => currentContent.push({ ...d, id: timestamp(), contentType: 'recipe' })); break;
-                    case 'DEFINE_WORLD_BUILDING': currentContent.push({ ...data, id: timestamp(), contentType: 'worldBuilding' }); break;
-                    case 'CREATE_CUSTOM_PANEL': currentContent.push({ ...data, id: timestamp(), contentType: 'customPanel' }); break;
-    
-                    case 'UPDATE_ITEM': { const index = currentContent.findIndex(c => c.contentType === 'item' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'item' }; break; }
-                    case 'UPDATE_TALENT': { const index = currentContent.findIndex(c => c.contentType === 'talent' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'talent' }; break; }
-                    case 'UPDATE_SECT': { const index = currentContent.findIndex(c => c.contentType === 'sect' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'sect' }; break; }
-                    case 'UPDATE_CHARACTER': { const index = currentContent.findIndex(c => c.contentType === 'character' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'character' }; break; }
-                    case 'UPDATE_TECHNIQUE': { const index = currentContent.findIndex(c => c.contentType === 'technique' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'technique' }; break; }
-                    case 'UPDATE_NPC': { const index = currentContent.findIndex(c => c.contentType === 'npc' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'npc' }; break; }
-                    case 'UPDATE_EVENT': { const index = currentContent.findIndex(c => c.contentType === 'event' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'event' }; break; }
-                    case 'UPDATE_RECIPE': { const index = currentContent.findIndex(c => c.contentType === 'recipe' && c.name === data.name); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'recipe' }; break; }
-                    case 'UPDATE_WORLD_BUILDING': { const index = currentContent.findIndex(c => c.contentType === 'worldBuilding' && c.title === data.title); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'worldBuilding' }; break; }
-                    case 'UPDATE_CUSTOM_PANEL': { const index = currentContent.findIndex(c => c.contentType === 'customPanel' && c.title === data.title); if (index !== -1) currentContent[index] = { ...data, id: currentContent[index].id, contentType: 'customPanel' }; break; }
-    
-                    case 'DELETE_ITEM': currentContent = currentContent.filter(c => !(c.contentType === 'item' && c.name === data.name)); break;
-                    case 'DELETE_TALENT': currentContent = currentContent.filter(c => !(c.contentType === 'talent' && c.name === data.name)); break;
-                    case 'DELETE_SECT': currentContent = currentContent.filter(c => !(c.contentType === 'sect' && c.name === data.name)); break;
-                    case 'DELETE_CHARACTER': currentContent = currentContent.filter(c => !(c.contentType === 'character' && c.name === data.name)); break;
-                    case 'DELETE_TECHNIQUE': currentContent = currentContent.filter(c => !(c.contentType === 'technique' && c.name === data.name)); break;
-                    case 'DELETE_NPC': currentContent = currentContent.filter(c => !(c.contentType === 'npc' && c.name === data.name)); break;
-                    case 'DELETE_EVENT': currentContent = currentContent.filter(c => !(c.contentType === 'event' && c.name === data.name)); break;
-                    case 'DELETE_RECIPE': currentContent = currentContent.filter(c => !(c.contentType === 'recipe' && c.name === data.name)); break;
-                    case 'DELETE_WORLD_BUILDING': currentContent = currentContent.filter(c => !(c.contentType === 'worldBuilding' && c.title === data.title)); break;
-                    case 'DELETE_CUSTOM_PANEL': currentContent = currentContent.filter(c => !(c.contentType === 'customPanel' && c.title === data.title)); break;
-                }
-            });
-    
-            return currentContent;
-        });
+
+        if (data.content && data.content.length > 0) {
+            const newContent = data.content.map(c => ({...c, id: timestamp()})) as AddedContentUnion[];
+            setAddedContent(prev => [...prev, ...newContent]);
+            showActionNotification(`AI đã tạo thành công ${newContent.length} mục nội dung mới.`);
+        }
     };
     
     const handleSaveContent = (contentToSave: AddedContentUnion) => {
@@ -631,7 +590,16 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
+        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 relative">
+            <div className="absolute top-4 right-4 z-30 w-full max-w-sm space-y-2">
+                {actionNotifications.map(n => (
+                    <div key={n.id} className={`flex items-start gap-3 p-3 rounded-lg shadow-lg text-sm font-semibold animate-fade-in ${n.type === 'success' ? 'bg-green-800/95 text-white border border-green-600' : 'bg-red-800/95 text-white border border-red-600'}`}>
+                        {n.type === 'success' ? <FaCheckCircle className="w-5 h-5 mt-0.5 text-green-300 flex-shrink-0"/> : <FaExclamationCircle className="w-5 h-5 mt-0.5 text-red-300 flex-shrink-0"/>}
+                        <span>{n.text}</span>
+                    </div>
+                ))}
+            </div>
+
             <ConfirmationModal isOpen={!!pendingSystemAction} title="Xác Nhận Thay Thế Hệ Thống" message="Hành động này sẽ thay thế toàn bộ cấu hình hệ thống hiện tại bằng dữ liệu mới do AI tạo ra. Bạn có chắc chắn muốn tiếp tục?" onConfirm={handleConfirmSystemReplacement} onCancel={() => setPendingSystemAction(null)} />
             <ItemEditorModal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onSave={handleSaveItem} itemToEdit={editingItem} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <TalentEditorModal isOpen={isTalentModalOpen} onClose={() => setIsTalentModalOpen(false)} onSave={handleSaveTalent} talentToEdit={editingTalent} allAttributes={ALL_ATTRIBUTES} talentRanks={talentRanks} suggestions={allUniqueTags} />
@@ -643,14 +611,13 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             <TechniqueEditorModal isOpen={isTechniqueModalOpen} onClose={() => setIsTechniqueModalOpen(false)} onSave={handleSaveTechnique} techniqueToEdit={editingTechnique} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <EventEditorModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} onSave={handleSaveEvent} eventToEdit={editingEvent} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <RecipeEditorModal isOpen={isRecipeModalOpen} onClose={() => setIsRecipeModalOpen(false)} onSave={handleSaveRecipe} recipeToEdit={editingRecipe} />
+            <AiContentGeneratorModal isOpen={isAiGeneratorOpen} onClose={() => setIsAiGeneratorOpen(false)} onGenerate={handleAiGeneratedContent} modContext={modContextForAI} />
             
             <div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold font-title">Trình Chỉnh Sửa Mod</h2><button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button></div>
 
             <div className="flex items-stretch gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-8 overflow-x-auto">
                 <TabButton tabId="info" label="Thông Tin" icon={FaFileSignature} />
-                <TabButton tabId="content" label="Nội Dung" icon={FaBoxes} />
-                <TabButton tabId="system" label="Hệ Thống" icon={FaCogs} />
-                <TabButton tabId="ai" label="GameMaster AI" icon={FaRobot} />
+                <TabButton tabId="editor" label="Trình Chỉnh Sửa" icon={FaEdit} />
             </div>
 
             <div className="min-h-[calc(100vh-28rem)] max-h-[calc(100vh-28rem)] overflow-y-auto pr-2">
@@ -663,12 +630,17 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                         </Section>
                     </div>
                 )}
-                {activeTab === 'content' && (
-                    <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <Section title={addedContentEditorView === 'list' ? 'Nội Dung Thêm Mới' : 'Chỉnh Sửa JSON Hàng Loạt'}>
-                             <button onClick={addedContentEditorView === 'list' ? switchToJsonView : () => setAddedContentEditorView('list')} className="float-right -mt-12 flex items-center gap-2 px-3 py-1.5 bg-gray-700/80 text-white text-sm font-bold rounded-lg hover:bg-gray-600/80" title={addedContentEditorView === 'list' ? "Chuyển sang chế độ JSON" : "Chuyển sang chế độ danh sách"}>
-                                {addedContentEditorView === 'list' ? <FaCode/> : <FaList />}
-                            </button>
+                {activeTab === 'editor' && (
+                    <div className="animate-fade-in space-y-6" style={{ animationDuration: '300ms' }}>
+                        <Section title={addedContentEditorView === 'list' ? 'Nội Dung & Hệ Thống' : 'Chỉnh Sửa JSON Hàng Loạt'}>
+                             <div className="flex justify-end -mt-12 gap-2">
+                                <button onClick={() => setIsAiGeneratorOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-700/80 text-white text-sm font-bold rounded-lg hover:bg-purple-600/80" title="Sử dụng AI để tạo nội dung mới">
+                                    <FaRobot /> Thêm bằng AI
+                                </button>
+                                <button onClick={addedContentEditorView === 'list' ? switchToJsonView : () => setAddedContentEditorView('list')} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/80 text-white text-sm font-bold rounded-lg hover:bg-gray-600/80" title={addedContentEditorView === 'list' ? "Chuyển sang chế độ JSON" : "Chuyển sang chế độ danh sách"}>
+                                    {addedContentEditorView === 'list' ? <FaCode/> : <FaList />}
+                                </button>
+                             </div>
 
                            {addedContentEditorView === 'list' ? (
                                 <div className="space-y-4">
@@ -712,7 +684,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                         {filteredContent.length > 0 ? (
                                             filteredContent.map(content => <ContentCard key={`${content.contentType}-${content.id}`} content={content} />)
                                         ) : (
-                                            <div className="text-center text-gray-500 p-8 bg-black/20 rounded-lg border border-dashed border-gray-700"><p>Chưa có nội dung nào.</p><p className="text-sm mt-1">Sử dụng GameMaster AI hoặc "Thêm Thủ Công" để bắt đầu!</p></div>
+                                            <div className="text-center text-gray-500 p-8 bg-black/20 rounded-lg border border-dashed border-gray-700"><p>Chưa có nội dung nào.</p><p className="text-sm mt-1">Sử dụng "Thêm Bằng AI" hoặc "Thêm Thủ Công" để bắt đầu!</p></div>
                                         )}
                                     </div>
                                 </div>
@@ -726,10 +698,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                 </div>
                            )}
                         </Section>
-                    </div>
-                )}
-                {activeTab === 'system' && (
-                    <div className="animate-fade-in space-y-6" style={{ animationDuration: '300ms' }}>
                         <Section title="Hệ Thống Cảnh Giới Tu Luyện">
                             <div className="space-y-2">
                                 {realms.map(realm => (
@@ -762,7 +730,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                     />
                                     <label htmlFor="allowAIGen" className="text-sm" style={{color: 'var(--text-muted-color)'}}>
                                         Nếu bật, AI sẽ tự tạo Tiên Tư mới dựa trên ý niệm nhân vật. 
-                                        <br/>Nếu tắt, AI sẽ chỉ chọn từ danh sách Tiên Tư bạn đã tạo trong tab "Nội Dung".
+                                        <br/>Nếu tắt, AI sẽ chỉ chọn từ danh sách Tiên Tư bạn đã tạo.
                                     </label>
                                 </div>
                             </InputRow>
@@ -782,11 +750,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                 <FaPlus /> Thêm Phẩm Chất
                             </button>
                         </Section>
-                    </div>
-                )}
-                {activeTab === 'ai' && (
-                    <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                       <GameMasterChat onActionRequest={handleAIAction} modContext={modContextForAI} />
                     </div>
                 )}
             </div>

@@ -1,10 +1,8 @@
 import React, { useState, memo } from 'react';
 import type { StoryEntry } from '../types';
-// FIX: Added GiBroadsword for combat icon.
 import { FaUser, FaBookOpen, FaCog, FaFeatherAlt } from 'react-icons/fa';
 import { GiBroadsword } from 'react-icons/gi';
 
-// FIX: Added 'combat' entry to satisfy the StoryEntry type.
 const NODE_INFO: { [key in StoryEntry['type']]: { icon: React.ElementType, color: string, label: string } } = {
     'narrative': { icon: FaBookOpen, color: 'border-gray-500', label: 'Tường thuật' },
     'dialogue': { icon: FaFeatherAlt, color: 'border-amber-500', label: 'Đối thoại' },

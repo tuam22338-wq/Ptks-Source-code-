@@ -1,21 +1,17 @@
 import React from 'react';
-// FIX: Changed import from 'Screen' to 'View' as 'Screen' is not an exported member of App.
 import type { View } from '../App';
 
 interface TopNavigationProps {
-  // FIX: Renamed type from Screen to View.
   activeScreen: View;
   setActiveScreen: (screen: View) => void;
 }
 
-// FIX: Renamed type from Screen to View and updated 'play' to 'saveSlots' to match available views.
 const NAV_ITEMS: { screen: View; label: string }[] = [
   { screen: 'saveSlots', label: 'Chơi Game' },
   { screen: 'settings', label: 'Cài Đặt' },
 ];
 
 const NavButton: React.FC<{
-  // FIX: Renamed type from Screen to View.
   item: { screen: View; label: string };
   isActive: boolean;
   onClick: () => void;

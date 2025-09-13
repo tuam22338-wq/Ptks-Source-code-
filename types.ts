@@ -333,7 +333,7 @@ export interface StoryNode {
     tags?: string[];
 }
 
-export interface ModStorySystem {
+export interface StorySystem {
     id: string;
     name: string;
     description: string;
@@ -364,7 +364,7 @@ export interface ModContent {
     talentSystemConfig?: TalentSystemConfig;
     talentRanks?: Omit<ModTalentRank, 'id'>[];
     declarations?: ModDeclaration;
-    storySystems?: Omit<ModStorySystem, 'id'>[];
+    storySystems?: Omit<StorySystem, 'id'>[];
     customPanels?: Omit<ModCustomPanel, 'id'>[];
 }
 
@@ -379,119 +379,52 @@ export interface CommunityMod {
     downloadUrl: string;
 }
 
+// --- New AI Content Generation Types ---
+export type ModContentObject =
+    | (Omit<ModItem, 'id'> & { contentType: 'item' })
+    | (Omit<ModTalent, 'id'> & { contentType: 'talent' })
+    | (Omit<ModCharacter, 'id'> & { contentType: 'character' })
+    | (Omit<ModSect, 'id'> & { contentType: 'sect' })
+    | (Omit<ModWorldBuilding, 'id'> & { contentType: 'worldBuilding' })
+    | (Omit<ModNpc, 'id'> & { contentType: 'npc' })
+    | (Omit<ModTechnique, 'id'> & { contentType: 'technique' })
+    | (Omit<ModEvent, 'id'> & { contentType: 'event' })
+    | (Omit<AlchemyRecipe, 'id'> & { contentType: 'recipe' })
+    | (Omit<ModCustomPanel, 'id'> & { contentType: 'customPanel' });
 
-// AI Action types from GameMaster
-export type ChatResponse = { response: string };
-export type CreateItemData = Omit<ModItem, 'id'>;
-export type CreateTalentData = Omit<ModTalent, 'id'>;
-export type CreateSectData = Omit<ModSect, 'id'>;
-export type CreateRealmSystemData = Omit<RealmConfig, 'id'>[];
-export type ConfigureTalentSystemData = TalentSystemConfig;
-export type CreateCharacterData = Omit<ModCharacter, 'id'>;
-export type DefineWorldBuildingData = Omit<ModWorldBuilding, 'id'>;
-export type CreateTechniqueData = Omit<ModTechnique, 'id'>;
-export type CreateNpcData = Omit<ModNpc, 'id'>;
-export type CreateEventData = Omit<ModEvent, 'id'>;
-export type CreateRecipeData = Omit<AlchemyRecipe, 'id'>;
-export type CreateDeclarationData = ModDeclaration;
-export type CreateStorySystemData = Omit<ModStorySystem, 'id'>;
-export type CreateCustomPanelData = Omit<ModCustomPanel, 'id'>;
+export interface AiGeneratedModData {
+    content?: ModContentObject[];
+    realmConfigs?: Omit<RealmConfig, 'id'>[];
+    talentSystemConfig?: TalentSystemConfig;
+}
 
+// FIX: Added missing AIAction and related types for the GameMasterChat component.
+export type AIActionType =
+    | 'CHAT'
+    | 'CREATE_ITEM' | 'CREATE_MULTIPLE_ITEMS' | 'CREATE_TALENT' | 'CREATE_MULTIPLE_TALENTS' | 'CREATE_SECT' | 'CREATE_MULTIPLE_SECTS' | 'CREATE_CHARACTER' | 'CREATE_MULTIPLE_CHARACTERS'
+    | 'DEFINE_WORLD_BUILDING' | 'CREATE_TECHNIQUE' | 'CREATE_NPC' | 'CREATE_EVENT' | 'CREATE_RECIPE' | 'CREATE_CUSTOM_PANEL'
+    | 'UPDATE_ITEM' | 'UPDATE_TALENT' | 'UPDATE_SECT' | 'UPDATE_CHARACTER' | 'UPDATE_TECHNIQUE' | 'UPDATE_NPC' | 'UPDATE_EVENT' | 'UPDATE_RECIPE' | 'UPDATE_WORLD_BUILDING' | 'UPDATE_CUSTOM_PANEL'
+    | 'DELETE_ITEM' | 'DELETE_TALENT' | 'DELETE_SECT' | 'DELETE_CHARACTER' | 'DELETE_TECHNIQUE' | 'DELETE_NPC' | 'DELETE_EVENT' | 'DELETE_RECIPE' | 'DELETE_WORLD_BUILDING' | 'DELETE_CUSTOM_PANEL'
+    | 'CREATE_REALM_SYSTEM' | 'CONFIGURE_TALENT_SYSTEM' | 'BATCH_ACTIONS';
 
+export interface AIAction {
+    action: AIActionType;
+    data: any;
+}
 
-export type AIAction =
-    | { action: 'CHAT'; data: ChatResponse }
-    | { action: 'CREATE_ITEM'; data: CreateItemData }
-    | { action: 'CREATE_MULTIPLE_ITEMS'; data: CreateItemData[] }
-    | { action: 'CREATE_TALENT'; data: CreateTalentData }
-    | { action: 'CREATE_MULTIPLE_TALENTS'; data: CreateTalentData[] }
-    | { action: 'CREATE_SECT'; data: CreateSectData }
-    | { action: 'CREATE_MULTIPLE_SECTS'; data: CreateSectData[] }
-    | { action: 'CREATE_CHARACTER'; data: CreateCharacterData }
-    | { action: 'CREATE_MULTIPLE_CHARACTERS'; data: CreateCharacterData[] }
-    | { action: 'CREATE_TECHNIQUE'; data: CreateTechniqueData }
-    | { action: 'CREATE_MULTIPLE_TECHNIQUES'; data: CreateTechniqueData[] }
-    | { action: 'CREATE_NPC'; data: CreateNpcData }
-    | { action: 'CREATE_MULTIPLE_NPCS'; data: CreateNpcData[] }
-    | { action: 'CREATE_EVENT'; data: CreateEventData }
-    | { action: 'CREATE_MULTIPLE_EVENTS'; data: CreateEventData[] }
-    | { action: 'CREATE_RECIPE'; data: CreateRecipeData }
-    | { action: 'CREATE_MULTIPLE_RECIPES'; data: CreateRecipeData[] }
-    | { action: 'DEFINE_WORLD_BUILDING'; data: DefineWorldBuildingData }
-    | { action: 'CREATE_REALM_SYSTEM'; data: CreateRealmSystemData }
-    | { action: 'CONFIGURE_TALENT_SYSTEM'; data: ConfigureTalentSystemData }
-    | { action: 'CREATE_DECLARATIONS'; data: CreateDeclarationData }
-    | { action: 'CREATE_STORY_SYSTEM'; data: CreateStorySystemData }
-    | { action: 'CREATE_CUSTOM_PANEL'; data: CreateCustomPanelData }
-    | { action: 'UPDATE_ITEM', data: CreateItemData }
-    | { action: 'DELETE_ITEM', data: { name: string } }
-    | { action: 'UPDATE_TALENT', data: CreateTalentData }
-    | { action: 'DELETE_TALENT', data: { name: string } }
-    | { action: 'UPDATE_SECT', data: CreateSectData }
-    | { action: 'DELETE_SECT', data: { name: string } }
-    | { action: 'UPDATE_CHARACTER', data: CreateCharacterData }
-    | { action: 'DELETE_CHARACTER', data: { name: string } }
-    | { action: 'UPDATE_TECHNIQUE', data: CreateTechniqueData }
-    | { action: 'DELETE_TECHNIQUE', data: { name: string } }
-    | { action: 'UPDATE_NPC', data: CreateNpcData }
-    | { action: 'DELETE_NPC', data: { name: string } }
-    | { action: 'UPDATE_EVENT', data: CreateEventData }
-    | { action: 'DELETE_EVENT', data: { name: string } }
-    | { action: 'UPDATE_RECIPE', data: CreateRecipeData }
-    | { action: 'DELETE_RECIPE', data: { name: string } }
-    | { action: 'UPDATE_WORLD_BUILDING', data: DefineWorldBuildingData }
-    | { action: 'DELETE_WORLD_BUILDING', data: { title: string } }
-    | { action: 'UPDATE_CUSTOM_PANEL', data: CreateCustomPanelData }
-    | { action: 'DELETE_CUSTOM_PANEL', data: { title: string } }
-    | { action: 'UPDATE_REPUTATION', data: { factionName: string, change: number } }
-    | { 
-        action: 'BATCH_ACTIONS'; 
-        data: Array<
-            | { action: 'CREATE_ITEM'; data: CreateItemData }
-            | { action: 'CREATE_MULTIPLE_ITEMS'; data: CreateItemData[] }
-            | { action: 'CREATE_TALENT'; data: CreateTalentData }
-            | { action: 'CREATE_MULTIPLE_TALENTS'; data: CreateTalentData[] }
-            | { action: 'CREATE_SECT'; data: CreateSectData }
-            | { action: 'CREATE_MULTIPLE_SECTS'; data: CreateSectData[] }
-            | { action: 'CREATE_CHARACTER'; data: CreateCharacterData }
-            | { action: 'CREATE_MULTIPLE_CHARACTERS'; data: CreateCharacterData[] }
-            | { action: 'CREATE_TECHNIQUE'; data: CreateTechniqueData }
-            | { action: 'CREATE_MULTIPLE_TECHNIQUES'; data: CreateTechniqueData[] }
-            | { action: 'CREATE_NPC'; data: CreateNpcData }
-            | { action: 'CREATE_MULTIPLE_NPCS'; data: CreateNpcData[] }
-            | { action: 'CREATE_EVENT'; data: CreateEventData }
-            | { action: 'CREATE_MULTIPLE_EVENTS'; data: CreateEventData[] }
-            | { action: 'CREATE_RECIPE'; data: CreateRecipeData }
-            | { action: 'CREATE_MULTIPLE_RECIPES'; data: CreateRecipeData[] }
-            | { action: 'DEFINE_WORLD_BUILDING'; data: DefineWorldBuildingData }
-            | { action: 'CREATE_REALM_SYSTEM'; data: CreateRealmSystemData }
-            | { action: 'CONFIGURE_TALENT_SYSTEM'; data: ConfigureTalentSystemData }
-            | { action: 'CREATE_DECLARATIONS'; data: CreateDeclarationData }
-            | { action: 'CREATE_STORY_SYSTEM'; data: CreateStorySystemData }
-            | { action: 'CREATE_CUSTOM_PANEL'; data: CreateCustomPanelData }
-            | { action: 'UPDATE_ITEM', data: CreateItemData }
-            | { action: 'DELETE_ITEM', data: { name: string } }
-            | { action: 'UPDATE_TALENT', data: CreateTalentData }
-            | { action: 'DELETE_TALENT', data: { name: string } }
-            | { action: 'UPDATE_SECT', data: CreateSectData }
-            | { action: 'DELETE_SECT', data: { name: string } }
-            | { action: 'UPDATE_CHARACTER', data: CreateCharacterData }
-            | { action: 'DELETE_CHARACTER', data: { name: string } }
-            | { action: 'UPDATE_TECHNIQUE', data: CreateTechniqueData }
-            | { action: 'DELETE_TECHNIQUE', data: { name: string } }
-            | { action: 'UPDATE_NPC', data: CreateNpcData }
-            | { action: 'DELETE_NPC', data: { name: string } }
-            | { action: 'UPDATE_EVENT', data: CreateEventData }
-            | { action: 'DELETE_EVENT', data: { name: string } }
-            | { action: 'UPDATE_RECIPE', data: CreateRecipeData }
-            | { action: 'DELETE_RECIPE', data: { name: string } }
-            | { action: 'UPDATE_WORLD_BUILDING', data: DefineWorldBuildingData }
-            | { action: 'DELETE_WORLD_BUILDING', data: { title: string } }
-            | { action: 'UPDATE_CUSTOM_PANEL', data: CreateCustomPanelData }
-            | { action: 'DELETE_CUSTOM_PANEL', data: { title: string } }
-            | { action: 'UPDATE_REPUTATION', data: { factionName: string, change: number } }
-        > 
-      };
+// Client-side representation of content in the mod editor
+export type AddedContentUnion = 
+    (ModItem & { contentType: 'item' }) |
+    (ModTalent & { contentType: 'talent' }) |
+    (ModCharacter & { contentType: 'character' }) |
+    (ModSect & { contentType: 'sect' }) |
+    (ModWorldBuilding & { contentType: 'worldBuilding' }) |
+    (ModNpc & { contentType: 'npc' }) |
+    (ModTechnique & { contentType: 'technique' }) |
+    (ModEvent & { contentType: 'event' }) |
+    (AlchemyRecipe & { contentType: 'recipe' }) |
+    (ModCustomPanel & { contentType: 'customPanel' });
+
 
 // --- Gameplay Types ---
 export interface Currency {
@@ -621,6 +554,20 @@ export interface CultivationPath {
   bonuses: StatBonus[];
 }
 
+export interface PlayerSectInfo {
+  sectId: string;
+  rank: string;
+  contribution: number;
+}
+
+export interface CaveAbode {
+    name: string;
+    level: number;
+    spiritGatheringArrayLevel: number; // Tụ Linh Trận
+    spiritHerbFieldLevel: number;     // Linh Điền
+    alchemyRoomLevel: number;         // Luyện Đan Thất
+    storageUpgradeLevel: number;      // Kho chứa đồ
+}
 
 export interface PlayerCharacter {
     identity: CharacterIdentity;
@@ -636,6 +583,8 @@ export interface PlayerCharacter {
     reputation: PlayerReputation[];
     chosenPathIds: string[];
     knownRecipeIds: string[];
+    sect: PlayerSectInfo | null;
+    caveAbode: CaveAbode;
 }
 
 export interface StoryEntry {
@@ -716,4 +665,20 @@ export interface Shop {
     name: string;
     description: string;
     inventory: ShopItem[];
+}
+
+// --- Sect Types ---
+export interface SectRank {
+    name: string;
+    contributionRequired: number;
+}
+
+export interface Sect {
+    id: string;
+    name: string;
+    description: string;
+    alignment: 'Chính Phái' | 'Ma Phái' | 'Trung Lập';
+    ranks: SectRank[];
+    joinRequirements: { attribute: string; value: number; greaterThan?: boolean }[];
+    icon: ElementType;
 }

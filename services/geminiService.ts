@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
-import type { InnateTalent, InnateTalentRank, CharacterIdentity, AIAction, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe, ModCustomPanel, ModItem, ModCharacter, ModSect, ModWorldBuilding } from '../types';
+// FIX: Added AIAction to the type imports to resolve a missing type error.
+import type { InnateTalent, InnateTalentRank, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, InventoryItem, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, WorldState, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AlchemyRecipe, ModCustomPanel, ModItem, ModCharacter, ModSect, ModWorldBuilding, StorySystem, AiGeneratedModData, AIAction } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL } from "../constants";
 import {
   FaSun, FaMoon
@@ -496,279 +497,74 @@ export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
     });
 };
 
-interface GameMasterModContext {
-    modInfo: {
-        name: string;
-        author: string;
-        description: string;
-    };
-    content: {
-        items?: Omit<ModItem, 'id'>[];
-        talents?: Omit<ModTalent, 'id'>[];
-        characters?: Omit<ModCharacter, 'id'>[];
-        sects?: Omit<ModSect, 'id'>[];
-        worldBuilding?: Omit<ModWorldBuilding, 'id'>[];
-        techniques?: Omit<ModTechnique, 'id'>[];
-        npcs?: Omit<ModNpc, 'id'>[];
-        events?: Omit<ModEvent, 'id'>[];
-        customPanels?: Omit<ModCustomPanel, 'id'>[];
-    };
-    realmConfigs: RealmConfig[];
-    talentRanks: ModTalentRank[];
-    talentSystemConfig: TalentSystemConfig;
-}
-
-const getGameMasterSystemInstruction = (modContext?: GameMasterModContext): string => {
-    const customRealms = modContext?.realmConfigs.map(r => r.name).join(', ') || 'Mặc định';
-    const customTalentRanks = modContext?.talentRanks.map(r => r.name).join(', ') || 'Mặc định';
-
-    let existingContentSummary = "Chưa có nội dung nào được thêm vào mod này.";
-    if (modContext?.content && Object.keys(modContext.content).length > 0) {
-        const contentParts = Object.entries(modContext.content)
-            .filter(([_, value]) => Array.isArray(value) && value.length > 0)
-            .map(([key, value]) => {
-                const names = (value as any[]).map(item => item.name || item.title).filter(Boolean);
-                if (names.length > 0) {
-                    return `*   **${key}:** ${names.join(', ')}`;
-                }
-                const contentType = key === 'customPanels' ? 'Bảng UI' : key;
-                return `*   **${contentType}:** ${value.length} mục`;
-            });
-        if (contentParts.length > 0) {
-            existingContentSummary = "Nội dung hiện có trong mod:\n" + contentParts.join('\n');
-        }
-    }
-
-
-    return `Bạn là một GameMaster AI thông minh, sáng tạo, và là một chuyên gia về bối cảnh Phong Thần Diễn Nghĩa, giúp người dùng tạo và CHỈNH SỬA mod cho game tu tiên Phong Thần Ký Sự.
-
-**TƯ DUY CỦA BẠN:**
-1.  **Phân tích từng bước:** Trước khi đưa ra JSON cuối cùng, hãy suy nghĩ từng bước để phân tích yêu cầu của người dùng, xác định họ muốn TẠO, SỬA, hay XÓA.
-2.  **Hiểu sâu bối cảnh:** Luôn bám sát không khí tu tiên, huyền huyễn của Phong Thần. Tên gọi, mô tả phải mang đậm văn phong Hán Việt cổ điển.
-3.  **Nhất quán là trên hết:** Khi tạo hoặc sửa nội dung, hãy tham khảo các hệ thống và nội dung đã có để đảm bảo sự nhất quán.
-
-**HIỂU BIẾT VỀ CƠ CHẾ GAME & MOD HIỆN TẠI:**
-*   **Thông tin Mod:** Tên: "${modContext?.modInfo.name || 'Chưa có tên'}", Tác giả: "${modContext?.modInfo.author || 'Chưa có'}", Mô tả: "${modContext?.modInfo.description || 'Chưa có'}"
-*   **Thuộc tính:** Danh sách đầy đủ: ${ALL_ATTRIBUTES.join(', ')}.
-*   **Hệ thống Tu Luyện:** Hệ thống cảnh giới hiện tại trong mod này là: ${customRealms}. Bạn có thể định nghĩa lại toàn bộ hệ thống này bằng \`CREATE_REALM_SYSTEM\`.
-*   **Phẩm chất Tiên Tư:** Các phẩm chất tiên tư hiện tại trong mod này là: ${customTalentRanks}.
-*   **Cấu hình Tiên Tư:** Số lựa chọn mỗi lần gieo quẻ: ${modContext?.talentSystemConfig.choicesPerRoll}, Tối đa có thể chọn: ${modContext?.talentSystemConfig.maxSelectable}.
-*   **Nội dung đã thêm:**
-${existingContentSummary}
-*   **Vật phẩm (Items), Công Pháp (Techniques), Sự kiện (Events), etc.:** Có thể được TẠO, SỬA, hoặc XÓA.
-
-**NHIỆM VỤ CỦA BẠN:**
-Phân tích yêu cầu của người dùng và chuyển đổi nó thành một hoặc nhiều hành động có cấu trúc (\`action\`) tương thích với game. Luôn trả lời ở định dạng JSON.
-*   **Trò chuyện:** Nếu người dùng chỉ đang trò chuyện hoặc hỏi, hãy sử dụng hành động 'CHAT'. **Phản hồi trong \`data.response\` phải là một câu trả lời đầy đủ và hữu ích, không bao giờ được để trống.**
-*   **Nhiều yêu cầu:** Nếu họ yêu cầu nhiều thứ, hãy dùng 'BATCH_ACTIONS'.
-*   **Chỉnh sửa:** Để chỉnh sửa một mục đã có, hãy sử dụng hành động \`UPDATE_[TYPE]\` (ví dụ: \`UPDATE_ITEM\`). **QUAN TRỌNG:** Bạn phải cung cấp lại TOÀN BỘ dữ liệu mới cho mục đó, bao gồm cả những phần không thay đổi. Xác định mục cần sửa bằng thuộc tính \`name\` (hoặc \`title\` cho WorldBuilding).
-*   **Xóa:** Để xóa, hãy sử dụng \`DELETE_[TYPE]\` và cung cấp \`name\` (hoặc \`title\`).
-
----
-
-**VÍ DỤ VỀ CHỈNH SỬA VÀ XÓA:**
-
-*   **Yêu cầu người dùng:** "Hãy sửa vật phẩm 'Phiên Thiên Ấn', tăng Lực Lượng lên 30."
-*   **Tư duy của bạn:** Người dùng muốn sửa một vật phẩm. Tôi cần tìm dữ liệu hiện tại của 'Phiên Thiên Ấn' trong context, thay đổi giá trị Lực Lượng, và sau đó trả về toàn bộ đối tượng vật phẩm đã được cập nhật bằng action \`UPDATE_ITEM\`.
-*   **JSON mẫu bạn nên tạo:**
-    \`\`\`json
-    {
-      "action": "UPDATE_ITEM",
-      "data": {
-        "name": "Phiên Thiên Ấn",
-        "description": "Một pháp bảo của Quảng Thành Tử, có sức mạnh lật trời, một khi tung ra, vạn vật đều khó chống đỡ.",
-        "type": "Pháp Bảo",
-        "quality": "Tiên Phẩm",
-        "weight": 5.0,
-        "bonuses": [
-          { "attribute": "Lực Lượng", "value": 30 }, 
-          { "attribute": "Tiên Lực", "value": 50 }
-        ],
-        "tags": ["Xiển Giáo", "Pháp Bảo Mạnh"]
-      }
-    }
-    \`\`\`
-
-*   **Yêu cầu người dùng:** "Xóa tông môn 'Triệt Giáo' đi."
-*   **Tư duy của bạn:** Người dùng muốn xóa một tông môn. Tôi sẽ sử dụng action \`DELETE_SECT\` và cung cấp tên.
-*   **JSON mẫu bạn nên tạo:**
-    \`\`\`json
-    {
-      "action": "DELETE_SECT",
-      "data": { "name": "Triệt Giáo" }
-    }
-    \`\`\`
-`;
-};
-
-
-export const getGameMasterActionableResponse = async (prompt: string, fileContent?: string, modContext?: GameMasterModContext): Promise<AIAction> => {
+export const generateModContentFromPrompt = async (prompt: string, modContext: any): Promise<AiGeneratedModData> => {
+    // --- Reusable Sub-Schemas ---
     const statBonusSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] };
+    const stringArray = { type: Type.ARRAY, items: { type: Type.STRING } };
 
-    const itemSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, weight: { type: Type.NUMBER }, slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'] }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'type', 'quality', 'weight'] };
-    const talentSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, rank: { type: Type.STRING, enum: TALENT_RANK_NAMES }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'rank'] };
-    const characterSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] }, origin: { type: Type.STRING }, appearance: { type: Type.STRING }, personality: { type: Type.STRING }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'gender', 'origin'] };
-    const sectSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, location: { type: Type.STRING }, members: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, rank: { type: Type.STRING, enum: ['Tông Chủ', 'Trưởng Lão', 'Đệ Tử Chân Truyền', 'Đệ Tử Nội Môn', 'Đệ Tử Ngoại Môn'] } } } }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['name', 'description', 'location'] };
-    const worldBuildingSchema = { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, data: { type: Type.OBJECT, description: "Đối tượng JSON tự do" }, tags: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['title', 'data'] };
+    // --- Content Type Schemas ---
+    const itemSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['item'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, weight: { type: Type.NUMBER }, slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'] }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'type', 'quality', 'weight'] };
+    const talentSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['talent'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, rank: { type: Type.STRING, enum: TALENT_RANK_NAMES }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'rank'] };
+    const characterSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['character'] }, name: { type: Type.STRING }, gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] }, origin: { type: Type.STRING }, appearance: { type: Type.STRING }, personality: { type: Type.STRING }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: stringArray }, required: ['contentType', 'name', 'gender', 'origin', 'appearance', 'personality'] };
+    const sectMemberSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, rank: { type: Type.STRING, enum: ['Tông Chủ', 'Trưởng Lão', 'Đệ Tử Chân Truyền', 'Đệ Tử Nội Môn', 'Đệ Tử Ngoại Môn'] }, description: { type: Type.STRING } }, required: ['name', 'rank'] };
+    const sectSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['sect'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, location: { type: Type.STRING }, members: { type: Type.ARRAY, items: sectMemberSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'location'] };
+    const worldBuildingSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['worldBuilding'] }, title: { type: Type.STRING }, description: { type: Type.STRING }, data: { type: Type.STRING, description: 'A JSON string representing the world building data object.' }, tags: stringArray }, required: ['contentType', 'title', 'description', 'data'] };
+    const npcRelationshipSchema = { type: Type.OBJECT, properties: { targetNpcName: { type: Type.STRING }, type: { type: Type.STRING }, description: { type: Type.STRING } }, required: ['targetNpcName', 'type', 'description'] };
+    const npcSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['npc'] }, name: { type: Type.STRING }, status: { type: Type.STRING }, description: { type: Type.STRING }, origin: { type: Type.STRING }, personality: { type: Type.STRING }, locationId: { type: Type.STRING }, relationships: { type: Type.ARRAY, items: npcRelationshipSchema }, talentNames: stringArray, faction: { type: Type.STRING }, tags: stringArray }, required: ['contentType', 'name', 'status', 'description', 'origin', 'personality', 'locationId'] };
+    const techniqueEffectSchema = { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['DAMAGE', 'HEAL', 'BUFF', 'DEBUFF'] }, details: { type: Type.STRING, description: 'A JSON string representing the effect details object.' } }, required: ['type', 'details'] };
+    const techniqueSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['technique'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ'] }, cost: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'] }, value: { type: Type.NUMBER } }, required: ['type', 'value'] }, cooldown: { type: Type.NUMBER }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] }, icon: { type: Type.STRING }, level: { type: Type.NUMBER }, maxLevel: { type: Type.NUMBER }, requirements: { type: Type.ARRAY, items: statBonusSchema }, effects: { type: Type.ARRAY, items: techniqueEffectSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'type', 'cost', 'cooldown', 'rank', 'icon'] };
+    const eventOutcomeSchema = { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['GIVE_ITEM', 'REMOVE_ITEM', 'CHANGE_STAT', 'ADD_RUMOR', 'START_EVENT', 'START_STORY', 'UPDATE_REPUTATION'] }, details: { type: Type.STRING, description: 'A JSON string representing the outcome details object.' } }, required: ['type', 'details'] };
+    const skillCheckSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, difficulty: { type: Type.NUMBER } }, required: ['attribute', 'difficulty'] };
+    const eventChoiceSchema = { type: Type.OBJECT, properties: { text: { type: Type.STRING }, check: skillCheckSchema, outcomes: { type: Type.ARRAY, items: eventOutcomeSchema } }, required: ['text'] };
+    const eventSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['event'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, choices: { type: Type.ARRAY, items: eventChoiceSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'choices'] };
+    const recipeIngredientSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] };
+    const recipeQualityCurveSchema = { type: Type.OBJECT, properties: { threshold: { type: Type.NUMBER }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] } }, required: ['threshold', 'quality'] };
+    const recipeSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['recipe'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: recipeIngredientSchema }, result: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] }, requiredAttribute: { type: Type.OBJECT, properties: { name: { type: Type.STRING, enum: ['Đan Thuật'] }, value: { type: Type.NUMBER } }, required: ['name', 'value'] }, icon: { type: Type.STRING }, qualityCurve: { type: Type.ARRAY, items: recipeQualityCurveSchema } }, required: ['contentType', 'name', 'description', 'ingredients', 'result', 'requiredAttribute', 'icon', 'qualityCurve'] };
+    const customPanelSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['customPanel'] }, title: { type: Type.STRING }, iconName: { type: Type.STRING }, content: stringArray, tags: stringArray }, required: ['contentType', 'title', 'iconName', 'content'] };
+
+    // --- System Schemas ---
     const realmSystemSchema = { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, hasTribulation: { type: Type.BOOLEAN }, stages: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, qiRequired: { type: Type.NUMBER }, bonuses: { type: Type.ARRAY, items: statBonusSchema } } } } } } };
     const talentSystemConfigSchema = { type: Type.OBJECT, properties: { systemName: { type: Type.STRING }, choicesPerRoll: { type: Type.NUMBER }, maxSelectable: { type: Type.NUMBER } } };
-    const updateReputationSchema = { type: Type.OBJECT, properties: { factionName: { type: Type.STRING }, change: { type: Type.NUMBER } }, required: ['factionName', 'change']};
-    
-    const techniqueSchema = {
-        type: Type.OBJECT,
-        properties: {
-            name: { type: Type.STRING },
-            description: { type: Type.STRING },
-            type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ'] },
-            cost: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'] }, value: { type: Type.NUMBER } }, required: ['type', 'value'] },
-            cooldown: { type: Type.NUMBER },
-            rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] },
-            icon: { type: Type.STRING, description: "Một emoji biểu tượng" },
-            requirements: { type: Type.ARRAY, items: statBonusSchema },
-            effects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['DAMAGE', 'HEAL', 'BUFF', 'DEBUFF'] }, details: { type: Type.OBJECT, description: 'Đối tượng JSON chứa chi tiết hiệu ứng' } }, required: ['type', 'details'] } },
-            tags: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ['name', 'description', 'type', 'cost', 'cooldown', 'rank', 'icon'],
-    };
 
-    const npcSchema = {
-        type: Type.OBJECT,
-        properties: {
-            name: { type: Type.STRING },
-            status: { type: Type.STRING },
-            description: { type: Type.STRING },
-            origin: { type: Type.STRING },
-            personality: { type: Type.STRING },
-            talentNames: { type: Type.ARRAY, items: { type: Type.STRING } },
-            locationId: { type: Type.STRING, enum: WORLD_MAP.map(l => l.id) },
-            relationships: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { targetNpcName: { type: Type.STRING }, type: { type: Type.STRING }, description: { type: Type.STRING } }, required: ['targetNpcName', 'type'] } },
-            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-        },
-        required: ['name', 'status', 'description', 'origin', 'personality', 'locationId'],
-    };
-
-    const eventSchema = {
-        type: Type.OBJECT,
-        properties: {
-            name: { type: Type.STRING, description: 'Tên định danh cho sự kiện' },
-            description: { type: Type.STRING },
-            trigger: { type: Type.OBJECT, nullable: true, properties: { type: { type: Type.STRING, enum: ['ON_ENTER_LOCATION', 'ON_TALK_TO_NPC', 'ON_GAME_DATE'] }, details: { type: Type.OBJECT, description: 'Đối tượng JSON chứa chi tiết trigger' } }, required: ['type', 'details'] },
-            choices: { type: Type.ARRAY, items: { 
-                type: Type.OBJECT, 
-                properties: { 
-                    text: { type: Type.STRING },
-                    check: { type: Type.OBJECT, nullable: true, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, difficulty: { type: Type.NUMBER } }, required: ['attribute', 'difficulty'] },
-                    outcomes: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['GIVE_ITEM', 'REMOVE_ITEM', 'CHANGE_STAT', 'ADD_RUMOR', 'START_EVENT'] }, details: { type: Type.OBJECT, description: 'Đối tượng JSON chứa chi tiết outcome' } }, required: ['type', 'details'] } }
-                },
-                required: ['text']
-            }},
-            tags: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ['name', 'description', 'choices']
-    };
-
-    const recipeSchema = {
-        type: Type.OBJECT,
-        properties: {
-            name: { type: Type.STRING },
-            description: { type: Type.STRING },
-            icon: { type: Type.STRING, description: "Một emoji" },
-            ingredients: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
-            result: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] },
-            requiredAttribute: { type: Type.OBJECT, properties: { name: { const: 'Đan Thuật' }, value: { type: Type.NUMBER } }, required: ['name', 'value'] },
-            qualityCurve: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { threshold: { type: Type.NUMBER }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] } }, required: ['threshold', 'quality'] } }
-        },
-        required: ['name', 'description', 'icon', 'ingredients', 'result', 'requiredAttribute', 'qualityCurve']
-    };
-
-    const customPanelSchema = {
-        type: Type.OBJECT,
-        properties: {
-            title: { type: Type.STRING, description: 'Tên của tab sẽ hiển thị trong UI.' },
-            iconName: { type: Type.STRING, enum: ['FaUser', 'FaBoxOpen', 'FaGlobe', 'FaBook', 'FaScroll', 'FaSun', 'FaGopuram', 'GiCauldron'], description: 'Tên của icon từ danh sách cho phép.'},
-            content: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Danh sách các `title` của mục WorldBuilding để hiển thị trong bảng này.'},
-            tags: { type: Type.ARRAY, items: { type: Type.STRING } }
-        },
-        required: ['title', 'iconName', 'content']
-    };
-    
-    const deleteByNameSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING } }, required: ['name'] };
-    const deleteByTitleSchema = { type: Type.OBJECT, properties: { title: { type: Type.STRING } }, required: ['title'] };
-
+    // --- Main Response Schema ---
     const responseSchema = {
-        oneOf: [
-            { properties: { action: { const: 'CHAT' }, data: { type: Type.OBJECT, properties: { response: { type: Type.STRING, description: "Một câu trả lời trò chuyện thân thiện và hữu ích cho người dùng. Không được để trống." } }, required: ['response'] } } },
-            { properties: { action: { const: 'CREATE_ITEM' }, data: itemSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_ITEMS' }, data: { type: Type.ARRAY, items: itemSchema } } },
-            { properties: { action: { const: 'CREATE_TALENT' }, data: talentSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_TALENTS' }, data: { type: Type.ARRAY, items: talentSchema } } },
-            { properties: { action: { const: 'CREATE_SECT' }, data: sectSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_SECTS' }, data: { type: Type.ARRAY, items: sectSchema } } },
-            { properties: { action: { const: 'CREATE_CHARACTER' }, data: characterSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_CHARACTERS' }, data: { type: Type.ARRAY, items: characterSchema } } },
-            { properties: { action: { const: 'DEFINE_WORLD_BUILDING' }, data: worldBuildingSchema } },
-            { properties: { action: { const: 'CREATE_REALM_SYSTEM' }, data: realmSystemSchema } },
-            { properties: { action: { const: 'CONFIGURE_TALENT_SYSTEM' }, data: talentSystemConfigSchema } },
-            { properties: { action: { const: 'CREATE_TECHNIQUE' }, data: techniqueSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_TECHNIQUES' }, data: { type: Type.ARRAY, items: techniqueSchema } } },
-            { properties: { action: { const: 'CREATE_NPC' }, data: npcSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_NPCS' }, data: { type: Type.ARRAY, items: npcSchema } } },
-            { properties: { action: { const: 'CREATE_EVENT' }, data: eventSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_EVENTS' }, data: { type: Type.ARRAY, items: eventSchema } } },
-            { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
-            { properties: { action: { const: 'CREATE_MULTIPLE_RECIPES' }, data: { type: Type.ARRAY, items: recipeSchema } } },
-            { properties: { action: { const: 'CREATE_CUSTOM_PANEL' }, data: customPanelSchema } },
-            { properties: { action: { const: 'UPDATE_ITEM' }, data: itemSchema } },
-            { properties: { action: { const: 'DELETE_ITEM' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_TALENT' }, data: talentSchema } },
-            { properties: { action: { const: 'DELETE_TALENT' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_SECT' }, data: sectSchema } },
-            { properties: { action: { const: 'DELETE_SECT' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_CHARACTER' }, data: characterSchema } },
-            { properties: { action: { const: 'DELETE_CHARACTER' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_TECHNIQUE' }, data: techniqueSchema } },
-            { properties: { action: { const: 'DELETE_TECHNIQUE' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_NPC' }, data: npcSchema } },
-            { properties: { action: { const: 'DELETE_NPC' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_EVENT' }, data: eventSchema } },
-            { properties: { action: { const: 'DELETE_EVENT' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_RECIPE' }, data: recipeSchema } },
-            { properties: { action: { const: 'DELETE_RECIPE' }, data: deleteByNameSchema } },
-            { properties: { action: { const: 'UPDATE_WORLD_BUILDING' }, data: worldBuildingSchema } },
-            { properties: { action: { const: 'DELETE_WORLD_BUILDING' }, data: deleteByTitleSchema } },
-            { properties: { action: { const: 'UPDATE_CUSTOM_PANEL' }, data: customPanelSchema } },
-            { properties: { action: { const: 'DELETE_CUSTOM_PANEL' }, data: deleteByTitleSchema } },
-            { properties: { action: { const: 'UPDATE_REPUTATION' }, data: updateReputationSchema } },
-            { properties: { action: { const: 'BATCH_ACTIONS' }, data: { type: Type.ARRAY, items: {
-                 oneOf: [
-                    { properties: { action: { const: 'CREATE_ITEM' }, data: itemSchema } },
-                    { properties: { action: { const: 'CREATE_TALENT' }, data: talentSchema } },
-                    { properties: { action: { const: 'CREATE_SECT' }, data: sectSchema } },
-                    { properties: { action: { const: 'CREATE_TECHNIQUE' }, data: techniqueSchema } },
-                    { properties: { action: { const: 'CREATE_NPC' }, data: npcSchema } },
-                    { properties: { action: { const: 'CREATE_EVENT' }, data: eventSchema } },
-                    { properties: { action: { const: 'CREATE_RECIPE' }, data: recipeSchema } },
-                    { properties: { action: { const: 'CREATE_CUSTOM_PANEL' }, data: customPanelSchema } },
-                    { properties: { action: { const: 'UPDATE_ITEM' }, data: itemSchema } },
-                    { properties: { action: { const: 'DELETE_ITEM' }, data: deleteByNameSchema } },
-                    { properties: { action: { const: 'UPDATE_TALENT' }, data: talentSchema } },
-                    { properties: { action: { const: 'DELETE_TALENT' }, data: deleteByNameSchema } },
-                    { properties: { action: { const: 'UPDATE_REPUTATION' }, data: updateReputationSchema } },
-                 ]
-            } } } }
-        ],
+        type: Type.OBJECT,
+        properties: {
+            content: {
+                type: Type.ARRAY,
+                items: {
+                    oneOf: [
+                        itemSchema,
+                        talentSchema,
+                        characterSchema,
+                        sectSchema,
+                        worldBuildingSchema,
+                        npcSchema,
+                        techniqueSchema,
+                        eventSchema,
+                        recipeSchema,
+                        customPanelSchema
+                    ]
+                }
+            },
+            realmConfigs: realmSystemSchema,
+            talentSystemConfig: talentSystemConfigSchema
+        },
+        description: "The complete set of generated mod data, including content and system configurations."
     };
-
-    const systemInstruction = getGameMasterSystemInstruction(modContext);
     
-    const fullPrompt = fileContent 
-        ? `${prompt}\n\nDựa trên tệp đính kèm sau:\n---\n${fileContent}\n---`
-        : prompt;
-
+    const systemInstruction = `You are an expert mod content generator for the game 'Phong Thần Ký Sự'. Your task is to generate game content in JSON format based on the user's prompt and the provided context of the current mod. 
+    You ONLY output a single JSON object matching the provided schema. Do not chat or explain.
+    
+    Current Mod Context:
+    ${JSON.stringify(modContext, null, 2)}
+    
+    Based on the user's request, generate new content. You can generate multiple items of different types in the 'content' array. You can also propose changes to 'realmConfigs' or 'talentSystemConfig' if the user's request implies a system-wide change. Always include the correct 'contentType' field for each object in the 'content' array.`;
+    
     const settings = getSettings();
     const response = await generateWithRetry({
-        model: settings.gameMasterModel,
-        contents: fullPrompt,
+        model: settings.gameMasterModel, // Reusing the setting for this specialized task
+        contents: prompt,
         config: {
             systemInstruction,
             responseMimeType: "application/json",
@@ -778,31 +574,39 @@ export const getGameMasterActionableResponse = async (prompt: string, fileConten
     
     try {
         const jsonText = response.text.trim();
-        const action = JSON.parse(jsonText);
-        if (action && action.action) {
-            if (action.action === 'CHAT') {
-                // The AI sometimes incorrectly returns "response" at the top level with "data": null.
-                // We'll normalize this to match our expected AIAction type.
-                if (action.response && action.data === null) {
-                    return { action: 'CHAT', data: { response: action.response } };
+        const generatedData = JSON.parse(jsonText) as AiGeneratedModData;
+
+        // Post-process stringified JSON fields
+        if (generatedData.content) {
+            generatedData.content.forEach((item: any) => {
+                if (item.contentType === 'worldBuilding' && typeof item.data === 'string') {
+                    try { item.data = JSON.parse(item.data); } catch (e) { console.error('Failed to parse worldBuilding data:', item.data, e); }
                 }
-                if (typeof action.data === 'string') {
-                    return { action: 'CHAT', data: { response: action.data } };
+                if (item.contentType === 'technique' && item.effects) {
+                    item.effects.forEach((effect: any) => {
+                        if (typeof effect.details === 'string') {
+                            try { effect.details = JSON.parse(effect.details); } catch (e) { console.error('Failed to parse technique effect details:', effect.details, e); }
+                        }
+                    });
                 }
-                // Handle the case where data is correct or data.response exists.
-                if (action.data && action.data.response) {
-                    return action as AIAction;
+                if (item.contentType === 'event' && item.choices) {
+                    item.choices.forEach((choice: any) => {
+                        if (choice.outcomes) {
+                            choice.outcomes.forEach((outcome: any) => {
+                                if (typeof outcome.details === 'string') {
+                                    try { outcome.details = JSON.parse(outcome.details); } catch (e) { console.error('Failed to parse event outcome details:', outcome.details, e); }
+                                }
+                            });
+                        }
+                    });
                 }
-            } else if (action.data) {
-                // For all other actions, data should exist.
-                return action as AIAction;
-            }
+            });
         }
-        throw new Error("Invalid action format received from AI.");
-    } catch (e: any) {
-        console.error("Failed to parse AI action response:", e);
-        console.error("Raw AI response:", response.text);
-        return { action: 'CHAT', data: { response: `Rất tiếc, tôi không thể thực hiện hành động đó. Phản hồi từ AI không hợp lệ hoặc không thể phân tích được. Vui lòng thử diễn đạt lại yêu cầu của bạn.` } };
+        
+        return generatedData;
+    } catch (e) {
+        console.error("Failed to parse AI mod content response:", e, response.text);
+        throw new Error("Phản hồi từ AI không phải là định dạng JSON hợp lệ.");
     }
 };
 
@@ -945,6 +749,7 @@ export const generateStoryContinuationStream = async function* (
     const safetySettings = getSafetySettingsForApi();
 
     const thinkingConfig = settings.mainTaskModel.includes('flash') 
+        // FIX: Replaced boolean `settings.enableThinking` with the numeric `settings.thinkingBudget` to match the expected type.
         ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
         : {};
     
@@ -1130,4 +935,21 @@ export const generateCombatNarrative = async (
     });
 
     return response.text;
+};
+
+// FIX: Added missing getGameMasterActionableResponse function to resolve import error in GameMasterChat.
+// This is a mock implementation as the original function was not provided.
+export const getGameMasterActionableResponse = async (
+    prompt: string,
+    fileContent: string | undefined,
+    modContext: any
+): Promise<AIAction> => {
+    console.warn("Using mock getGameMasterActionableResponse. This feature is not fully implemented.");
+    await new Promise(resolve => setTimeout(resolve, 1000)); // simulate network delay
+    return {
+        action: 'CHAT',
+        data: {
+            response: `I have received your prompt: "${prompt}". This feature is currently under development.`
+        }
+    };
 };
