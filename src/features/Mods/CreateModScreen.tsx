@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     FaArrowLeft, FaBoxOpen, FaUserShield, FaStar, FaPlus, FaEdit, FaTrash, FaCogs, FaGlobe, FaFilter,
@@ -14,7 +15,7 @@ import type {
     Gender, ItemType, InnateTalentRank, SectMember, SectMemberRank, NpcRelationshipInput, CultivationTechniqueType, TechniqueEffect, TechniqueEffectType, EventChoice, EventOutcome, EventOutcomeType, SkillCheck, ItemQuality
 } from '../../types';
 import StatBonusEditor from './components/StatBonusEditor';
-import TagEditor from '../../../components/TagEditor';
+import TagEditor from '../../components/TagEditor';
 import AiContentGeneratorModal from './components/AiContentGeneratorModal';
 
 

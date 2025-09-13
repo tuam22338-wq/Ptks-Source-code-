@@ -1,1 +1,1 @@
-export { default } from '../../../../components/TagEditor';
+export { default } from '../../../components/TagEditor';
