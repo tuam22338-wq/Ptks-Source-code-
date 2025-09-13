@@ -39,6 +39,7 @@ export interface GameSettings {
     narrativeStyle: NarrativeStyle;
     fontFamily: string;
     theme: Theme;
+    backgroundImage: string;
     mainTaskModel: AIModel;
     quickSupportModel: AIModel;
     itemAnalysisModel: AIModel;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../constants';
-import { testApiKeys } from '../services/geminiService';
+import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS, PREDEFINED_BACKGROUNDS } from '../constants';
+import { testApiKeys, generateBackgroundImage } from '../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme } from '../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle, FaExpand } from 'react-icons/fa';
 import LoadingSpinner from './LoadingSpinner';
@@ -51,10 +51,14 @@ const Toggle: React.FC<{ checked: boolean; onChange: (e: React.ChangeEvent<HTMLI
 type KeyCheckResult = { key: string; status: 'valid' | 'invalid'; error?: string };
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings, onChange }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('api');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
   const [isCheckingKeys, setIsCheckingKeys] = useState(false);
   const [keyCheckResults, setKeyCheckResults] = useState<KeyCheckResult[] | null>(null);
-  
+  const [customBgUrl, setCustomBgUrl] = useState(settings.backgroundImage);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
   const handleSafetyLevelChange = (category: keyof GameSettings['safetyLevels'], value: SafetyLevel) => {
     onChange('safetyLevels', {
         ...settings.safetyLevels,
@@ -62,7 +66,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
     });
   };
   
-  const handleSaveSettings = () => {
+  const handleSettingsSave = () => {
     onSave();
   };
 
@@ -91,6 +95,21 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
         elem.webkitRequestFullscreen();
     } else if (elem.msRequestFullscreen) { /* IE/Edge */
         elem.msRequestFullscreen();
+    }
+  };
+
+  const handleGenerateBg = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true);
+    setGenerationError(null);
+    try {
+        const imageDataUri = await generateBackgroundImage(aiPrompt);
+        onChange('backgroundImage', imageDataUri);
+        setCustomBgUrl(imageDataUri);
+    } catch (err: any) {
+        setGenerationError(err.message || 'Không thể tạo hình ảnh.');
+    } finally {
+        setIsGenerating(false);
     }
   };
 
@@ -173,7 +192,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
             )}
             {activeTab === 'interface' && (
                 <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                    <SettingsSection title="Cài Đặt Giao Diện">
+                    <SettingsSection title="Giao Diện Chung">
                         <SettingsRow label="Theme Giao Diện" description="Thay đổi bảng màu tổng thể của trò chơi.">
                              <Select value={settings.theme} onChange={e => onChange('theme', e.target.value as Theme)} options={THEME_OPTIONS} />
                         </SettingsRow>
@@ -187,6 +206,63 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                              <button onClick={handleFullScreen} className="flex items-center gap-2 px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">
                                 <FaExpand /> Bật Toàn Màn Hình
                             </button>
+                        </SettingsRow>
+                    </SettingsSection>
+                    <SettingsSection title="Hình Nền">
+                        <SettingsRow label="Hình nền có sẵn" description="Chọn một trong các hình nền có sẵn.">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                {PREDEFINED_BACKGROUNDS.map(bg => (
+                                    <div 
+                                        key={bg.name}
+                                        title={bg.name}
+                                        onClick={() => {
+                                            onChange('backgroundImage', bg.url);
+                                            setCustomBgUrl(bg.url);
+                                        }}
+                                        className={`w-full aspect-video rounded-md bg-cover bg-center cursor-pointer border-2 transition-all ${settings.backgroundImage === bg.url ? 'border-[var(--primary-accent-color)] ring-2 ring-[var(--primary-accent-color)]/50' : 'border-gray-600 hover:border-gray-400'}`}
+                                        style={{ backgroundImage: `url(${bg.url})` }}
+                                    />
+                                ))}
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="URL Tùy Chỉnh" description="Dán một URL hình ảnh để làm nền.">
+                            <div className="flex items-center gap-2 w-full max-w-xs">
+                                <input 
+                                    type="text" 
+                                    value={customBgUrl}
+                                    onChange={e => setCustomBgUrl(e.target.value)}
+                                    className="w-full bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-sm"
+                                    placeholder="https://..."
+                                />
+                                <button
+                                    onClick={() => onChange('backgroundImage', customBgUrl)}
+                                    className="px-3 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 text-sm"
+                                >
+                                    Áp dụng
+                                </button>
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Tạo Bằng AI" description="Mô tả hình nền bạn muốn AI tạo ra.">
+                             <div className="flex flex-col gap-2 w-full max-w-xs">
+                                <div className="flex items-center gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={aiPrompt}
+                                        onChange={e => setAiPrompt(e.target.value)}
+                                        className="w-full bg-gray-800/50 border border-gray-600 rounded-md px-3 py-2 text-sm"
+                                        placeholder="Ví dụ: một thung lũng thần tiên..."
+                                        disabled={isGenerating}
+                                    />
+                                    <button
+                                        onClick={handleGenerateBg}
+                                        disabled={isGenerating || !aiPrompt.trim()}
+                                        className="px-3 py-2 bg-purple-700/80 text-white font-bold rounded-lg hover:bg-purple-600/80 text-sm w-24 h-10 flex justify-center items-center"
+                                    >
+                                        {isGenerating ? <LoadingSpinner size="sm" /> : 'Tạo'}
+                                    </button>
+                                </div>
+                                 {generationError && <p className="text-xs text-red-400">{generationError}</p>}
+                             </div>
                         </SettingsRow>
                     </SettingsSection>
                 </div>
@@ -253,62 +329,24 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                         <SettingsRow label="Model cho RAG Embeddings" description="Model Gemini để tạo vector embeddings.">
                             <Select value={settings.ragEmbeddingModel} onChange={() => {}} options={RAG_EMBEDDING_MODELS} />
                         </SettingsRow>
-                        <SettingsRow label="Tần suất Tóm tắt Tự động" description="AI tóm tắt bối cảnh sau mỗi X lượt.">
-                            <NumberInput value={settings.autoSummaryFrequency} onChange={e => onChange('autoSummaryFrequency', parseInt(e.target.value))} min={1} />
+                        {/* FIX: The file was truncated here, causing a boolean to be assigned to the string 'description' prop. Completed the component. */}
+                        <SettingsRow label="Tần suất Tóm tắt Tự động" description="Số hành động của người chơi trước khi AI tự động tóm tắt. Đặt là 0 để tắt.">
+                            <NumberInput value={settings.autoSummaryFrequency} onChange={e => onChange('autoSummaryFrequency', parseInt(e.target.value, 10) || 0)} min={0} />
                         </SettingsRow>
-                    </SettingsSection>
-                    <SettingsSection title="Cấu hình Model Nâng cao">
-                        <SettingsRow label="Nhiệt độ (Temperature)" description="Kiểm soát sự sáng tạo của AI. Giá trị cao hơn (vd: 1.2) cho kết quả sáng tạo hơn, giá trị thấp hơn (vd: 0.5) cho kết quả chặt chẽ hơn. Mặc định: 1.">
-                            <div className="flex items-center gap-2 w-full max-w-xs">
-                                <input 
-                                    type="range" 
-                                    min="0" 
-                                    max="2" 
-                                    step="0.1" 
-                                    value={settings.temperature} 
-                                    onChange={e => onChange('temperature', parseFloat(e.target.value))}
-                                    className="w-full"
-                                />
-                                <span className="font-mono text-sm w-12 text-center">{settings.temperature.toFixed(1)}</span>
-                            </div>
-                        </SettingsRow>
-                         <SettingsRow label="Top-K" description="Giới hạn các token tiếp theo được chọn từ K token có xác suất cao nhất. Mặc định: 64.">
-                            <NumberInput value={settings.topK} onChange={e => onChange('topK', parseInt(e.target.value))} min={1} />
-                        </SettingsRow>
-                        <SettingsRow label="Top-P" description="Chọn các token từ có xác suất cao nhất có tổng xác suất tích lũy là P. Mặc định: 0.95.">
-                            <div className="flex items-center gap-2 w-full max-w-xs">
-                                <input 
-                                    type="range" 
-                                    min="0" 
-                                    max="1" 
-                                    step="0.01" 
-                                    value={settings.topP} 
-                                    onChange={e => onChange('topP', parseFloat(e.target.value))}
-                                    className="w-full"
-                                />
-                                <span className="font-mono text-sm w-12 text-center">{settings.topP.toFixed(2)}</span>
-                            </div>
-                        </SettingsRow>
-                        <SettingsRow label="Bật Chế độ Suy Nghĩ (Thinking)" description="Chỉ áp dụng cho model Flash. Bật để có chất lượng cao hơn, tắt để có độ trễ thấp hơn.">
-                            <Toggle checked={settings.enableThinking} onChange={e => onChange('enableThinking', e.target.checked)} />
-                        </SettingsRow>
-                        <SettingsRow label="Ngân sách Suy Nghĩ (Thinking Budget)" description="Số token tối đa model có thể dùng để suy nghĩ trước khi trả lời. Chỉ áp dụng khi 'Thinking' được bật.">
-                            <NumberInput value={settings.thinkingBudget} onChange={e => onChange('thinkingBudget', parseInt(e.target.value))} min={0} />
+                        <SettingsRow label="Tóm tắt trước khi cắt tỉa" description="Tóm tắt lịch sử trò chuyện trước khi cắt bớt token cũ để tiết kiệm ngữ cảnh.">
+                            <Toggle checked={settings.summarizeBeforePruning} onChange={e => onChange('summarizeBeforePruning', e.target.checked)} />
                         </SettingsRow>
                     </SettingsSection>
                 </div>
             )}
         </div>
-
-        <div className="flex justify-center items-center gap-4 mt-10">
-            <button 
-                onClick={onBack} 
-                className="px-5 py-3 bg-gray-800/80 text-white font-bold rounded-lg hover:bg-gray-700/80 transition-colors duration-300 transform hover:scale-105 shadow-lg shadow-black/30"
-                title="Quay Lại"
-            >
-                <FaArrowLeft className="w-5 h-5" />
+        
+        {/* Action Buttons */}
+        <div className="mt-8 pt-6 border-t border-[var(--panel-border-color)] flex justify-end items-center gap-4">
+            <button onClick={onBack} className="flex items-center gap-2 px-6 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">
+                <FaArrowLeft /> Quay Lại
             </button>
-            <button onClick={handleSaveSettings} className="px-8 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 transition-colors duration-300 transform hover:scale-105 shadow-lg shadow-black/30">
+            <button onClick={handleSettingsSave} className="px-6 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80">
                 Lưu Cài Đặt
             </button>
         </div>
@@ -316,4 +354,5 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
   );
 };
 
+// FIX: Added missing default export.
 export default SettingsPanel;

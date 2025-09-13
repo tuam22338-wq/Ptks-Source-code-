@@ -114,7 +114,6 @@
         /* font-family will be set by React */
         color: var(--text-color);
         background-color: var(--bg-color);
-        background-image: url('https://images.unsplash.com/photo-1597810749557-93f543f4a3e8?q=80&w=2574&auto=format&fit=crop');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -215,6 +214,70 @@
       body.force-desktop {
         min-width: 1024px;
       }
+
+      /* Gameplay Layout Styles */
+      .gameplay-main-content {
+          flex-grow: 1;
+          display: flex;
+          min-height: 0;
+      }
+
+      /* --- Mobile Layout --- */
+      .gameplay-sidebar-wrapper {
+          position: fixed;
+          top: 0;
+          right: 0;
+          height: 100%;
+          z-index: 40;
+          width: 90%;
+          max-width: 400px;
+          transform: translateX(100%);
+          transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      }
+      .gameplay-sidebar-wrapper.is-open {
+          transform: translateX(0);
+      }
+      .gameplay-sidebar-backdrop {
+          position: fixed;
+          inset: 0;
+          background-color: rgba(0,0,0,0.6);
+          backdrop-filter: blur(4px);
+          z-index: 35;
+          animation: fadeIn 0.4s ease-out;
+      }
+
+      /* --- Desktop Layout --- */
+      @media (min-width: 1024px) {
+          body:not(.force-mobile) .gameplay-main-content {
+              flex-direction: row;
+          }
+          body:not(.force-mobile) .gameplay-story-panel {
+              flex: 3;
+          }
+          body:not(.force-mobile) .gameplay-sidebar-wrapper {
+              flex: 1;
+              position: relative;
+              transform: translateX(0) !important;
+          }
+          body:not(.force-mobile) .top-bar-sidebar-toggle {
+              display: none;
+          }
+      }
+      body.force-desktop .gameplay-main-content {
+          flex-direction: row;
+      }
+      body.force-desktop .gameplay-story-panel {
+          flex: 3;
+      }
+      body.force-desktop .gameplay-sidebar-wrapper {
+          flex: 1;
+          position: relative;
+          transform: translateX(0) !important;
+      }
+      body.force-desktop .top-bar-sidebar-toggle {
+          display: none;
+      }
+      
 
       /* Animations */
       @keyframes fadeIn {

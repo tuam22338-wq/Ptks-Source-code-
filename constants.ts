@@ -371,12 +371,32 @@ export const THEME_OPTIONS: { value: Theme; label: string }[] = [
     { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch' },
 ];
 
+export const PREDEFINED_BACKGROUNDS = [
+    {
+        name: 'Misty Forest',
+        url: 'https://images.unsplash.com/photo-1597810749557-93f543f4a3e8?q=80&w=2574&auto=format&fit=crop',
+    },
+    {
+        name: 'Celestial Mountains',
+        url: 'https://images.unsplash.com/photo-1506362802963-179192a53de6?q=80&w=2670&auto=format&fit=crop'
+    },
+    {
+        name: 'Bamboo Grove',
+        url: 'https://images.unsplash.com/photo-1566064893402-532a2a8089c8?q=80&w=2574&auto=format&fit=crop'
+    },
+    {
+        name: 'Ancient Temple',
+        url: 'https://images.unsplash.com/photo-1543033505-83ce842713f5?q=80&w=2670&auto=format&fit=crop'
+    }
+];
+
 export const DEFAULT_SETTINGS: GameSettings = {
     layoutMode: 'auto',
     gameSpeed: 'normal',
     narrativeStyle: 'classic_wuxia',
     fontFamily: "'Noto Serif', serif",
     theme: 'theme-amber',
+    backgroundImage: PREDEFINED_BACKGROUNDS[0].url,
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',

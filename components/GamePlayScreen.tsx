@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup, CultivationPath, CombatState } from '../types';
+import type { GameState, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup, CultivationPath, CombatState, Attribute } from '../types';
 import StoryLog from './StoryLog';
 import ActionBar from './ActionBar';
 import Sidebar from './Sidebar';
@@ -23,6 +23,28 @@ interface GamePlayScreenProps {
     onSaveGame: (currentState: GameState, showNotification: (message: string) => void) => void;
     onBack: () => void;
 }
+
+const AttributeGrid: React.FC<{ attributes: AttributeGroup[] }> = ({ attributes }) => (
+    <div className="space-y-4">
+        {attributes.map(group => (
+          <div key={group.title}>
+            <h4 className="text-md text-gray-400 font-title mb-2">{group.title}</h4>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              {group.attributes.map(attr => (
+                  <div key={attr.name} className="flex items-center" title={attr.description}>
+                  <attr.icon className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+                  <div className="flex-grow flex justify-between items-baseline text-sm">
+                      <span className="text-gray-300">{attr.name}:</span>
+                      <span className="font-bold text-md font-title text-gray-100">{attr.value}</span>
+                  </div>
+                  </div>
+              ))}
+            </div>
+          </div>
+        ))}
+    </div>
+);
+
 
 const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> = ({ npc, allNpcs, onClose }) => {
   return (
@@ -66,6 +88,12 @@ const NpcInfoModal: React.FC<{ npc: NPC; allNpcs: NPC[]; onClose: () => void }> 
                                 )
                             })}
                         </div>
+                    </div>
+                )}
+                {npc.attributes && npc.attributes.length > 0 && (
+                    <div>
+                        <h4 className="text-md text-gray-300 font-title font-semibold mb-2">Thuộc Tính</h4>
+                        <AttributeGrid attributes={npc.attributes} />
                     </div>
                 )}
                 <div>
@@ -253,8 +281,21 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
     };
 
     useEffect(() => {
-        const handleResize = () => setIsSidebarOpen(window.innerWidth > 1024);
+        const handleResize = () => {
+            const isDesktop = window.innerWidth > 1024;
+            const isForcingMobile = document.body.classList.contains('force-mobile');
+            const isForcingDesktop = document.body.classList.contains('force-desktop');
+
+            if (isForcingDesktop) {
+                 setIsSidebarOpen(true);
+            } else if (isForcingMobile) {
+                // Keep sidebar state as is, don't auto-open
+            } else {
+                 setIsSidebarOpen(isDesktop);
+            }
+        };
         window.addEventListener('resize', handleResize);
+        handleResize(); // Initial check
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
@@ -540,7 +581,7 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                     </div>
                 </div>
             )}
-            <div className="flex-shrink-0 p-2 sm:p-4 bg-black/40 backdrop-blur-sm border-b border-gray-700/50 z-10">
+            <div className="flex-shrink-0 p-2 sm:p-4 bg-black/40 backdrop-blur-sm border-b border-gray-700/50 z-20">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsGameMenuOpen(true)} className="p-3 bg-gray-800/60 rounded-full text-gray-300 hover:bg-gray-700/60" title="Menu">
@@ -551,47 +592,43 @@ const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ gameState, setGameState
                         <Timeline gameDate={gameDate} />
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-3 bg-gray-800/60 rounded-full text-gray-300 hover:bg-gray-700/60" title="Bảng điều khiển">
+                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-3 bg-gray-800/60 rounded-full text-gray-300 hover:bg-gray-700/60 top-bar-sidebar-toggle" title="Bảng điều khiển">
                            {isSidebarOpen ? <FaTimes /> : <FaBars />}
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-grow flex min-h-0 relative">
-                {isSidebarOpen && (
-                    <div 
-                        onClick={() => setIsSidebarOpen(false)} 
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden animate-fade-in"
-                        style={{ animationDuration: '300ms' }}
-                    ></div>
-                )}
-                <div className={`transition-all duration-500 ${isSidebarOpen ? 'md:w-2/3 lg:w-3/4' : 'w-full'}`}>
-                    <div className="h-full flex flex-col bg-stone-900/50">
-                        <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} techniques={playerCharacter.techniques} />
-                        {renderBottomPanel()}
-                    </div>
+            <div className="gameplay-main-content">
+                {isSidebarOpen && <div className="gameplay-sidebar-backdrop md:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
+
+                <div className="gameplay-story-panel h-full flex flex-col bg-stone-900/50">
+                    <StoryLog story={storyLog} inventoryItems={playerCharacter.inventory.items} techniques={playerCharacter.techniques} />
+                    {renderBottomPanel()}
                 </div>
-                <div className={`fixed top-0 right-0 h-full bg-stone-900/80 backdrop-blur-md border-l border-gray-700/50 shadow-2xl transition-transform duration-500 z-30 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'} w-full md:w-1/3 lg:w-1/4`}>
-                    <Sidebar
-                        playerCharacter={playerCharacter}
-                        setPlayerCharacter={setPlayerCharacter}
-                        onBreakthrough={handleBreakthrough}
-                        currentLocation={currentLocation}
-                        npcsAtLocation={npcsAtLocation}
-                        neighbors={neighbors}
-                        rumors={worldState.rumors}
-                        storyLog={storyLog}
-                        onTravel={handleTravel}
-                        onExplore={handleExplore}
-                        onNpcSelect={setViewingNpc}
-                        allNpcs={activeNpcs}
-                        encounteredNpcIds={encounteredNpcIds}
-                        discoveredLocations={discoveredLocations}
-                        realmSystem={realmSystem}
-                        showNotification={showNotification}
-                        activeMods={activeMods}
-                    />
+                
+                <div className={`gameplay-sidebar-wrapper ${isSidebarOpen ? 'is-open' : ''}`}>
+                    <div className="h-full bg-stone-900/80 backdrop-blur-md border-l border-gray-700/50 shadow-2xl">
+                        <Sidebar
+                            playerCharacter={playerCharacter}
+                            setPlayerCharacter={setPlayerCharacter}
+                            onBreakthrough={handleBreakthrough}
+                            currentLocation={currentLocation}
+                            npcsAtLocation={npcsAtLocation}
+                            neighbors={neighbors}
+                            rumors={worldState.rumors}
+                            storyLog={storyLog}
+                            onTravel={handleTravel}
+                            onExplore={handleExplore}
+                            onNpcSelect={setViewingNpc}
+                            allNpcs={activeNpcs}
+                            encounteredNpcIds={encounteredNpcIds}
+                            discoveredLocations={discoveredLocations}
+                            realmSystem={realmSystem}
+                            showNotification={showNotification}
+                            activeMods={activeMods}
+                        />
+                    </div>
                 </div>
             </div>
             {viewingNpc && <NpcInfoModal npc={viewingNpc} allNpcs={activeNpcs} onClose={() => setViewingNpc(null)} />}

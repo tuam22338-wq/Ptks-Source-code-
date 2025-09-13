@@ -352,6 +352,22 @@ export const generateCharacterAvatar = async (identity: CharacterIdentity): Prom
     return `data:image/jpeg;base64,${base64ImageBytes}`;
 };
 
+export const generateBackgroundImage = async (prompt: string): Promise<string> => {
+    const fullPrompt = `${prompt}, beautiful fantasy landscape, digital painting, epic, cinematic lighting, wide angle, suitable for a game background.`;
+
+    const response = await generateImagesWithRetry({
+        prompt: fullPrompt,
+        config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/jpeg',
+            aspectRatio: '16:9',
+        },
+    });
+
+    const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+    return `data:image/jpeg;base64,${base64ImageBytes}`;
+};
+
 export const generateDynamicNpcs = async (count: number): Promise<NPC[]> => {
     const availableLocations = WORLD_MAP.map(l => l.id);
     const availableRealms = REALM_SYSTEM.map(r => r.name);
@@ -566,7 +582,7 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
     
     const settings = getSettings();
     const response = await generateWithRetry({
-        model: settings.gameMasterModel, // Reusing the setting for this specialized task
+        model: settings.gameMasterModel,
         contents: prompt,
         config: {
             systemInstruction,

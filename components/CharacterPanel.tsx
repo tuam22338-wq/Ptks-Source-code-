@@ -1,7 +1,7 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup } from '../types';
 import { INNATE_TALENT_RANKS, CULTIVATION_PATHS, CHARACTER_STATUS_CONFIG } from '../constants';
-import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers } from 'react-icons/fa';
+import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers, FaChevronDown } from 'react-icons/fa';
 
 interface CharacterPanelProps {
     character: PlayerCharacter;
@@ -57,9 +57,50 @@ const calculateFinalAttributes = (baseAttributes: AttributeGroup[], activeEffect
     return finalAttributes;
 };
 
+const AttributeGrid: React.FC<{
+    attributes: Attribute[];
+    baseAttributes?: Attribute[];
+}> = ({ attributes, baseAttributes }) => (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+      {attributes.map(attr => {
+        const baseAttr = baseAttributes?.find(ba => ba.name === attr.name);
+        const baseValue = baseAttr?.value;
+        const currentValue = attr.value;
+        const bonus = (typeof currentValue === 'number' && typeof baseValue === 'number') ? currentValue - baseValue : 0;
+        
+        let valueColor = 'text-gray-100';
+        if (bonus > 0) valueColor = 'text-green-400';
+        if (bonus < 0) valueColor = 'text-red-400';
+        
+        return (
+            <div key={attr.name} className="flex items-center" title={`${attr.description}${bonus !== 0 ? ` (Cơ bản: ${baseValue}, Thưởng: ${bonus > 0 ? '+' : ''}${bonus})` : ''}`}>
+              <attr.icon className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+              <div className="flex-grow flex justify-between items-baseline text-sm">
+                <span className="text-gray-300">{attr.name}:</span>
+                <span className={`font-bold text-md font-title transition-colors duration-300 ${valueColor}`}>{attr.value}</span>
+              </div>
+            </div>
+        );
+      })}
+    </div>
+);
+
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
     const { identity, attributes, talents, cultivation, currencies, chosenPathIds, reputation, healthStatus, activeEffects } = character;
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
+
+    const toggleGroup = (title: string) => {
+        setExpandedGroups(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(title)) {
+                newSet.delete(title);
+            } else {
+                newSet.add(title);
+            }
+            return newSet;
+        });
+    };
 
     const finalAttributes = useMemo(() => calculateFinalAttributes(attributes, activeEffects), [attributes, activeEffects]);
 
@@ -203,26 +244,24 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
             {/* Attributes */}
             <div>
                  <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Thuộc Tính Chi Tiết</h3>
-                <div className="space-y-4">
-                    {finalAttributes.filter(g => !['Chỉ số Sinh Tồn', 'Thông Tin Tu Luyện'].includes(g.title)).map(group => (
-                      <div key={group.title}>
-                        <h4 className="text-md text-gray-400 font-title mb-2">{group.title}</h4>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                          {group.attributes.map(attr => {
-                            if (attr.name === 'Cảnh Giới') return null; // Hide Cảnh Giới from here as it's displayed at the top
-                            return (
-                                <div key={attr.name} className="flex items-center" title={attr.description}>
-                                <attr.icon className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                                <div className="flex-grow flex justify-between items-baseline text-sm">
-                                    <span className="text-gray-300">{attr.name}:</span>
-                                    <span className="font-bold text-md font-title text-gray-100">{attr.value}</span>
+                <div className="space-y-2">
+                    {finalAttributes.filter(g => !['Chỉ số Sinh Tồn', 'Thông Tin Tu Luyện'].includes(g.title)).map(group => {
+                        const isExpanded = expandedGroups.has(group.title);
+                        const baseGroup = attributes.find(bg => bg.title === group.title);
+                        return (
+                          <div key={group.title} className="bg-black/20 rounded-lg border border-gray-700/60 transition-all duration-300">
+                            <button onClick={() => toggleGroup(group.title)} className="w-full flex justify-between items-center p-2 text-left">
+                                <h4 className="text-md text-gray-400 font-title">{group.title}</h4>
+                                <FaChevronDown className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isExpanded && (
+                                <div className="p-3 border-t border-gray-700/50 animate-fade-in" style={{animationDuration: '300ms'}}>
+                                    <AttributeGrid attributes={group.attributes} baseAttributes={baseGroup?.attributes} />
                                 </div>
-                                </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+                            )}
+                          </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

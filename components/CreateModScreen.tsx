@@ -12,7 +12,6 @@ import CharacterEditorModal from './CharacterEditorModal';
 import ItemEditorModal from './ItemEditorModal';
 import WorldBuildingEditorModal from './WorldBuildingEditorModal';
 import SectEditorModal from './SectEditorModal';
-import RealmEditorModal from './RealmEditorModal';
 import NpcEditorModal from './NpcEditorModal';
 import TechniqueEditorModal from './TechniqueEditorModal';
 import EventEditorModal from './EventEditorModal';
@@ -127,8 +126,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const [editingWorldBuilding, setEditingWorldBuilding] = useState<ModWorldBuilding | null>(null);
     const [isSectModalOpen, setIsSectModalOpen] = useState(false);
     const [editingSect, setEditingSect] = useState<ModSect | null>(null);
-    const [isRealmModalOpen, setIsRealmModalOpen] = useState(false);
-    const [editingRealm, setEditingRealm] = useState<RealmConfig | null>(null);
     const [isNpcModalOpen, setIsNpcModalOpen] = useState(false);
     const [editingNpc, setEditingNpc] = useState<ModNpc | null>(null);
     const [isTechniqueModalOpen, setIsTechniqueModalOpen] = useState(false);
@@ -298,7 +295,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const handleOpenCharacterEditor = (character: ModCharacter | null) => { setEditingCharacter(character); setIsCharacterModalOpen(true); };
     const handleOpenWorldBuildingEditor = (wb: ModWorldBuilding | null) => { setEditingWorldBuilding(wb); setIsWorldBuildingModalOpen(true); };
     const handleOpenSectEditor = (sect: ModSect | null) => { setEditingSect(sect); setIsSectModalOpen(true); };
-    const handleOpenRealmEditor = (realm: RealmConfig | null) => { setEditingRealm(realm); setIsRealmModalOpen(true); };
     const handleOpenNpcEditor = (npc: ModNpc | null) => { setEditingNpc(npc); setIsNpcModalOpen(true); };
     const handleOpenTechniqueEditor = (technique: ModTechnique | null) => { setEditingTechnique(technique); setIsTechniqueModalOpen(true); };
     const handleOpenEventEditor = (event: ModEvent | null) => { setEditingEvent(event); setIsEventModalOpen(true); };
@@ -315,22 +311,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     const handleSaveTechnique = (techToSave: ModTechnique) => { handleSaveContent({ ...techToSave, contentType: 'technique' }); setIsTechniqueModalOpen(false); };
     const handleSaveEvent = (eventToSave: ModEvent) => { handleSaveContent({ ...eventToSave, contentType: 'event' }); setIsEventModalOpen(false); };
     const handleSaveRecipe = (recipeToSave: AlchemyRecipe) => { handleSaveContent({ ...recipeToSave, contentType: 'recipe' }); setIsRecipeModalOpen(false); };
-    
-    const handleSaveRealm = (realmToSave: RealmConfig) => {
-        const exists = realms.some(r => r.id === realmToSave.id);
-        if (exists) {
-            setRealms(prev => prev.map(r => (r.id === realmToSave.id ? realmToSave : r)));
-        } else {
-            setRealms(prev => [...prev, realmToSave]);
-        }
-        setIsRealmModalOpen(false);
-    };
-
-    const handleDeleteRealm = (id: string, name: string) => {
-        if (window.confirm(`Bạn có chắc muốn xóa cảnh giới "${name}"?`)) {
-            setRealms(prev => prev.filter(r => r.id !== id));
-        }
-    };
 
     // Talent Rank Handlers
     const handleTalentRankChange = (index: number, field: keyof ModTalentRank, value: string | number) => {
@@ -606,7 +586,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             <CharacterEditorModal isOpen={isCharacterModalOpen} onClose={() => setIsCharacterModalOpen(false)} onSave={handleSaveCharacter} characterToEdit={editingCharacter} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <WorldBuildingEditorModal isOpen={isWorldBuildingModalOpen} onClose={() => setIsWorldBuildingModalOpen(false)} onSave={handleSaveWorldBuilding} worldBuildingToEdit={editingWorldBuilding} suggestions={allUniqueTags} />
             <SectEditorModal isOpen={isSectModalOpen} onClose={() => setIsSectModalOpen(false)} onSave={handleSaveSect} sectToEdit={editingSect} suggestions={allUniqueTags} />
-            <RealmEditorModal isOpen={isRealmModalOpen} onClose={() => setIsRealmModalOpen(false)} onSave={handleSaveRealm} realmToEdit={editingRealm} allAttributes={ALL_ATTRIBUTES} />
             <NpcEditorModal isOpen={isNpcModalOpen} onClose={() => setIsNpcModalOpen(false)} onSave={handleSaveNpc} npcToEdit={editingNpc} suggestions={allUniqueTags} />
             <TechniqueEditorModal isOpen={isTechniqueModalOpen} onClose={() => setIsTechniqueModalOpen(false)} onSave={handleSaveTechnique} techniqueToEdit={editingTechnique} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
             <EventEditorModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} onSave={handleSaveEvent} eventToEdit={editingEvent} allAttributes={ALL_ATTRIBUTES} suggestions={allUniqueTags} />
@@ -634,9 +613,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                     <div className="animate-fade-in space-y-6" style={{ animationDuration: '300ms' }}>
                         <Section title={addedContentEditorView === 'list' ? 'Nội Dung & Hệ Thống' : 'Chỉnh Sửa JSON Hàng Loạt'}>
                              <div className="flex justify-end -mt-12 gap-2">
-                                <button onClick={() => setIsAiGeneratorOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-700/80 text-white text-sm font-bold rounded-lg hover:bg-purple-600/80" title="Sử dụng AI để tạo nội dung mới">
-                                    <FaRobot /> Thêm bằng AI
-                                </button>
                                 <button onClick={addedContentEditorView === 'list' ? switchToJsonView : () => setAddedContentEditorView('list')} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/80 text-white text-sm font-bold rounded-lg hover:bg-gray-600/80" title={addedContentEditorView === 'list' ? "Chuyển sang chế độ JSON" : "Chuyển sang chế độ danh sách"}>
                                     {addedContentEditorView === 'list' ? <FaCode/> : <FaList />}
                                 </button>
@@ -663,7 +639,10 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                         )}
                                     </div>
                                     
-                                    <div className="flex justify-end">
+                                    <div className="flex justify-end gap-2">
+                                         <button onClick={() => setIsAiGeneratorOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-700/80 text-white text-sm font-bold rounded-lg hover:bg-purple-600/80" title="Sử dụng AI để tạo nội dung mới">
+                                            <FaRobot /> Thêm bằng AI
+                                        </button>
                                          <div className="relative group flex-shrink-0">
                                             <button className="flex items-center gap-2 px-3 py-1.5 bg-teal-700/80 text-white text-sm font-bold rounded-lg hover:bg-teal-600/80"><FaPlus /> Thêm Thủ Công</button>
                                             <div className="absolute right-0 mt-2 w-48 bg-gray-800/95 border border-gray-700 rounded-md shadow-lg z-10 hidden group-hover:block backdrop-blur-sm">
@@ -697,25 +676,6 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                                     </div>
                                 </div>
                            )}
-                        </Section>
-                        <Section title="Hệ Thống Cảnh Giới Tu Luyện">
-                            <div className="space-y-2">
-                                {realms.map(realm => (
-                                    <div key={realm.id} className="bg-black/20 p-3 rounded-lg flex justify-between items-center border border-gray-700/60">
-                                        <div>
-                                            <p className="font-bold">{realm.name}</p>
-                                            <p className="text-sm" style={{color: 'var(--text-muted-color)'}}>{realm.stages.length} giai đoạn</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => handleOpenRealmEditor(realm)} className="p-2 text-gray-400 hover:text-white"><FaEdit /></button>
-                                            <button onClick={() => handleDeleteRealm(realm.id, realm.name)} className="p-2 text-gray-400 hover:text-red-400"><FaTrash /></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                             <button onClick={() => handleOpenRealmEditor(null)} className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-gray-700/80 text-white text-sm font-bold rounded-lg hover:bg-gray-600/80">
-                                <FaPlus /> Thêm Cảnh Giới
-                            </button>
                         </Section>
                         <Section title="Hệ Thống Phẩm Chất Tiên Tư">
                             <p className="text-sm" style={{color: 'var(--text-muted-color)'}}>Tùy chỉnh các cấp bậc của Tiên Tư và xác suất xuất hiện của chúng.</p>

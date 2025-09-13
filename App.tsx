@@ -211,18 +211,21 @@ const App: React.FC = () => {
 
 
   useEffect(() => {
-    // Apply font family directly
     document.body.style.fontFamily = settings.fontFamily;
 
-    // Manage theme classes by removing all possible themes and adding the current one
     THEME_OPTIONS.forEach(themeOption => {
         document.body.classList.remove(themeOption.value);
     });
-    if (settings.theme && settings.theme !== 'theme-amber') { // 'theme-amber' is the default via :root
+    if (settings.theme && settings.theme !== 'theme-amber') {
         document.body.classList.add(settings.theme);
     }
     
-    // Manage layout classes by removing all layout modes and adding the current one
+    if (settings.backgroundImage) {
+        document.body.style.backgroundImage = `url("${settings.backgroundImage}")`;
+    } else {
+        document.body.style.backgroundImage = 'none';
+    }
+
     document.body.classList.remove('force-desktop', 'force-mobile');
     if (settings.layoutMode === 'desktop') {
       document.body.classList.add('force-desktop');
@@ -230,13 +233,12 @@ const App: React.FC = () => {
       document.body.classList.add('force-mobile');
     }
 
-    // Manage performance mode class
     if (settings.enablePerformanceMode) {
         document.body.classList.add('performance-mode');
     } else {
         document.body.classList.remove('performance-mode');
     }
-  }, [settings]); // Depend on the entire settings object for robustness
+  }, [settings]);
 
   const handleSettingChange = (key: keyof GameSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
