@@ -1,11 +1,13 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../../constants';
-import { testApiKeys, generateBackgroundImage, reloadApiKeys } from '../../services/geminiService';
+import { generateBackgroundImage, reloadApiKeys } from '../../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme, RagEmbeddingModel } from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle, FaExpand, FaBook, FaTrash, FaTerminal } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
+import { GoogleGenAI } from '@google/genai';
 
 interface SettingsPanelProps {
   onBack: () => void;
@@ -373,44 +375,56 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
 };
 
 const ApiKeyManager: React.FC<{ settings: GameSettings, onChange: (key: keyof GameSettings, value: any) => void }> = ({ settings, onChange }) => {
-    const [keys, setKeys] = useState<string[]>([]);
+    const [keys, setKeys] = useState<string[]>(() =>
+        settings.apiKeys && settings.apiKeys.length > 0 ? settings.apiKeys : ['']
+    );
     const [keyTestResults, setKeyTestResults] = useState<{ key: string, status: 'valid' | 'invalid', error?: string }[]>([]);
     const [isTesting, setIsTesting] = useState(false);
-
-    useEffect(() => {
-        setKeys(settings.apiKeys && settings.apiKeys.length > 0 ? settings.apiKeys : ['']);
-    }, [settings.apiKeys]);
 
     const handleKeyChange = (index: number, value: string) => {
         const newKeys = [...keys];
         newKeys[index] = value;
         setKeys(newKeys);
+        onChange('apiKeys', newKeys);
+        onChange('apiKey', newKeys[0] || '');
     };
 
     const addKeyField = () => {
-        setKeys([...keys, '']);
+        const newKeys = [...keys, ''];
+        setKeys(newKeys);
+        onChange('apiKeys', newKeys);
     };
     
     const removeKeyField = (index: number) => {
-        setKeys(keys.filter((_, i) => i !== index));
+        const newKeys = keys.filter((_, i) => i !== index);
+        setKeys(newKeys);
+        onChange('apiKeys', newKeys);
+        onChange('apiKey', newKeys[0] || '');
     };
     
     const handleTestKeys = async () => {
         setIsTesting(true);
         setKeyTestResults([]);
         
-        await db.saveSettings({...settings, apiKeys: keys, apiKey: keys[0] || ''});
-        await reloadApiKeys();
-        
-        const results = await testApiKeys();
+        const keysToTest = keys.filter(k => k && k.trim());
+        if (keysToTest.length === 0) {
+            setKeyTestResults([{ key: 'N/A', status: 'invalid', error: 'Không có key nào được cung cấp.' }]);
+            setIsTesting(false);
+            return;
+        }
+
+        const results = [];
+        for (const key of keysToTest) {
+            try {
+                const testAi = new GoogleGenAI({ apiKey: key });
+                await testAi.models.generateContent({ model: 'gemini-2.5-flash', contents: 'test' });
+                results.push({ key: `...${key.slice(-4)}`, status: 'valid' as const });
+            } catch (e: any) {
+                results.push({ key: `...${key.slice(-4)}`, status: 'invalid' as const, error: e.message });
+            }
+        }
         setKeyTestResults(results);
         setIsTesting(false);
-    };
-
-    const handleSaveApiKeysToSettings = () => {
-        onChange('apiKeys', keys.filter(k => k.trim() !== ''));
-        onChange('apiKey', keys[0] || '');
-        alert('Đã cập nhật danh sách keys. Nhấn "Lưu Cài Đặt" để lưu vĩnh viễn.');
     };
 
     const keysToShow = settings.useKeyRotation ? keys : [keys[0] || ''];
@@ -443,12 +457,11 @@ const ApiKeyManager: React.FC<{ settings: GameSettings, onChange: (key: keyof Ga
                     )}
                 </div>
             </SettingsRow>
-             <SettingsRow label="Kiểm tra & Cập Nhật" description="Kiểm tra các key đã nhập và cập nhật chúng vào cài đặt.">
-                 <div className="flex flex-col sm:flex-row gap-4">
+             <SettingsRow label="Kiểm tra" description="Kiểm tra các key đã nhập có hợp lệ không. Các thay đổi sẽ được lưu khi bạn nhấn 'Lưu cài đặt'.">
+                 <div className="flex flex-col gap-4">
                     <button onClick={handleTestKeys} disabled={isTesting} className="px-4 py-2 bg-blue-700/80 text-white font-bold rounded-lg hover:bg-blue-600/80 w-40 flex justify-center items-center">
                         {isTesting ? <LoadingSpinner size="sm" /> : 'Kiểm Tra'}
                     </button>
-                    <button onClick={handleSaveApiKeysToSettings} className="px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">Cập nhật danh sách Keys</button>
                  </div>
                  {keyTestResults.length > 0 && (
                      <div className="mt-4 space-y-2">
