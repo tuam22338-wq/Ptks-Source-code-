@@ -42,6 +42,7 @@ export interface GameSettings {
     fontFamily: string;
     theme: Theme;
     backgroundImage: string;
+    zoomLevel: number;
     mainTaskModel: AIModel;
     quickSupportModel: AIModel;
     itemAnalysisModel: AIModel;

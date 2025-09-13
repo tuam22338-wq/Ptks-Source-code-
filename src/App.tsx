@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -16,7 +17,7 @@ import DeveloperConsole from './components/DeveloperConsole';
 
 import * as db from './services/dbService';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel } from './types';
-import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from './constants';
+import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from './constants';
 import { reloadApiKeys } from './services/geminiService';
 import { migrateGameState, createNewGameState } from './utils/gameStateManager';
 
@@ -237,6 +238,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     document.body.style.fontFamily = settings.fontFamily;
+    document.documentElement.style.fontSize = `${settings.zoomLevel}%`;
 
     THEME_OPTIONS.forEach(themeOption => {
         document.body.classList.remove(themeOption.value);
@@ -391,9 +393,39 @@ const App: React.FC = () => {
     }
     
     setIsLoading(true);
+
+    const npcCount = NPC_DENSITY_LEVELS.find(d => d.id === gameStartData.npcDensity)?.count ?? 20;
+    let estimatedTime = Math.ceil(npcCount * 0.4) + 5; // ~0.4s per NPC + 5s base time
+    let remainingTime = estimatedTime;
+
+    const messages = [
+        'Đang nạp các mod đã kích hoạt...',
+        'Thỉnh mời các vị thần...',
+        'Vẽ nên sông núi, cây cỏ...',
+        'Tạo ra chúng sinh vạn vật...',
+        'An bài số mệnh, định ra nhân quả...'
+    ];
+    let messageIndex = 0;
+
+    const updateLoadingMessage = () => {
+        const message = messages[messageIndex];
+        const timeString = remainingTime > 0 ? ` (Ước tính còn: ${remainingTime}s)` : ' (Sắp xong...)';
+        setLoadingMessage(message + timeString);
+    };
+
+    updateLoadingMessage();
+
+    const timerInterval = setInterval(() => {
+        remainingTime = Math.max(0, remainingTime - 1);
+        updateLoadingMessage();
+    }, 1000);
+
+    const messageInterval = setInterval(() => {
+        messageIndex = (messageIndex + 1) % messages.length;
+        updateLoadingMessage();
+    }, 4000);
     
     try {
-        setLoadingMessage('Đang nạp các mod đã kích hoạt...');
         const activeMods: FullMod[] = [];
         const modLibrary: db.DbModInLibrary[] = await db.getModLibrary();
         const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
@@ -403,7 +435,6 @@ const App: React.FC = () => {
             if (modContent) activeMods.push(modContent);
         }
         
-        setLoadingMessage('Đang tạo ra chúng sinh...');
         const newGameState = await createNewGameState(gameStartData, activeMods);
         
         await db.saveGameState(currentSlotId, newGameState);
@@ -418,6 +449,8 @@ const App: React.FC = () => {
         console.error("Failed to start new game:", error);
         alert(`Lỗi nghiêm trọng khi tạo thế giới: ${(error as Error).message}. Vui lòng thử lại.`);
     } finally {
+        clearInterval(timerInterval);
+        clearInterval(messageInterval);
         setIsLoading(false);
     }
   }, [currentSlotId, loadSaveSlots]);

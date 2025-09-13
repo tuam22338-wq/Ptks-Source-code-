@@ -403,6 +403,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     fontFamily: "'Noto Serif', serif",
     theme: 'theme-amber',
     backgroundImage: '',
+    zoomLevel: 100,
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',

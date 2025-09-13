@@ -78,7 +78,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
             let keysToReset: (keyof GameSettings)[] = [];
             switch (section) {
                 case 'Giao Diện':
-                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'storyLogItemsPerPage'];
+                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'storyLogItemsPerPage', 'zoomLevel'];
                     break;
                 case 'AI & Models':
                     keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK'];
@@ -165,6 +165,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                                 <select value={settings.theme} onChange={(e) => onChange('theme', e.target.value as Theme)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
                                     {THEME_OPTIONS.map(theme => <option key={theme.value} value={theme.value}>{theme.label}</option>)}
                                 </select>
+                            </SettingsRow>
+                            <SettingsRow label="Mức Thu Phóng Giao Diện" description="Thay đổi kích thước tổng thể của tất cả các thành phần giao diện.">
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="range"
+                                        min="75"
+                                        max="150"
+                                        step="5"
+                                        value={settings.zoomLevel}
+                                        onChange={e => onChange('zoomLevel', parseInt(e.target.value))}
+                                        className="w-full"
+                                    />
+                                    <span className="font-mono text-lg w-20 text-center">{settings.zoomLevel}%</span>
+                                </div>
                             </SettingsRow>
                             <SettingsRow label="Vật phẩm mỗi trang" description="Số lượng vật phẩm hiển thị trên mỗi trang trong túi đồ.">
                                 <input type="number" value={settings.itemsPerPage} onChange={(e) => onChange('itemsPerPage', parseInt(e.target.value) || 10)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
