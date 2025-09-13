@@ -1,6 +1,6 @@
 import { FaQuestionCircle } from 'react-icons/fa';
-import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, WORLD_MAP } from "../constants";
-import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC } from "../types";
+import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, SECTS, WORLD_MAP } from "../constants";
+import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect } from "../types";
 import { generateDynamicNpcs } from '../services/geminiService';
 
 const initialStory = [
@@ -77,6 +77,30 @@ export const migrateGameState = (savedGame: any): GameState => {
                 npc.attributes = rehydrateAttributes(npc.attributes);
              }
              return npc;
+        });
+    }
+
+    const allSectsConfig = new Map<string, Sect>();
+    SECTS.forEach(sect => allSectsConfig.set(sect.id, sect));
+    if (dataToProcess.worldSects) {
+        dataToProcess.worldSects = dataToProcess.worldSects.map((sect: Sect) => {
+            const config = allSectsConfig.get(sect.id);
+            if (config && config.icon) {
+                return { ...sect, icon: config.icon };
+            }
+            return sect;
+        });
+    }
+
+    const allLocationsConfig = new Map<string, Location>();
+    WORLD_MAP.forEach(loc => allLocationsConfig.set(loc.id, loc));
+    if (dataToProcess.discoveredLocations) {
+        dataToProcess.discoveredLocations = dataToProcess.discoveredLocations.map((loc: Location) => {
+            const config = allLocationsConfig.get(loc.id);
+            if (config && config.contextualActions) {
+                return { ...loc, contextualActions: config.contextualActions };
+            }
+            return loc;
         });
     }
 

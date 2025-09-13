@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { GameState, GameSettings, ModInfo, FullMod, SaveSlot, AttributeGroup, NPC, Sect } from '../types';
+import type { GameState, GameSettings, ModInfo, FullMod, SaveSlot, AttributeGroup, NPC, Sect, Location } from '../types';
 
 export interface DbSaveSlot {
   id: number;
@@ -37,7 +37,7 @@ export class MyDatabase extends Dexie {
       modLibrary: 'modInfo.id',
       modContent: 'id',
       modDrafts: 'id',
-      misc: 'key',
+misc: 'key',
     });
   }
 }
@@ -93,6 +93,21 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
             const { icon, ...rest } = sect;
             return rest as Sect;
         })
+    }
+    
+    if (dehydratedState.discoveredLocations) {
+        dehydratedState.discoveredLocations = dehydratedState.discoveredLocations.map(location => {
+            if (!location.contextualActions) {
+                return location;
+            }
+            return {
+                ...location,
+                contextualActions: location.contextualActions.map(action => {
+                    const { icon, ...rest } = action;
+                    return rest;
+                })
+            };
+        });
     }
     
     return dehydratedState;

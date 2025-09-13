@@ -50,7 +50,8 @@ const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, current
                                     title={action.description}
                                     className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-600/70 disabled:opacity-50 transition-colors"
                                 >
-                                    <Icon />
+                                    {/* FIX: Add a check for the icon before rendering to prevent runtime errors, as it is now an optional property. */}
+                                    {Icon && <Icon />}
                                     {action.label}
                                 </button>
                             );

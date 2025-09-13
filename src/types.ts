@@ -475,7 +475,7 @@ export interface Location {
         id: string;
         label: string;
         description: string;
-        icon: ElementType;
+        icon?: ElementType;
     }[];
 }
 
