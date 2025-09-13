@@ -1,0 +1,980 @@
+
+
+import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
+import type { ElementType } from 'react';
+import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute } from '../types';
+import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG } from "../constants";
+import * as db from './dbService';
+import { FaQuestionCircle } from "react-icons/fa";
+
+// --- Key Manager ---
+const ApiKeyManager = (() => {
+    let keys: string[] = [];
+    let currentKeyIndex = 0;
+    let settingsCache: GameSettings | null = null;
+
+    const loadKeys = async () => {
+        try {
+            const settings = await db.getSettings() || DEFAULT_SETTINGS;
+            settingsCache = settings;
+            const keyList = settings.apiKeys?.filter((k: string) => k && k.trim()) || [];
+            
+            if (settings.useKeyRotation && keyList.length > 0) {
+                keys = keyList;
+            } else if (settings.apiKey) {
+                keys = [settings.apiKey.trim()];
+            } else {
+                keys = [process.env.API_KEY as string].filter(Boolean);
+            }
+            currentKeyIndex = 0;
+        } catch (e) {
+            console.error("Could not load API keys from DB.", e);
+            keys = [process.env.API_KEY as string].filter(Boolean);
+        }
+    };
+
+    return {
+        getKey: (): string | null => {
+            if (keys.length === 0) return null;
+            return keys[currentKeyIndex];
+        },
+        rotateKey: (): string | null => {
+            if (keys.length <= 1) return keys[0] || null;
+            currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+            console.warn(`Rotating to API key #${currentKeyIndex + 1}`);
+            return keys[currentKeyIndex];
+        },
+        reload: loadKeys,
+        getKeys: () => keys,
+        getCurrentIndex: () => currentKeyIndex,
+        getSettings: (): GameSettings => settingsCache || DEFAULT_SETTINGS,
+    };
+})();
+
+export const reloadApiKeys = ApiKeyManager.reload;
+
+const getAiClient = async () => {
+    await ApiKeyManager.reload(); // Always get fresh keys
+    const apiKey = ApiKeyManager.getKey();
+    if (!apiKey) {
+        throw new Error("API Key của Gemini chưa được cấu hình. Vui lòng vào Cài Đặt và thêm API Key.");
+    }
+    return new GoogleGenAI({ apiKey });
+};
+
+
+const getSettings = (): GameSettings => {
+    return ApiKeyManager.getSettings();
+};
+
+const getSafetySettingsForApi = () => {
+    const settings = getSettings();
+    if (settings.masterSafetySwitch) {
+        return [
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        ];
+    }
+    return [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: settings.safetyLevels.harassment as HarmBlockThreshold },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: settings.safetyLevels.hateSpeech as HarmBlockThreshold },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: settings.safetyLevels.sexuallyExplicit as HarmBlockThreshold },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: settings.safetyLevels.dangerousContent as HarmBlockThreshold },
+    ];
+};
+
+const performApiCall = async <T>(
+    apiFunction: (client: GoogleGenAI, request: any) => Promise<T>,
+    baseRequest: any,
+    maxRetries = 3
+): Promise<T> => {
+    await ApiKeyManager.reload();
+    const keyCount = ApiKeyManager.getKeys().length;
+    if (keyCount === 0) {
+       throw new Error("API Key của Gemini chưa được cấu hình. Vui lòng vào Cài Đặt và thêm API Key.");
+    }
+
+    const initialKeyIndex = ApiKeyManager.getCurrentIndex();
+
+    for (let i = 0; i < keyCount; i++) {
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                const ai = await getAiClient();
+                const response = await apiFunction(ai, baseRequest);
+                return response;
+            } catch (error: any) {
+                attempt++;
+                const errorMessage = error.toString().toLowerCase();
+                const isAuthError = errorMessage.includes('400') || errorMessage.includes('permission') || errorMessage.includes('api key not valid');
+                const isQuotaError = errorMessage.includes('429') || errorMessage.includes('resource_exhausted');
+
+                if (isAuthError || isQuotaError) {
+                    console.warn(`Key ${ApiKeyManager.getCurrentIndex() + 1}/${keyCount} failed: ${errorMessage}`);
+                    break; 
+                }
+                
+                if (attempt >= maxRetries) {
+                    throw error;
+                }
+
+                const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                console.warn(`Gặp lỗi máy chủ. Thử lại sau ${delay.toFixed(0)}ms... (Lần thử ${attempt}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        ApiKeyManager.rotateKey();
+        if (ApiKeyManager.getCurrentIndex() === initialKeyIndex && keyCount > 1) {
+             break;
+        }
+    }
+    
+    throw new Error("Tất cả các API key đều không thành công.");
+};
+
+
+const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateContentResponse> => {
+    const settings = getSettings();
+    const safetySettings = getSafetySettingsForApi();
+    
+    const modelToUse = generationRequest.model || settings.mainTaskModel;
+
+    const thinkingConfig = modelToUse.includes('flash') 
+        ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
+        : {};
+    
+    const finalRequest = {
+        ...generationRequest,
+        model: modelToUse,
+        config: { 
+            ...generationRequest.config, 
+            safetySettings,
+            temperature: settings.temperature,
+            topK: settings.topK,
+            topP: settings.topP,
+            ...thinkingConfig,
+        }
+    };
+    
+    return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest, maxRetries);
+};
+
+const generateImagesWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateImagesResponse> => {
+    const settings = getSettings();
+    const finalRequest = { ...generationRequest, model: settings.imageGenerationModel };
+    return performApiCall((ai, req) => ai.models.generateImages(req), finalRequest, maxRetries);
+};
+
+export const testApiKeys = async (): Promise<{ key: string, status: 'valid' | 'invalid', error?: string }[]> => {
+    await reloadApiKeys();
+    const keys = ApiKeyManager.getKeys();
+    if (keys.length === 0) {
+        return [{ key: 'N/A', status: 'invalid', error: 'Không có key nào được cung cấp.' }];
+    }
+
+    const results = [];
+    for (const key of keys) {
+        try {
+            const testAi = new GoogleGenAI({ apiKey: key });
+            await testAi.models.generateContent({ model: 'gemini-2.5-flash', contents: 'test' });
+            results.push({ key: `...${key.slice(-4)}`, status: 'valid' as const });
+        } catch (e: any) {
+            results.push({ key: `...${key.slice(-4)}`, status: 'invalid' as const, error: e.message });
+        }
+    }
+    return results;
+};
+
+export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
+    try {
+        const response = await fetch(COMMUNITY_MODS_URL);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok, status: ${response.status}`);
+        }
+        const data: CommunityMod[] = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch community mods:", error);
+        return [{
+            modInfo: {
+                id: 'fallback-mod-example',
+                name: 'Thần Binh Lợi Khí (Ví dụ)',
+                author: 'Game Master',
+                description: 'Không thể tải danh sách mod cộng đồng. Đây là một ví dụ mẫu có sẵn.',
+                version: '1.0.0',
+            },
+            downloadUrl: 'https://gist.githubusercontent.com/world-class-dev/2c1b2c6e6152a5a5d852c0021c32c4e2/raw/phongthan-thanbinh-loikhi.json'
+        }];
+    }
+};
+
+
+interface ModTalentConfig {
+    systemConfig: TalentSystemConfig;
+    ranks: ModTalentRank[];
+    availableTalents: ModTalent[];
+}
+
+export const generateCharacterIdentity = async (concept: string, gender: Gender): Promise<Omit<CharacterIdentity, 'gender' | 'age'>> => {
+    const identitySchema = {
+        type: Type.OBJECT,
+        properties: {
+            name: { type: Type.STRING, description: 'Tên Hán Việt, phù hợp bối cảnh tiên hiệp. Ví dụ: "Lý Thanh Vân", "Hàn Lập".' },
+            origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật, chi tiết và lôi cuốn.' },
+            appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo.' },
+            personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê.' },
+        },
+        required: ['name', 'origin', 'appearance', 'personality'],
+    };
+
+    const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Phong Thần, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
+    - **Bối cảnh:** Phong Thần Diễn Nghĩa, thế giới huyền huyễn, tiên hiệp.
+    - **Giới tính nhân vật:** ${gender}
+    - **Ý tưởng gốc từ người chơi:** "${concept}"
+    
+    Nhiệm vụ: Sáng tạo ra một cái tên, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
+    `;
+    
+    const response = await generateWithRetry({
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: identitySchema,
+        }
+    });
+
+    const json = JSON.parse(response.text);
+    return json as Omit<CharacterIdentity, 'gender' | 'age'>;
+};
+
+export const generateTalentChoices = async (identity: CharacterIdentity, concept: string, modTalentConfig: ModTalentConfig): Promise<InnateTalent[]> => {
+    const talentRanks = modTalentConfig.ranks.length > 0 ? modTalentConfig.ranks.map(r => r.name) : TALENT_RANK_NAMES;
+    const choicesPerRoll = modTalentConfig.systemConfig.choicesPerRoll || 6;
+    
+    const talentsSchema = {
+        type: Type.OBJECT,
+        properties: {
+            talents: {
+                type: Type.ARRAY,
+                description: `Một danh sách gồm chính xác ${choicesPerRoll} tiên tư độc đáo.`,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING, description: 'Tên của tiên tư, ngắn gọn và độc đáo (ví dụ: "Thánh Thể Hoang Cổ", "Kiếm Tâm Thông Minh").' },
+                        description: { type: Type.STRING, description: 'Mô tả ngắn gọn về bản chất của tiên tư.' },
+                        rank: { type: Type.STRING, enum: talentRanks, description: 'Cấp bậc của tiên tư.' },
+                        effect: { type: Type.STRING, description: 'Mô tả hiệu ứng trong game của tiên tư.' },
+                        bonuses: {
+                            type: Type.ARRAY,
+                            description: 'Danh sách các chỉ số được cộng thêm. Có thể là một mảng rỗng.',
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES, description: 'Tên chỉ số được cộng.' },
+                                    value: { type: Type.NUMBER, description: 'Giá trị cộng thêm.' },
+                                },
+                                required: ['attribute', 'value'],
+                            },
+                        },
+                        triggerCondition: { type: Type.STRING, description: 'Điều kiện kích hoạt đặc biệt (nếu có). Ví dụ: "Khi sinh mệnh dưới 20%".' },
+                        synergy: { type: Type.STRING, description: 'Tương tác đặc biệt với các yếu tố khác (nếu có). Ví dụ: "Mạnh hơn khi trang bị kiếm".' },
+                    },
+                    required: ['name', 'description', 'rank', 'effect'],
+                },
+            }
+        },
+        required: ['talents'],
+    };
+
+    const talentInstructions = modTalentConfig.systemConfig.allowAIGeneratedTalents !== false
+    ? `Tạo ra ${choicesPerRoll} tiên tư độc đáo, có liên quan mật thiết đến thân phận và ý tưởng gốc của nhân vật. Phân bổ cấp bậc của chúng một cách ngẫu nhiên và hợp lý (sử dụng các cấp bậc: ${talentRanks.join(', ')}). Các tiên tư phải có chiều sâu, có thể có điều kiện kích hoạt hoặc tương tác đặc biệt.`
+    : `CHỈ được chọn ${choicesPerRoll} tiên tư từ danh sách có sẵn sau: ${modTalentConfig.availableTalents.map(t => t.name).join(', ')}.`;
+
+    const prompt = `Dựa trên thông tin về nhân vật, hãy tạo ra một bộ Tiên Tư (Innate Talents) cho họ.
+    - **Bối cảnh:** Game tu tiên Phong Thần.
+    - **Ý tưởng gốc:** "${concept}"
+    - **Thân phận nhân vật:**
+        - Tên: ${identity.name}
+        - Giới tính: ${identity.gender}
+        - Xuất thân: ${identity.origin}
+        - Ngoại hình: ${identity.appearance}
+        - Tính cách: ${identity.personality}
+
+    Nhiệm vụ:
+    ${talentInstructions}
+
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
+    `;
+
+    const response = await generateWithRetry({
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: talentsSchema,
+        }
+    });
+
+    const json = JSON.parse(response.text);
+    return json.talents as InnateTalent[];
+};
+
+
+export const generateCharacterAvatar = async (identity: CharacterIdentity): Promise<string> => {
+    const prompt = `Tạo ảnh chân dung (portrait) cho một nhân vật trong game tu tiên.
+    - **Ngoại hình:** ${identity.appearance}
+    - **Giới tính:** ${identity.gender}
+    - **Xuất thân:** ${identity.origin}
+    - **Phong cách:** Tranh vẽ nghệ thuật, phong cách thủy mặc kết hợp fantasy, chi tiết, ánh sáng đẹp.
+    - **Bối cảnh:** Nền đơn giản, tập trung vào nhân vật.
+    - **Tỷ lệ:** Chân dung cận mặt hoặc bán thân.
+    `;
+
+    const response = await generateImagesWithRetry({
+        prompt: prompt,
+        config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/jpeg',
+            aspectRatio: '1:1',
+        },
+    });
+
+    const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+    return `data:image/jpeg;base64,${base64ImageBytes}`;
+};
+
+export const generateBackgroundImage = async (prompt: string): Promise<string> => {
+    const fullPrompt = `${prompt}, beautiful fantasy landscape, digital painting, epic, cinematic lighting, wide angle, suitable for a game background.`;
+
+    const response = await generateImagesWithRetry({
+        prompt: fullPrompt,
+        config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/jpeg',
+            aspectRatio: '16:9',
+        },
+    });
+
+    const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+    return `data:image/jpeg;base64,${base64ImageBytes}`;
+};
+
+export const generateEventIllustration = async (prompt: string): Promise<string> => {
+    const fullPrompt = `Epic moment, fantasy art painting, Chinese ink wash painting style (Shuǐmòhuà), cinematic lighting, detailed, beautiful. ${prompt}`;
+
+    const response = await generateImagesWithRetry({
+        prompt: fullPrompt,
+        config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/jpeg',
+            aspectRatio: '16:9',
+        },
+    });
+
+    const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+    return `data:image/jpeg;base64,${base64ImageBytes}`;
+};
+
+export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]> => {
+    const count = NPC_DENSITY_LEVELS.find(d => d.id === npcDensity)?.count ?? 15;
+    const availableLocations = WORLD_MAP.map(l => l.id);
+    const availableRealms = REALM_SYSTEM.map(r => r.name);
+
+    const responseSchema = {
+        type: Type.ARRAY,
+        items: {
+            type: Type.OBJECT,
+            properties: {
+                name: { type: Type.STRING },
+                gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] },
+                status: { type: Type.STRING, description: 'Mô tả trạng thái hiện tại của NPC (ví dụ: "Đang ngồi thiền trong hang động", "Đang mua bán ở chợ").' },
+                description: { type: Type.STRING, description: 'Mô tả ngoại hình của NPC.' },
+                origin: { type: Type.STRING, description: 'Mô tả xuất thân, nguồn gốc của NPC.' },
+                personality: { type: Type.STRING, description: 'Tính cách của NPC (ví dụ: Trung Lập, Tà Ác, Hỗn Loạn, Chính Trực).' },
+                realmName: { type: Type.STRING, enum: availableRealms, description: 'Cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
+                ChinhDao: { type: Type.NUMBER, description: 'Điểm Chính Đạo (0-100).' },
+                MaDao: { type: Type.NUMBER, description: 'Điểm Ma Đạo (0-100).' },
+                TienLuc: { type: Type.NUMBER, description: 'Chỉ số Tiên Lực chiến đấu.' },
+                PhongNgu: { type: Type.NUMBER, description: 'Chỉ số Phòng Ngự chiến đấu.' },
+                SinhMenh: { type: Type.NUMBER, description: 'Chỉ số Sinh Mệnh chiến đấu.' },
+                currencies: {
+                    type: Type.OBJECT,
+                    description: 'Số tiền NPC sở hữu. Có thể để trống nếu là người thường.',
+                    properties: {
+                        linhThach: { type: Type.NUMBER, description: 'Số Linh thạch hạ phẩm.' },
+                        bac: { type: Type.NUMBER, description: 'Số Bạc.' },
+                    }
+                },
+                talents: {
+                    type: Type.ARRAY,
+                    description: "Một danh sách từ 0 đến 3 tiên tư độc đáo.",
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            name: { type: Type.STRING },
+                            description: { type: Type.STRING },
+                            rank: { type: Type.STRING, enum: TALENT_RANK_NAMES },
+                            effect: { type: Type.STRING },
+                             bonuses: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                                        value: { type: Type.NUMBER }
+                                    },
+                                    required: ['attribute', 'value']
+                                }
+                            }
+                        },
+                        required: ['name', 'description', 'rank', 'effect'],
+                    },
+                },
+                locationId: { type: Type.STRING, enum: availableLocations },
+            },
+            required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'realmName', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'TienLuc', 'PhongNgu', 'SinhMenh', 'currencies'],
+        },
+    };
+    
+    const prompt = `Tạo ra ${count} NPC (Non-Player Characters) độc đáo cho thế giới game tu tiên Phong Thần.
+    Các NPC này có thể là tu sĩ, yêu ma, dân thường, hoặc các sinh vật kỳ dị.
+    Mỗi NPC cần có thông tin đầy đủ theo schema. Hãy sáng tạo và làm cho thế giới trở nên sống động.
+    
+    **Yêu cầu chi tiết:**
+    1.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu (Tiên Lực, Phòng Ngự, Sinh Mệnh). Ví dụ, một 'ma đầu' sẽ có Ma Đạo cao, trong khi một 'đại hiệp' sẽ có Chính Đạo cao.
+    2.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp từ danh sách. Một lão nông bình thường sẽ là "Phàm Nhân", trong khi một trưởng lão tông môn có thể là "Kết Đan Kỳ" hoặc "Nguyên Anh Kỳ".
+    3.  **Tiên Tư:** Tạo ra 1-2 tiên tư (talents) độc đáo và phù hợp cho mỗi NPC tu sĩ. Các tiên tư nên có cấp bậc (rank) và hiệu ứng (effect) rõ ràng, có thể cộng thêm chỉ số (bonuses).
+    4.  **Tài Sản:** Gán cho họ một lượng tiền tệ (Linh thạch, Bạc) phù hợp. Một trưởng lão có thể giàu có, trong khi một tán tu có thể nghèo khó.`;
+    
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.npcSimulationModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema,
+        }
+    });
+
+    const npcsData = JSON.parse(response.text);
+    
+    const attrConfigMap = new Map<string, { description: string, icon: ElementType }>();
+    ATTRIBUTES_CONFIG.forEach(group => {
+        group.attributes.forEach(attr => {
+            attrConfigMap.set(attr.name, { description: attr.description, icon: attr.icon });
+        });
+    });
+
+    return npcsData.map((npcData: any): NPC => {
+        const { name, gender, description, origin, personality, talents, realmName, currencies, ...stats } = npcData;
+        
+        const targetRealm = REALM_SYSTEM.find(r => r.name === realmName) || REALM_SYSTEM[0];
+        const targetStage = targetRealm.stages[Math.floor(Math.random() * targetRealm.stages.length)];
+
+        const cultivation: NPC['cultivation'] = {
+            currentRealmId: targetRealm.id,
+            currentStageId: targetStage.id,
+            spiritualQi: Math.floor(Math.random() * targetStage.qiRequired),
+            hasConqueredInnerDemon: false,
+        };
+
+        // FIX: Add the required 'icon' property to each attribute based on the central config.
+        const baseAttributes: AttributeGroup[] = [
+             {
+                title: 'Chỉ số Chiến Đấu',
+                attributes: [
+                    { name: 'Tiên Lực', description: attrConfigMap.get('Tiên Lực')?.description ?? 'Sát thương phép thuật.', value: stats.TienLuc || 0, icon: attrConfigMap.get('Tiên Lực')?.icon ?? FaQuestionCircle },
+                    { name: 'Phòng Ngự', description: attrConfigMap.get('Phòng Ngự')?.description ?? 'Khả năng chống đỡ.', value: stats.PhongNgu || 0, icon: attrConfigMap.get('Phòng Ngự')?.icon ?? FaQuestionCircle },
+                ],
+            },
+            {
+                title: 'Chỉ số Sinh Tồn',
+                attributes: [
+                     { name: 'Sinh Mệnh', description: attrConfigMap.get('Sinh Mệnh')?.description ?? 'Thể lực.', value: stats.SinhMenh || 100, maxValue: stats.SinhMenh || 100, icon: attrConfigMap.get('Sinh Mệnh')?.icon ?? FaQuestionCircle },
+                ]
+            },
+            {
+                title: 'Thiên Hướng',
+                attributes: [
+                    { name: 'Chính Đạo', description: attrConfigMap.get('Chính Đạo')?.description ?? 'Danh tiếng chính đạo.', value: stats.ChinhDao || 0, icon: attrConfigMap.get('Chính Đạo')?.icon ?? FaQuestionCircle },
+                    { name: 'Ma Đạo', description: attrConfigMap.get('Ma Đạo')?.description ?? 'Uy danh ma đạo.', value: stats.MaDao || 0, icon: attrConfigMap.get('Ma Đạo')?.icon ?? FaQuestionCircle },
+                ],
+            },
+        ];
+
+        return {
+            ...stats,
+            id: `dynamic-npc-${Math.random().toString(36).substring(2, 9)}`,
+            identity: {
+                name,
+                gender,
+                appearance: description,
+                origin,
+                personality,
+            },
+            talents: talents || [],
+            attributes: baseAttributes,
+            cultivation,
+            techniques: [],
+            inventory: { items: [], weightCapacity: 15 },
+            currencies: {
+                'Linh thạch hạ phẩm': currencies?.linhThach || 0,
+                'Bạc': currencies?.bac || 0,
+            },
+            equipment: {},
+            healthStatus: 'HEALTHY' as const,
+            activeEffects: [],
+        };
+    });
+};
+
+export const generateModContentFromPrompt = async (prompt: string, modContext: any): Promise<AiGeneratedModData> => {
+    // --- Reusable Sub-Schemas ---
+    const statBonusSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] };
+    const stringArray = { type: Type.ARRAY, items: { type: Type.STRING } };
+
+    // --- Content Type Schemas ---
+    const itemSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['item'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, weight: { type: Type.NUMBER }, slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'] }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'type', 'quality', 'weight'] };
+    const talentSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['talent'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, rank: { type: Type.STRING, enum: TALENT_RANK_NAMES }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'rank'] };
+    const characterSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['character'] }, name: { type: Type.STRING }, gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] }, origin: { type: Type.STRING }, appearance: { type: Type.STRING }, personality: { type: Type.STRING }, bonuses: { type: Type.ARRAY, items: statBonusSchema }, tags: stringArray }, required: ['contentType', 'name', 'gender', 'origin', 'appearance', 'personality'] };
+    const sectMemberSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, rank: { type: Type.STRING, enum: ['Tông Chủ', 'Trưởng Lão', 'Đệ Tử Chân Truyền', 'Đệ Tử Nội Môn', 'Đệ Tử Ngoại Môn'] }, description: { type: Type.STRING } }, required: ['name', 'rank'] };
+    const sectSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['sect'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, location: { type: Type.STRING }, members: { type: Type.ARRAY, items: sectMemberSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'location'] };
+    const worldBuildingSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['worldBuilding'] }, title: { type: Type.STRING }, description: { type: Type.STRING }, data: { type: Type.STRING, description: 'A JSON string representing the world building data object.' }, tags: stringArray }, required: ['contentType', 'title', 'description', 'data'] };
+    const npcRelationshipSchema = { type: Type.OBJECT, properties: { targetNpcName: { type: Type.STRING }, type: { type: Type.STRING }, description: { type: Type.STRING } }, required: ['targetNpcName', 'type', 'description'] };
+    const npcSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['npc'] }, name: { type: Type.STRING }, status: { type: Type.STRING }, description: { type: Type.STRING }, origin: { type: Type.STRING }, personality: { type: Type.STRING }, locationId: { type: Type.STRING }, relationships: { type: Type.ARRAY, items: npcRelationshipSchema }, talentNames: stringArray, faction: { type: Type.STRING }, tags: stringArray }, required: ['contentType', 'name', 'status', 'description', 'origin', 'personality', 'locationId'] };
+    const techniqueEffectSchema = { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['DAMAGE', 'HEAL', 'BUFF', 'DEBUFF'] }, details: { type: Type.STRING, description: 'A JSON string representing the effect details object.' } }, required: ['type', 'details'] };
+    const techniqueSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['technique'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ'] }, cost: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'] }, value: { type: Type.NUMBER } }, required: ['type', 'value'] }, cooldown: { type: Type.NUMBER }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] }, icon: { type: Type.STRING }, level: { type: Type.NUMBER }, maxLevel: { type: Type.NUMBER }, requirements: { type: Type.ARRAY, items: statBonusSchema }, effects: { type: Type.ARRAY, items: techniqueEffectSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'type', 'cost', 'cooldown', 'rank', 'icon'] };
+    const eventOutcomeSchema = { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['GIVE_ITEM', 'REMOVE_ITEM', 'CHANGE_STAT', 'ADD_RUMOR', 'START_EVENT', 'START_STORY', 'UPDATE_REPUTATION'] }, details: { type: Type.STRING, description: 'A JSON string representing the outcome details object.' } }, required: ['type', 'details'] };
+    const skillCheckSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, difficulty: { type: Type.NUMBER } }, required: ['attribute', 'difficulty'] };
+    const eventChoiceSchema = { type: Type.OBJECT, properties: { text: { type: Type.STRING }, check: skillCheckSchema, outcomes: { type: Type.ARRAY, items: eventOutcomeSchema } }, required: ['text'] };
+    const eventSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['event'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, choices: { type: Type.ARRAY, items: eventChoiceSchema }, tags: stringArray }, required: ['contentType', 'name', 'description', 'choices'] };
+    const recipeIngredientSchema = { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] };
+    const recipeQualityCurveSchema = { type: Type.OBJECT, properties: { threshold: { type: Type.NUMBER }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] } }, required: ['threshold', 'quality'] };
+    const recipeSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['recipe'] }, name: { type: Type.STRING }, description: { type: Type.STRING }, ingredients: { type: Type.ARRAY, items: recipeIngredientSchema }, result: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] }, requiredAttribute: { type: Type.OBJECT, properties: { name: { type: Type.STRING, enum: ['Đan Thuật'] }, value: { type: Type.NUMBER } }, required: ['name', 'value'] }, icon: { type: Type.STRING }, qualityCurve: { type: Type.ARRAY, items: recipeQualityCurveSchema } }, required: ['contentType', 'name', 'description', 'ingredients', 'result', 'requiredAttribute', 'icon', 'qualityCurve'] };
+    const customPanelSchema = { type: Type.OBJECT, properties: { contentType: { type: Type.STRING, enum: ['customPanel'] }, title: { type: Type.STRING }, iconName: { type: Type.STRING }, content: stringArray, tags: stringArray }, required: ['contentType', 'title', 'iconName', 'content'] };
+
+    const realmSystemSchema = { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, hasTribulation: { type: Type.BOOLEAN }, stages: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, qiRequired: { type: Type.NUMBER }, bonuses: { type: Type.ARRAY, items: statBonusSchema } } } } } } };
+    const talentSystemConfigSchema = { type: Type.OBJECT, properties: { systemName: { type: Type.STRING }, choicesPerRoll: { type: Type.NUMBER }, maxSelectable: { type: Type.NUMBER } } };
+
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            content: {
+                type: Type.ARRAY,
+                items: {
+                    oneOf: [
+                        itemSchema,
+                        talentSchema,
+                        characterSchema,
+                        sectSchema,
+                        worldBuildingSchema,
+                        npcSchema,
+                        techniqueSchema,
+                        eventSchema,
+                        recipeSchema,
+                        customPanelSchema
+                    ]
+                }
+            },
+            realmConfigs: realmSystemSchema,
+            talentSystemConfig: talentSystemConfigSchema
+        },
+        description: "The complete set of generated mod data, including content and system configurations."
+    };
+    
+    const systemInstruction = `You are an expert mod content generator for the game 'Phong Thần Ký Sự'. Your task is to generate game content in JSON format based on the user's prompt and the provided context of the current mod. 
+    You ONLY output a single JSON object matching the provided schema. Do not chat or explain.
+    
+    Current Mod Context:
+    ${JSON.stringify(modContext, null, 2)}
+    
+    Based on the user's request, generate new content. You can generate multiple items of different types in the 'content' array. You can also propose changes to 'realmConfigs' or 'talentSystemConfig' if the user's request implies a system-wide change. Always include the correct 'contentType' field for each object in the 'content' array.`;
+    
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.gameMasterModel,
+        contents: prompt,
+        config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema,
+        }
+    });
+    
+    try {
+        const jsonText = response.text.trim();
+        const generatedData = JSON.parse(jsonText) as AiGeneratedModData;
+
+        if (generatedData.content) {
+            generatedData.content.forEach((item: any) => {
+                if (item.contentType === 'worldBuilding' && typeof item.data === 'string') {
+                    try { item.data = JSON.parse(item.data); } catch (e) { console.error('Failed to parse worldBuilding data:', item.data, e); }
+                }
+                if (item.contentType === 'technique' && item.effects) {
+                    item.effects.forEach((effect: any) => {
+                        if (typeof effect.details === 'string') {
+                            try { effect.details = JSON.parse(effect.details); } catch (e) { console.error('Failed to parse technique effect details:', effect.details, e); }
+                        }
+                    });
+                }
+                if (item.contentType === 'event' && item.choices) {
+                    item.choices.forEach((choice: any) => {
+                        if (choice.outcomes) {
+                            choice.outcomes.forEach((outcome: any) => {
+                                if (typeof outcome.details === 'string') {
+                                    try { outcome.details = JSON.parse(outcome.details); } catch (e) { console.error('Failed to parse event outcome details:', outcome.details, e); }
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        
+        return generatedData;
+    } catch (e) {
+        console.error("Failed to parse AI mod content response:", e, response.text);
+        throw new Error("Phản hồi từ AI không phải là định dạng JSON hợp lệ.");
+    }
+};
+
+export const generateGameEvent = async (
+    player: PlayerCharacter,
+    date: GameDate,
+    location: Location,
+    npcs: NPC[]
+): Promise<GameEvent> => {
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            description: { type: Type.STRING, description: 'Mô tả chi tiết về tình huống hoặc sự kiện đang xảy ra xung quanh người chơi.' },
+            choices: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        text: { type: Type.STRING, description: 'Mô tả hành động hoặc lựa chọn của người chơi.' },
+                        check: {
+                            type: Type.OBJECT,
+                            nullable: true,
+                            properties: {
+                                attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES, description: 'Thuộc tính cần kiểm tra.' },
+                                difficulty: { type: Type.NUMBER, description: 'Độ khó của bài kiểm tra (DC), từ 5 (rất dễ) đến 25 (rất khó).' },
+                            },
+                            required: ['attribute', 'difficulty'],
+                        },
+                    },
+                    required: ['text'],
+                },
+            },
+        },
+        required: ['description', 'choices'],
+    };
+
+    const context = `
+    **Bối cảnh:** Game tu tiên Phong Thần.
+    **Nhân vật chính:** ${player.identity.name} (Cảnh giới: ${REALM_SYSTEM.find(r => r.id === player.cultivation.currentRealmId)?.name || 'Unknown'})
+    **Thời gian:** ${date.season}, ${date.timeOfDay}
+    **Địa điểm:** ${location.name} (${location.description})
+    **Loại địa điểm:** ${location.type}
+    **Nhân vật khác tại đây:** ${npcs.length > 0 ? npcs.map(n => n.identity.name).join(', ') : 'Không có ai'}
+
+    Dựa vào bối cảnh trên, hãy tạo ra một tình tiết (event) nhỏ, bất ngờ và thú vị cho người chơi.
+    - Tình tiết phải có mô tả rõ ràng và 2-4 lựa chọn hành động.
+    - QUAN TRỌNG: Nếu địa điểm là 'Bí Cảnh' hoặc 'Hoang Dã', hãy ưu tiên tạo ra các sự kiện nguy hiểm như gặp yêu thú, dính bẫy, hoặc bị tu sĩ khác tập kích.
+    - Mỗi lựa chọn có thể yêu cầu một bài kiểm tra thuộc tính (skill check) với độ khó (difficulty) phù hợp.
+    - Trả về kết quả dưới dạng JSON theo schema.
+    `;
+    
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.mainTaskModel,
+        contents: context,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema,
+        }
+    });
+
+    const eventData = JSON.parse(response.text);
+    return {
+        id: `event-${Date.now()}`,
+        ...eventData,
+        choices: eventData.choices.map((choice: any, index: number) => ({
+            ...choice,
+            id: `choice-${Date.now()}-${index}`,
+        })),
+    };
+};
+
+export const generateStoryContinuationStream = async function* (
+    storyLog: StoryEntry[],
+    playerInput: StoryEntry,
+    gameState: GameState,
+    systemReports: string
+): AsyncGenerator<string, void, undefined> {
+    const { playerCharacter, gameDate, discoveredLocations, activeNpcs } = gameState;
+    const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!;
+    const npcsAtLocation = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
+    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === getSettings().narrativeStyle)?.label || 'Classic Wuxia';
+
+    const history = storyLog.slice(-15).map(entry => {
+        if (entry.type === 'player-action' || entry.type === 'player-dialogue') {
+            return `Người chơi: ${entry.content}`;
+        }
+        return `Hệ thống: ${entry.content}`;
+    }).join('\n');
+
+    const actionContext = `Người chơi vừa ${playerInput.type === 'player-dialogue' ? 'nói' : 'hành động'}: "${playerInput.content}".`;
+
+    const prompt = `Bạn là một người kể chuyện (Game Master) cho game tu tiên Phong Thần Ký Sự.
+    **Văn phong:** ${narrativeStyle}. Hãy viết tiếp câu chuyện một cách hấp dẫn, giàu trí tưởng tượng.
+    
+    **Bối cảnh hiện tại:**
+    - Nhân vật: ${playerCharacter.identity.name}, ${playerCharacter.identity.appearance}, ${playerCharacter.identity.personality}.
+    - Cảnh giới: ${REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name || 'Unknown'}
+    - Địa điểm: ${currentLocation.name} (${currentLocation.description})
+    - NPC xung quanh: ${npcsAtLocation.length > 0 ? npcsAtLocation.map(n => n.identity.name).join(', ') : 'Không có ai.'}
+    - Thời gian: ${gameDate.season}, ${gameDate.timeOfDay}
+    
+    **Thông Tin Hệ Thống:**
+    ${systemReports}
+    
+    **Lịch sử gần đây:**
+    ${history}
+
+    **Hành động của người chơi:**
+    ${actionContext}
+    
+    **Quy Tắc & Tính Năng Game (Rules & Game Features):**
+    - Bạn có thể chủ động bắt đầu một trận chiến nếu tình huống hợp lý (ví dụ: người chơi bị tấn công, hoặc khiêu khích kẻ thù). Dùng tag: \`[START_COMBAT:{"enemyNames": ["Tên NPC 1", "Tên NPC 2"]}]\`
+    - Bạn có thể bắt đầu một cuộc đối thoại giữa người chơi và một NPC. Dùng tag: \`[START_DIALOGUE:{"npcName": "Tên NPC"}]\`. Nếu bạn muốn NPC đưa ra lựa chọn, hãy dùng tag: \`[DIALOGUE_CHOICES: ["Lựa chọn 1", "Lựa chọn 2"]]\`.
+    - Người chơi có thể sử dụng công pháp. Bạn hãy mô tả hiệu ứng hình ảnh, hệ thống sẽ xử lý kết quả.
+    - Bạn có thể cho người chơi vật phẩm, tiền, hoặc thay đổi chỉ số. Dùng các tag sau:
+        -   \`[UPDATE_CULTIVATION:{"addQi": number}]\`: Khi người chơi tu luyện hoặc nhận được linh khí.
+        -   \`[UPDATE_KARMA:{"chinhDao": number, "maDao": number}]\`: Dùng số dương để cộng, số âm để trừ. Ví dụ, một hành động tốt có thể là '{"chinhDao": 5, "maDao": 0}'.
+        -   \`[ADD_ITEM:{"name": string, "description": string, "quantity": number, "type": "Loại", "quality": "Phẩm chất", "weight": number}]\`
+        -   \`[REMOVE_ITEM:{"name": string, "quantity": number}]\`
+        -   \`[ADD_CURRENCY:{"name": "Linh thạch hạ phẩm" | "Bạc", "amount": number}]\`
+        -   \`[UPDATE_RELATIONSHIP:{"npcName": string, "change": number}]\` (change có thể là số âm)
+        -   \`[UPDATE_ATTRIBUTE:{"name": string, "change": number}]\`
+
+    **Nhiệm vụ của bạn:**
+    1.  **Mô tả kết quả:** Dựa vào hành động của người chơi, bối cảnh, và thông tin hệ thống, hãy mô tả những gì xảy ra tiếp theo. Giữ cho câu chuyện liền mạch.
+    2.  **Sử dụng AI Tags (Cực kỳ Quan trọng):** Nếu hành động của người chơi dẫn đến thay đổi trạng thái game, BẮT BUỘC phải dùng các tag đã được liệt kê ở trên. Hệ thống sẽ tự động xử lý các tag này.
+    
+    **Ví dụ:**
+    Người chơi: ta ngồi xuống tu luyện
+    Thông tin hệ thống: Cần 1000 linh khí để đột phá.
+    AI trả về: Bạn ngồi xuống, vận chuyển công pháp, linh khí xung quanh từ từ hội tụ về phía bạn. [UPDATE_CULTIVATION:{"addQi": 15}]
+
+    Bây giờ, hãy viết tiếp câu chuyện. Chỉ trả về phần văn bản kể chuyện, bao gồm cả các tag nếu cần thiết.
+    `;
+    
+    const settings = getSettings();
+    const safetySettings = getSafetySettingsForApi();
+
+    const thinkingConfig = settings.mainTaskModel.includes('flash') 
+        ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
+        : {};
+    
+    const finalRequest = {
+        model: settings.mainTaskModel,
+        contents: prompt,
+        config: { 
+            safetySettings,
+            temperature: settings.temperature,
+            topK: settings.topK,
+            topP: settings.topP,
+            ...thinkingConfig,
+        }
+    };
+    
+    let stream;
+    try {
+        const ai = await getAiClient();
+        stream = await ai.models.generateContentStream(finalRequest);
+    } catch (e) {
+        console.error("Stream initialization failed, trying once more.", e);
+        await new Promise(res => setTimeout(res, 1000));
+        const ai = await getAiClient();
+        stream = await ai.models.generateContentStream(finalRequest);
+    }
+    
+    for await (const chunk of stream) {
+        yield chunk.text;
+    }
+};
+
+
+export const generateDynamicLocation = async (parentLocation: Location): Promise<{ name: string; description: string }> => {
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            name: { type: Type.STRING, description: 'Tên Hán Việt độc đáo, hấp dẫn cho địa điểm mới.' },
+            description: { type: Type.STRING, description: 'Mô tả chi tiết, sống động về địa điểm này.' },
+        },
+        required: ['name', 'description'],
+    };
+
+    const prompt = `Trong bối cảnh game tu tiên Phong Thần, người chơi đang khám phá khu vực xung quanh "${parentLocation.name}" (${parentLocation.description}).
+    Hãy tạo ra một địa điểm nhỏ, cụ thể và thú vị mà họ có thể phát hiện ra.
+    Ví dụ: một hang động bí ẩn, một thác nước ẩn, một ngôi miếu hoang, một cây cổ thụ phát sáng...
+    Trả về kết quả dưới dạng JSON theo schema.`;
+
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.mainTaskModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema,
+        }
+    });
+
+    return JSON.parse(response.text);
+};
+
+export const analyzeActionForTechnique = async (actionText: string, availableTechniques: CultivationTechnique[]): Promise<CultivationTechnique | null> => {
+    if (availableTechniques.length === 0) return null;
+
+    const techniqueNames = availableTechniques.map(t => t.name);
+    
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            techniqueName: { type: Type.STRING, enum: [...techniqueNames, ''], description: 'Tên công pháp được sử dụng. Trả về chuỗi rỗng nếu không có công pháp nào được sử dụng.' },
+        },
+        required: ['techniqueName'],
+    };
+
+    const prompt = `Phân tích hành động sau của người chơi và xác định xem họ có đang cố gắng sử dụng một trong các công pháp có sẵn hay không.
+    **Hành động của người chơi:** "${actionText}"
+    **Danh sách công pháp có sẵn:** ${techniqueNames.join(', ')}
+
+    Nếu hành động của người chơi khớp hoặc có ý định rõ ràng sử dụng một công pháp, hãy trả về tên của công pháp đó. Nếu không, trả về một chuỗi rỗng.
+    Chỉ trả về JSON.`;
+    
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.actionAnalysisModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema,
+        }
+    });
+
+    const { techniqueName } = JSON.parse(response.text);
+    if (techniqueName) {
+        return availableTechniques.find(t => t.name === techniqueName) || null;
+    }
+    return null;
+};
+
+export const generateBreakthroughNarrative = async (
+    player: PlayerCharacter,
+    oldRealmName: string,
+    newRealm: RealmConfig,
+    newStage: RealmStage
+): Promise<string> => {
+    const prompt = `Trong game tu tiên Phong Thần, người chơi "${player.identity.name}" vừa đột phá thành công từ cảnh giới ${oldRealmName} lên ${newRealm.name} - ${newStage.name}.
+    Hãy viết một đoạn văn mô tả lại quá trình đột phá này một cách hào hùng, kịch tính và sống động.
+    Mô tả những thay đổi trong cơ thể, linh lực, và nhận thức của nhân vật.
+    Đoạn văn nên ngắn gọn, khoảng 2-4 câu.`;
+
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.mainTaskModel,
+        contents: prompt,
+        config: {}
+    });
+
+    return response.text;
+};
+
+export const generateWorldEvent = async (gameState: GameState): Promise<Rumor> => {
+    const { discoveredLocations, worldState } = gameState;
+
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            text: { type: Type.STRING, description: 'Nội dung của tin đồn, ngắn gọn và bí ẩn.' },
+            locationId: { type: Type.STRING, enum: discoveredLocations.map(l => l.id), description: 'ID của địa điểm mà tin đồn này xuất hiện.' },
+        },
+        required: ['text', 'locationId'],
+    };
+
+    const prompt = `Trong bối cảnh game tu tiên Phong Thần, hãy tạo ra một tin đồn (rumor) mới.
+    Tin đồn có thể về một bảo vật xuất thế, một cao nhân xuất hiện, một tông môn tuyển đệ tử, hoặc một nơi nào đó có dị tượng...
+    Tin đồn phải liên quan đến một trong những địa điểm đã được khám phá.
+    Các tin đồn hiện có: ${worldState.rumors.map(r => r.text).join('; ')}
+    
+    Hãy tạo ra một tin đồn mới, không trùng lặp. Trả về dưới dạng JSON.`;
+    
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.mainTaskModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema,
+        }
+    });
+    
+    const rumorData = JSON.parse(response.text);
+    return {
+        id: `rumor-${Date.now()}`,
+        ...rumorData,
+    };
+};
+export const generateCombatNarrative = async (
+    gameState: GameState,
+    combatActionDescription: string
+): Promise<string> => {
+    const { playerCharacter, combatState } = gameState;
+    if (!combatState) return "Lỗi: Không tìm thấy trạng thái chiến đấu.";
+
+    const currentActorId = combatState.turnOrder[combatState.currentTurnIndex];
+    const isPlayerTurn = currentActorId === 'player';
+    const actor = isPlayerTurn ? playerCharacter : combatState.enemies.find(e => e.id === currentActorId);
+
+    if (!actor) {
+        return `Lỗi: Không tìm thấy người hành động (ID: ${currentActorId}).`;
+    }
+
+    const actorName = actor.identity.name;
+    const enemyNames = isPlayerTurn 
+        ? combatState.enemies.map(e => e.identity.name).join(', ') 
+        : playerCharacter.identity.name;
+
+    const prompt = `Trong game tu tiên Phong Thần, hãy viết một đoạn văn tường thuật hành động chiến đấu.
+    Bối cảnh: ${actorName} đang chiến đấu với ${enemyNames}.
+    Hành động: ${combatActionDescription}
+    
+    Hãy mô tả kết quả một cách sống động và kịch tính. Giữ cho nó ngắn gọn.`;
+
+    const response = await generateWithRetry({
+        contents: prompt,
+        config: {}
+    });
+
+    return response.text;
+};
+
+export const getGameMasterActionableResponse = async (
+    prompt: string,
+    fileContent: string | undefined,
+    modContext: any
+): Promise<AIAction> => {
+    console.warn("Using mock getGameMasterActionableResponse. This feature is not fully implemented.");
+    await new Promise(resolve => setTimeout(resolve, 1000)); // simulate network delay
+    return {
+        action: 'CHAT',
+        data: {
+            response: `I have received your prompt: "${prompt}". This feature is currently under development.`
+        }
+    };
+};
