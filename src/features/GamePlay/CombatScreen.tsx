@@ -9,7 +9,6 @@ interface CombatScreenProps {
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
     showNotification: (message: string) => void;
-    // FIX: Add addStoryEntry to props to allow logging combat actions.
     addStoryEntry: (newEntryData: { type: 'combat', content: string }) => void;
 }
 
@@ -41,7 +40,7 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
         if (combatState && combatState.enemies.length > 0) {
             setSelectedTargetId(combatState.enemies[0].id);
         }
-    }, []);
+    }, [combatState]);
 
     useEffect(() => {
         const processEnemyTurn = async () => {

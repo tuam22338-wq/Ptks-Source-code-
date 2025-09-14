@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute, FullMod, PlayerNpcRelationship } from '../types';
-import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG } from "../constants";
+import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute, FullMod, PlayerNpcRelationship, InventoryItem } from '../types';
+import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../constants";
 import * as db from './dbService';
 import { FaQuestionCircle } from "react-icons/fa";
 
@@ -77,13 +77,22 @@ const performApiCall = async <T>(
             const errorMessage = error.toString().toLowerCase();
             const isAuthError = errorMessage.includes('400') || errorMessage.includes('permission') || errorMessage.includes('api key not valid');
             const isQuotaError = errorMessage.includes('429') || errorMessage.includes('resource_exhausted');
+            const isOverloaded = errorMessage.includes('503') || errorMessage.includes('model is overloaded');
 
-            if (isAuthError || isQuotaError) {
-                console.error(`API call failed with auth/quota error: ${errorMessage}`);
-                throw error;
+            if (isAuthError) {
+                console.error(`API call failed with auth error: ${errorMessage}`);
+                throw new Error(`Lỗi xác thực API: ${error.message}. Vui lòng kiểm tra API Key của bạn.`);
+            }
+            if (isQuotaError) {
+                console.error(`API call failed with quota error: ${errorMessage}`);
+                 throw new Error(`Hết dung lượng API. Vui lòng thử lại sau hoặc kiểm tra gói cước của bạn.`);
             }
             
             if (attempt >= maxRetries) {
+                console.error(`API call failed after ${maxRetries} retries.`, error);
+                if (isOverloaded) {
+                    throw new Error("Máy chủ AI đang quá tải. Vui lòng thử lại sau ít phút.");
+                }
                 throw error;
             }
 
@@ -219,8 +228,8 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
         required: ['name', 'origin', 'appearance', 'personality', 'familyName'],
     };
 
-    const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Phong Thần, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
-    - **Bối cảnh:** Phong Thần Diễn Nghĩa, thế giới huyền huyễn, tiên hiệp.
+    const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Tam Thiên Thế Giới, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
+    - **Bối cảnh:** Tam Thiên Thế Giới, thế giới huyền huyễn, tiên hiệp.
     - **Giới tính nhân vật:** ${gender}
     - **Ý tưởng gốc từ người chơi:** "${concept}"
     
@@ -284,7 +293,7 @@ export const generateTalentChoices = async (identity: CharacterIdentity, concept
     : `CHỈ được chọn ${choicesPerRoll} tiên tư từ danh sách có sẵn sau: ${modTalentConfig.availableTalents.map(t => t.name).join(', ')}.`;
 
     const prompt = `Dựa trên thông tin về nhân vật, hãy tạo ra một bộ Tiên Tư (Innate Talents) cho họ.
-    - **Bối cảnh:** Game tu tiên Phong Thần.
+    - **Bối cảnh:** Game tu tiên Tam Thiên Thế Giới.
     - **Ý tưởng gốc:** "${concept}"
     - **Thân phận nhân vật:**
         - Tên: ${identity.name}
@@ -389,11 +398,11 @@ export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]
                 TienLuc: { type: Type.NUMBER, description: 'Chỉ số Tiên Lực chiến đấu.' },
                 PhongNgu: { type: Type.NUMBER, description: 'Chỉ số Phòng Ngự chiến đấu.' },
                 SinhMenh: { type: Type.NUMBER, description: 'Chỉ số Sinh Mệnh chiến đấu.' },
-                currencies: {
+                currency: {
                     type: Type.OBJECT,
                     description: 'Số tiền NPC sở hữu. Có thể để trống nếu là người thường.',
                     properties: {
-                        linhThach: { type: Type.NUMBER, description: 'Số Linh thạch hạ phẩm.' },
+                        linhThachHaPham: { type: Type.NUMBER, description: 'Số Linh thạch hạ phẩm.' },
                         bac: { type: Type.NUMBER, description: 'Số Bạc.' },
                     }
                 },
@@ -424,11 +433,11 @@ export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]
                 },
                 locationId: { type: Type.STRING, enum: availableLocations },
             },
-            required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'realmName', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'TienLuc', 'PhongNgu', 'SinhMenh', 'currencies'],
+            required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'realmName', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'TienLuc', 'PhongNgu', 'SinhMenh', 'currency'],
         },
     };
     
-    const prompt = `Tạo ra ${count} NPC (Non-Player Characters) độc đáo cho thế giới game tu tiên Phong Thần.
+    const prompt = `Tạo ra ${count} NPC (Non-Player Characters) độc đáo cho thế giới game tu tiên Tam Thiên Thế Giới.
     Các NPC này có thể là tu sĩ, yêu ma, dân thường, hoặc các sinh vật kỳ dị.
     Mỗi NPC cần có thông tin đầy đủ theo schema. Hãy sáng tạo và làm cho thế giới trở nên sống động.
     
@@ -436,7 +445,7 @@ export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]
     1.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu (Tiên Lực, Phòng Ngự, Sinh Mệnh). Ví dụ, một 'ma đầu' sẽ có Ma Đạo cao, trong khi một 'đại hiệp' sẽ có Chính Đạo cao.
     2.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp từ danh sách. Một lão nông bình thường sẽ là "Phàm Nhân", trong khi một trưởng lão tông môn có thể là "Kết Đan Kỳ" hoặc "Nguyên Anh Kỳ".
     3.  **Tiên Tư:** Tạo ra 1-2 tiên tư (talents) độc đáo và phù hợp cho mỗi NPC tu sĩ. Các tiên tư nên có cấp bậc (rank) và hiệu ứng (effect) rõ ràng, có thể cộng thêm chỉ số (bonuses).
-    4.  **Tài Sản:** Gán cho họ một lượng tiền tệ (Linh thạch, Bạc) phù hợp. Một trưởng lão có thể giàu có, trong khi một tán tu có thể nghèo khó.`;
+    4.  **Tài Sản:** Gán cho họ một lượng tiền tệ (Linh thạch hạ phẩm, Bạc) phù hợp. Một trưởng lão có thể giàu có, trong khi một tán tu có thể nghèo khó.`;
     
     const settings = getSettings();
     const response = await generateWithRetry({
@@ -458,7 +467,7 @@ export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]
     });
 
     return npcsData.map((npcData: any): NPC => {
-        const { name, gender, description, origin, personality, talents, realmName, currencies, ...stats } = npcData;
+        const { name, gender, description, origin, personality, talents, realmName, currency, ...stats } = npcData;
         
         const targetRealm = REALM_SYSTEM.find(r => r.name === realmName) || REALM_SYSTEM[0];
         const targetStage = targetRealm.stages[Math.floor(Math.random() * targetRealm.stages.length)];
@@ -493,6 +502,21 @@ export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]
             },
         ];
 
+        const currencyItems: InventoryItem[] = [];
+        if (currency?.linhThachHaPham > 0) {
+            const currencyItem = CURRENCY_ITEMS.find(c => c.name === 'Linh thạch hạ phẩm');
+            if (currencyItem) {
+                currencyItems.push({ ...currencyItem, quantity: currency.linhThachHaPham });
+            }
+        }
+        if (currency?.bac > 0) {
+            const currencyItem = CURRENCY_ITEMS.find(c => c.name === 'Bạc');
+            if (currencyItem) {
+                currencyItems.push({ ...currencyItem, quantity: currency.bac });
+            }
+        }
+
+
         return {
             ...stats,
             id: `dynamic-npc-${Math.random().toString(36).substring(2, 9)}`,
@@ -502,36 +526,31 @@ export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]
                 appearance: description,
                 origin,
                 personality,
+                age: 20 + Math.floor(Math.random() * 200)
             },
             talents: talents || [],
             attributes: baseAttributes,
             cultivation,
             techniques: [],
-            inventory: { items: [], weightCapacity: 15 },
-            currencies: {
-                'Linh thạch hạ phẩm': currencies?.linhThach || 0,
-                'Bạc': currencies?.bac || 0,
-            },
+            inventory: { items: currencyItems, weightCapacity: 15 },
             equipment: {},
             healthStatus: 'HEALTHY' as const,
             activeEffects: [],
+            tuoiTho: 100 + Math.floor(Math.random() * 500)
         };
     });
 };
 
 export const generateModContentFromPrompt = async (prompt: string, modContext: any): Promise<AiGeneratedModData> => {
-    // --- Reusable Sub-Schemas ---
-// FIX: Corrected the shorthand property syntax for 'attribute' to a full property definition, resolving a syntax error.
     const statBonusSchema = { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] };
     
-    // FIX: Completed the function implementation by defining comprehensive JSON schemas for all moddable content types and adding the logic to call the Gemini API and parse the response. This resolves the return type error.
     const modItemSchema = {
         type: Type.OBJECT,
         properties: {
-            contentType: { type: Type.STRING, const: 'item' },
+            contentType: { type: Type.STRING, enum: ['item'] },
             name: { type: Type.STRING },
             description: { type: Type.STRING },
-            type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương'] },
+            type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] },
             quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] },
             weight: { type: Type.NUMBER },
             bonuses: { type: Type.ARRAY, items: statBonusSchema },
@@ -543,7 +562,7 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
     const modTalentSchema = {
         type: Type.OBJECT,
         properties: {
-            contentType: { type: Type.STRING, const: 'talent' },
+            contentType: { type: Type.STRING, enum: ['talent'] },
             name: { type: Type.STRING },
             description: { type: Type.STRING },
             rank: { type: Type.STRING, enum: TALENT_RANK_NAMES },
@@ -553,7 +572,7 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
         required: ['contentType', 'name', 'description', 'rank']
     };
 
-    const allSchemas = [modItemSchema, modTalentSchema]; // Add other schemas here
+    const allSchemas = [modItemSchema, modTalentSchema];
 
     const finalSchema = {
         type: Type.OBJECT,
@@ -600,7 +619,7 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
         }
     };
 
-    const fullPrompt = `Bạn là một Game Master AI cho game tu tiên "Phong Thần Ký Sự".
+    const fullPrompt = `Bạn là một Game Master AI cho game tu tiên "Tam Thiên Thế Giới".
     Nhiệm vụ của bạn là tạo ra nội dung mới cho một bản mod dựa trên yêu cầu của người dùng.
     
     Bối cảnh mod hiện tại (nếu có):
@@ -632,8 +651,6 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
     }
 };
 
-// FIX: Added implementations for all missing AI service functions to resolve import errors.
-
 export async function* generateStoryContinuationStream(gameState: GameState, userInput: string, inputType: 'say' | 'act'): AsyncIterable<string> {
     const { playerCharacter, gameDate, storyLog, discoveredLocations, activeNpcs, storySummary } = gameState;
     const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
@@ -642,8 +659,8 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
     const settings = getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
-    const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai text-based có tên "Phong Thần Ký Sự".
-- Bối cảnh: Thế giới tiên hiệp dựa trên Phong Thần Diễn Nghĩa.
+    const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai text-based có tên "Tam Thiên Thế Giới".
+- Bối cảnh: Thế giới tiên hiệp huyền huyễn.
 - **QUAN TRỌNG NHẤT: PHẢI LUÔN LUÔN trả lời bằng TIẾNG VIỆT.**
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
 - Chỉ kể tiếp câu chuyện, không đưa ra lời khuyên hay bình luận ngoài vai trò người kể chuyện.
@@ -655,7 +672,7 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
       : `**Lịch sử gần đây (5 mục cuối):**\n${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}`;
 
     const contextSummary = [
-        `**Nhân vật:** Tên: ${playerCharacter.identity.name}. Xuất thân: ${playerCharacter.identity.origin}. Tính cách: ${playerCharacter.identity.personality}.`,
+        `**Nhân vật:** Tên: ${playerCharacter.identity.name}. Xuất thân: ${playerCharacter.identity.origin}. Tính cách: ${playerCharacter.identity.personality}. Danh vọng: ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value} điểm).`,
         `**Bối cảnh:** Hiện tại là giờ ${gameDate.shichen}, ngày ${gameDate.day} mùa ${gameDate.season} năm ${gameDate.era} ${gameDate.year}.`,
         `**Vị trí:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.`,
         npcsHere.length > 0 ? `**Nhân vật khác tại đây:** ${npcsHere.map(n => `${n.identity.name} (${n.status})`).join(', ')}.` : "Không có ai khác ở đây.",
@@ -676,8 +693,7 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
     });
 
     for await (const chunk of stream) {
-        // Filter out thinking tags here before yielding
-        yield chunk.text.replace(/\[thinking...\]/gi, '');
+        yield (chunk.text ?? '').replace(/\[thinking...\]/gi, '');
     }
 }
 
@@ -794,7 +810,7 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
     };
 
     const prompt = `Dựa trên thông tin về nhân vật chính, hãy tạo ra các thành viên gia đình và bạn bè thân thiết cho họ.
-    - **Bối cảnh:** Game tu tiên Phong Thần, một thế giới huyền huyễn.
+    - **Bối cảnh:** Game tu tiên Tam Thiên Thế Giới, một thế giới huyền huyễn.
     - **Nhân vật chính:**
         - Tên: ${identity.name} (${identity.gender}, 18 tuổi)
         - Họ: ${identity.familyName || '(Không có)'}
@@ -839,7 +855,6 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
             cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
             techniques: [],
             inventory: { items: [], weightCapacity: 10 },
-            currencies: { 'Đồng': Math.floor(Math.random() * 500), 'Bạc': Math.floor(Math.random() * 10) },
             equipment: {},
             healthStatus: 'HEALTHY',
             activeEffects: [],
@@ -849,7 +864,6 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
 
         const relationship: PlayerNpcRelationship = {
             npcId: npcId,
-            // FIX: Corrected property name from 'relationship_type' to 'type' to match the PlayerNpcRelationship interface.
             type: member.relationship_type,
             value: 80 + Math.floor(Math.random() * 20), // Start with high affinity
             status: 'Tri kỷ',
@@ -875,7 +889,7 @@ export const generateOpeningScene = async (gameState: GameState): Promise<string
     const settings = getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
-    const prompt = `Bạn là người kể chuyện cho game tu tiên "Phong Thần Ký Sự". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
+    const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     - **Giọng văn:** ${narrativeStyle}.
     - **Nhân vật chính:** ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi. Xuất thân: ${playerCharacter.identity.origin}.
     - **Địa điểm hiện tại:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.

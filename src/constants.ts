@@ -1,4 +1,4 @@
-import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, SectMission, MainCultivationTechnique } from './types';
+import type { Faction, GameSettings, AttributeGroup, InnateTalentRank, MajorEvent, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, Location, NPC, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, FullMod, ItemQuality, EquipmentSlot, CultivationTechnique, NarrativeStyle, InnateTalent, Shop, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, SectMission, MainCultivationTechnique, InventoryItem } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -14,6 +14,13 @@ export { MAIN_CULTIVATION_TECHNIQUES_DATABASE };
 export const CURRENT_GAME_VERSION = "1.1.0";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
+
+export const CURRENCY_ITEMS: Omit<InventoryItem, 'quantity'>[] = [
+    { id: 'currency_dong', name: 'Đồng', description: 'Tiền tệ cơ bản nhất của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 1, icon: '🪙' },
+    { id: 'currency_bac', name: 'Bạc', description: 'Tiền tệ phổ biến của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 100, icon: '⚪' },
+    { id: 'currency_vang', name: 'Vàng', description: 'Tiền tệ quý giá của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 10000, icon: '🟡' },
+    { id: 'currency_lthp', name: 'Linh thạch hạ phẩm', description: 'Đá chứa linh khí, tiền tệ của tu sĩ.', type: 'Tạp Vật', weight: 0.1, quality: 'Linh Phẩm', value: 10000, icon: '💎' },
+];
 
 export const FACTIONS: Faction[] = [
   {
@@ -155,7 +162,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Phong Thần Bảng', description: 'Nắm giữ thiên cơ, có quyền phong thần.', rank: 'Thánh Giai', effect: 'Có khả năng nhìn thấu vận mệnh.' }, { name: 'Đả Thần Tiên', description: 'Pháp bảo do sư tôn ban tặng, chuyên đánh tiên nhân.', rank: 'Đại Tiên Giai', effect: 'Tăng mạnh sát thương lên kẻ địch có tu vi cao.' } ],
     locationId: 'song_vi_thuy',
     cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Bạc': 100, 'Linh thạch hạ phẩm': 50 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_na_tra',
@@ -166,7 +173,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Pháp Liên Hóa Thân', description: 'Thân thể được tái tạo từ hoa sen, miễn nhiễm với nhiều loại độc và tà thuật.', rank: 'Đại Tiên Giai', effect: 'Kháng tất cả hiệu ứng tiêu cực.' }, { name: 'Tam Đầu Lục Tý', description: 'Khi chiến đấu có thể hóa thành ba đầu sáu tay, sức mạnh tăng vọt.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh các chỉ số chiến đấu trong giao tranh.' } ],
     locationId: 'tran_duong_quan',
     cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Linh thạch hạ phẩm': 200 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_duong_tien',
@@ -177,7 +184,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Thiên Nhãn', description: 'Con mắt thứ ba giữa trán, có thể nhìn thấu bản chất, phá trừ ảo ảnh.', rank: 'Thánh Giai', effect: 'Nhìn thấu mọi ngụy trang và ẩn thân.' }, { name: 'Bát Cửu Huyền Công', description: 'Công pháp biến hóa vô song, có 72 phép biến hóa.', rank: 'Đại Tiên Giai', effect: 'Khả năng biến hóa thành vạn vật.' } ],
     locationId: 'ngoc_hu_cung',
     cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Linh thạch hạ phẩm': 500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 150, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_dat_ky',
@@ -188,7 +195,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Hồ Mị', description: 'Sức quyến rũ trời sinh của hồ ly, khiến người khác phái khó lòng chống cự.', rank: 'Đại Tiên Giai', effect: 'Giảm mạnh ý chí của đối thủ nam.' } ],
     locationId: 'loc_dai',
     cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 50, items: [] }, currencies: { 'Vàng': 10000, 'Bạc': 50000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 50, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_tru_vuong',
@@ -199,7 +206,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Thiên Tử Long Khí', description: 'Sở hữu khí vận của một triều đại, có khả năng áp chế kẻ địch.', rank: 'Trung Tiên Giai', effect: 'Tăng khả năng kháng hiệu ứng.' } ],
     locationId: 'loc_dai',
     cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_2', spiritualQi: 0, hasConqueredInnerDemon: false },
-    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: { 'Vàng': 99999 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_van_trong',
@@ -210,7 +217,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Thần Mục', description: 'Con mắt thứ ba có thể phân biệt trắng đen, nhìn rõ trung gian.', rank: 'Hậu Tiên Giai', effect: 'Miễn nhiễm với ảo thuật và lừa dối.' } ],
     locationId: 'trieu_ca',
     cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Linh thạch hạ phẩm': 2000, 'Vàng': 5000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 150, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_than_cong_bao',
@@ -221,7 +228,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Miệng Lưỡi Sắc Sảo', description: 'Có tài ăn nói, dễ dàng thuyết phục người khác.', rank: 'Sơ Tiên Giai', effect: 'Tăng mạnh khả năng thuyết phục trong đối thoại.' } ],
     locationId: 'rung_me_vu',
     cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: false },
-    techniques: [], inventory: { weightCapacity: 80, items: [] }, currencies: { 'Linh thạch hạ phẩm': 500, 'Bạc': 1000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 80, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_co_xuong',
@@ -232,7 +239,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Hậu Thiên Bát Quái', description: 'Có khả năng suy diễn thiên cơ, biết trước họa phúc.', rank: 'Trung Tiên Giai', effect: 'Tăng chỉ số Cơ Duyên.' } ],
     locationId: 'tay_ky',
     cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_dz', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Vàng': 2000 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_thai_at_chan_nhan',
@@ -243,7 +250,7 @@ export const NPC_LIST: NPC[] = [
     talents: [],
     locationId: 'ngoc_hu_cung',
     cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 500, items: [] }, currencies: { 'Linh thạch thượng phẩm': 100 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 500, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_trieu_cong_minh',
@@ -254,7 +261,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Định Hải Châu', description: '24 viên ngọc có sức mạnh kinh thiên động địa.', rank: 'Đại Tiên Giai', effect: 'Sở hữu sức tấn công cực mạnh.' } ],
     locationId: 'dao_tam_tien',
     cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 300, items: [] }, currencies: { 'Linh thạch thượng phẩm': 200 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 300, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_van_tieu',
@@ -265,7 +272,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Cửu Khúc Hoàng Hà Trận', description: 'Trận pháp thượng cổ, có thể gọt bỏ tu vi của tiên nhân.', rank: 'Thánh Giai', effect: 'Cực kỳ nguy hiểm, có thể làm người chơi mất cảnh giới.' } ],
     locationId: 'dao_tam_tien',
     cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Linh thạch trung phẩm': 500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_thach_co_nuong_nuong',
@@ -276,7 +283,7 @@ export const NPC_LIST: NPC[] = [
     talents: [],
     locationId: 'bach_cot_dong',
     cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_1', spiritualQi: 0, hasConqueredInnerDemon: false },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Linh thạch hạ phẩm': 500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_ly_tinh',
@@ -287,7 +294,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Linh Lung Bảo Tháp', description: 'Pháp bảo do Nhiên Đăng Cổ Phật tặng để khắc chế Na Tra.', rank: 'Trung Tiên Giai', effect: 'Có khả năng trấn áp kẻ địch.' } ],
     locationId: 'tran_duong_quan',
     cultivation: { currentRealmId: 'nhan_tien', currentStageId: 'nt_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 120, items: [] }, currencies: { 'Bạc': 1500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 120, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   { id: 'npc_loi_chan_tu',
     identity: { name: 'Lôi Chấn Tử', gender: 'Nam', appearance: 'Thân xanh, mặt nhọn, mọc cánh sau lưng, tay cầm côn vàng.', origin: 'Con nuôi của Cơ Xương, đệ tử của Vân Trung Tử.', personality: 'Hỗn Loạn', familyName: 'Cơ gia', age: 20 },
@@ -297,7 +304,7 @@ export const NPC_LIST: NPC[] = [
     talents: [ { name: 'Phong Lôi Dực', description: 'Đôi cánh có sức mạnh của gió và sấm sét, tốc độ cực nhanh.', rank: 'Hậu Tiên Giai', effect: 'Tốc độ di chuyển cực cao.' } ],
     locationId: 'tay_ky',
     cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: { 'Linh thạch hạ phẩm': 300 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   { id: 'npc_hoang_phi_ho',
     identity: { name: 'Hoàng Phi Hổ', gender: 'Nam', appearance: 'Võ tướng oai phong, mình mặc giáp trụ, cưỡi ngũ sắc thần ngưu.', origin: 'Trấn quốc Võ Thành Vương của nhà Thương, sau này phản lại Trụ Vương theo về nhà Chu.', personality: 'Chính Trực', age: 40 },
@@ -307,7 +314,7 @@ export const NPC_LIST: NPC[] = [
     talents: [],
     locationId: 'tam_son_quan',
     cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_3', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Vàng': 250 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 150, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_quang_thanh_tu',
@@ -318,7 +325,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Phiên Thiên Ấn', description: 'Pháp bảo cực mạnh, có sức nặng của một ngọn núi.', rank: 'Đại Tiên Giai', effect: 'Gây sát thương vật lý cực lớn.' }],
     locationId: 'ngoc_hu_cung',
     cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_xich_tinh_tu',
@@ -329,7 +336,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Âm Dương Kính', description: 'Có hai mặt sinh tử, một mặt cứu người, một mặt giết người.', rank: 'Đại Tiên Giai', effect: 'Có khả năng hồi sinh hoặc tiêu diệt mục tiêu.' }],
     locationId: 'ngoc_hu_cung',
     cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_dao_hanh_thien_ton',
@@ -340,7 +347,7 @@ export const NPC_LIST: NPC[] = [
     talents: [],
     locationId: 'ngoc_hu_cung',
     cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_nhien_dang_dao_nhan',
@@ -351,7 +358,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Linh Cữu Đăng', description: 'Ngọn đèn thần chứa ngọn lửa vĩnh cửu.', rank: 'Thánh Giai', effect: 'Khắc chế các loại tà ma.' }],
     locationId: 'ngoc_hu_cung',
     cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 300, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 300, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_da_bao_dao_nhan',
@@ -362,7 +369,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Vạn Bảo', description: 'Sở hữu vô số pháp bảo, có thể tùy ý sử dụng.', rank: 'Đại Tiên Giai', effect: 'Có nhiều lựa chọn chiến đấu.' }],
     locationId: 'bich_du_cung',
     cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 999, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 999, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_kim_linh_thanh_mau',
@@ -373,7 +380,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Tứ Tượng Tháp', description: 'Bảo tháp có thể trấn áp kẻ địch.', rank: 'Đại Tiên Giai', effect: 'Gây choáng và sát thương diện rộng.' }],
     locationId: 'bich_du_cung',
     cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_khong_tuyen',
@@ -384,7 +391,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Ngũ Sắc Thần Quang', description: 'Năm sợi lông đuôi có thể thu vạn vật trong ngũ hành, không gì không quét.', rank: 'Thánh Giai', effect: 'Có thể vô hiệu hóa mọi pháp bảo và đòn tấn công.' }],
     locationId: 'tam_son_quan',
     cultivation: { currentRealmId: 'chuan_thanh', currentStageId: 'ct_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 200, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_co_phat',
@@ -395,7 +402,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Chân Long Thiên Tử', description: 'Có được sự phù hộ của thiên mệnh, là vua của nhân gian.', rank: 'Đại Tiên Giai', effect: 'Tăng mạnh may mắn và uy thế.' }],
     locationId: 'tay_ky',
     cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 150, items: [] }, currencies: { 'Vàng': 500 }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 150, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_nu_oa',
@@ -406,7 +413,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Sơn Hà Xã Tắc Đồ', description: 'Một thế giới chứa trong một bức tranh, có thể nhốt cả Thánh Nhân.', rank: 'Thánh Giai', effect: 'Không thể chống cự.' }],
     locationId: 'oa_hoang_cung',
     cultivation: { currentRealmId: 'thanh_nhan', currentStageId: 'tn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 1000, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 1000, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
     id: 'npc_luc_ap_dao_nhan',
@@ -417,7 +424,7 @@ export const NPC_LIST: NPC[] = [
     talents: [{ name: 'Trảm Tiên Phi Đao', description: 'Một hồ lô có thể phóng ra một tia sáng có mắt, chém đầu tiên nhân.', rank: 'Thánh Giai', effect: 'Gây sát thương chí mạng.' }],
     locationId: 'rung_me_vu',
     cultivation: { currentRealmId: 'chuan_thanh', currentStageId: 'ct_2', spiritualQi: 0, hasConqueredInnerDemon: true },
-    techniques: [], inventory: { weightCapacity: 100, items: [] }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
+    techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   }
 ];
 
@@ -433,7 +440,7 @@ export const SHOPS: Shop[] = [
                 type: 'Đan Dược',
                 quality: 'Linh Phẩm',
                 weight: 0.1,
-                price: { currency: 'Linh thạch hạ phẩm', amount: 10 },
+                price: { currencyName: 'Linh thạch hạ phẩm', amount: 10 },
                 stock: 'infinite'
             },
             {
@@ -442,7 +449,7 @@ export const SHOPS: Shop[] = [
                 type: 'Tạp Vật',
                 quality: 'Phàm Phẩm',
                 weight: 0.1,
-                price: { currency: 'Bạc', amount: 100 },
+                price: { currencyName: 'Bạc', amount: 100 },
                 stock: 'infinite'
             }
         ]
@@ -1069,21 +1076,4 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
     { id: 'high', name: 'Đông Đúc', description: 'Nhiều NPC, thế giới hỗn loạn.', count: 200 },
 ];
 
-export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
-    {
-        id: 'tech_basic_meditation',
-        name: 'Tĩnh Tọa Cơ Bản',
-        description: 'Phương pháp cơ bản để dẫn khí nhập thể, tĩnh tâm凝神.',
-        type: 'Linh Kỹ',
-        cost: {
-            type: 'Linh Lực',
-            value: 0
-        },
-        cooldown: 0,
-        effects: [],
-        rank: 'Phàm Giai',
-        icon: '🧘',
-        level: 1,
-        maxLevel: 1,
-    }
-];
+export const INITIAL_TECHNIQUES: CultivationTechnique[] = [];

@@ -6,7 +6,6 @@ import type { Location } from '../../../types';
 
 type ActionType = 'say' | 'act';
 
-// FIX: Update ActionBarProps to accept activeTab and setActiveTab from parent
 interface ActionBarProps {
     onActionSubmit: (text: string, type: ActionType) => void;
     disabled: boolean;

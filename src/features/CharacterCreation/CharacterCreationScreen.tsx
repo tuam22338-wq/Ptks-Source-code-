@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, memo } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter } from '../../types';
 import { FaArrowLeft, FaDice } from 'react-icons/fa';
@@ -215,10 +216,12 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
           }
       });
       
+// FIX: Added the missing 'danhVong' property to align with the PlayerCharacter type.
       const characterData = {
           identity: identity,
           attributes: initialAttributes,
           talents: selectedTalents,
+          danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
       };

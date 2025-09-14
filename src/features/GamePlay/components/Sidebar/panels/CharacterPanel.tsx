@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from 'react';
-import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup } from '../../../../../types';
-import { INNATE_TALENT_RANKS, CULTIVATION_PATHS, CHARACTER_STATUS_CONFIG } from '../../../../../constants';
-import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers, FaChevronDown } from 'react-icons/fa';
+import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup, InventoryItem } from '../../../../../types';
+import { INNATE_TALENT_RANKS, CULTIVATION_PATHS, CHARACTER_STATUS_CONFIG, CURRENCY_ITEMS } from '../../../../../constants';
+import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers, FaChevronDown, FaShieldAlt } from 'react-icons/fa';
 
 interface CharacterPanelProps {
     character: PlayerCharacter;
@@ -87,7 +87,7 @@ const AttributeGrid: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, talents, cultivation, currencies, chosenPathIds, reputation, healthStatus, activeEffects } = character;
+    const { identity, attributes, talents, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, inventory } = character;
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
 
     const toggleGroup = (title: string) => {
@@ -103,6 +103,16 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
     };
 
     const finalAttributes = useMemo(() => calculateFinalAttributes(attributes, activeEffects), [attributes, activeEffects]);
+    
+    const currencies = useMemo(() => {
+        const currencyMap: Record<string, number> = {};
+        CURRENCY_ITEMS.forEach(currencyDef => {
+            const itemInInventory = inventory.items.find(i => i.id === currencyDef.id);
+            currencyMap[currencyDef.name] = itemInInventory?.quantity || 0;
+        });
+        return currencyMap;
+    }, [inventory.items]);
+
 
     const currentRealmData = realmSystem.find(r => r.id === cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === cultivation.currentStageId);
@@ -180,25 +190,19 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                 </div>
             </div>
 
-            {/* Faction Reputation */}
-            {reputation && reputation.length > 0 && (
-                <div>
-                    <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
-                        <FaUsers /> Danh Vọng
-                    </h3>
-                    <div className="space-y-2">
-                        {reputation.map(rep => (
-                            <div key={rep.factionName} className="flex justify-between items-center bg-black/20 px-3 py-2 rounded-lg border border-gray-700/60 text-sm">
-                                <span className="text-gray-300">{rep.factionName}</span>
-                                <div className="text-right">
-                                    <span className="font-bold text-amber-300">{rep.status}</span>
-                                    <span className="text-xs text-gray-400 ml-2">({rep.value})</span>
-                                </div>
-                            </div>
-                        ))}
+            {/* Reputation */}
+            <div>
+                <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
+                    <FaShieldAlt /> Danh Vọng
+                </h3>
+                <div className="flex justify-between items-center bg-black/20 px-3 py-2 rounded-lg border border-gray-700/60 text-sm">
+                    <span className="text-gray-300">Toàn cõi</span>
+                    <div className="text-right">
+                        <span className="font-bold text-amber-300">{danhVong.status}</span>
+                        <span className="text-xs text-gray-400 ml-2">({danhVong.value})</span>
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* Talents */}
             <div>

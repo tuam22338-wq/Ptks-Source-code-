@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { FaBookReader, FaExclamationCircle } from 'react-icons/fa';
+import { FaBookReader, FaExclamationCircle, FaCoins } from 'react-icons/fa';
 import { GiSwapBag, GiGears, GiCauldron, GiMountainCave, GiCastle } from 'react-icons/gi';
 
 const GuideSection: React.FC<{ icon: React.ElementType; title: string; children: React.ReactNode }> = ({ icon: Icon, title, children }) => (
@@ -35,6 +35,15 @@ const GuidePanel: React.FC = () => {
                         <p className="mt-2">Sau khi bạn trang bị, sử dụng hoặc vứt bỏ vật phẩm và đóng túi đồ lại, AI kể chuyện sẽ tự động nhận biết và tiếp nối câu chuyện một cách hợp lý.</p>
                     </GuideSection>
                     
+                     <GuideSection icon={FaCoins} title="Hệ Thống Tiền Tệ">
+                        <p>Tiền tệ trong game được xem như vật phẩm trong túi đồ của bạn, chia thành nhiều loại:</p>
+                        <ul className="list-disc list-inside text-gray-400">
+                            <li><strong>Phàm Tệ:</strong> Dùng trong giao dịch của người thường, bao gồm Đồng, Bạc, Vàng.</li>
+                            <li><strong>Linh Tệ:</strong> Tiền tệ chính trong giới tu tiên, là các loại Linh Thạch chứa đựng linh khí.</li>
+                            <li><strong>Tiên Tệ & Đặc Biệt:</strong> Các loại tiền tệ cao cấp hơn như Tiên Ngọc, hoặc điểm Cống hiến Tông môn, điểm Danh Vọng sẽ xuất hiện ở các giai đoạn sau của game.</li>
+                        </ul>
+                    </GuideSection>
+
                      <GuideSection icon={GiGears} title="Tính Năng Khác">
                         <p>Tương tự như túi đồ, các tính năng khác cũng được điều khiển bằng lời nói:</p>
                         <ul className="list-disc list-inside text-gray-400 italic">

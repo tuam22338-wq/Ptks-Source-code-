@@ -15,7 +15,7 @@ export interface SaveSlot {
 
 
 // --- Settings Types ---
-// FIX: Per Gemini guidelines, only 'gemini-2.5-flash' is permitted for general text tasks.
+// Per Gemini guidelines, only 'gemini-2.5-flash' is permitted for general text tasks.
 export type AIModel = 'gemini-2.5-flash';
 export type ImageModel = 'imagen-4.0-generate-001';
 export type RagEmbeddingModel = 'text-embedding-004';
@@ -512,7 +512,6 @@ export interface NPC {
     cultivation: CultivationState;
     techniques: CultivationTechnique[];
     inventory: Inventory;
-    currencies: Currency;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     faction?: string;
     isHostile?: boolean;
@@ -603,7 +602,6 @@ export interface MainCultivationTechnique {
 
 export interface PlayerNpcRelationship {
     npcId: string;
-// FIX: Added the 'type' property to define the nature of the player's relationship with an NPC.
     type: string; // e.g., 'Phụ thân', 'Bằng hữu', 'Thanh mai trúc mã'
     value: number; // e.g., -100 (Hated) to 100 (Loved)
     status: 'Thù địch' | 'Lạnh nhạt' | 'Trung lập' | 'Thân thiện' | 'Tri kỷ';
@@ -617,6 +615,10 @@ export interface PlayerReputation {
   status: FactionReputationStatus;
 }
 
+export interface DanhVong {
+    value: number;
+    status: string;
+}
 
 export interface CultivationPath {
   id: string;
@@ -663,6 +665,7 @@ export interface PlayerCharacter {
     techniquePoints: number;
 
     relationships: PlayerNpcRelationship[];
+    danhVong: DanhVong;
     reputation: PlayerReputation[];
     chosenPathIds: string[];
     knownRecipeIds: string[];
@@ -746,7 +749,7 @@ export interface GameEvent {
 // --- Shop Types ---
 export interface ShopItem extends Omit<InventoryItem, 'id' | 'quantity'> {
     price: {
-        currency: string;
+        currencyName: string;
         amount: number;
     };
     stock: number | 'infinite';

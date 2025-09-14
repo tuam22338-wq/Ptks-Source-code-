@@ -29,6 +29,7 @@ export const migrateGameState = (savedGame: any): GameState => {
                 dataToProcess.playerCharacter.techniqueCooldowns = dataToProcess.playerCharacter.techniqueCooldowns ?? {};
                 dataToProcess.playerCharacter.activeMissions = dataToProcess.playerCharacter.activeMissions ?? [];
                 dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
+                dataToProcess.playerCharacter.danhVong = dataToProcess.playerCharacter.danhVong ?? { value: 0, status: 'Vô Danh Tiểu Tốt' };
             }
             
             dataToProcess.version = "1.1.0";
@@ -40,8 +41,9 @@ export const migrateGameState = (savedGame: any): GameState => {
         }
     }
     
-    // Rework technique system for old saves or saves that missed the migration.
-     if (dataToProcess.playerCharacter && (!dataToProcess.playerCharacter.mainCultivationTechnique || dataToProcess.playerCharacter.mainCultivationTechnique.id === 'main_tech_van_vat_quy_nguyen')) {
+    // This migration can be removed in future versions, but is kept for saves that might have missed the 1.1.0 technique system update
+    if (dataToProcess.playerCharacter && dataToProcess.playerCharacter.techniques) {
+        console.log("Applying late technique system migration...");
         const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
         const newTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
         
@@ -53,7 +55,6 @@ export const migrateGameState = (savedGame: any): GameState => {
         dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || INITIAL_TECHNIQUES;
         delete dataToProcess.playerCharacter.techniques;
         dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
-        console.log(`Migrated to new main cultivation technique: ${newTechnique.name}`);
     }
 
 
@@ -129,7 +130,7 @@ export const migrateGameState = (savedGame: any): GameState => {
 
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'auxiliaryTechniques' | 'mainCultivationTechnique' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'danhVong' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
         npcDensity: NpcDensity
     },
     activeMods: FullMod[]
@@ -149,11 +150,9 @@ export const createNewGameState = async (
         weightCapacity: initialWeightCapacity,
         items: [
             { id: 'item1', name: 'Bình Dược Liệu', description: 'Một bình sứ chứa thảo dược cơ bản để trị thương.', quantity: 5, type: 'Đan Dược', icon: '🏺', weight: 0.5, quality: 'Phàm Phẩm' },
-            { id: 'item2', name: 'Trường Bào Đạo Sĩ', description: 'Một bộ y phục của người tu đạo, giúp tĩnh tâm凝神.', quantity: 1, type: 'Phòng Cụ', icon: '🥋', bonuses: [{ attribute: 'Nguyên Thần', value: 1 }], weight: 1.5, quality: 'Phàm Phẩm', slot: 'Thượng Y' },
-            { id: 'item3', name: 'Đào Mộc Kiếm', description: 'Một thanh kiếm bằng gỗ đào, có khả năng khắc chế yêu ma tà mị.', quantity: 1, type: 'Vũ Khí', icon: '🗡️', bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 2 }], weight: 2.0, quality: 'Phàm Phẩm', slot: 'Vũ Khí' },
-            { id: 'item4', name: 'Lệnh Bài Thân Phận', description: 'Một lệnh bài bằng gỗ đào, khắc tên và xuất thân của bạn.', quantity: 1, type: 'Tạp Vật', icon: '🪪', weight: 0.1, quality: 'Phàm Phẩm' },
-            { id: 'item5', name: 'Phá Cấm Phù', description: 'Một lá bùa đơn giản có thể phá giải các cấm chế cấp thấp.', quantity: 3, type: 'Pháp Bảo', rank: 'Phàm Giai', icon: '📜', bonuses: [{ attribute: 'Thần Thức', value: 1 }], weight: 0.1, quality: 'Linh Phẩm' },
-            { id: 'item6', name: 'Sơ Cấp Tu Luyện Tâm Pháp', description: 'Ghi lại những khẩu quyết cơ bản để dẫn khí nhập thể, giúp tăng tốc độ tu luyện ban đầu.', quantity: 1, type: 'Tạp Vật', icon: '📖', bonuses: [{ attribute: 'Ngộ Tính', value: 2 }], weight: 0.5, quality: 'Phàm Phẩm' },
+            { id: 'item2', name: 'Trường Bào Vải Thô', description: 'Một bộ y phục vải thô của dân thường.', quantity: 1, type: 'Phòng Cụ', icon: '🥋', bonuses: [], weight: 1.5, quality: 'Phàm Phẩm', slot: 'Thượng Y' },
+            { id: 'item3', name: 'Dao Găm Sắt', description: 'Một con dao găm bằng sắt, chỉ có thể dùng để phòng thân.', quantity: 1, type: 'Vũ Khí', icon: '🗡️', bonuses: [{ attribute: 'Lực Lượng', value: 1 }], weight: 1.0, quality: 'Phàm Phẩm', slot: 'Vũ Khí' },
+            { id: 'item4', name: 'Lệnh Bài Thân Phận', description: 'Một lệnh bài bằng gỗ, khắc tên và xuất thân của bạn.', quantity: 1, type: 'Tạp Vật', icon: '🪪', weight: 0.1, quality: 'Phàm Phẩm' },
             { id: 'item7', name: 'Hồi Khí Đan - Đan Phương', description: 'Ghi lại phương pháp luyện chế Hồi Khí Đan Hạ Phẩm. Có thể học bằng cách sử dụng.', quantity: 1, type: 'Đan Phương', icon: '📜', weight: 0.1, quality: 'Phàm Phẩm', recipeId: 'recipe_hoi_khi_dan_ha_pham' },
         ]
     };
@@ -190,10 +189,6 @@ export const createNewGameState = async (
     const startingLocation = initialCoreLocations[Math.floor(Math.random() * initialCoreLocations.length)] || WORLD_MAP[0];
     const caveAbodeLocation = WORLD_MAP.find(l => l.id === DEFAULT_CAVE_ABODE.locationId);
 
-    const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
-    const selectedTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
-    selectedTechnique.skillTreeNodes['root'].isUnlocked = true;
-
     let playerCharacter: PlayerCharacter = {
         identity: { ...characterData.identity, age: 18 },
         attributes: updatedAttributes,
@@ -203,10 +198,11 @@ export const createNewGameState = async (
         cultivation: initialCultivation,
         currentLocationId: startingLocation.id,
         equipment: {},
-        mainCultivationTechnique: selectedTechnique,
-        auxiliaryTechniques: INITIAL_TECHNIQUES,
-        techniquePoints: 1,
+        mainCultivationTechnique: null,
+        auxiliaryTechniques: [],
+        techniquePoints: 0,
         relationships: [],
+        danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
         reputation: FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),
         chosenPathIds: [],
         knownRecipeIds: [],

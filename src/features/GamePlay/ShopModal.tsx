@@ -4,6 +4,7 @@ import { SHOPS, ITEM_QUALITY_STYLES } from '../../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';
 
 interface ShopModalProps {
+    isOpen: boolean;
     shopId: string;
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
@@ -11,16 +12,21 @@ interface ShopModalProps {
     onClose: () => void;
 }
 
-const ShopModal: React.FC<ShopModalProps> = ({ shopId, gameState, setGameState, showNotification, onClose }) => {
+const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId, gameState, setGameState, showNotification, onClose }) => {
+// FIX: Added conditional rendering based on the new 'isOpen' prop to prevent the modal from rendering when not active.
+    if (!isOpen) return null;
+
     const shopData = SHOPS.find(s => s.id === shopId);
     const { playerCharacter } = gameState;
 
     const handleBuyItem = (item: ShopItem) => {
-        const { currency, amount } = item.price;
-        const playerCurrency = playerCharacter.currencies[currency] || 0;
+        const { currencyName, amount } = item.price;
+        
+        const playerCurrencyItem = playerCharacter.inventory.items.find(i => i.name === currencyName);
+        const playerCurrencyAmount = playerCurrencyItem?.quantity || 0;
 
-        if (playerCurrency < amount) {
-            showNotification(`Không đủ ${currency}!`);
+        if (playerCurrencyAmount < amount) {
+            showNotification(`Không đủ ${currencyName}!`);
             return;
         }
         
@@ -33,16 +39,24 @@ const ShopModal: React.FC<ShopModalProps> = ({ shopId, gameState, setGameState, 
         setGameState(prev => {
             if (!prev) return null;
             const { playerCharacter } = prev;
-            const newCurrencies = { ...playerCharacter.currencies, [currency]: playerCurrency - amount };
-            const existingItem = playerCharacter.inventory.items.find(i => i.name === item.name);
-            let newItems: InventoryItem[];
+
+            // 1. Deduct currency
+            let newItems = playerCharacter.inventory.items.map(i => {
+                if (i.name === currencyName) {
+                    return { ...i, quantity: i.quantity - amount };
+                }
+                return i;
+            }).filter(i => i.quantity > 0);
+
+            // 2. Add purchased item
+            const existingItem = newItems.find(i => i.name === item.name);
 
             if (existingItem) {
-                newItems = playerCharacter.inventory.items.map(i => 
+                newItems = newItems.map(i => 
                     i.name === item.name ? { ...i, quantity: i.quantity + 1 } : i
                 );
             } else {
-                const newItem: InventoryItem = {
+                const newItemToAdd: InventoryItem = {
                     id: `item-${Date.now()}-${Math.random()}`,
                     name: item.name,
                     description: item.description,
@@ -56,14 +70,13 @@ const ShopModal: React.FC<ShopModalProps> = ({ shopId, gameState, setGameState, 
                     value: item.value,
                     slot: item.slot,
                 };
-                newItems = [...playerCharacter.inventory.items, newItem];
+                newItems.push(newItemToAdd);
             }
             
             return {
                 ...prev,
                 playerCharacter: {
                     ...playerCharacter,
-                    currencies: newCurrencies,
                     inventory: { ...playerCharacter.inventory, items: newItems }
                 }
             };
@@ -119,7 +132,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ shopId, gameState, setGameState, 
                                 </div>
                                 <div className="flex-shrink-0 w-full sm:w-auto flex sm:flex-col items-center sm:items-end justify-between gap-2">
                                     <div className="flex items-center gap-2 font-semibold">
-                                        <CurrencyIcon currency={item.price.currency} />
+                                        <CurrencyIcon currency={item.price.currencyName} />
                                         <span>{item.price.amount.toLocaleString()}</span>
                                     </div>
                                     <button 

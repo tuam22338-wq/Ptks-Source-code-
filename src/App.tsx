@@ -2,6 +2,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -374,7 +375,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleGameStart = useCallback(async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'danhVong' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
       npcDensity: NpcDensity
   }) => {
     if (currentSlotId === null) {
@@ -385,16 +386,15 @@ const App: React.FC = () => {
     setIsLoading(true);
 
     const npcCount = NPC_DENSITY_LEVELS.find(d => d.id === gameStartData.npcDensity)?.count ?? 20;
-    let estimatedTime = Math.ceil(npcCount * 0.5) + 8; // ~0.5s per NPC + 8s base time
+    let estimatedTime = Math.ceil(npcCount * 0.4) + 5; // ~0.4s per NPC + 5s base time
     let remainingTime = estimatedTime;
 
     const messages = [
         'Đang nạp các mod đã kích hoạt...',
         'Thỉnh mời các vị thần...',
         'Vẽ nên sông núi, cây cỏ...',
-        'Tạo dựng gia đình, thân hữu...',
-        'An bài số mệnh cho chúng sinh...',
-        'Viết nên chương mở đầu...'
+        'Tạo ra chúng sinh vạn vật...',
+        'An bài số mệnh, định ra nhân quả...'
     ];
     let messageIndex = 0;
 

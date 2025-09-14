@@ -42,7 +42,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
                     `
                 }}
             >
-                Phong Thần Ký Sự
+                Tam Thiên Thế Giới
             </h1>
             <h2 
                 className="text-2xl sm:text-3xl mt-2 tracking-widest font-semibold font-title text-[var(--text-muted-color)] animate-menu-item"

@@ -81,13 +81,18 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
 
     if (dehydratedState.activeNpcs) {
         dehydratedState.activeNpcs = dehydratedState.activeNpcs.map((npc: NPC) => {
-            if (npc.attributes) {
-                return {
-                    ...npc,
-                    attributes: dehydrateAttributesForSave(npc.attributes) as AttributeGroup[]
+            let newNpc: any = { ...npc };
+            if (newNpc.attributes) {
+                newNpc = {
+                    ...newNpc,
+                    attributes: dehydrateAttributesForSave(newNpc.attributes) as AttributeGroup[]
                 };
             }
-            return npc;
+            // Ensure obsolete currencies property is removed for forward compatibility
+            if ('currencies' in newNpc) {
+                delete newNpc.currencies;
+            }
+            return newNpc;
         });
     }
 
@@ -192,7 +197,7 @@ export const saveModDraft = async (draftData: any): Promise<void> => {
     await db.modDrafts.put({ id: 'current-draft', data: draftData });
 };
 
-// FIX: Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
+// Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
 export const deleteDb = (): Promise<void> => {
     return (db as Dexie).delete();
 };

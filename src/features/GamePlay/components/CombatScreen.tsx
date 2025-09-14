@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect } from '../../../types';
 import { generateCombatNarrative } from '../../../services/geminiService';
