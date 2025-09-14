@@ -28,9 +28,10 @@ const SettingsManager = (() => {
 export const reloadSettings = SettingsManager.reload;
 
 const getAiClient = () => {
-    const apiKey = process.env.API_KEY;
+    const settings = getSettings();
+    const apiKey = settings.apiKey || process.env.API_KEY;
     if (!apiKey) {
-        throw new Error("API Key của Gemini chưa được cấu hình.");
+        throw new Error("API Key của Gemini chưa được cấu hình trong Cài đặt hoặc biến môi trường.");
     }
     return new GoogleGenAI({ apiKey });
 };
@@ -155,18 +156,23 @@ const generateImagesWithRetry = (generationRequest: any, maxRetries = 3): Promis
     return performApiCall((ai, req) => ai.models.generateImages(req), finalRequest, maxRetries);
 };
 
-export const testApiKeys = async (): Promise<{ key: string, status: 'valid' | 'invalid', error?: string }[]> => {
-    const apiKey = process.env.API_KEY;
+export const testApiKey = async (apiKey: string): Promise<{ status: 'valid' | 'invalid', error?: string }> => {
     if (!apiKey) {
-        return [{ key: 'N/A', status: 'invalid', error: 'Không có API key nào được cấu hình trong biến môi trường.' }];
+        return { status: 'invalid', error: 'API key không được để trống.' };
     }
 
     try {
         const testAi = new GoogleGenAI({ apiKey });
         await testAi.models.generateContent({ model: 'gemini-2.5-flash', contents: 'test' });
-        return [{ key: `...${apiKey.slice(-4)}`, status: 'valid' as const }];
+        return { status: 'valid' as const };
     } catch (e: any) {
-        return [{ key: `...${apiKey.slice(-4)}`, status: 'invalid' as const, error: e.message }];
+        let errorMessage = e.message;
+        if (e.toString().includes('API key not valid')) {
+            errorMessage = "API Key không hợp lệ. Vui lòng kiểm tra lại.";
+        } else if (e.toString().includes('fetch failed')) {
+            errorMessage = "Không thể kết nối đến máy chủ Gemini. Vui lòng kiểm tra kết nối mạng của bạn.";
+        }
+        return { status: 'invalid' as const, error: errorMessage };
     }
 };
 

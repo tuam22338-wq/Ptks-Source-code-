@@ -7,6 +7,9 @@ import {
   GiMountainCave, GiDoubleDragon, GiTalk, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle
 } from 'react-icons/gi';
 import { FaSun, FaMoon } from 'react-icons/fa';
+import { MAIN_CULTIVATION_TECHNIQUES_DATABASE } from './data/mainCultivationTechniques';
+
+export { MAIN_CULTIVATION_TECHNIQUES_DATABASE };
 
 export const CURRENT_GAME_VERSION = "1.1.0";
 
@@ -491,6 +494,7 @@ export const THEME_OPTIONS: { value: Theme; label: string }[] = [
 ];
 
 export const DEFAULT_SETTINGS: GameSettings = {
+    apiKey: '',
     layoutMode: 'auto',
     gameSpeed: 'normal',
     narrativeStyle: 'classic_wuxia',
@@ -1083,22 +1087,3 @@ export const INITIAL_TECHNIQUES: CultivationTechnique[] = [
         maxLevel: 1,
     }
 ];
-
-
-export const MAIN_CULTIVATION_TECHNIQUE: MainCultivationTechnique = {
-    id: 'main_tech_van_vat_quy_nguyen',
-    name: 'Vạn Vật Quy Nguyên Quyết',
-    description: 'Một công pháp cổ xưa, tập trung vào việc hấp thụ linh khí từ vạn vật để củng cố bản thân, nền tảng vững chắc, hậu kỳ vô tận.',
-    skillTreeNodes: {
-        'root': { id: 'root', name: 'Quy Nguyên Tâm Pháp', description: 'Nền tảng của Vạn Vật Quy Nguyên Quyết, tăng tốc độ hấp thụ linh khí.', icon: '🌀', realmRequirement: 'luyen_khi', cost: 0, isUnlocked: true, type: 'core_enhancement', childrenIds: ['lk_passive_1', 'lk_active_1'], position: { x: 50, y: 5 }, bonuses: [{ attribute: 'Ngộ Tính', value: 5 }] },
-        // Luyện Khí Branch
-        'lk_passive_1': { id: 'lk_passive_1', name: 'Tẩy Tủy', description: 'Thanh lọc cơ thể, tăng cường Căn Cốt.', icon: '💧', realmRequirement: 'luyen_khi', cost: 1, isUnlocked: false, type: 'passive_bonus', childrenIds: ['lk_passive_2'], position: { x: 30, y: 15 }, bonuses: [{ attribute: 'Căn Cốt', value: 10 }] },
-        'lk_active_1': { id: 'lk_active_1', name: 'Linh Khí Thuẫn', description: 'Tạo ra một tấm khiên linh khí để phòng ngự.', icon: '🛡️', realmRequirement: 'luyen_khi', cost: 1, isUnlocked: false, type: 'active_skill', childrenIds: ['lk_passive_2'], position: { x: 70, y: 15 }, activeSkill: { name: 'Linh Khí Thuẫn', description: 'Tạo một tấm khiên hấp thụ 50 sát thương trong 3 lượt.', type: 'Linh Kỹ', cost: { type: 'Linh Lực', value: 20 }, cooldown: 5, effects: [], rank: 'Phàm Giai', icon: '🛡️' } },
-        'lk_passive_2': { id: 'lk_passive_2', name: 'Dưỡng Thần', description: 'Tẩm bổ linh hồn, tăng cường Nguyên Thần.', icon: '🧠', realmRequirement: 'luyen_khi', cost: 2, isUnlocked: false, type: 'passive_bonus', childrenIds: ['tc_core'], position: { x: 50, y: 25 }, bonuses: [{ attribute: 'Nguyên Thần', value: 10 }] },
-        // Trúc Cơ Branch
-        'tc_core': { id: 'tc_core', name: 'Trúc Cơ Đạo Thể', description: 'Sau khi Trúc Cơ, cơ thể trở nên mạnh mẽ hơn, tăng Sinh Mệnh và Linh Lực.', icon: '💪', realmRequirement: 'truc_co', cost: 1, isUnlocked: false, type: 'core_enhancement', childrenIds: ['tc_passive_1', 'tc_active_1'], position: { x: 50, y: 35 }, bonuses: [{ attribute: 'Sinh Mệnh', value: 100 }, { attribute: 'Linh Lực', value: 50 }] },
-        'tc_passive_1': { id: 'tc_passive_1', name: 'Chân Nguyên Hộ Thể', description: 'Chân nguyên tự động bảo vệ cơ thể, tăng Bền Bỉ.', icon: '🧱', realmRequirement: 'truc_co', cost: 2, isUnlocked: false, type: 'passive_bonus', childrenIds: ['tc_active_2'], position: { x: 30, y: 45 }, bonuses: [{ attribute: 'Bền Bỉ', value: 15 }] },
-        'tc_active_1': { id: 'tc_active_1', name: 'Linh Tức Trảm', description: 'Ngưng tụ linh khí thành một đòn tấn công.', icon: '⚔️', realmRequirement: 'truc_co', cost: 2, isUnlocked: false, type: 'active_skill', childrenIds: ['tc_active_2'], position: { x: 70, y: 45 }, activeSkill: { name: 'Linh Tức Trảm', description: 'Gây sát thương bằng 120% chỉ số Linh Lực Sát Thương của bạn.', type: 'Thần Thông', cost: { type: 'Linh Lực', value: 40 }, cooldown: 3, effects: [], rank: 'Tiểu Giai', icon: '⚔️' } },
-        'tc_active_2': { id: 'tc_active_2', name: 'Quy Nguyên Thuật', description: 'Hấp thụ linh khí từ môi trường để hồi phục.', icon: '➕', realmRequirement: 'truc_co', cost: 3, isUnlocked: false, type: 'active_skill', childrenIds: [], position: { x: 50, y: 55 }, activeSkill: { name: 'Quy Nguyên Thuật', description: 'Hồi phục 30% Linh Lực đã mất.', type: 'Linh Kỹ', cost: { type: 'Linh Lực', value: 0 }, cooldown: 8, effects: [], rank: 'Tiểu Giai', icon: '➕' } },
-    }
-};

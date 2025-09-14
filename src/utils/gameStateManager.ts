@@ -1,5 +1,5 @@
 import { FaQuestionCircle } from 'react-icons/fa';
-import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, MAIN_CULTIVATION_TECHNIQUE, REALM_SYSTEM, SECTS, WORLD_MAP } from "../constants";
+import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE } from "../constants";
 import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique } from "../types";
 import { generateDynamicNpcs } from '../services/geminiService';
 
@@ -23,12 +23,6 @@ export const migrateGameState = (savedGame: any): GameState => {
             dataToProcess.activeStory = dataToProcess.activeStory ?? null;
 
             if (dataToProcess.playerCharacter) {
-                // Technique system migration
-                dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
-                delete dataToProcess.playerCharacter.techniques;
-                dataToProcess.playerCharacter.mainCultivationTechnique = dataToProcess.playerCharacter.mainCultivationTechnique ?? MAIN_CULTIVATION_TECHNIQUE;
-                dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
-
                 // Other migrations
                 dataToProcess.playerCharacter.relationships = dataToProcess.playerCharacter.relationships ?? [];
                 dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
@@ -50,12 +44,20 @@ export const migrateGameState = (savedGame: any): GameState => {
         }
     }
     
-    // Ensure new fields exist even if version is current but save is old
-     if (dataToProcess.playerCharacter && !dataToProcess.playerCharacter.mainCultivationTechnique) {
-        dataToProcess.playerCharacter.mainCultivationTechnique = MAIN_CULTIVATION_TECHNIQUE;
-        dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
+    // Rework technique system for old saves or saves that missed the migration.
+     if (dataToProcess.playerCharacter && (!dataToProcess.playerCharacter.mainCultivationTechnique || dataToProcess.playerCharacter.mainCultivationTechnique.id === 'main_tech_van_vat_quy_nguyen')) {
+        const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
+        const newTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
+        
+        if(newTechnique) {
+            newTechnique.skillTreeNodes['root'].isUnlocked = true;
+        }
+
+        dataToProcess.playerCharacter.mainCultivationTechnique = newTechnique;
+        dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || INITIAL_TECHNIQUES;
         delete dataToProcess.playerCharacter.techniques;
-        dataToProcess.playerCharacter.techniquePoints = 1;
+        dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
+        console.log(`Migrated to new main cultivation technique: ${newTechnique.name}`);
     }
 
 
@@ -195,6 +197,11 @@ export const createNewGameState = async (
     const startingLocation = initialCoreLocations[Math.floor(Math.random() * initialCoreLocations.length)] || WORLD_MAP[0];
     const caveAbodeLocation = WORLD_MAP.find(l => l.id === DEFAULT_CAVE_ABODE.locationId);
 
+    const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
+    const selectedTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
+    // Mark root as unlocked
+    selectedTechnique.skillTreeNodes['root'].isUnlocked = true;
+
     const finalPlayerCharacter: PlayerCharacter = {
         identity: { ...characterData.identity, age: 18 },
         attributes: updatedAttributes,
@@ -204,7 +211,7 @@ export const createNewGameState = async (
         cultivation: initialCultivation,
         currentLocationId: startingLocation.id,
         equipment: {},
-        mainCultivationTechnique: MAIN_CULTIVATION_TECHNIQUE,
+        mainCultivationTechnique: selectedTechnique,
         auxiliaryTechniques: INITIAL_TECHNIQUES,
         techniquePoints: 1,
         relationships: [],
