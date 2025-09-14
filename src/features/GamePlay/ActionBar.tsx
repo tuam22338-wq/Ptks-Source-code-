@@ -9,10 +9,11 @@ interface ActionBarProps {
     onActionSubmit: (text: string, type: ActionType) => void;
     disabled: boolean;
     currentLocation: Location;
+    activeTab: ActionType;
+    setActiveTab: (tab: ActionType) => void;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, currentLocation }) => {
-    const [activeTab, setActiveTab] = useState<ActionType>('act');
+const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, currentLocation, activeTab, setActiveTab }) => {
     const [inputText, setInputText] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {

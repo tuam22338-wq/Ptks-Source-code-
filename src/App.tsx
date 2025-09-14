@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -10,7 +12,7 @@ import MainMenu from './features/MainMenu/MainMenu';
 import ModsScreen from './features/Mods/ModsScreen';
 import CreateModScreen from './features/Mods/CreateModScreen';
 import { GamePlayScreen } from './features/GamePlay/GamePlayScreen';
-import LoreScreen from './features/Lore/LoreScreen';
+import ThoiTheScreen from './features/Lore/LoreScreen';
 import InfoScreen from './features/Info/InfoScreen';
 import DeveloperConsole from './components/DeveloperConsole';
 
@@ -20,7 +22,7 @@ import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVE
 import { reloadSettings } from './services/geminiService';
 import { migrateGameState, createNewGameState } from './utils/gameStateManager';
 
-export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'lore' | 'info';
+export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'thoiThe' | 'info';
 
 interface ModInLibrary {
     modInfo: { id: string };
@@ -383,15 +385,16 @@ const App: React.FC = () => {
     setIsLoading(true);
 
     const npcCount = NPC_DENSITY_LEVELS.find(d => d.id === gameStartData.npcDensity)?.count ?? 20;
-    let estimatedTime = Math.ceil(npcCount * 0.4) + 5; // ~0.4s per NPC + 5s base time
+    let estimatedTime = Math.ceil(npcCount * 0.5) + 8; // ~0.5s per NPC + 8s base time
     let remainingTime = estimatedTime;
 
     const messages = [
         'Đang nạp các mod đã kích hoạt...',
         'Thỉnh mời các vị thần...',
         'Vẽ nên sông núi, cây cỏ...',
-        'Tạo ra chúng sinh vạn vật...',
-        'An bài số mệnh, định ra nhân quả...'
+        'Tạo dựng gia đình, thân hữu...',
+        'An bài số mệnh cho chúng sinh...',
+        'Viết nên chương mở đầu...'
     ];
     let messageIndex = 0;
 
@@ -464,8 +467,8 @@ const App: React.FC = () => {
         return <ModsScreen onBack={() => handleNavigate('mainMenu')} onNavigate={handleNavigate} />;
       case 'createMod':
         return <CreateModScreen onBack={() => handleNavigate('mods')} />;
-      case 'lore':
-        return <LoreScreen onBack={() => handleNavigate('mainMenu')} />;
+      case 'thoiThe':
+        return <ThoiTheScreen onBack={() => handleNavigate('mainMenu')} />;
       case 'info':
         return <InfoScreen onBack={() => handleNavigate('mainMenu')} />;
       case 'gamePlay':

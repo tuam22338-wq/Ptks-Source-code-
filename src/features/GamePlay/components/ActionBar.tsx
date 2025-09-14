@@ -1,18 +1,21 @@
 
+
 import React, { useState } from 'react';
 import { FaPaperPlane, FaComment, FaBolt } from 'react-icons/fa';
 import type { Location } from '../../../types';
 
 type ActionType = 'say' | 'act';
 
+// FIX: Update ActionBarProps to accept activeTab and setActiveTab from parent
 interface ActionBarProps {
     onActionSubmit: (text: string, type: ActionType) => void;
     disabled: boolean;
     currentLocation: Location;
+    activeTab: ActionType;
+    setActiveTab: (tab: ActionType) => void;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, currentLocation }) => {
-    const [activeTab, setActiveTab] = useState<ActionType>('act');
+const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, currentLocation, activeTab, setActiveTab }) => {
     const [inputText, setInputText] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -49,7 +52,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, current
                                     title={action.description}
                                     className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-600/70 disabled:opacity-50 transition-colors"
                                 >
-                                    <Icon />
+                                    {Icon && <Icon />}
                                     {action.label}
                                 </button>
                             );

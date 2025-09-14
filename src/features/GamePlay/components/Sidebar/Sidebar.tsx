@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, StoryEntry } from '../../../../types';
+import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, StoryEntry, GameState } from '../../../../types';
 import CharacterPanel from './panels/CharacterPanel';
 import GuidePanel from './panels/GuidePanel';
 import WorldPanel from './panels/WorldPanel';
@@ -10,7 +10,9 @@ import LorePanel from './panels/LorePanel';
 import CustomContentPanel from './panels/CustomContentPanel';
 import MapView from './panels/MapView';
 import StoryGraphPanel from './panels/StoryGraphPanel';
-import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaSitemap } from 'react-icons/fa';
+import AiMemoryPanel from './panels/AiMemoryPanel';
+import GenealogyPanel from './panels/GenealogyPanel';
+import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaProjectDiagram, FaBrain, FaSitemap } from 'react-icons/fa';
 
 interface SidebarProps {
     playerCharacter: PlayerCharacter;
@@ -30,27 +32,30 @@ interface SidebarProps {
     realmSystem: RealmConfig[];
     showNotification: (message: string) => void;
     activeMods: FullMod[];
+    gameState: GameState;
 }
-type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | string;
+type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | 'aiMemory' | 'genealogy' | string;
 
 const ICON_MAP: { [key: string]: React.ElementType } = {
     FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram
 };
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog } = props;
-    const [activeTab, setActiveTab] = useState<SidebarTab>('guide');
+    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog, gameState } = props;
+    const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     
     const baseTabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
-        {id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle },
         {id: 'character', label: 'Nhân Vật', icon: FaUser },
         {id: 'techniques', label: 'Công Pháp', icon: FaScroll },
+        {id: 'genealogy', label: 'Gia Phả', icon: FaSitemap },
         {id: 'world', label: 'Thế Giới', icon: FaGlobe },
         {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt },
-        {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaSitemap },
+        {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaProjectDiagram },
+        {id: 'aiMemory', label: 'AI Ký Ức', icon: FaBrain },
         {id: 'wiki', label: 'Bách Khoa', icon: FaBook },
         {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
         {id: 'lore', label: 'Thiên Mệnh', icon: FaSun },
+        {id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle },
     ];
 
     const moddedTabs = useMemo(() => {
@@ -93,9 +98,11 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {activeTab === 'guide' && <GuidePanel />}
                 {activeTab === 'character' && <CharacterPanel character={playerCharacter} onBreakthrough={onBreakthrough} realmSystem={realmSystem} />}
                 {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
+                {activeTab === 'genealogy' && <GenealogyPanel playerCharacter={playerCharacter} allNpcs={allNpcs} onNpcSelect={onNpcSelect} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={onNpcSelect} />}
                 {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}
+                {activeTab === 'aiMemory' && <AiMemoryPanel gameState={gameState} />}
                 {activeTab === 'wiki' && <WikiPanel playerCharacter={playerCharacter} allNpcs={allNpcs} encounteredNpcIds={encounteredNpcIds} discoveredLocations={discoveredLocations} />}
                 {activeTab === 'realms' && <RealmPanel playerCharacter={playerCharacter} realmSystem={realmSystem} />}
                 {activeTab === 'lore' && <LorePanel />}

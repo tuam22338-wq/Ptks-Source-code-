@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute, FullMod } from '../types';
+import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute, FullMod, PlayerNpcRelationship } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG } from "../constants";
 import * as db from './dbService';
 import { FaQuestionCircle } from "react-icons/fa";
@@ -211,11 +211,12 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
         type: Type.OBJECT,
         properties: {
             name: { type: Type.STRING, description: 'Tên Hán Việt, phù hợp bối cảnh tiên hiệp. Ví dụ: "Lý Thanh Vân", "Hàn Lập".' },
+            familyName: { type: Type.STRING, description: 'Họ của nhân vật, ví dụ: "Lý", "Trần".' },
             origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật, chi tiết và lôi cuốn.' },
             appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo.' },
             personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê.' },
         },
-        required: ['name', 'origin', 'appearance', 'personality'],
+        required: ['name', 'origin', 'appearance', 'personality', 'familyName'],
     };
 
     const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Phong Thần, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
@@ -223,7 +224,7 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
     - **Giới tính nhân vật:** ${gender}
     - **Ý tưởng gốc từ người chơi:** "${concept}"
     
-    Nhiệm vụ: Sáng tạo ra một cái tên, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
+    Nhiệm vụ: Sáng tạo ra một cái tên, họ, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
     `;
     
@@ -634,17 +635,77 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
 // FIX: Added implementations for all missing AI service functions to resolve import errors.
 
 export async function* generateStoryContinuationStream(gameState: GameState, userInput: string, inputType: 'say' | 'act'): AsyncIterable<string> {
-    const contextPrompt = `... [Context based on gameState] ...`; // A detailed prompt would be constructed here.
-    const fullPrompt = `${contextPrompt}\n\nPlayer ${inputType}s: "${userInput}"\n\nNarrator:`;
+    const { playerCharacter, gameDate, storyLog, discoveredLocations, activeNpcs, storySummary } = gameState;
+    const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
+    const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
+    
+    const settings = getSettings();
+    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
+
+    const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai text-based có tên "Phong Thần Ký Sự".
+- Bối cảnh: Thế giới tiên hiệp dựa trên Phong Thần Diễn Nghĩa.
+- **QUAN TRỌNG NHẤT: PHẢI LUÔN LUÔN trả lời bằng TIẾNG VIỆT.**
+- Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
+- Chỉ kể tiếp câu chuyện, không đưa ra lời khuyên hay bình luận ngoài vai trò người kể chuyện.
+- Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.
+- Đừng lặp lại những thông tin đã có trong ngữ cảnh.`;
+
+    const historyContext = storySummary
+      ? `**Lịch sử tóm tắt:**\n${storySummary}\n\n**Sự kiện gần đây nhất:**\n${storyLog.slice(-3).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}`
+      : `**Lịch sử gần đây (5 mục cuối):**\n${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}`;
+
+    const contextSummary = [
+        `**Nhân vật:** Tên: ${playerCharacter.identity.name}. Xuất thân: ${playerCharacter.identity.origin}. Tính cách: ${playerCharacter.identity.personality}.`,
+        `**Bối cảnh:** Hiện tại là giờ ${gameDate.shichen}, ngày ${gameDate.day} mùa ${gameDate.season} năm ${gameDate.era} ${gameDate.year}.`,
+        `**Vị trí:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.`,
+        npcsHere.length > 0 ? `**Nhân vật khác tại đây:** ${npcsHere.map(n => `${n.identity.name} (${n.status})`).join(', ')}.` : "Không có ai khác ở đây.",
+        historyContext
+    ].join('\n');
+    
+    const userAction = inputType === 'say'
+        ? `${playerCharacter.identity.name} nói: "${userInput}"`
+        : `${playerCharacter.identity.name} quyết định: "${userInput}"`;
+
+    const fullPrompt = `${contextSummary}\n\n${userAction}\n\n**Người kể chuyện:**`;
 
     const stream = await generateWithRetryStream({
-        contents: fullPrompt
+        contents: fullPrompt,
+        config: {
+            systemInstruction: systemInstruction,
+        }
     });
 
     for await (const chunk of stream) {
-        yield chunk.text;
+        // Filter out thinking tags here before yielding
+        yield chunk.text.replace(/\[thinking...\]/gi, '');
     }
 }
+
+export const summarizeStory = async (storyLog: StoryEntry[]): Promise<string> => {
+    const settings = getSettings();
+    const logText = storyLog
+        .map(entry => `[${entry.type}] ${entry.content}`)
+        .join('\n');
+
+    const prompt = `Dưới đây là lịch sử các sự kiện trong một trò chơi nhập vai. Hãy tóm tắt nó thành một đoạn văn kể chuyện ngắn gọn, mạch lạc. 
+    Tập trung vào các điểm chính: nhân vật chính đã làm gì, gặp ai, những thay đổi quan trọng trong cốt truyện và thế giới.
+    Bản tóm tắt này sẽ được dùng làm "ký ức dài hạn" cho AI kể chuyện, vì vậy nó cần phải súc tích nhưng đầy đủ thông tin.
+    
+    Lịch sử sự kiện:
+    ---
+    ${logText}
+    ---
+    
+    Bản tóm tắt:`;
+
+    const response = await generateWithRetry({
+        model: settings.quickSupportModel, // Use a fast model for summarization
+        contents: prompt,
+    });
+
+    return response.text.trim();
+};
+
 
 export const generateGameEvent = async (gameState: GameState): Promise<{ type: string, narrative: string, data?: any }> => {
     const prompt = "Tạo một sự kiện ngẫu nhiên nhỏ cho người chơi.";
@@ -705,4 +766,133 @@ export const generateCombatNarrative = async (gameState: GameState, actionDescri
     const prompt = `Bối cảnh: Một trận chiến đang diễn ra. Hành động: ${actionDescription}. Hãy viết một đoạn văn tường thuật hành động này một cách sống động và phù hợp với bối cảnh tiên hiệp.`;
     const response = await generateWithRetry({ contents: prompt });
     return response.text;
+};
+
+export const generateFamilyAndFriends = async (identity: CharacterIdentity, locationId: string): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[] }> => {
+    const familySchema = {
+        type: Type.OBJECT,
+        properties: {
+            family_members: {
+                type: Type.ARRAY,
+                description: 'Một danh sách gồm 2 đến 4 thành viên gia đình hoặc bạn bè thân thiết (ví dụ: cha, mẹ, anh/chị/em, bạn thân).',
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING, description: `Tên của thành viên gia đình, nên có họ là '${identity.familyName || ''}'.` },
+                        gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] },
+                        age: { type: Type.NUMBER, description: 'Tuổi của nhân vật, phải hợp lý so với người chơi (18 tuổi).' },
+                        relationship_type: { type: Type.STRING, description: 'Mối quan hệ với người chơi (ví dụ: Phụ thân, Mẫu thân, Huynh đệ, Thanh mai trúc mã).' },
+                        status: { type: Type.STRING, description: 'Mô tả ngắn gọn về tình trạng hoặc nghề nghiệp hiện tại (ví dụ: "Là một thợ rèn trong trấn", "Nội trợ trong gia đình", "Đang học tại trường làng").' },
+                        description: { type: Type.STRING, description: 'Mô tả ngắn gọn ngoại hình.' },
+                        personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'] },
+                    },
+                    required: ['name', 'gender', 'age', 'relationship_type', 'status', 'description', 'personality'],
+                },
+            }
+        },
+        required: ['family_members'],
+    };
+
+    const prompt = `Dựa trên thông tin về nhân vật chính, hãy tạo ra các thành viên gia đình và bạn bè thân thiết cho họ.
+    - **Bối cảnh:** Game tu tiên Phong Thần, một thế giới huyền huyễn.
+    - **Nhân vật chính:**
+        - Tên: ${identity.name} (${identity.gender}, 18 tuổi)
+        - Họ: ${identity.familyName || '(Không có)'}
+        - Xuất thân: ${identity.origin}
+        - Tính cách: ${identity.personality}
+    
+    Nhiệm vụ: Tạo ra 2 đến 4 NPC là người thân hoặc bạn bè gần gũi của nhân vật chính. Họ đều là PHÀM NHÂN, không phải tu sĩ. Họ nên sống cùng một địa điểm với người chơi.
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
+    `;
+    
+    const settings = getSettings();
+    const response = await generateWithRetry({
+        model: settings.npcSimulationModel,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: familySchema,
+        }
+    });
+
+    const data = JSON.parse(response.text);
+    const generatedNpcs: NPC[] = [];
+    const generatedRelationships: PlayerNpcRelationship[] = [];
+
+    data.family_members.forEach((member: any) => {
+        const npcId = `family-npc-${Math.random().toString(36).substring(2, 9)}`;
+        const npc: NPC = {
+            id: npcId,
+            identity: {
+                name: member.name,
+                gender: member.gender,
+                appearance: member.description,
+                origin: `Người thân của ${identity.name} tại ${locationId}.`,
+                personality: member.personality,
+                age: member.age,
+                familyName: identity.familyName,
+            },
+            status: member.status,
+            attributes: [], // They are mortals, few attributes needed
+            talents: [],
+            locationId: locationId,
+            cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+            techniques: [],
+            inventory: { items: [], weightCapacity: 10 },
+            currencies: { 'Đồng': Math.floor(Math.random() * 500), 'Bạc': Math.floor(Math.random() * 10) },
+            equipment: {},
+            healthStatus: 'HEALTHY',
+            activeEffects: [],
+            tuoiTho: 80, // Mortal lifespan
+        };
+        generatedNpcs.push(npc);
+
+        const relationship: PlayerNpcRelationship = {
+            npcId: npcId,
+            // FIX: Corrected property name from 'relationship_type' to 'type' to match the PlayerNpcRelationship interface.
+            type: member.relationship_type,
+            value: 80 + Math.floor(Math.random() * 20), // Start with high affinity
+            status: 'Tri kỷ',
+        };
+        generatedRelationships.push(relationship);
+    });
+
+    return { npcs: generatedNpcs, relationships: generatedRelationships };
+};
+
+export const generateOpeningScene = async (gameState: GameState): Promise<string> => {
+    const { playerCharacter, discoveredLocations, activeNpcs } = gameState;
+    const currentLocation = discoveredLocations.find(loc => loc.id === playerCharacter.currentLocationId);
+    
+    const familyInfo = playerCharacter.relationships
+        .map(rel => {
+            const npc = activeNpcs.find(n => n.id === rel.npcId);
+            return npc ? `- ${rel.type}: ${npc.identity.name} (${npc.status})` : null;
+        })
+        .filter(Boolean)
+        .join('\n');
+    
+    const settings = getSettings();
+    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
+
+    const prompt = `Bạn là người kể chuyện cho game tu tiên "Phong Thần Ký Sự". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
+    - **Giọng văn:** ${narrativeStyle}.
+    - **Nhân vật chính:** ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi. Xuất thân: ${playerCharacter.identity.origin}.
+    - **Địa điểm hiện tại:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.
+    - **Gia đình & Người thân:**
+    ${familyInfo}
+
+    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 2-3 câu. Đoạn văn phải thiết lập bối cảnh ngay lập tức: người chơi đang ở đâu, đang làm gì, và có thể đề cập đến một người thân để tạo sự kết nối ban đầu.
+    
+    Ví dụ:
+    "Ánh nắng ban mai xuyên qua khe cửa, rọi lên gương mặt của Lý Thanh Vân. Ngươi đang ngồi trong căn nhà gỗ đơn sơ ở Thanh Hà Trấn, tiếng phụ thân Lý Đại Ngưu đang rèn sắt từ ngoài sân vọng vào đều đặn. Hôm nay là một ngày trọng đại..."
+    
+    Hãy viết một đoạn văn độc đáo và phù hợp với nhân vật. Chỉ trả về đoạn văn tường thuật, không thêm bất kỳ lời dẫn hay bình luận nào khác.`;
+
+    const response = await generateWithRetry({
+        model: settings.mainTaskModel,
+        contents: prompt,
+    });
+
+    return response.text.trim();
 };

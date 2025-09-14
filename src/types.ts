@@ -603,6 +603,8 @@ export interface MainCultivationTechnique {
 
 export interface PlayerNpcRelationship {
     npcId: string;
+// FIX: Added the 'type' property to define the nature of the player's relationship with an NPC.
+    type: string; // e.g., 'Phụ thân', 'Bằng hữu', 'Thanh mai trúc mã'
     value: number; // e.g., -100 (Hated) to 100 (Loved)
     status: 'Thù địch' | 'Lạnh nhạt' | 'Trung lập' | 'Thân thiện' | 'Tri kỷ';
 }
@@ -720,6 +722,7 @@ export interface GameState {
     dialogueChoices: string[] | null;
     worldSects?: Sect[];
     eventIllustrations?: { eventId: string; imageUrl: string; narrative: string }[];
+    storySummary?: string;
 }
 
 // --- Gameplay Event Types ---

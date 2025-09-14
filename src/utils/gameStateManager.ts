@@ -1,12 +1,7 @@
 import { FaQuestionCircle } from 'react-icons/fa';
 import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE } from "../constants";
 import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique } from "../types";
-import { generateDynamicNpcs } from '../services/geminiService';
-
-const initialStory = [
-    { id: 1, type: 'narrative' as const, content: 'Màn sương mỏng dần, để lộ ra một con đường mòn phủ đầy lá rụng trong khu rừng tĩnh mịch. Không khí se lạnh mang theo mùi đất ẩm và cây cỏ. Xa xa, tiếng chim hót lảnh lót phá vỡ sự yên tĩnh. Đây là nơi câu chuyện của bạn bắt đầu.' },
-    { id: 2, type: 'system' as const, content: 'Bạn có thể dùng ô "Nói" để giao tiếp, "Hành Động" để tương tác, hoặc nhập "tu luyện" để tĩnh tọa hấp thụ linh khí.' },
-];
+import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 
 export const migrateGameState = (savedGame: any): GameState => {
     let dataToProcess = { ...savedGame };
@@ -21,6 +16,7 @@ export const migrateGameState = (savedGame: any): GameState => {
             dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
             dataToProcess.encounteredNpcIds = dataToProcess.encounteredNpcIds ?? [];
             dataToProcess.activeStory = dataToProcess.activeStory ?? null;
+            dataToProcess.storySummary = dataToProcess.storySummary ?? '';
 
             if (dataToProcess.playerCharacter) {
                 // Other migrations
@@ -67,6 +63,8 @@ export const migrateGameState = (savedGame: any): GameState => {
     if (dataToProcess.playerCharacter) {
          dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
     }
+    dataToProcess.storySummary = dataToProcess.storySummary ?? '';
+
 
     const allAttributesConfig = new Map<string, any>();
     ATTRIBUTES_CONFIG.forEach(group => {
@@ -143,11 +141,6 @@ export const createNewGameState = async (
         ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
         : REALM_SYSTEM;
         
-    const generatedNpcs = await generateDynamicNpcs(npcDensity);
-    if (!generatedNpcs || generatedNpcs.length === 0) {
-        throw new Error("AI không thể tạo ra chúng sinh. Vui lòng kiểm tra API Key.");
-    }
-
     const canCotAttr = characterData.attributes.flatMap(g => g.attributes).find(a => a.name === 'Căn Cốt');
     const canCotValue = (canCotAttr?.value as number) || 10;
     const initialWeightCapacity = 20 + (canCotValue - 10) * 2;
@@ -199,10 +192,9 @@ export const createNewGameState = async (
 
     const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
     const selectedTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
-    // Mark root as unlocked
     selectedTechnique.skillTreeNodes['root'].isUnlocked = true;
 
-    const finalPlayerCharacter: PlayerCharacter = {
+    let playerCharacter: PlayerCharacter = {
         identity: { ...characterData.identity, age: 18 },
         attributes: updatedAttributes,
         talents: characterData.talents,
@@ -226,6 +218,29 @@ export const createNewGameState = async (
         activeMissions: [],
         inventoryActionLog: [],
     };
+    
+    const { npcs: familyNpcs, relationships: familyRelationships } = await generateFamilyAndFriends(playerCharacter.identity, startingLocation.id);
+    playerCharacter.relationships = familyRelationships;
+
+    const generatedNpcs = await generateDynamicNpcs(npcDensity);
+    if (!generatedNpcs || generatedNpcs.length === 0) {
+        throw new Error("AI không thể tạo ra chúng sinh. Vui lòng kiểm tra API Key.");
+    }
+
+    const allNpcs = [...familyNpcs, ...generatedNpcs];
+    
+    const tempGameStateForOpening = {
+        playerCharacter,
+        activeNpcs: allNpcs,
+        discoveredLocations: [startingLocation],
+    } as GameState;
+
+    const openingNarrative = await generateOpeningScene(tempGameStateForOpening);
+
+    const initialStory = [
+        { id: 1, type: 'narrative' as const, content: openingNarrative },
+        { id: 2, type: 'system' as const, content: 'Bạn có thể dùng ô "Nói" để giao tiếp, "Hành Động" để tương tác, hoặc nhập "tu luyện" để tĩnh tọa hấp thụ linh khí.' },
+    ];
 
     const initialGameDate: GameDate = {
         era: 'Tiên Phong Thần',
@@ -248,8 +263,8 @@ export const createNewGameState = async (
 
     return {
         version: CURRENT_GAME_VERSION,
-        playerCharacter: finalPlayerCharacter,
-        activeNpcs: generatedNpcs as NPC[],
+        playerCharacter,
+        activeNpcs: allNpcs,
         gameDate: initialGameDate,
         discoveredLocations: discoveredLocations,
         worldState: initialWorldState,
@@ -263,5 +278,6 @@ export const createNewGameState = async (
         dialogueChoices: null,
         worldSects: [],
         eventIllustrations: [],
+        storySummary: '',
     };
 };

@@ -1,5 +1,8 @@
 
 
+
+
+
 import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
 import type { GameState, GameSettings, StoryEntry, GameDate, Season, Weather, Location, NPC, PlayerCharacter, GameEvent, EventChoice, InventoryItem, EquipmentSlot, StatBonus, Rumor, WorldState, CultivationTechnique, PlayerNpcRelationship, AttributeGroup, CultivationPath, CombatState, Attribute, RealmConfig } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -17,7 +20,7 @@ import CombatScreen from './components/CombatScreen';
 import DialoguePanel from './components/DialoguePanel';
 import NotificationArea from '../../components/NotificationArea';
 import { FaBars, FaTimes, FaExclamationTriangle, FaCog, FaSave } from 'react-icons/fa';
-import { generateStoryContinuationStream, generateGameEvent, generateDynamicLocation, generateBreakthroughNarrative, generateWorldEvent, generateCombatNarrative, generateEventIllustration } from '../../services/geminiService';
+import { generateStoryContinuationStream, generateGameEvent, generateDynamicLocation, generateBreakthroughNarrative, generateWorldEvent, generateCombatNarrative, generateEventIllustration, summarizeStory } from '../../services/geminiService';
 import { SHICHEN_LIST, REALM_SYSTEM, TIMEOFDAY_DETAILS, NPC_LIST, INNATE_TALENT_RANKS, CULTIVATION_PATHS, CHARACTER_STATUS_CONFIG, SECTS, INVENTORY_ACTION_LOG_PREFIX } from '../../constants';
 
 
@@ -107,6 +110,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameSt
     const [offeredPaths, setOfferedPaths] = useState<CultivationPath[]>([]);
     const [selectedNpc, setSelectedNpc] = useState<NPC | null>(null);
     const [notifications, setNotifications] = useState<{ id: number; message: string }[]>([]);
+    const [actionBarTab, setActionBarTab] = useState<'say' | 'act'>('act');
 
     const lastProcessedYear = useRef(gameState.gameDate.year);
 
@@ -210,9 +214,9 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameSt
 
     const handleActionSubmit = useCallback(async (text: string, type: 'say' | 'act') => {
         if (isAiResponding || !text.trim()) return;
-
+    
         setAiResponding(true);
-
+    
         const entryType = type === 'say' ? 'player-dialogue' : 'player-action';
         addStoryEntry({ type: entryType, content: text });
         
@@ -221,18 +225,18 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameSt
             inventoryActionText = INVENTORY_ACTION_LOG_PREFIX + gameState.playerCharacter.inventoryActionLog.join('\n') + "\n]";
             setGameState(gs => gs ? { ...gs, playerCharacter: { ...gs.playerCharacter, inventoryActionLog: [] } } : null);
         }
-
-        const fullPrompt = inventoryActionText ? `${inventoryActionText}\n\n${text}` : text;
-
+    
+        const userInput = inventoryActionText ? `${inventoryActionText}\n\n${text}` : text;
+    
         try {
-            const stream = generateStoryContinuationStream(gameState, fullPrompt, type);
-
+            const stream = generateStoryContinuationStream(gameState, userInput, type);
+    
             let accumulatedContent = '';
             addStoryEntry({ type: 'narrative', content: '' });
-
+    
             for await (const chunk of stream) {
                 accumulatedContent += chunk;
-
+    
                 setGameState(gs => {
                     if (!gs) return null;
                     const lastEntry = gs.storyLog[gs.storyLog.length - 1];
@@ -243,65 +247,30 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameSt
                     return gs;
                 });
             }
-
-            // Process game state changes from tags in the final content
-            const tagRegex = /\[(.*?)]/g;
-            const matches = accumulatedContent.match(tagRegex);
-            let finalContent = accumulatedContent;
-            
-            if (matches) {
-                finalContent = accumulatedContent.replace(tagRegex, '').trim();
-                setGameState(gs => {
-                    if (!gs) return null;
-                    const lastEntry = gs.storyLog[gs.storyLog.length - 1];
-                    const updatedLog = [...gs.storyLog.slice(0, -1), { ...lastEntry, content: finalContent }];
-                    return { ...gs, storyLog: updatedLog };
-                });
-                
-                // Process tags
-                matches.forEach(match => {
-                    const [tag, ...params] = match.slice(1, -1).split(':');
-                    
-                    if (tag === 'TIME_PASS') {
-                         const hours = parseInt(params[0], 10) || 1;
-                         setGameState(gs => {
-                            if (!gs) return null;
-                            let newDate = { ...gs.gameDate };
-                            for (let i = 0; i < hours; i++) {
-                                let currentShichenIndex = SHICHEN_LIST.findIndex(s => s.name === newDate.shichen);
-                                let nextShichenIndex = (currentShichenIndex + 1) % SHICHEN_LIST.length;
-                                newDate.shichen = SHICHEN_LIST[nextShichenIndex].name;
-                                if (nextShichenIndex === 0) {
-                                    newDate.day += 1;
-                                    if (newDate.day > 30) {
-                                        newDate.day = 1;
-                                        const seasonOrder: Season[] = ['Xuân', 'Hạ', 'Thu', 'Đông'];
-                                        let currentSeasonIndex = seasonOrder.findIndex(s => s === newDate.season);
-                                        let nextSeasonIndex = (currentSeasonIndex + 1) % 4;
-                                        newDate.season = seasonOrder[nextSeasonIndex];
-                                        if (nextSeasonIndex === 0) {
-                                            newDate.year += 1;
-                                        }
-                                    }
-                                }
-                            }
-                            newDate.timeOfDay = TIMEOFDAY_DETAILS[newDate.shichen].name;
-                            return { ...gs, gameDate: newDate };
-                         });
-                    } else if (tag === 'OPEN_INVENTORY') {
-                         setInventoryOpen(true);
-                    }
-                });
-            }
-
+    
         } catch (error: any) {
             console.error("Lỗi khi tạo truyện:", error);
             addStoryEntry({ type: 'system', content: `Lỗi hệ thống: ${error.message}` });
         } finally {
             setAiResponding(false);
+            
+            setGameState(gs => {
+                if (!gs) return null;
+                const shouldSummarize = gs.storyLog.length > 5 && gs.storyLog.length % settings.autoSummaryFrequency === 0;
+                if (shouldSummarize) {
+                    console.log("Đã đến lúc tóm tắt lại ký ức dài hạn cho AI...");
+                    summarizeStory(gs.storyLog).then(newSummary => {
+                        setGameState(gss => gss ? { ...gss, storySummary: newSummary } : null);
+                        showNotification("AI đã cập nhật ký ức dài hạn.");
+                        console.log("Tóm tắt mới:", newSummary);
+                    }).catch(err => {
+                        console.error("Không thể tóm tắt câu chuyện:", err);
+                    });
+                }
+                return gs;
+            });
         }
-
-    }, [isAiResponding, addStoryEntry, setGameState, gameState]);
+    }, [isAiResponding, addStoryEntry, setGameState, gameState, settings.autoSummaryFrequency, showNotification]);
 
     const setPlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
         setGameState(gs => gs ? { ...gs, playerCharacter: updater(gs.playerCharacter) } : null);
@@ -391,7 +360,13 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameSt
                     {isAiResponding && <div className="flex-shrink-0 p-4 text-center"><LoadingSpinner message="AI đang tự sự..." /></div>}
                     
                     {/* Conditional Panels */}
-                    {gameState.combatState && <CombatScreen gameState={gameState} setGameState={setGameState} showNotification={showNotification} addStoryEntry={addStoryEntry} />}
+                    {gameState.combatState && <CombatScreen 
+                        gameState={gameState} 
+                        setGameState={setGameState} 
+                        showNotification={showNotification} 
+                        addStoryEntry={addStoryEntry}
+                        allPlayerTechniques={allPlayerTechniques} 
+                    />}
                     {gameState.activeStory && <CustomStoryPlayer gameState={gameState} setGameState={setGameState} />}
                     {gameState.dialogueWithNpcId && (
                         <DialoguePanel 
@@ -401,7 +376,13 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameSt
                     )}
                     {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={playerCharacter.attributes.flatMap(g => g.attributes)} />}
                     
-                    <ActionBar onActionSubmit={handleActionSubmit} disabled={isAiResponding || !!activeEvent || !!gameState.combatState || !!gameState.activeStory} currentLocation={currentLocation} />
+                    <ActionBar 
+                        onActionSubmit={handleActionSubmit} 
+                        disabled={isAiResponding || !!activeEvent || !!gameState.combatState || !!gameState.activeStory} 
+                        currentLocation={currentLocation} 
+                        activeTab={actionBarTab}
+                        setActiveTab={setActionBarTab}
+                    />
                 </div>
                 
                  {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop" onClick={() => setSidebarOpen(false)}></div>}
@@ -424,6 +405,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = ({ settings, gameSt
                         showNotification={showNotification}
                         activeMods={activeMods}
                         storyLog={storyLog}
+                        gameState={gameState}
                     />
                 </div>
             </main>
