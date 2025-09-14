@@ -1,11 +1,12 @@
+
+
 import React, { useState, useEffect, memo } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../../constants';
-import { generateBackgroundImage, reloadApiKeys } from '../../services/geminiService';
+import { generateBackgroundImage } from '../../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme, RagEmbeddingModel } from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle, FaExpand, FaBook, FaTrash, FaTerminal } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
-import { GoogleGenAI } from '@google/genai';
 
 interface SettingsPanelProps {
   onBack: () => void;
@@ -14,7 +15,7 @@ interface SettingsPanelProps {
   onChange: (key: keyof GameSettings, value: any) => void;
 }
 
-type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'api' | 'advanced';
+type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'advanced';
 
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = memo(({ title, children }) => (
   <section className="mb-8">
@@ -78,7 +79,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
             let keysToReset: (keyof GameSettings)[] = [];
             switch (section) {
                 case 'Giao Diện':
-                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'storyLogItemsPerPage', 'zoomLevel'];
+                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'storyLogItemsPerPage', 'zoomLevel', 'textColor'];
                     break;
                 case 'AI & Models':
                     keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK'];
@@ -139,7 +140,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI & Models" />
                 <TabButton tabId="safety" activeTab={activeTab} onClick={setActiveTab} icon={FaShieldAlt} label="An Toàn" />
                 <TabButton tabId="gameplay" activeTab={activeTab} onClick={setActiveTab} icon={FaGamepad} label="Lối Chơi" />
-                <TabButton tabId="api" activeTab={activeTab} onClick={setActiveTab} icon={FaKey} label="API Keys" />
                 <TabButton tabId="advanced" activeTab={activeTab} onClick={setActiveTab} icon={FaCog} label="Nâng Cao" />
             </div>
 
@@ -166,6 +166,14 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                                     {THEME_OPTIONS.map(theme => <option key={theme.value} value={theme.value}>{theme.label}</option>)}
                                 </select>
                             </SettingsRow>
+                            <SettingsRow label="Màu Chữ Chính" description="Thay đổi màu sắc của văn bản chính trong game.">
+                                <input 
+                                    type="color" 
+                                    value={settings.textColor} 
+                                    onChange={(e) => onChange('textColor', e.target.value)}
+                                    className="w-full h-10 p-1 bg-gray-800/50 border border-gray-600 rounded cursor-pointer"
+                                />
+                            </SettingsRow>
                             <SettingsRow label="Mức Thu Phóng Giao Diện" description="Thay đổi kích thước tổng thể của tất cả các thành phần giao diện.">
                                 <div className="flex items-center gap-4">
                                     <input
@@ -183,7 +191,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                             <SettingsRow label="Vật phẩm mỗi trang" description="Số lượng vật phẩm hiển thị trên mỗi trang trong túi đồ.">
                                 <input type="number" value={settings.itemsPerPage} onChange={(e) => onChange('itemsPerPage', parseInt(e.target.value) || 10)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
-                             <SettingsRow label="Độ dài câu chuyện" description="Điều chỉnh độ dài phản hồi của AI kể chuyện. Số mục càng cao, AI sẽ viết càng dài và chi tiết hơn, giống như một trang tiểu thuyết.">
+                             <SettingsRow label="Độ dài phản hồi của AI" description="Điều chỉnh độ dài phản hồi của AI kể chuyện. Số mục càng cao, AI sẽ viết càng dài và chi tiết hơn, giống như một trang tiểu thuyết.">
                                 <input type="number" min="5" max="100" value={settings.storyLogItemsPerPage} onChange={(e) => onChange('storyLogItemsPerPage', parseInt(e.target.value) || 20)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
                             <SettingsRow label="Toàn màn hình" description="Bật chế độ toàn màn hình để có trải nghiệm tốt nhất.">
@@ -314,11 +322,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
                         </SettingsSection>
                     </div>
                 )}
-                {activeTab === 'api' && (
-                    <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                         <ApiKeyManager settings={settings} onChange={onChange} />
-                    </div>
-                )}
                 {activeTab === 'advanced' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                         <SettingsSection title="Quản lý Lịch sử Chat">
@@ -388,112 +391,5 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, onSave, settings,
         </div>
     );
 };
-
-const ApiKeyManager: React.FC<{ settings: GameSettings, onChange: (key: keyof GameSettings, value: any) => void }> = memo(({ settings, onChange }) => {
-    const [keys, setKeys] = useState<string[]>(() =>
-        settings.apiKeys && settings.apiKeys.length > 0 ? settings.apiKeys : ['']
-    );
-    const [keyTestResults, setKeyTestResults] = useState<{ key: string, status: 'valid' | 'invalid', error?: string }[]>([]);
-    const [isTesting, setIsTesting] = useState(false);
-
-    const handleKeyChange = (index: number, value: string) => {
-        const newKeys = [...keys];
-        newKeys[index] = value;
-        setKeys(newKeys);
-        onChange('apiKeys', newKeys);
-        onChange('apiKey', newKeys[0] || '');
-    };
-
-    const addKeyField = () => {
-        const newKeys = [...keys, ''];
-        setKeys(newKeys);
-        onChange('apiKeys', newKeys);
-    };
-    
-    const removeKeyField = (index: number) => {
-        const newKeys = keys.filter((_, i) => i !== index);
-        setKeys(newKeys);
-        onChange('apiKeys', newKeys);
-        onChange('apiKey', newKeys[0] || '');
-    };
-    
-    const handleTestKeys = async () => {
-        setIsTesting(true);
-        setKeyTestResults([]);
-        
-        const keysToTest = keys.filter(k => k && k.trim());
-        if (keysToTest.length === 0) {
-            setKeyTestResults([{ key: 'N/A', status: 'invalid', error: 'Không có key nào được cung cấp.' }]);
-            setIsTesting(false);
-            return;
-        }
-
-        const results = [];
-        for (const key of keysToTest) {
-            try {
-                const testAi = new GoogleGenAI({ apiKey: key });
-                await testAi.models.generateContent({ model: 'gemini-2.5-flash', contents: 'test' });
-                results.push({ key: `...${key.slice(-4)}`, status: 'valid' as const });
-            } catch (e: any) {
-                results.push({ key: `...${key.slice(-4)}`, status: 'invalid' as const, error: e.message });
-            }
-        }
-        setKeyTestResults(results);
-        setIsTesting(false);
-    };
-
-    const keysToShow = settings.useKeyRotation ? keys : [keys[0] || ''];
-
-    return (
-        <SettingsSection title="Quản lý API Keys">
-            <SettingsRow label="Chế độ xoay vòng Key" description="Tự động chuyển sang key tiếp theo nếu key hiện tại hết hạn mức hoặc gặp lỗi.">
-                <input type="checkbox" checked={settings.useKeyRotation} onChange={e => onChange('useKeyRotation', e.target.checked)} className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500" />
-            </SettingsRow>
-            <SettingsRow label={settings.useKeyRotation ? "Danh sách API Keys" : "Gemini API Key"} description={settings.useKeyRotation ? "Thêm nhiều key để xoay vòng." : "Nhập API key của bạn."}>
-                <div className="space-y-3">
-                    {keysToShow.map((key, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                            <input
-                                type="password"
-                                value={key}
-                                onChange={e => handleKeyChange(index, e.target.value)}
-                                placeholder={`API Key ${settings.useKeyRotation ? `#${index + 1}` : ''}`}
-                                className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2"
-                            />
-                            {settings.useKeyRotation && keys.length > 1 && (
-                                <button onClick={() => removeKeyField(index)} className="p-2 text-gray-400 hover:text-red-400">
-                                    <FaTimesCircle />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    {settings.useKeyRotation && (
-                         <button onClick={addKeyField} className="text-sm text-teal-400 hover:text-teal-300">Thêm Key</button>
-                    )}
-                </div>
-            </SettingsRow>
-             <SettingsRow label="Kiểm tra" description="Kiểm tra các key đã nhập có hợp lệ không. Các thay đổi sẽ được lưu khi bạn nhấn 'Lưu cài đặt'.">
-                 <div className="flex flex-col gap-4">
-                    <button onClick={handleTestKeys} disabled={isTesting} className="px-4 py-2 bg-blue-700/80 text-white font-bold rounded-lg hover:bg-blue-600/80 w-40 flex justify-center items-center">
-                        {isTesting ? <LoadingSpinner size="sm" /> : 'Kiểm Tra'}
-                    </button>
-                 </div>
-                 {keyTestResults.length > 0 && (
-                     <div className="mt-4 space-y-2">
-                         {keyTestResults.map((result, index) => (
-                            <div key={index} className={`flex items-start gap-2 p-2 rounded-md text-sm ${result.status === 'valid' ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
-                                {result.status === 'valid' ? <FaCheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> : <FaTimesCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
-                                <div>
-                                    <span className="font-bold">Key {index + 1} ({result.key}): {result.status === 'valid' ? 'Hợp lệ' : 'Không hợp lệ'}</span>
-                                    {result.error && <p className="text-xs">{result.error}</p>}
-                                </div>
-                            </div>
-                         ))}
-                     </div>
-                 )}
-            </SettingsRow>
-        </SettingsSection>
-    );
-});
 
 export default memo(SettingsPanel);

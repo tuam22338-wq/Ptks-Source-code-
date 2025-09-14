@@ -60,7 +60,7 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }
 
                 switch (entry.type) {
                     case 'narrative':
-                        return <p key={entry.id} style={animationStyle} className="text-gray-300 italic text-justify my-4 leading-relaxed animate-fade-in">{contentWithHighlight}</p>;
+                        return <p key={entry.id} style={animationStyle} className="text-gray-300 italic text-justify my-4 leading-relaxed animate-fade-in whitespace-pre-wrap">{contentWithHighlight}</p>;
                     
                     case 'system':
                         return <p key={entry.id} style={animationStyle} className="text-center text-xs text-gray-500 tracking-widest my-4 uppercase animate-fade-in">{contentWithHighlight}</p>;

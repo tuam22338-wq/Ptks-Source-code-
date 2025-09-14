@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import type { GameState, NPC, PlayerCharacter } from '../../../types';
 import { generateCombatNarrative } from '../../../services/geminiService';
@@ -9,7 +10,6 @@ interface CombatScreenProps {
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
     showNotification: (message: string) => void;
-    // FIX: Add addStoryEntry to props to allow logging combat actions.
     addStoryEntry: (newEntryData: { type: 'combat', content: string }) => void;
 }
 
@@ -51,9 +51,9 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
                 
                 if (enemy) {
                     // Simple AI: always attack player
-                    const enemyTienLuc = getAttributeValue(enemy, 'Tiên Lực');
-                    const playerPhongNgu = getAttributeValue(gameState.playerCharacter, 'Phòng Ngự');
-                    const damage = Math.max(1, enemyTienLuc - playerPhongNgu);
+                    const enemyDamage = getAttributeValue(enemy, 'Linh Lực Sát Thương') + getAttributeValue(enemy, 'Lực Lượng');
+                    const playerDefense = getAttributeValue(gameState.playerCharacter, 'Bền Bỉ');
+                    const damage = Math.max(1, enemyDamage - playerDefense);
 
                     const narrative = await generateCombatNarrative(gameState, `${enemy.identity.name} tấn công ${gameState.playerCharacter.identity.name}, gây ra ${damage} sát thương.`);
                     addStoryEntry({ type: 'combat', content: narrative });
@@ -98,9 +98,9 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
             return;
         }
 
-        const playerTienLuc = getAttributeValue(gameState.playerCharacter, 'Tiên Lực');
-        const targetPhongNgu = getAttributeValue(target, 'Phòng Ngự');
-        const damage = Math.max(1, playerTienLuc - targetPhongNgu);
+        const playerDamage = getAttributeValue(gameState.playerCharacter, 'Linh Lực Sát Thương') + getAttributeValue(gameState.playerCharacter, 'Lực Lượng');
+        const targetDefense = getAttributeValue(target, 'Bền Bỉ');
+        const damage = Math.max(1, playerDamage - targetDefense);
         
         const narrative = await generateCombatNarrative(gameState, `${gameState.playerCharacter.identity.name} tấn công ${target.identity.name}, gây ra ${damage} sát thương.`);
         addStoryEntry({ type: 'combat', content: narrative });

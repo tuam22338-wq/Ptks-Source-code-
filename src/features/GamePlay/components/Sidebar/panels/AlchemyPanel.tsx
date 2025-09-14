@@ -22,8 +22,8 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter, setPlayerC
         return ALCHEMY_RECIPES.find(r => r.id === selectedRecipeId);
     }, [selectedRecipeId]);
     
-    const danThuatAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Đan Thuật');
-    const danThuatValue = (danThuatAttr?.value as number) || 0;
+    const alchemySkillAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Ngự Khí Thuật');
+    const alchemySkillValue = (alchemySkillAttr?.value as number) || 0;
 
     const availableCauldrons = useMemo(() => {
         return playerCharacter.inventory.items.filter(i => i.type === 'Đan Lô');
@@ -50,8 +50,8 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter, setPlayerC
         }
 
         // 3. Check Skill
-        if (danThuatValue < selectedRecipe.requiredAttribute.value) {
-            showNotification(`Đan Thuật không đủ! Yêu cầu: ${selectedRecipe.requiredAttribute.value}`);
+        if (alchemySkillValue < selectedRecipe.requiredAttribute.value) {
+            showNotification(`Ngự Khí Thuật không đủ! Yêu cầu: ${selectedRecipe.requiredAttribute.value}`);
             return;
         }
         
@@ -59,13 +59,13 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter, setPlayerC
 
         setTimeout(() => {
             // 4. Calculate Success & Quality
-            const skillDifference = danThuatValue - selectedRecipe.requiredAttribute.value;
+            const skillDifference = alchemySkillValue - selectedRecipe.requiredAttribute.value;
             const successChance = Math.min(0.98, 0.6 + skillDifference * 0.02); // 60% base, +2% per skill point over req
             const didSucceed = Math.random() < successChance;
 
             if (didSucceed) {
                 let quality: ItemQuality = 'Phàm Phẩm';
-                const qualityRoll = Math.random() * (danThuatValue + 20); // Roll influenced by skill
+                const qualityRoll = Math.random() * (alchemySkillValue + 20); // Roll influenced by skill
                 for (const curve of selectedRecipe.qualityCurve) {
                     if (qualityRoll >= curve.threshold) {
                         quality = curve.quality;
@@ -130,7 +130,7 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter, setPlayerC
                     <GiCauldron className="text-amber-300" /> Luyện Đan
                 </h3>
                  <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 mb-4">
-                    <p className="text-center text-sm">Đan Thuật: <span className="font-bold text-amber-300">{danThuatValue}</span></p>
+                    <p className="text-center text-sm">Ngự Khí Thuật: <span className="font-bold text-amber-300">{alchemySkillValue}</span></p>
                     <p className="text-center text-xs text-gray-400">Đan Lô đang dùng: {availableCauldrons.length > 0 ? availableCauldrons[0].name : 'Không có'}</p>
                 </div>
                 

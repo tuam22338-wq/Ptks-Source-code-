@@ -1,7 +1,4 @@
 
-
-
-
 import React, { useState, useCallback, useEffect, memo } from 'react';
 import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter } from '../../types';
 import { FaArrowLeft, FaDice } from 'react-icons/fa';
@@ -17,7 +14,7 @@ import * as db from '../../services/dbService';
 interface CharacterCreationScreenProps {
   onBack: () => void;
   onGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
       npcDensity: NpcDensity
   }) => Promise<void>;
 }
@@ -53,7 +50,6 @@ const NpcDensitySelector: React.FC<{ value: NpcDensity, onChange: (value: NpcDen
     </div>
 );
 
-// FIX: Export the component and add a top-level return statement to make it a valid React component.
 export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = memo(({ onBack, onGameStart }) => {
   const [step, setStep] = useState<'modeSelection' | 'idea' | 'roleplay' | 'generating' | 'results'>('modeSelection');
   const [characterConcept, setCharacterConcept] = useState('');

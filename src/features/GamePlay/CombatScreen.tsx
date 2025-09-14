@@ -1,13 +1,15 @@
 
+
 import React, { useState, useEffect } from 'react';
-import type { GameState, NPC, PlayerCharacter } from '../../types';
-import { generateCombatNarrative } from '../../services/geminiService';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import type { GameState, NPC, PlayerCharacter } from '../../../types';
+import { generateCombatNarrative } from '../../../services/geminiService';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 
 interface CombatScreenProps {
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
     showNotification: (message: string) => void;
+    // FIX: Add addStoryEntry to props to allow logging combat actions.
     addStoryEntry: (newEntryData: { type: 'combat', content: string }) => void;
 }
 

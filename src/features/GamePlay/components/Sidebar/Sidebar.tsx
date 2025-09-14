@@ -1,20 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, StoryEntry } from '../../../../types';
 import CharacterPanel from './panels/CharacterPanel';
-import InventoryPanel from './panels/InventoryPanel';
+import GuidePanel from './panels/GuidePanel';
 import WorldPanel from './panels/WorldPanel';
 import TechniquesPanel from './panels/TechniquesPanel';
 import WikiPanel from './panels/WikiPanel';
 import RealmPanel from './panels/RealmPanel';
 import LorePanel from './panels/LorePanel';
-import AlchemyPanel from './panels/AlchemyPanel';
 import CustomContentPanel from './panels/CustomContentPanel';
 import MapView from './panels/MapView';
 import StoryGraphPanel from './panels/StoryGraphPanel';
-import SectPanel from './panels/SectPanel';
-import CaveAbodePanel from './panels/CaveAbodePanel';
-import { FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaSitemap } from 'react-icons/fa';
-import { GiCauldron, GiDoubleDragon, GiMountainCave } from 'react-icons/gi';
+import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaSitemap } from 'react-icons/fa';
 
 interface SidebarProps {
     playerCharacter: PlayerCharacter;
@@ -35,27 +31,24 @@ interface SidebarProps {
     showNotification: (message: string) => void;
     activeMods: FullMod[];
 }
-type SidebarTab = 'character' | 'inventory' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'alchemy' | 'map' | 'storyGraph' | 'sect' | 'caveAbode' | string;
+type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | string;
 
 const ICON_MAP: { [key: string]: React.ElementType } = {
-    FaUser, FaBoxOpen, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, GiCauldron
+    FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram
 };
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
     const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog } = props;
-    const [activeTab, setActiveTab] = useState<SidebarTab>('character');
+    const [activeTab, setActiveTab] = useState<SidebarTab>('guide');
     
     const baseTabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
+        {id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle },
         {id: 'character', label: 'Nhân Vật', icon: FaUser },
         {id: 'techniques', label: 'Công Pháp', icon: FaScroll },
-        {id: 'inventory', label: 'Hành Trang', icon: FaBoxOpen },
-        {id: 'alchemy', label: 'Luyện Đan', icon: GiCauldron },
-        {id: 'sect', label: 'Tông Môn', icon: GiDoubleDragon },
-        {id: 'caveAbode', label: 'Động Phủ', icon: GiMountainCave },
         {id: 'world', label: 'Thế Giới', icon: FaGlobe },
         {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt },
         {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaSitemap },
-        {id: 'wiki', label: 'Wiki', icon: FaBook },
+        {id: 'wiki', label: 'Bách Khoa', icon: FaBook },
         {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
         {id: 'lore', label: 'Thiên Mệnh', icon: FaSun },
     ];
@@ -97,12 +90,9 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 </div>
             </div>
             <div className="flex-grow overflow-y-auto pr-2">
+                {activeTab === 'guide' && <GuidePanel />}
                 {activeTab === 'character' && <CharacterPanel character={playerCharacter} onBreakthrough={onBreakthrough} realmSystem={realmSystem} />}
-                {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} />}
-                {activeTab === 'inventory' && <InventoryPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
-                {activeTab === 'alchemy' && <AlchemyPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
-                {activeTab === 'sect' && <SectPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
-                {activeTab === 'caveAbode' && <CaveAbodePanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} currentLocation={currentLocation} />}
+                {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={onNpcSelect} />}
                 {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}

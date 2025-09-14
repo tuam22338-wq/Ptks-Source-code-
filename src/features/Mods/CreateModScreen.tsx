@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     FaArrowLeft, FaBoxOpen, FaUserShield, FaStar, FaPlus, FaEdit, FaTrash, FaCogs, FaGlobe, FaFilter,
@@ -294,7 +295,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 newContent = { id: newId, contentType: 'event', name: '', description: '', choices: [{ text: 'Lựa chọn 1', check: null, outcomes: [] }], tags: [] };
                 break;
             case 'recipe':
-                newContent = { id: newId, contentType: 'recipe', name: '', description: '', ingredients: [{ name: '', quantity: 1 }], result: { name: '', quantity: 1 }, requiredAttribute: { name: 'Đan Thuật', value: 10 }, icon: '📜', qualityCurve: [{ threshold: 50, quality: 'Linh Phẩm' }] };
+                // FIX: Corrected attribute name from 'Đan Thuật' to 'Ngự Khí Thuật' to match the type definition.
+                newContent = { id: newId, contentType: 'recipe', name: '', description: '', ingredients: [{ name: '', quantity: 1 }], result: { name: '', quantity: 1 }, requiredAttribute: { name: 'Ngự Khí Thuật', value: 10 }, icon: '📜', qualityCurve: [{ threshold: 50, quality: 'Linh Phẩm' }] };
                 break;
             case 'customPanel':
                 newContent = { id: newId, contentType: 'customPanel', title: '', iconName: 'FaBook', content: [], tags: [] };

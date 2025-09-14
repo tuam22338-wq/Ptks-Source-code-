@@ -1,6 +1,6 @@
 import { FaQuestionCircle } from 'react-icons/fa';
-import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, SECTS, WORLD_MAP } from "../constants";
-import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect } from "../types";
+import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, MAIN_CULTIVATION_TECHNIQUE, REALM_SYSTEM, SECTS, WORLD_MAP } from "../constants";
+import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique } from "../types";
 import { generateDynamicNpcs } from '../services/geminiService';
 
 const initialStory = [
@@ -23,6 +23,13 @@ export const migrateGameState = (savedGame: any): GameState => {
             dataToProcess.activeStory = dataToProcess.activeStory ?? null;
 
             if (dataToProcess.playerCharacter) {
+                // Technique system migration
+                dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
+                delete dataToProcess.playerCharacter.techniques;
+                dataToProcess.playerCharacter.mainCultivationTechnique = dataToProcess.playerCharacter.mainCultivationTechnique ?? MAIN_CULTIVATION_TECHNIQUE;
+                dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
+
+                // Other migrations
                 dataToProcess.playerCharacter.relationships = dataToProcess.playerCharacter.relationships ?? [];
                 dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
                 dataToProcess.playerCharacter.chosenPathIds = dataToProcess.playerCharacter.chosenPathIds ?? [];
@@ -31,6 +38,7 @@ export const migrateGameState = (savedGame: any): GameState => {
                 dataToProcess.playerCharacter.caveAbode = dataToProcess.playerCharacter.caveAbode ?? DEFAULT_CAVE_ABODE;
                 dataToProcess.playerCharacter.techniqueCooldowns = dataToProcess.playerCharacter.techniqueCooldowns ?? {};
                 dataToProcess.playerCharacter.activeMissions = dataToProcess.playerCharacter.activeMissions ?? [];
+                dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
             }
             
             dataToProcess.version = "1.1.0";
@@ -42,9 +50,21 @@ export const migrateGameState = (savedGame: any): GameState => {
         }
     }
     
+    // Ensure new fields exist even if version is current but save is old
+     if (dataToProcess.playerCharacter && !dataToProcess.playerCharacter.mainCultivationTechnique) {
+        dataToProcess.playerCharacter.mainCultivationTechnique = MAIN_CULTIVATION_TECHNIQUE;
+        dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
+        delete dataToProcess.playerCharacter.techniques;
+        dataToProcess.playerCharacter.techniquePoints = 1;
+    }
+
+
     dataToProcess.worldSects = dataToProcess.worldSects ?? [];
     dataToProcess.eventIllustrations = dataToProcess.eventIllustrations ?? [];
     dataToProcess.dialogueChoices = dataToProcess.dialogueChoices ?? null;
+    if (dataToProcess.playerCharacter) {
+         dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
+    }
 
     const allAttributesConfig = new Map<string, any>();
     ATTRIBUTES_CONFIG.forEach(group => {
@@ -109,7 +129,7 @@ export const migrateGameState = (savedGame: any): GameState => {
 
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions'>,
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'auxiliaryTechniques' | 'mainCultivationTechnique' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
         npcDensity: NpcDensity
     },
     activeMods: FullMod[]
@@ -126,23 +146,28 @@ export const createNewGameState = async (
         throw new Error("AI không thể tạo ra chúng sinh. Vui lòng kiểm tra API Key.");
     }
 
-    const nhucThanAttr = characterData.attributes.flatMap(g => g.attributes).find(a => a.name === 'Nhục Thân');
-    const nhucThanValue = (nhucThanAttr?.value as number) || 10;
-    const initialWeightCapacity = 15 + (nhucThanValue - 10) * 2;
+    const canCotAttr = characterData.attributes.flatMap(g => g.attributes).find(a => a.name === 'Căn Cốt');
+    const canCotValue = (canCotAttr?.value as number) || 10;
+    const initialWeightCapacity = 20 + (canCotValue - 10) * 2;
 
     const initialInventory: Inventory = {
         weightCapacity: initialWeightCapacity,
         items: [
             { id: 'item1', name: 'Bình Dược Liệu', description: 'Một bình sứ chứa thảo dược cơ bản để trị thương.', quantity: 5, type: 'Đan Dược', icon: '🏺', weight: 0.5, quality: 'Phàm Phẩm' },
             { id: 'item2', name: 'Trường Bào Đạo Sĩ', description: 'Một bộ y phục của người tu đạo, giúp tĩnh tâm凝神.', quantity: 1, type: 'Phòng Cụ', icon: '🥋', bonuses: [{ attribute: 'Nguyên Thần', value: 1 }], weight: 1.5, quality: 'Phàm Phẩm', slot: 'Thượng Y' },
-            { id: 'item3', name: 'Đào Mộc Kiếm', description: 'Một thanh kiếm bằng gỗ đào, có khả năng khắc chế yêu ma tà mị.', quantity: 1, type: 'Vũ Khí', icon: '🗡️', bonuses: [{ attribute: 'Tiên Lực', value: 2 }], weight: 2.0, quality: 'Phàm Phẩm', slot: 'Vũ Khí' },
+            { id: 'item3', name: 'Đào Mộc Kiếm', description: 'Một thanh kiếm bằng gỗ đào, có khả năng khắc chế yêu ma tà mị.', quantity: 1, type: 'Vũ Khí', icon: '🗡️', bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 2 }], weight: 2.0, quality: 'Phàm Phẩm', slot: 'Vũ Khí' },
             { id: 'item4', name: 'Lệnh Bài Thân Phận', description: 'Một lệnh bài bằng gỗ đào, khắc tên và xuất thân của bạn.', quantity: 1, type: 'Tạp Vật', icon: '🪪', weight: 0.1, quality: 'Phàm Phẩm' },
-            { id: 'item5', name: 'Phá Cấm Phù', description: 'Một lá bùa đơn giản có thể phá giải các cấm chế cấp thấp.', quantity: 3, type: 'Pháp Bảo', rank: 'Phàm Giai', icon: '📜', bonuses: [{ attribute: 'Nguyên Thần', value: 1 }], weight: 0.1, quality: 'Linh Phẩm' },
-            { id: 'item6', name: 'Sơ Cấp Tu Luyện Tâm Pháp', description: 'Ghi lại những khẩu quyết cơ bản để dẫn khí nhập thể, giúp tăng tốc độ tu luyện ban đầu.', quantity: 1, type: 'Tạp Vật', icon: '📖', bonuses: [{ attribute: 'Cảm Ngộ', value: 2 }], weight: 0.5, quality: 'Phàm Phẩm' },
+            { id: 'item5', name: 'Phá Cấm Phù', description: 'Một lá bùa đơn giản có thể phá giải các cấm chế cấp thấp.', quantity: 3, type: 'Pháp Bảo', rank: 'Phàm Giai', icon: '📜', bonuses: [{ attribute: 'Thần Thức', value: 1 }], weight: 0.1, quality: 'Linh Phẩm' },
+            { id: 'item6', name: 'Sơ Cấp Tu Luyện Tâm Pháp', description: 'Ghi lại những khẩu quyết cơ bản để dẫn khí nhập thể, giúp tăng tốc độ tu luyện ban đầu.', quantity: 1, type: 'Tạp Vật', icon: '📖', bonuses: [{ attribute: 'Ngộ Tính', value: 2 }], weight: 0.5, quality: 'Phàm Phẩm' },
             { id: 'item7', name: 'Hồi Khí Đan - Đan Phương', description: 'Ghi lại phương pháp luyện chế Hồi Khí Đan Hạ Phẩm. Có thể học bằng cách sử dụng.', quantity: 1, type: 'Đan Phương', icon: '📜', weight: 0.1, quality: 'Phàm Phẩm', recipeId: 'recipe_hoi_khi_dan_ha_pham' },
         ]
     };
-    const initialCurrencies: Currency = { 'Linh thạch hạ phẩm': 20, 'Bạc': 100 };
+    const initialCurrencies: Currency = { 
+        'Đồng': 1000, 
+        'Bạc': 50,
+        'Vàng': 0,
+        'Linh thạch hạ phẩm': 20,
+    };
 
     const initialCultivation: CultivationState = {
         currentRealmId: realmSystemToUse[0].id,
@@ -179,7 +204,9 @@ export const createNewGameState = async (
         cultivation: initialCultivation,
         currentLocationId: startingLocation.id,
         equipment: {},
-        techniques: INITIAL_TECHNIQUES,
+        mainCultivationTechnique: MAIN_CULTIVATION_TECHNIQUE,
+        auxiliaryTechniques: INITIAL_TECHNIQUES,
+        techniquePoints: 1,
         relationships: [],
         reputation: FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),
         chosenPathIds: [],
@@ -190,6 +217,7 @@ export const createNewGameState = async (
         activeEffects: [],
         techniqueCooldowns: {},
         activeMissions: [],
+        inventoryActionLog: [],
     };
 
     const initialGameDate: GameDate = {

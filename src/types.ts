@@ -1,5 +1,3 @@
-
-
 import type { ElementType } from 'react';
 
 // --- Generic Types ---
@@ -17,7 +15,8 @@ export interface SaveSlot {
 
 
 // --- Settings Types ---
-export type AIModel = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-2.5-flash-lite';
+// FIX: Per Gemini guidelines, only 'gemini-2.5-flash' is permitted for general text tasks.
+export type AIModel = 'gemini-2.5-flash';
 export type ImageModel = 'imagen-4.0-generate-001';
 export type RagEmbeddingModel = 'text-embedding-004';
 export type LayoutMode = 'auto' | 'desktop' | 'mobile';
@@ -43,6 +42,7 @@ export interface GameSettings {
     theme: Theme;
     backgroundImage: string;
     zoomLevel: number;
+    textColor: string;
     mainTaskModel: AIModel;
     quickSupportModel: AIModel;
     itemAnalysisModel: AIModel;
@@ -64,9 +64,6 @@ export interface GameSettings {
     enableAiSoundSystem: boolean;
     masterSafetySwitch: boolean;
     safetyLevels: SafetySettings;
-    apiKey: string;
-    apiKeys: string[];
-    useKeyRotation: boolean;
     enablePerformanceMode: boolean;
     temperature: number;
     topK: number;
@@ -258,7 +255,7 @@ export interface TechniqueEffect {
     details: Record<string, any>; 
 }
 
-export type ModTechnique = Omit<CultivationTechnique, 'id' | 'effectDescription'> & {
+export type ModTechnique = Omit<CultivationTechnique, 'id'> & {
     id: string;
     requirements?: StatBonus[];
     effects?: TechniqueEffect[];
@@ -314,7 +311,7 @@ export interface AlchemyRecipe {
   description: string;
   ingredients: { name: string; quantity: number }[];
   result: { name: string; quantity: number };
-  requiredAttribute: { name: 'Đan Thuật'; value: number };
+  requiredAttribute: { name: 'Ngự Khí Thuật'; value: number };
   icon: string;
   qualityCurve: { threshold: number; quality: ItemQuality }[];
 }
@@ -450,7 +447,23 @@ export interface ActiveEffect {
 }
 
 export interface Currency {
-    [key: string]: number;
+  /**
+   * Phàm Tệ (Mundane Currency):
+   * - Đồng: Copper coins
+   * - Bạc: Silver coins
+   * - Vàng: Gold coins
+   * Linh Tệ (Spiritual Currency):
+   * - Linh thạch hạ phẩm: Low-grade spirit stones
+   * - Linh thạch trung phẩm: Mid-grade spirit stones
+   * - Linh thạch thượng phẩm: High-grade spirit stones
+   * - Linh thạch cực phẩm: Peak-grade spirit stones
+   * Tiên Tệ (Immortal Currency):
+   * - Tiên Ngọc: Immortal Jade
+   * Đặc Biệt (Special Currency):
+   * - Điểm Cống Hiến Tông Môn: Sect Contribution Points
+   * - Điểm Danh Vọng: Reputation Points
+   */
+  [key: string]: number;
 }
 
 export interface ResourceNode {
@@ -489,8 +502,7 @@ export interface Relationship {
 
 export interface NPC {
     id: string;
-    // FIX: Make gender required in NPC identity to match usage.
-    identity: Omit<CharacterIdentity, 'age'>;
+    identity: CharacterIdentity;
     status: string;
     attributes: AttributeGroup[];
     talents: InnateTalent[];
@@ -505,14 +517,10 @@ export interface NPC {
     isHostile?: boolean;
     dialogueTreeId?: string;
     shopId?: string;
-    ChinhDao?: number;
-    MaDao?: number;
-    TienLuc?: number;
-    PhongNgu?: number;
-    SinhMenh?: number;
     healthStatus: CharacterStatus;
     activeEffects: ActiveEffect[];
     loot?: { itemId: string; chance: number; min: number; max: number }[];
+    tuoiTho: number;
 }
 
 export interface InventoryItem {
@@ -563,6 +571,34 @@ export interface CultivationTechnique {
     maxLevel: number;
     levelBonuses?: { level: number, bonuses: StatBonus[] }[];
 }
+
+
+// --- New Main Cultivation Technique System ---
+export type SkillTreeNodeType = 'passive_bonus' | 'active_skill' | 'core_enhancement';
+
+export interface SkillTreeNode {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    realmRequirement: string; // ID of the realm, e.g., 'luyen_khi'
+    cost: number; // Technique points to unlock
+    isUnlocked: boolean;
+    type: SkillTreeNodeType;
+    childrenIds: string[];
+    position: { x: number; y: number }; // For rendering the tree
+    bonuses?: StatBonus[];
+    activeSkill?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
+}
+
+export interface MainCultivationTechnique {
+    id: string;
+    name: string;
+    description: string;
+    skillTreeNodes: Record<string, SkillTreeNode>; // Keyed by node ID
+}
+// --- End New System ---
+
 
 export interface PlayerNpcRelationship {
     npcId: string;
@@ -617,7 +653,12 @@ export interface PlayerCharacter {
     cultivation: CultivationState;
     currentLocationId: string;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
-    techniques: CultivationTechnique[];
+    
+    // New Technique System
+    mainCultivationTechnique: MainCultivationTechnique | null;
+    auxiliaryTechniques: CultivationTechnique[];
+    techniquePoints: number;
+
     relationships: PlayerNpcRelationship[];
     reputation: PlayerReputation[];
     chosenPathIds: string[];
@@ -628,6 +669,7 @@ export interface PlayerCharacter {
     activeEffects: ActiveEffect[];
     techniqueCooldowns: Record<string, number>;
     activeMissions: ActiveMission[];
+    inventoryActionLog: string[];
 }
 
 export interface StoryEntry {
