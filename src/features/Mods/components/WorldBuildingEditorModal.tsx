@@ -125,7 +125,7 @@ const WorldContentEditorModal: React.FC<WorldContentEditorModalProps> = ({ isOpe
                     <input type="number" value={content.coordinates.y} onChange={e => handleChange('coordinates', { ...content.coordinates, y: parseInt(e.target.value) || 0 })} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                 </FieldWrapper>
                  <FieldWrapper label="Nồng độ Linh Khí">
-                    <input type="number" value={content.qiConcentration} onChange={e => handleChange('qiConcentration', parseInt(e.target.value) || 0 })} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
+                    <input type="number" value={content.qiConcentration} onChange={e => handleChange('qiConcentration', parseInt(e.target.value) || 0 )} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2 text-gray-200" />
                 </FieldWrapper>
             </div>
              <FieldWrapper label="Hàng xóm (ID địa điểm, cách nhau bằng dấu phẩy)">

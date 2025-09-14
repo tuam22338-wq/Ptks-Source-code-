@@ -764,17 +764,30 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
     };
 
     const fullPrompt = `Bạn là một Game Master AI cho game tu tiên "Tam Thiên Thế Giới".
-    Nhiệm vụ của bạn là tạo ra nội dung mới cho một bản mod dựa trên yêu cầu của người dùng.
-    
-    Bối cảnh mod hiện tại (nếu có):
-    ${JSON.stringify(modContext, null, 2)}
-    
-    Yêu cầu của người dùng:
-    "${prompt}"
-    
-    Dựa vào yêu cầu, hãy tạo ra các đối tượng nội dung game phù hợp và trả về dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
-    **QUAN TRỌNG**: Ưu tiên tạo nội dung trong mảng 'content' (vật phẩm, tiên tư, nhân vật, v.v.). Chỉ tạo 'realmConfigs' hoặc 'talentSystemConfig' nếu người dùng yêu cầu rõ ràng về việc tạo hoặc thay đổi toàn bộ hệ thống cảnh giới hoặc tiên tư.
-    Hãy sáng tạo và đảm bảo nội dung phù hợp với bối cảnh tiên hiệp.
+Nhiệm vụ của bạn là tạo ra nội dung mới cho một bản mod dựa trên yêu cầu của người dùng.
+
+**Bối cảnh mod hiện tại (nếu có):**
+${JSON.stringify(modContext, null, 2)}
+
+**Hướng dẫn và Ví dụ:**
+- **Tạo Vật Phẩm (item):** 'Tạo một thanh phi kiếm tên Lưu Tinh, phẩm chất Tiên Phẩm, tăng 20 Thân Pháp.'
+  - Các tham số chính: name, description, type, quality, weight, bonuses (thuộc tính & giá trị), tags.
+- **Tạo Tiên Tư (talent):** 'Tạo một tiên tư Thánh Giai tên Bất Diệt Thánh Thể, tăng 500 Căn Cốt và 1000 Sinh Mệnh.'
+  - Các tham số chính: name, description, rank, bonuses, tags.
+- **Tạo NPC:** 'Tạo một NPC là trưởng lão tà phái tên Hắc Ma Lão Tổ, ở địa điểm Hắc Long Đàm, trạng thái đang luyện công.'
+  - Các tham số chính: name, status, description (ngoại hình), origin, personality, locationId, tags.
+- **Tạo Công Pháp Phụ (auxiliaryTechnique):** 'Tạo một thần thông tên là Hỏa Long Thuật, cấp Địa Giai, tiêu hao 100 linh lực, gây sát thương hỏa.'
+  - Các tham số chính: name, description, type, cost, cooldown, rank, icon, requirements, effects, tags.
+- **Tạo Tông Môn (sect):** 'Tạo một tông môn tên là Thanh Vân Môn, ở Thanh Loan Sơn, là chính phái chuyên tu luyện kiếm đạo.'
+  - Các tham số chính: name, description, location, members, tags.
+- **Tạo nhiều đối tượng:** 'Tạo 5 loại linh dược khác nhau phẩm chất Linh Phẩm.'
+
+**Yêu cầu của người dùng:**
+"${prompt}"
+
+Dựa vào yêu cầu, hãy tạo ra các đối tượng nội dung game phù hợp và trả về dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
+**QUAN TRỌNG**: Ưu tiên tạo nội dung trong mảng 'content'. Chỉ tạo 'realmConfigs' hoặc 'talentSystemConfig' nếu người dùng yêu cầu rõ ràng.
+Hãy sáng tạo và đảm bảo nội dung phù hợp với bối cảnh tiên hiệp.
     `;
 
     const response = await generateWithRetry({

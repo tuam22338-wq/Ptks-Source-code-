@@ -10,7 +10,6 @@ import EventPanel from './EventPanel';
 import CombatScreen from './components/CombatScreen';
 import CultivationPathModal from './components/CultivationPathModal';
 import CustomStoryPlayer from './components/CustomStoryPlayer';
-import DialoguePanel from './components/DialoguePanel';
 import ShopModal from './components/ShopModal';
 import { generateStoryContinuationStream, summarizeStory, generateBreakthroughNarrative } from '../../services/geminiService';
 import { REALM_SYSTEM, CULTIVATION_PATHS, SHOPS } from '../../constants';
@@ -31,7 +30,6 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
     const [notifications, setNotifications] = useState<{ id: number, message: string }[]>([]);
     const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
     const [availablePaths, setAvailablePaths] = useState<CultivationPath[]>([]);
-    const [dialogueTarget, setDialogueTarget] = useState<NPC | null>(null);
     const [activeShopId, setActiveShopId] = useState<string | null>(null);
     const [isInventoryOpen, setIsInventoryOpen] = useState(false);
     
@@ -78,7 +76,6 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
         addStoryEntry(playerActionEntry);
         
         // Add a placeholder for AI response
-        const placeholderId = Date.now();
         addStoryEntry({ type: 'narrative', content: '...' });
 
         try {
@@ -247,12 +244,12 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
                 setActiveShopId(npc.shopId);
             } else {
                 console.warn(`NPC ${npc.identity.name} has invalid shopId: ${npc.shopId}`);
-                setDialogueTarget(npc); // Fallback to dialogue
+                handleActionSubmit(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act');
             }
         } else {
-            setDialogueTarget(npc);
+            handleActionSubmit(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act');
         }
-    }, []);
+    }, [handleActionSubmit]);
     
     const allPlayerTechniques = useMemo(() => {
         const activeSkills = Object.values(gameState.playerCharacter.mainCultivationTechnique?.skillTreeNodes || {})
@@ -292,9 +289,8 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
                     {combatState && <CombatScreen gameState={gameState} setGameState={setGameState} showNotification={showNotification} addStoryEntry={addStoryEntry} allPlayerTechniques={allPlayerTechniques}/>}
                     {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={playerCharacter.attributes.flatMap(g => g.attributes)} />}
                     {activeStory && <CustomStoryPlayer gameState={gameState} setGameState={setGameState} />}
-                    {dialogueTarget && <DialoguePanel npc={dialogueTarget} onClose={() => setDialogueTarget(null)}/>}
 
-                    {!combatState && !activeEvent && !activeStory && !dialogueTarget && (
+                    {!combatState && !activeEvent && !activeStory && (
                         <ActionBar 
                             onActionSubmit={handleActionSubmit} 
                             disabled={isAiResponding}

@@ -162,7 +162,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Phong Thần Bảng', description: 'Nắm giữ thiên cơ, có quyền phong thần.', rank: 'Thánh Giai', effect: 'Có khả năng nhìn thấu vận mệnh.' }, { name: 'Đả Thần Tiên', description: 'Pháp bảo do sư tôn ban tặng, chuyên đánh tiên nhân.', rank: 'Đại Tiên Giai', effect: 'Tăng mạnh sát thương lên kẻ địch có tu vi cao.' } ],
     locationId: 'song_vi_thuy',
-    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -173,7 +173,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Pháp Liên Hóa Thân', description: 'Thân thể được tái tạo từ hoa sen, miễn nhiễm với nhiều loại độc và tà thuật.', rank: 'Đại Tiên Giai', effect: 'Kháng tất cả hiệu ứng tiêu cực.' }, { name: 'Tam Đầu Lục Tý', description: 'Khi chiến đấu có thể hóa thành ba đầu sáu tay, sức mạnh tăng vọt.', rank: 'Hậu Tiên Giai', effect: 'Tăng mạnh các chỉ số chiến đấu trong giao tranh.' } ],
     locationId: 'tran_duong_quan',
-    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -184,7 +184,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Thiên Nhãn', description: 'Con mắt thứ ba giữa trán, có thể nhìn thấu bản chất, phá trừ ảo ảnh.', rank: 'Thánh Giai', effect: 'Nhìn thấu mọi ngụy trang và ẩn thân.' }, { name: 'Bát Cửu Huyền Công', description: 'Công pháp biến hóa vô song, có 72 phép biến hóa.', rank: 'Đại Tiên Giai', effect: 'Khả năng biến hóa thành vạn vật.' } ],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 150, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -195,7 +195,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Hồ Mị', description: 'Sức quyến rũ trời sinh của hồ ly, khiến người khác phái khó lòng chống cự.', rank: 'Đại Tiên Giai', effect: 'Giảm mạnh ý chí của đối thủ nam.' } ],
     locationId: 'loc_dai',
-    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 50, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -206,7 +206,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Thiên Tử Long Khí', description: 'Sở hữu khí vận của một triều đại, có khả năng áp chế kẻ địch.', rank: 'Trung Tiên Giai', effect: 'Tăng khả năng kháng hiệu ứng.' } ],
     locationId: 'loc_dai',
-    cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_2', spiritualQi: 0, hasConqueredInnerDemon: false },
+    cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: false },
     techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -217,7 +217,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Thần Mục', description: 'Con mắt thứ ba có thể phân biệt trắng đen, nhìn rõ trung gian.', rank: 'Hậu Tiên Giai', effect: 'Miễn nhiễm với ảo thuật và lừa dối.' } ],
     locationId: 'trieu_ca',
-    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 150, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -228,7 +228,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Miệng Lưỡi Sắc Sảo', description: 'Có tài ăn nói, dễ dàng thuyết phục người khác.', rank: 'Sơ Tiên Giai', effect: 'Tăng mạnh khả năng thuyết phục trong đối thoại.' } ],
     locationId: 'rung_me_vu',
-    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_1', spiritualQi: 0, hasConqueredInnerDemon: false },
+    cultivation: { currentRealmId: 'thien_tien', currentStageId: 'tt_so_ky', spiritualQi: 0, hasConqueredInnerDemon: false },
     techniques: [], inventory: { weightCapacity: 80, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -239,7 +239,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Hậu Thiên Bát Quái', description: 'Có khả năng suy diễn thiên cơ, biết trước họa phúc.', rank: 'Trung Tiên Giai', effect: 'Tăng chỉ số Cơ Duyên.' } ],
     locationId: 'tay_ky',
-    cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_dz', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'luyen_khi', currentStageId: 'lk_vien_man', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -250,7 +250,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 500, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -261,7 +261,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Định Hải Châu', description: '24 viên ngọc có sức mạnh kinh thiên động địa.', rank: 'Đại Tiên Giai', effect: 'Sở hữu sức tấn công cực mạnh.' } ],
     locationId: 'dao_tam_tien',
-    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 300, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -272,7 +272,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Cửu Khúc Hoàng Hà Trận', description: 'Trận pháp thượng cổ, có thể gọt bỏ tu vi của tiên nhân.', rank: 'Thánh Giai', effect: 'Cực kỳ nguy hiểm, có thể làm người chơi mất cảnh giới.' } ],
     locationId: 'dao_tam_tien',
-    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -283,7 +283,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [],
     locationId: 'bach_cot_dong',
-    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_1', spiritualQi: 0, hasConqueredInnerDemon: false },
+    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_so_ky', spiritualQi: 0, hasConqueredInnerDemon: false },
     techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -294,7 +294,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Linh Lung Bảo Tháp', description: 'Pháp bảo do Nhiên Đăng Cổ Phật tặng để khắc chế Na Tra.', rank: 'Trung Tiên Giai', effect: 'Có khả năng trấn áp kẻ địch.' } ],
     locationId: 'tran_duong_quan',
-    cultivation: { currentRealmId: 'nhan_tien', currentStageId: 'nt_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'nhan_tien', currentStageId: 'nt_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 120, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   { id: 'npc_loi_chan_tu',
@@ -304,7 +304,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [ { name: 'Phong Lôi Dực', description: 'Đôi cánh có sức mạnh của gió và sấm sét, tốc độ cực nhanh.', rank: 'Hậu Tiên Giai', effect: 'Tốc độ di chuyển cực cao.' } ],
     locationId: 'tay_ky',
-    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'kim_tien', currentStageId: 'kt_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   { id: 'npc_hoang_phi_ho',
@@ -314,7 +314,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [],
     locationId: 'tam_son_quan',
-    cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_3', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'truc_co', currentStageId: 'tc_hau_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 150, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -325,7 +325,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [{ name: 'Phiên Thiên Ấn', description: 'Pháp bảo cực mạnh, có sức nặng của một ngọn núi.', rank: 'Đại Tiên Giai', effect: 'Gây sát thương vật lý cực lớn.' }],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -336,7 +336,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [{ name: 'Âm Dương Kính', description: 'Có hai mặt sinh tử, một mặt cứu người, một mặt giết người.', rank: 'Đại Tiên Giai', effect: 'Có khả năng hồi sinh hoặc tiêu diệt mục tiêu.' }],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -347,7 +347,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'thai_at', currentStageId: 'ta_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -358,7 +358,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [{ name: 'Linh Cữu Đăng', description: 'Ngọn đèn thần chứa ngọn lửa vĩnh cửu.', rank: 'Thánh Giai', effect: 'Khắc chế các loại tà ma.' }],
     locationId: 'ngoc_hu_cung',
-    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 300, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -369,7 +369,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [{ name: 'Vạn Bảo', description: 'Sở hữu vô số pháp bảo, có thể tùy ý sử dụng.', rank: 'Đại Tiên Giai', effect: 'Có nhiều lựa chọn chiến đấu.' }],
     locationId: 'bich_du_cung',
-    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 999, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -380,7 +380,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [{ name: 'Tứ Tượng Tháp', description: 'Bảo tháp có thể trấn áp kẻ địch.', rank: 'Đại Tiên Giai', effect: 'Gây choáng và sát thương diện rộng.' }],
     locationId: 'bich_du_cung',
-    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'dai_la', currentStageId: 'dl_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -391,7 +391,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [{ name: 'Ngũ Sắc Thần Quang', description: 'Năm sợi lông đuôi có thể thu vạn vật trong ngũ hành, không gì không quét.', rank: 'Thánh Giai', effect: 'Có thể vô hiệu hóa mọi pháp bảo và đòn tấn công.' }],
     locationId: 'tam_son_quan',
-    cultivation: { currentRealmId: 'chuan_thanh', currentStageId: 'ct_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'chuan_thanh', currentStageId: 'ct_so_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 200, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   },
   {
@@ -424,7 +424,7 @@ export const NPC_LIST: NPC[] = [
     attributes: [],
     talents: [{ name: 'Trảm Tiên Phi Đao', description: 'Một hồ lô có thể phóng ra một tia sáng có mắt, chém đầu tiên nhân.', rank: 'Thánh Giai', effect: 'Gây sát thương chí mạng.' }],
     locationId: 'rung_me_vu',
-    cultivation: { currentRealmId: 'chuan_thanh', currentStageId: 'ct_2', spiritualQi: 0, hasConqueredInnerDemon: true },
+    cultivation: { currentRealmId: 'chuan_thanh', currentStageId: 'ct_trung_ky', spiritualQi: 0, hasConqueredInnerDemon: true },
     techniques: [], inventory: { weightCapacity: 100, items: [] }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [],
   }
 ];
@@ -914,157 +914,125 @@ export const REALM_SYSTEM: RealmConfig[] = [
     },
     { 
         id: 'luyen_khi', name: 'Luyện Khí Kỳ',
-        description: 'Bước đầu tiên trên con đường tu tiên, dẫn khí vào cơ thể, tẩy kinh phạt tủy, dần dần thoát ly khỏi thân xác phàm tục. Tuổi thọ tăng nhẹ.',
+        description: 'Bước đầu tiên trên con đường tu tiên, dẫn khí vào cơ thể, tẩy kinh phạt tủy. Mỗi tầng sẽ gia tăng một chút sức mạnh và thể chất.',
         stages: [
-            { id: 'lk_1', name: 'Tầng 1-3 (Sơ Kỳ)', qiRequired: 500, bonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Linh Lực', value: 40 }], description: 'Cảm nhận được linh khí, có thể sử dụng các pháp thuật đơn giản.' },
-            { id: 'lk_4', name: 'Tầng 4-6 (Trung Kỳ)', qiRequired: 4000, bonuses: [{ attribute: 'Sinh Mệnh', value: 30 }, { attribute: 'Linh Lực', value: 60 }], description: 'Linh lực trong cơ thể dồi dào hơn, có thể điều khiển các pháp khí cấp thấp.' },
-            { id: 'lk_7', name: 'Tầng 7-9 (Hậu Kỳ)', qiRequired: 32000, bonuses: [{ attribute: 'Sinh Mệnh', value: 50 }, { attribute: 'Linh Lực', value: 100 }], description: 'Linh lực ngưng tụ, chuẩn bị cho việc Trúc Cơ.' },
-            { id: 'lk_dz', name: 'Viên Mãn', qiRequired: 65000, bonuses: [{ attribute: 'Tuổi Thọ', value: 20 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạt tới đỉnh cao của Luyện Khí, có thể thử đột phá Trúc Cơ.' },
+            { id: 'lk_1', name: 'Tầng 1', qiRequired: 100, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Sơ bộ cảm nhận được linh khí.' },
+            { id: 'lk_2', name: 'Tầng 2', qiRequired: 300, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Có thể dẫn khí đi khắp châu thân.' },
+            { id: 'lk_3', name: 'Tầng 3', qiRequired: 600, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 10 }], description: 'Linh lực trong cơ thể dần ổn định.' },
+            { id: 'lk_4', name: 'Tầng 4', qiRequired: 1200, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 10 }], description: 'Sử dụng được một vài pháp thuật đơn giản.' },
+            { id: 'lk_5', name: 'Tầng 5', qiRequired: 2500, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 15 }], description: 'Linh lực trở nên dồi dào hơn.' },
+            { id: 'lk_6', name: 'Tầng 6', qiRequired: 5000, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 15 }], description: 'Điều khiển linh lực dần thành thục.' },
+            { id: 'lk_7', name: 'Tầng 7', qiRequired: 10000, bonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Linh Lực', value: 20 }], description: 'Linh lực bắt đầu ngưng tụ, có thể điều khiển pháp khí cấp thấp.' },
+            { id: 'lk_8', name: 'Tầng 8', qiRequired: 25000, bonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Linh Lực', value: 20 }], description: 'Uy lực pháp thuật tăng mạnh.' },
+            { id: 'lk_9', name: 'Tầng 9', qiRequired: 50000, bonuses: [{ attribute: 'Sinh Mệnh', value: 25 }, { attribute: 'Linh Lực', value: 25 }], description: 'Đạt tới đỉnh cao Luyện Khí, chuẩn bị Trúc Cơ.' },
+            { id: 'lk_vien_man', name: 'Viên Mãn', qiRequired: 80000, bonuses: [{ attribute: 'Tuổi Thọ', value: 20 }, { attribute: 'Nguyên Thần', value: 5 }, { attribute: 'Thần Thức', value: 5 }], description: 'Linh lực cô đọng đến cực hạn, có thể thử Trúc Cơ.' },
         ]
     },
     { 
         id: 'truc_co', name: 'Trúc Cơ Kỳ', 
-        description: 'Xây dựng nền tảng (Đạo Cơ) cho con đường tu luyện sau này. Linh lực chuyển hóa thành chân nguyên, sức mạnh tăng vọt, tuổi thọ đạt 200 năm.',
+        description: 'Xây dựng nền tảng (Đạo Cơ) cho con đường tu luyện. Linh lực chuyển hóa thành chân nguyên, sức mạnh tăng vọt, tuổi thọ đạt 200 năm.',
         hasTribulation: true, 
         stages: [
-            { id: 'tc_1', name: 'Sơ Kỳ', qiRequired: 100000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 10 }], description: 'Đạo cơ hình thành, thần thức có thể xuất ra ngoài.' },
-            { id: 'tc_2', name: 'Trung Kỳ', qiRequired: 250000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 10 }], description: 'Đạo cơ vững chắc, có thể bắt đầu ngự vật phi hành.' },
-            { id: 'tc_3', name: 'Hậu Kỳ', qiRequired: 500000, bonuses: [{ attribute: 'Căn Cốt', value: 15 }, { attribute: 'Nguyên Thần', value: 15 }, { attribute: 'Tuổi Thọ', value: 50 }], description: 'Chân nguyên hùng hậu, chuẩn bị ngưng tụ Kim Đan.' },
+            { id: 'tc_so_ky', name: 'Sơ Kỳ', qiRequired: 150000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ hình thành, thần thức có thể xuất ra ngoài dò xét.' },
+            { id: 'tc_trung_ky', name: 'Trung Kỳ', qiRequired: 400000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ vững chắc, có thể bắt đầu ngự vật phi hành.' },
+            { id: 'tc_hau_ky', name: 'Hậu Kỳ', qiRequired: 800000, bonuses: [{ attribute: 'Căn Cốt', value: 15 }, { attribute: 'Nguyên Thần', value: 10 }], description: 'Chân nguyên hùng hậu, uy lực pháp thuật tăng mạnh.' },
+            { id: 'tc_vien_man', name: 'Viên Mãn', qiRequired: 1200000, bonuses: [{ attribute: 'Tuổi Thọ', value: 50 }, { attribute: 'Căn Cốt', value: 5 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ viên mãn, chuẩn bị ngưng tụ Kim Đan.' },
         ]
     },
     {
         id: 'ket_dan', name: 'Kết Đan Kỳ',
-        description: 'Ngưng tụ toàn bộ chân nguyên trong cơ thể thành một viên Kim Đan. Một khi thành công, tu sĩ sẽ chính thức bước vào hàng ngũ cao thủ, tuổi thọ tăng lên 500 năm.',
+        description: 'Ngưng tụ toàn bộ chân nguyên trong cơ thể thành một viên Kim Đan. Tu sĩ chính thức bước vào hàng ngũ cao thủ, tuổi thọ tăng lên 500 năm.',
         stages: [
-            { id: 'kd_1', name: 'Sơ Kỳ', qiRequired: 1500000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 20 }], description: 'Kim đan sơ thành, có thể sử dụng Đan hỏa.'},
-            { id: 'kd_2', name: 'Trung Kỳ', qiRequired: 4000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 25 }, { attribute: 'Bền Bỉ', value: 25 }], description: 'Kim đan ổn định, uy lực pháp thuật tăng mạnh.'},
-            { id: 'kd_3', name: 'Hậu Kỳ', qiRequired: 10000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 30 }, { attribute: 'Bền Bỉ', value: 30 }, { attribute: 'Tuổi Thọ', value: 150 }], description: 'Kim đan viên mãn, chuẩn bị cho việc phá đan thành anh.'},
+            { id: 'kd_so_ky', name: 'Sơ Kỳ', qiRequired: 2500000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan sơ thành, có thể sử dụng Đan hỏa.'},
+            { id: 'kd_trung_ky', name: 'Trung Kỳ', qiRequired: 6000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan ổn định, uy lực pháp thuật tăng mạnh.'},
+            { id: 'kd_hau_ky', name: 'Hậu Kỳ', qiRequired: 15000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 25 }, { attribute: 'Bền Bỉ', value: 20 }], description: 'Kim đan cường đại, có thể bắt đầu thai nghén Nguyên Anh.'},
+            { id: 'kd_vien_man', name: 'Viên Mãn', qiRequired: 30000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 150 }, { attribute: 'Linh Lực Sát Thương', value: 10 }, { attribute: 'Bền Bỉ', value: 10 }], description: 'Kim đan đại thành, chuẩn bị cho việc phá đan thành anh.'},
         ]
     },
     {
         id: 'nguyen_anh', name: 'Nguyên Anh Kỳ',
-        description: 'Phá vỡ Kim Đan, thai nghén ra một "Nguyên Anh" - một tiểu nhân giống hệt bản thân và chứa đựng toàn bộ tinh, khí, thần. Nguyên Anh có thể xuất khiếu, ngao du thái hư. Tuổi thọ đạt 1000 năm.',
+        description: 'Phá vỡ Kim Đan, thai nghén ra "Nguyên Anh". Nguyên Anh có thể xuất khiếu, ngao du thái hư. Tuổi thọ đạt 1000 năm.',
         hasTribulation: true,
         stages: [
-            { id: 'na_1', name: 'Sơ Kỳ', qiRequired: 50000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh được sinh ra, có thể đoạt xá trùng sinh.' },
-            { id: 'na_2', name: 'Trung Kỳ', qiRequired: 150000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh lớn mạnh, có thể thi triển các thần thông mạnh mẽ.'},
-            { id: 'na_3', name: 'Hậu Kỳ', qiRequired: 400000000, bonuses: [{ attribute: 'Nguyên Thần', value: 60 }, { attribute: 'Ngộ Tính', value: 30 }, { attribute: 'Tuổi Thọ', value: 300 }], description: 'Nguyên Anh và nhục thân hợp nhất, chuẩn bị cho Hóa Thần.'},
+            { id: 'na_so_ky', name: 'Sơ Kỳ', qiRequired: 80000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh được sinh ra, có thể đoạt xá trùng sinh.' },
+            { id: 'na_trung_ky', name: 'Trung Kỳ', qiRequired: 200000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh lớn mạnh, có thể thi triển các thần thông mạnh mẽ.'},
+            { id: 'na_hau_ky', name: 'Hậu Kỳ', qiRequired: 500000000, bonuses: [{ attribute: 'Nguyên Thần', value: 60 }, { attribute: 'Ngộ Tính', value: 30 }], description: 'Nguyên Anh và nhục thân bắt đầu hợp nhất.'},
+            { id: 'na_vien_man', name: 'Viên Mãn', qiRequired: 900000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 300 }, { attribute: 'Nguyên Thần', value: 20 }, { attribute: 'Ngộ Tính', value: 10 }], description: 'Nguyên Anh vững chắc, chuẩn bị cho Hóa Thần.'},
         ]
     },
     {
         id: 'hoa_than', name: 'Hóa Thần Kỳ',
-        description: 'Nguyên Anh và nhục thân hoàn toàn dung hợp, lĩnh ngộ được một phần法则之力 của thiên địa. Tu sĩ Hóa Thần có thể di chuyển trong hư không, thần thông quảng đại, tuổi thọ trên 2000 năm.',
+        description: 'Nguyên Anh và nhục thân hoàn toàn dung hợp, lĩnh ngộ được một phần pháp tắc của thiên địa. Tu sĩ có thể di chuyển trong hư không, tuổi thọ trên 2000 năm.',
         stages: [
-            { id: 'ht_1', name: 'Sơ Kỳ', qiRequired: 1000000000, bonuses: [{ attribute: 'Thân Pháp', value: 50 }, { attribute: 'Lực Lượng', value: 50 }], description: 'Sơ bộ nắm giữ pháp tắc không gian, có thể thuấn di.'},
-            { id: 'ht_2', name: 'Trung Kỳ', qiRequired: 3000000000, bonuses: [{ attribute: 'Thân Pháp', value: 60 }, { attribute: 'Lực Lượng', value: 60 }], description: 'Lĩnh ngộ sâu hơn về pháp tắc, có thể tạo ra lĩnh vực của riêng mình.' },
-            { id: 'ht_3', name: 'Hậu Kỳ', qiRequired: 8000000000, bonuses: [{ attribute: 'Thân Pháp', value: 70 }, { attribute: 'Lực Lượng', value: 70 }, { attribute: 'Tuổi Thọ', value: 1000 }], description: 'Hoàn toàn nắm giữ pháp tắc, chuẩn bị phi thăng.'},
-        ]
-    },
-    {
-        id: 'luyen_hu', name: 'Luyện Hư Kỳ',
-        description: 'Luyện hóa hư không, dung hợp thần thức vào thiên địa, bắt đầu cảm ngộ sâu sắc hơn về các quy tắc của đại đạo. Tuổi thọ đạt 5000 năm.',
-        hasTribulation: true,
-        stages: [
-            { id: 'lh_1', name: 'Sơ Kỳ', qiRequired: 20000000000, bonuses: [{ attribute: 'Nguyên Thần', value: 100 }, { attribute: 'Ngộ Tính', value: 50 }], description: 'Thần thức hóa hư, có thể cảm nhận các dòng chảy quy tắc.' },
-            { id: 'lh_2', name: 'Hậu Kỳ', qiRequired: 50000000000, bonuses: [{ attribute: 'Nguyên Thần', value: 150 }, { attribute: 'Tuổi Thọ', value: 2000 }], description: 'Có thể điều động một phần quy tắc lực, tạo ra hư không lĩnh vực.' },
-        ]
-    },
-    {
-        id: 'hop_the', name: 'Hợp Thể Kỳ',
-        description: 'Nhục thân và nguyên thần hoàn toàn hợp nhất với thiên địa, đạt tới cảnh giới "thiên nhân hợp nhất". Sức mạnh vô song, có thể di sơn đảo hải. Tuổi thọ đạt 10.000 năm.',
-        stages: [
-            { id: 'hthe_1', name: 'Sơ Kỳ', qiRequired: 100000000000, bonuses: [{ attribute: 'Căn Cốt', value: 100 }, { attribute: 'Linh Lực Sát Thương', value: 100 }], description: 'Mỗi cử động đều ẩn chứa uy lực của thiên địa.' },
-            { id: 'hthe_2', name: 'Trung Kỳ', qiRequired: 250000000000, bonuses: [{ attribute: 'Căn Cốt', value: 120 }, { attribute: 'Linh Lực Sát Thương', value: 120 }], description: 'Pháp tướng thiên địa, sức mạnh kinh người.' },
-            { id: 'hthe_3', name: 'Hậu Kỳ', qiRequired: 500000000000, bonuses: [{ attribute: 'Căn Cốt', value: 150 }, { attribute: 'Linh Lực Sát Thương', value: 150 }, { attribute: 'Tuổi Thọ', value: 5000 }], description: 'Hợp thể viên mãn, chuẩn bị cho Đại Thừa.' },
-        ]
-    },
-    {
-        id: 'dai_thua', name: 'Đại Thừa Kỳ',
-        description: 'Đại đạo thành tựu, là cảnh giới đỉnh cao của nhân gian. Tu sĩ Đại Thừa đã gần như bất tử, chỉ còn một bước nữa là phi thăng tiên giới. Tuổi thọ không còn là giới hạn.',
-        hasTribulation: true,
-        stages: [
-            { id: 'dt_1', name: 'Sơ Kỳ', qiRequired: 1000000000000, bonuses: [{ attribute: 'Lực Lượng', value: 200 }, { attribute: 'Thân Pháp', value: 200 }, { attribute: 'Nguyên Thần', value: 200 }], description: 'Lĩnh ngộ hoàn toàn một đại đạo.' },
-            { id: 'dt_2', name: 'Trung Kỳ', qiRequired: 200000000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 200 }, { attribute: 'Bền Bỉ', value: 200 }], description: 'Ngôn xuất pháp tùy, ý niệm di chuyển vạn dặm.' },
-            { id: 'dt_3', name: 'Hậu Kỳ', qiRequired: 500000000000, bonuses: [{ attribute: 'Ngộ Tính', value: 100 }, { attribute: 'Cơ Duyên', value: 50 }], description: 'Viên mãn vô khuyết, có thể cảm ứng được tiên giới chi môn.' },
-        ]
-    },
-    {
-        id: 'do_kiep', name: 'Độ Kiếp Kỳ',
-        description: 'Đối mặt với thiên kiếp cuối cùng, là thử thách để thoát ly phàm tục, phi thăng tiên giới. Thành công thì thành tiên, thất bại thì hồn phi phách tán.',
-        stages: [
-            { id: 'dk_1', name: 'Thiên Lôi Kiếp', qiRequired: 1e13, bonuses: [{ attribute: 'Tuổi Thọ', value: 99999 }], description: 'Vượt qua chín chín tám mươi mốt đạo thiên lôi.' },
-            { id: 'dk_2', name: 'Tâm Ma Kiếp', qiRequired: 2e13, bonuses: [{ attribute: 'Đạo Tâm', value: 100 }], description: 'Trảm phá tâm ma cuối cùng, đạo tâm viên mãn.' },
-            { id: 'dk_3', name: 'Phi Thăng', qiRequired: 5e13, bonuses: [{ attribute: 'Cơ Duyên', value: 100 }], description: 'Phá vỡ hư không, phi thăng tiên giới.' },
+            { id: 'ht_so_ky', name: 'Sơ Kỳ', qiRequired: 2E9, bonuses: [{ attribute: 'Thân Pháp', value: 50 }, { attribute: 'Lực Lượng', value: 50 }], description: 'Sơ bộ nắm giữ pháp tắc không gian, có thể thuấn di.'},
+            { id: 'ht_trung_ky', name: 'Trung Kỳ', qiRequired: 6E9, bonuses: [{ attribute: 'Thân Pháp', value: 60 }, { attribute: 'Lực Lượng', value: 60 }], description: 'Lĩnh ngộ sâu hơn về pháp tắc, có thể tạo ra lĩnh vực của riêng mình.' },
+            { id: 'ht_hau_ky', name: 'Hậu Kỳ', qiRequired: 1.5E10, bonuses: [{ attribute: 'Thân Pháp', value: 70 }, { attribute: 'Lực Lượng', value: 70 }], description: 'Hoàn toàn nắm giữ một loại pháp tắc, chuẩn bị Luyện Hư.'},
+            { id: 'ht_vien_man', name: 'Viên Mãn', qiRequired: 3E10, bonuses: [{ attribute: 'Tuổi Thọ', value: 1000 }, { attribute: 'Thân Pháp', value: 20 }, { attribute: 'Lực Lượng', value: 20 }], description: 'Lĩnh vực viên mãn, có thể phi thăng.'},
         ]
     },
     {
         id: 'nhan_tien', name: 'Nhân Tiên',
-        description: 'Thoát khỏi vòng luân hồi, thân thể hóa thành tiên躯, không còn bị sinh lão bệnh tử trói buộc. Tuổi thọ vĩnh cửu, nhưng vẫn còn trong tam giới.',
+        description: 'Thoát khỏi vòng luân hồi, thân thể hóa thành tiên躯, không còn bị sinh lão bệnh tử trói buộc. Tuổi thọ vĩnh cửu.',
         stages: [
-            { id: 'nt_1', name: 'Sơ Kỳ', qiRequired: 1e14, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Nguyên Thần', value: 200 }], description: 'Tiên lực sơ thành, có thể miễn cưỡng du hành trong hư không.' },
-            { id: 'nt_2', name: 'Hậu Kỳ', qiRequired: 5e14, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 200 }, { attribute: 'Bền Bỉ', value: 200 }], description: 'Tiên thể vững chắc, thần thông bắt đầu hiển lộ.' },
-        ]
-    },
-    {
-        id: 'dia_tien', name: 'Địa Tiên',
-        description: 'Tiên nhân của mặt đất, hấp thụ địa khí để tu luyện, thần thông gắn liền với sơn xuyên đại địa. Sức mạnh bền bỉ, khó bị tiêu diệt.',
-        stages: [
-            { id: 'dtien_1', name: 'Sơ Kỳ', qiRequired: 1e15, bonuses: [{ attribute: 'Bền Bỉ', value: 300 }, { attribute: 'Sinh Mệnh', value: 5000 }], description: 'Có thể điều khiển sức mạnh của đất đá.' },
-            { id: 'dtien_2', name: 'Hậu Kỳ', qiRequired: 5e15, bonuses: [{ attribute: 'Bền Bỉ', value: 400 }, { attribute: 'Căn Cốt', value: 300 }], description: 'Thân thể cứng như kim cương, có thể mượn sức mạnh từ long mạch.' },
+            { id: 'nt_so_ky', name: 'Sơ Kỳ', qiRequired: 1e14, bonuses: [{ attribute: 'Căn Cốt', value: 200 }], description: 'Tiên lực sơ thành, miễn cưỡng du hành trong hư không.' },
+            { id: 'nt_trung_ky', name: 'Trung Kỳ', qiRequired: 3e14, bonuses: [{ attribute: 'Nguyên Thần', value: 200 }], description: 'Tiên thể dần ổn định.' },
+            { id: 'nt_hau_ky', name: 'Hậu Kỳ', qiRequired: 7e14, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 200 }], description: 'Tiên thể vững chắc.' },
+            { id: 'nt_vien_man', name: 'Viên Mãn', qiRequired: 1.2e15, bonuses: [{ attribute: 'Bền Bỉ', value: 200 }], description: 'Thần thông bắt đầu hiển lộ.' },
         ]
     },
     {
         id: 'thien_tien', name: 'Thiên Tiên',
-        description: 'Tiên nhân của trời cao, hấp thụ thiên địa linh khí, có thể tự do đi lại giữa các tầng trời. Pháp lực cao thâm, không bị trói buộc bởi mặt đất.',
+        description: 'Tiên nhân của trời cao, hấp thụ thiên địa linh khí, tự do đi lại giữa các tầng trời. Pháp lực cao thâm.',
         stages: [
-            { id: 'tt_1', name: 'Sơ Kỳ', qiRequired: 1e16, bonuses: [{ attribute: 'Thân Pháp', value: 300 }, { attribute: 'Linh Lực Sát Thương', value: 300 }], description: 'Ngự không phi hành, tốc độ như điện.' },
-            { id: 'tt_2', name: 'Hậu Kỳ', qiRequired: 5e16, bonuses: [{ attribute: 'Thân Pháp', value: 400 }, { attribute: 'Nguyên Thần', value: 300 }], description: 'Lĩnh ngộ pháp tắc không gian, thần thông biến hóa.' },
-        ]
-    },
-    {
-        id: 'nguyen_tien', name: 'Nguyên Tiên',
-        description: 'Bắt đầu chạm đến bản nguyên của đại đạo, pháp lực không chỉ mạnh mà còn ẩn chứa quy tắc lực. Thần thông tự sinh, uy lực khó lường.',
-        stages: [
-            { id: 'ngt_1', name: 'Sơ Kỳ', qiRequired: 1e17, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Linh Lực Sát Thương', value: 400 }], description: 'Mỗi chiêu thức đều mang theo một tia đạo vận.' },
-            { id: 'ngt_2', name: 'Hậu Kỳ', qiRequired: 5e17, bonuses: [{ attribute: 'Ngộ Tính', value: 300 }, { attribute: 'Nguyên Thần', value: 400 }], description: 'Có thể tạo ra các thần thông của riêng mình.' },
+            { id: 'tt_so_ky', name: 'Sơ Kỳ', qiRequired: 5e16, bonuses: [{ attribute: 'Thân Pháp', value: 300 }], description: 'Ngự không phi hành, tốc độ như điện.' },
+            { id: 'tt_trung_ky', name: 'Trung Kỳ', qiRequired: 1.5e17, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 300 }], description: 'Lĩnh ngộ pháp tắc không gian.' },
+            { id: 'tt_hau_ky', name: 'Hậu Kỳ', qiRequired: 4e17, bonuses: [{ attribute: 'Nguyên Thần', value: 300 }], description: 'Thần thông biến hóa.' },
+            { id: 'tt_vien_man', name: 'Viên Mãn', qiRequired: 8e17, bonuses: [{ attribute: 'Ngộ Tính', value: 100 }], description: 'Pháp lực viên mãn, chuẩn bị ngưng tụ Kim Tiên chi thân.' },
         ]
     },
     {
         id: 'kim_tien', name: 'Kim Tiên',
-        description: 'Thân thể bất hoại, vạn kiếp không mài, là cảnh giới của phần lớn cao thủ trong tam giáo. Kim Tiên đã có tư cách khai tông lập phái, được người đời kính ngưỡng.',
+        description: 'Thân thể bất hoại, vạn kiếp không mài, là cảnh giới của phần lớn cao thủ trong tam giáo. Có tư cách khai tông lập phái.',
         stages: [
-            { id: 'kt_1', name: 'Sơ Kỳ', qiRequired: 1e18, bonuses: [{ attribute: 'Căn Cốt', value: 500 }, { attribute: 'Bền Bỉ', value: 500 }], description: 'Kim thân sơ thành, miễn nhiễm với phần lớn pháp thuật cấp thấp.' },
-            { id: 'kt_2', name: 'Viên Mãn', qiRequired: 5e18, bonuses: [{ attribute: 'Căn Cốt', value: 600 }, { attribute: 'Bền Bỉ', value: 600 }], description: 'Kim thân viên mãn, là trụ cột của các đại giáo.' },
+            { id: 'kt_so_ky', name: 'Sơ Kỳ', qiRequired: 2e18, bonuses: [{ attribute: 'Căn Cốt', value: 500 }], description: 'Kim thân sơ thành, miễn nhiễm với phần lớn pháp thuật cấp thấp.' },
+            { id: 'kt_trung_ky', name: 'Trung Kỳ', qiRequired: 6e18, bonuses: [{ attribute: 'Bền Bỉ', value: 500 }], description: 'Kim thân cường đại, khó bị tổn thương.' },
+            { id: 'kt_hau_ky', name: 'Hậu Kỳ', qiRequired: 1.5e19, bonuses: [{ attribute: 'Lực Lượng', value: 500 }], description: 'Sức mạnh của Kim thân đạt tới đỉnh điểm.' },
+            { id: 'kt_vien_man', name: 'Viên Mãn', qiRequired: 3e19, bonuses: [{ attribute: 'Đạo Tâm', value: 100 }], description: 'Kim thân viên mãn, là trụ cột của các đại giáo.' },
         ]
     },
     {
         id: 'thai_at', name: 'Thái Ất Kim Tiên',
-        description: 'Kim Tiên đạt đến trình độ cao hơn, trên đỉnh đầu ngưng tụ tam hoa, trong lồng ngực kết thành ngũ khí. Là cấp bậc của Thập Nhị Kim Tiên Xiển Giáo.',
+        description: 'Trên đỉnh đầu ngưng tụ tam hoa, trong lồng ngực kết thành ngũ khí. Là cấp bậc của Thập Nhị Kim Tiên Xiển Giáo.',
         stages: [
-            { id: 'ta_1', name: 'Tam Hoa Tụ Đỉnh', qiRequired: 1e20, bonuses: [{ attribute: 'Nguyên Thần', value: 800 }, { attribute: 'Ngộ Tính', value: 500 }], description: 'Tinh, Khí, Thần hóa thành ba đóa hoa sen trên đỉnh đầu, vạn pháp bất xâm.' },
-            { id: 'ta_2', name: 'Ngũ Khí Triều Nguyên', qiRequired: 5e20, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 800 }, { attribute: 'Bền Bỉ', value: 800 }], description: 'Ngũ tạng tương ứng với ngũ hành, pháp lực vô biên, sinh sôi không ngừng.' },
+            { id: 'ta_so_ky', name: 'Sơ Kỳ', qiRequired: 1e20, bonuses: [{ attribute: 'Nguyên Thần', value: 400 }], description: 'Bắt đầu ngưng tụ Tam hoa.' },
+            { id: 'ta_trung_ky', name: 'Trung Kỳ', qiRequired: 5e20, bonuses: [{ attribute: 'Ngộ Tính', value: 250 }], description: 'Tam hoa Tụ đỉnh, vạn pháp bất xâm.' },
+            { id: 'ta_hau_ky', name: 'Hậu Kỳ', qiRequired: 1e21, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 400 }], description: 'Bắt đầu ngưng tụ Ngũ khí.' },
+            { id: 'ta_vien_man', name: 'Viên Mãn', qiRequired: 2e21, bonuses: [{ attribute: 'Bền Bỉ', value: 400 }], description: 'Ngũ khí Triều nguyên, pháp lực vô biên.' },
         ]
     },
     {
         id: 'dai_la', name: 'Đại La Kim Tiên',
-        description: 'Nhảy ra khỏi tam giới, không còn trong ngũ hành. Đại La có nghĩa là tất cả không gian và thời gian, vĩnh hằng tự tại, là cảnh giới tối cao của tiên nhân.',
+        description: 'Nhảy ra khỏi tam giới, không còn trong ngũ hành. Đại La có nghĩa là tất cả không gian và thời gian, vĩnh hằng tự tại.',
         stages: [
-            { id: 'dl_1', name: 'Sơ Kỳ', qiRequired: 1e22, bonuses: [{ attribute: 'Cơ Duyên', value: 200 }, { attribute: 'Đạo Tâm', value: 200 }], description: 'Thoát khỏi xiềng xích của số mệnh, không bị nhân quả trói buộc.' },
-            { id: 'dl_2', name: 'Viên Mãn', qiRequired: 5e22, bonuses: [{ attribute: 'Nhân Quả', value: 0 }], description: 'Bất tử bất diệt, ngao du trong dòng sông thời gian.' },
+            { id: 'dl_so_ky', name: 'Sơ Kỳ', qiRequired: 1e22, bonuses: [{ attribute: 'Cơ Duyên', value: 200 }], description: 'Thoát khỏi xiềng xích của số mệnh.' },
+            { id: 'dl_trung_ky', name: 'Trung Kỳ', qiRequired: 5e22, bonuses: [{ attribute: 'Đạo Tâm', value: 200 }], description: 'Không bị nhân quả trói buộc.' },
+            { id: 'dl_hau_ky', name: 'Hậu Kỳ', qiRequired: 1e23, bonuses: [{ attribute: 'Nhân Quả', value: -100 }], description: 'Ngao du trong dòng sông thời gian.' },
+            { id: 'dl_vien_man', name: 'Viên Mãn', qiRequired: 2e23, bonuses: [{ attribute: 'Tuổi Thọ', value: 99999 }], description: 'Bất tử bất diệt.' },
         ]
     },
     {
         id: 'chuan_thanh', name: 'Chuẩn Thánh',
-        description: 'Chém tam thi, đã bước một chân vào cảnh giới Thánh Nhân. Là những tồn tại kinh khủng nhất dưới Thánh Nhân, một ý niệm có thể hủy diệt vô số thế giới.',
+        description: 'Chém tam thi, đã bước một chân vào cảnh giới Thánh Nhân. Là những tồn tại kinh khủng nhất dưới Thánh Nhân.',
         stages: [
-            { id: 'ct_1', name: 'Trảm Nhất Thi', qiRequired: 1e25, bonuses: [{ attribute: 'Lực Lượng', value: 2000 }, { attribute: 'Linh Lực Sát Thương', value: 2000 }], description: 'Chém bỏ một trong ba xác (thiện, ác, chấp niệm), sức mạnh tăng vọt.' },
-            { id: 'ct_2', name: 'Trảm Nhị Thi', qiRequired: 5e25, bonuses: [{ attribute: 'Nguyên Thần', value: 2000 }, { attribute: 'Bền Bỉ', value: 2000 }], description: 'Chém bỏ hai xác, đã có thể được gọi là Á Thánh.' },
-            { id: 'ct_3', name: 'Trảm Tam Thi', qiRequired: 1e26, bonuses: [{ attribute: 'Đạo Tâm', value: 1000 }, { attribute: 'Ngộ Tính', value: 1000 }], description: 'Chém cả ba xác, chỉ còn một bước nữa là chứng đạo thành Thánh.' },
+            { id: 'ct_so_ky', name: 'Trảm Nhất Thi', qiRequired: 1e25, bonuses: [{ attribute: 'Lực Lượng', value: 2000 }], description: 'Chém bỏ một trong ba xác (thiện, ác, chấp niệm), sức mạnh tăng vọt.' },
+            { id: 'ct_trung_ky', name: 'Trảm Nhị Thi', qiRequired: 5e25, bonuses: [{ attribute: 'Nguyên Thần', value: 2000 }], description: 'Chém bỏ hai xác, đã có thể được gọi là Á Thánh.' },
+            { id: 'ct_hau_ky', name: 'Trảm Tam Thi', qiRequired: 1e26, bonuses: [{ attribute: 'Đạo Tâm', value: 1000 }], description: 'Chém cả ba xác, chỉ còn một bước nữa là chứng đạo thành Thánh.' },
+            { id: 'ct_vien_man', name: 'Viên Mãn', qiRequired: 2e26, bonuses: [{ attribute: 'Ngộ Tính', value: 1000 }], description: 'Chỉ còn chờ cơ duyên để chứng đạo.' },
         ]
     },
     {
         id: 'thanh_nhan', name: 'Thánh Nhân',
-        description: 'Thiên đạo Thánh Nhân, vạn kiếp bất diệt, nguyên thần ký thác vào thiên đạo. Dưới thiên đạo đều là con kiến. Là những tồn tại tối cao, định ra quy luật của vũ trụ.',
+        description: 'Thiên đạo Thánh Nhân, vạn kiếp bất diệt, nguyên thần ký thác vào thiên đạo. Dưới thiên đạo đều là con kiến.',
         stages: [
             { id: 'tn_1', name: 'Thánh Nhân', qiRequired: Infinity, bonuses: [], description: 'Ngôn xuất pháp tùy, một lời nói có thể thay đổi thiên đạo.' },
         ]

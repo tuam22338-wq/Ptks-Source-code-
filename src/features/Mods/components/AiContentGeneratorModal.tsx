@@ -42,15 +42,15 @@ const AiContentGeneratorModal: React.FC<AiContentGeneratorModalProps> = ({ isOpe
                 </div>
                 <div className="p-6 flex-grow flex flex-col gap-4">
                     <p className="text-gray-400 text-sm">
-                        Nhập mô tả chi tiết về nội dung bạn muốn AI tạo ra. Bạn có thể yêu cầu tạo <strong>vật phẩm, tiên tư, nhân vật, NPC, tông môn, công pháp, sự kiện, v.v.</strong>
+                        Nhập mô tả chi tiết về nội dung bạn muốn AI tạo ra. Hãy cung cấp các thông tin như <strong>tên, loại, phẩm chất, chỉ số, địa điểm, v.v.</strong> để AI có thể hiểu rõ yêu cầu của bạn.
                         <br/>
-                        Cung cấp càng nhiều chi tiết, kết quả sẽ càng chính xác và phù hợp với ý tưởng của bạn.
+                        Bạn có thể yêu cầu tạo nhiều đối tượng cùng lúc (ví dụ: "Tạo 5 loại linh dược khác nhau").
                     </p>
                     <textarea
                         value={prompt}
                         onChange={e => setPrompt(e.target.value)}
                         rows={10}
-                        placeholder="Ví dụ 1: Tạo 3 thanh phi kiếm phẩm chất Linh Phẩm cho tu sĩ Trúc Cơ Kỳ.&#10;Ví dụ 2: Tạo một NPC trưởng lão của Xiển Giáo tên là Thanh Hư đạo trưởng, ông ta đang ở Côn Lôn Sơn.&#10;Ví dụ 3: Tạo một tiên tư Thánh Giai tên là 'Thái Cổ Lôi Thể'."
+                        placeholder="Tạo 3 thanh phi kiếm tên là ... phẩm chất ... tăng chỉ số ...&#10;Tạo 1 NPC trưởng lão tà phái tên Hắc Ma Lão Tổ ở Hắc Long Đàm.&#10;Tạo 1 tiên tư Thánh Giai tên Bất Diệt Thánh Thể, tăng 500 Căn Cốt.&#10;Tạo 1 thần thông cấp Địa Giai tên Hỏa Long Thuật, tiêu hao 100 linh lực."
                         className="w-full bg-gray-800/50 border border-gray-600 rounded-md p-3 text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400/50"
                         disabled={isLoading}
                     />
