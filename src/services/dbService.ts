@@ -1,6 +1,3 @@
-
-
-
 import Dexie, { type Table } from 'dexie';
 import type { GameState, GameSettings, ModInfo, FullMod, SaveSlot, AttributeGroup, NPC, Sect, Location } from '../types';
 
@@ -195,6 +192,16 @@ export const getModDraft = async (): Promise<any | null> => {
 
 export const saveModDraft = async (draftData: any): Promise<void> => {
     await db.modDrafts.put({ id: 'current-draft', data: draftData });
+};
+
+// --- World Service ---
+export const getActiveWorldId = async (): Promise<string> => {
+    const setting = await db.misc.get('activeWorldId');
+    return setting?.value || 'phong_than_dien_nghia'; // Default world ID
+};
+
+export const setActiveWorldId = async (worldId: string): Promise<void> => {
+    await db.misc.put({ key: 'activeWorldId', value: worldId });
 };
 
 // Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.

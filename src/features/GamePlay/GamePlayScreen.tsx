@@ -11,8 +11,7 @@ import CombatScreen from './components/CombatScreen';
 import CultivationPathModal from './components/CultivationPathModal';
 import CustomStoryPlayer from './components/CustomStoryPlayer';
 import DialoguePanel from './components/DialoguePanel';
-// Fix: Import the newly created ShopModal component.
-import ShopModal from './ShopModal';
+import ShopModal from './components/ShopModal';
 import { generateStoryContinuationStream, summarizeStory, generateBreakthroughNarrative } from '../../services/geminiService';
 import { REALM_SYSTEM, CULTIVATION_PATHS, SHOPS } from '../../constants';
 import InventoryModal from './components/InventoryModal';
@@ -276,7 +275,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
             <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} gameState={gameState} setGameState={setGameState} showNotification={showNotification} onClose={() => setActiveShopId(null)} />
             <InventoryModal isOpen={isInventoryOpen} gameState={gameState} setGameState={setGameState} showNotification={showNotification} onClose={() => setIsInventoryOpen(false)} />
             
-            <TopBar onBack={onBack} onSave={() => onSaveGame(gameState, showNotification)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} gameDate={gameState.gameDate} />
+            <TopBar onBack={onBack} onSave={() => onSaveGame(gameState, showNotification)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} gameDate={gameState.gameDate} majorEvents={gameState.majorEvents} />
             
             <div className="gameplay-main-content">
                 {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>}

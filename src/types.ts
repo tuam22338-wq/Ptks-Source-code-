@@ -118,7 +118,7 @@ export type TimeOfDay = 'Sáng Sớm' | 'Buổi Sáng' | 'Buổi Trưa' | 'Buổ
 export type Weather = 'SUNNY' | 'CLOUDY' | 'RAIN' | 'STORM' | 'SNOW';
 
 export interface GameDate {
-  era: 'Tiên Phong Thần';
+  era: string; // Changed from 'Tiên Phong Thần' to string to support custom worlds
   year: number;
   season: Season;
   day: number;
@@ -214,14 +214,26 @@ export interface ModCharacter {
     tags: string[];
 }
 
-export interface ModWorldBuilding {
+// --- NEW MODDING TYPES FOR WORLD OVERHAUL ---
+export type ModLocation = Omit<Location, 'contextualActions' | 'shopIds'> & {
     id: string;
-    title: string;
-    description: string;
-    data: Record<string, any>;
     tags: string[];
-    storySystemId?: string;
+};
+
+export interface ModWorldData {
+    id: string;
+    name: string;
+    description: string;
+    majorEvents: MajorEvent[];
+    initialNpcs: (Omit<ModNpc, 'id'> & { id?: string })[];
+    initialLocations: (Omit<ModLocation, 'id'> & { id?: string })[];
+    factions: Faction[];
+    startingYear: number;
+    eraName: string;
+    tags?: string[];
 }
+// --- END NEW MODDING TYPES ---
+
 
 export type SectMemberRank = 'Tông Chủ' | 'Trưởng Lão' | 'Đệ Tử Chân Truyền' | 'Đệ Tử Nội Môn' | 'Đệ Tử Ngoại Môn';
 
@@ -256,12 +268,26 @@ export interface TechniqueEffect {
     details: Record<string, any>; 
 }
 
-export type ModTechnique = Omit<CultivationTechnique, 'id'> & {
+// --- UPDATED TECHNIQUE MODDING TYPES ---
+export type AuxiliaryTechniqueType = 'Tâm Pháp' | 'Độn Thuật' | 'Luyện Thể' | 'Kiếm Quyết' | 'Thần Thông';
+
+export type ModAuxiliaryTechnique = Omit<CultivationTechnique, 'id' | 'type'> & {
     id: string;
+    type: AuxiliaryTechniqueType;
     requirements?: StatBonus[];
-    effects?: TechniqueEffect[];
     tags?: string[];
 };
+
+export type ModSkillTreeNode = Omit<SkillTreeNode, 'isUnlocked'>;
+
+export interface ModMainCultivationTechnique {
+    id: string;
+    name: string;
+    description: string;
+    skillTreeNodes: ModSkillTreeNode[];
+}
+// --- END UPDATED TECHNIQUE MODDING TYPES ---
+
 
 export type NpcRelationshipInput = { 
     targetNpcName: string; 
@@ -284,7 +310,7 @@ export type ModNpc = {
     tags: string[];
 };
 
-export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'worldBuilding' | 'npc' | 'technique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem';
+export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'location' | 'worldData' | 'npc' | 'auxiliaryTechnique' | 'mainCultivationTechnique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem';
 
 export type EventTriggerType = 'ON_ENTER_LOCATION' | 'ON_TALK_TO_NPC' | 'ON_GAME_DATE';
 export interface EventTrigger {
@@ -360,8 +386,10 @@ export interface ModContent {
     talents?: Omit<ModTalent, 'id'>[];
     characters?: Omit<ModCharacter, 'id'>[];
     sects?: Omit<ModSect, 'id'>[];
-    worldBuilding?: Omit<ModWorldBuilding, 'id'>[];
-    techniques?: Omit<ModTechnique, 'id'>[];
+    locations?: Omit<ModLocation, 'id'>[];
+    worldData?: Omit<ModWorldData, 'id'>[];
+    auxiliaryTechniques?: Omit<ModAuxiliaryTechnique, 'id'>[];
+    mainCultivationTechniques?: Omit<ModMainCultivationTechnique, 'id'>[];
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];
     recipes?: Omit<AlchemyRecipe, 'id'>[];
@@ -390,9 +418,11 @@ export type ModContentObject =
     | (Omit<ModTalent, 'id'> & { contentType: 'talent' })
     | (Omit<ModCharacter, 'id'> & { contentType: 'character' })
     | (Omit<ModSect, 'id'> & { contentType: 'sect' })
-    | (Omit<ModWorldBuilding, 'id'> & { contentType: 'worldBuilding' })
+    | (Omit<ModLocation, 'id'> & { contentType: 'location' })
+    | (Omit<ModWorldData, 'id'> & { contentType: 'worldData' })
     | (Omit<ModNpc, 'id'> & { contentType: 'npc' })
-    | (Omit<ModTechnique, 'id'> & { contentType: 'technique' })
+    | (Omit<ModAuxiliaryTechnique, 'id'> & { contentType: 'auxiliaryTechnique' })
+    | (Omit<ModMainCultivationTechnique, 'id'> & { contentType: 'mainCultivationTechnique' })
     | (Omit<ModEvent, 'id'> & { contentType: 'event' })
     | (Omit<AlchemyRecipe, 'id'> & { contentType: 'recipe' })
     | (Omit<ModCustomPanel, 'id'> & { contentType: 'customPanel' });
@@ -406,10 +436,11 @@ export interface AiGeneratedModData {
 export type AIActionType =
     | 'CHAT'
     | 'CREATE_ITEM' | 'CREATE_MULTIPLE_ITEMS' | 'CREATE_TALENT' | 'CREATE_MULTIPLE_TALENTS' | 'CREATE_SECT' | 'CREATE_MULTIPLE_SECTS' | 'CREATE_CHARACTER' | 'CREATE_MULTIPLE_CHARACTERS'
-    | 'DEFINE_WORLD_BUILDING' | 'CREATE_TECHNIQUE' | 'CREATE_NPC' | 'CREATE_EVENT' | 'CREATE_RECIPE' | 'CREATE_CUSTOM_PANEL'
-    | 'UPDATE_ITEM' | 'UPDATE_TALENT' | 'UPDATE_SECT' | 'UPDATE_CHARACTER' | 'UPDATE_TECHNIQUE' | 'UPDATE_NPC' | 'UPDATE_EVENT' | 'UPDATE_RECIPE' | 'UPDATE_WORLD_BUILDING' | 'UPDATE_CUSTOM_PANEL'
-    | 'DELETE_ITEM' | 'DELETE_TALENT' | 'DELETE_SECT' | 'DELETE_CHARACTER' | 'DELETE_TECHNIQUE' | 'DELETE_NPC' | 'DELETE_EVENT' | 'DELETE_RECIPE' | 'DELETE_WORLD_BUILDING' | 'DELETE_CUSTOM_PANEL'
+    | 'CREATE_LOCATION' | 'CREATE_WORLD_DATA' | 'CREATE_AUX_TECHNIQUE' | 'CREATE_MAIN_TECHNIQUE' | 'CREATE_NPC' | 'CREATE_EVENT' | 'CREATE_RECIPE' | 'CREATE_CUSTOM_PANEL'
+    | 'UPDATE_ITEM' | 'UPDATE_TALENT' | 'UPDATE_SECT' | 'UPDATE_CHARACTER' | 'UPDATE_LOCATION' | 'UPDATE_WORLD_DATA' | 'UPDATE_AUX_TECHNIQUE' | 'UPDATE_MAIN_TECHNIQUE' | 'UPDATE_NPC' | 'UPDATE_EVENT' | 'UPDATE_RECIPE' | 'UPDATE_CUSTOM_PANEL'
+    | 'DELETE_ITEM' | 'DELETE_TALENT' | 'DELETE_SECT' | 'DELETE_CHARACTER' | 'DELETE_LOCATION' | 'DELETE_WORLD_DATA' | 'DELETE_AUX_TECHNIQUE' | 'DELETE_MAIN_TECHNIQUE' | 'DELETE_NPC' | 'DELETE_EVENT' | 'DELETE_RECIPE' | 'DELETE_CUSTOM_PANEL'
     | 'CREATE_REALM_SYSTEM' | 'CONFIGURE_TALENT_SYSTEM' | 'BATCH_ACTIONS';
+
 
 export interface AIAction {
     action: AIActionType;
@@ -422,9 +453,11 @@ export type AddedContentUnion =
     (ModTalent & { contentType: 'talent' }) |
     (ModCharacter & { contentType: 'character' }) |
     (ModSect & { contentType: 'sect' }) |
-    (ModWorldBuilding & { contentType: 'worldBuilding' }) |
+    (ModLocation & { contentType: 'location' }) |
+    (ModWorldData & { contentType: 'worldData' }) |
     (ModNpc & { contentType: 'npc' }) |
-    (ModTechnique & { contentType: 'technique' }) |
+    (ModAuxiliaryTechnique & { contentType: 'auxiliaryTechnique' }) |
+    (ModMainCultivationTechnique & { contentType: 'mainCultivationTechnique' }) |
     (ModEvent & { contentType: 'event' }) |
     (AlchemyRecipe & { contentType: 'recipe' }) |
     (ModCustomPanel & { contentType: 'customPanel' });
@@ -720,6 +753,7 @@ export interface GameState {
     encounteredNpcIds: string[];
     activeMods: FullMod[];
     realmSystem: RealmConfig[];
+    majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;
     combatState: CombatState | null;
     dialogueWithNpcId: string | null;

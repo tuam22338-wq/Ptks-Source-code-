@@ -1,7 +1,17 @@
 import { FaQuestionCircle } from 'react-icons/fa';
-import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE } from "../constants";
-import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique } from "../types";
+import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID } from "../constants";
+// FIX: Import RealmConfig type
+import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
+import {
+  GiCauldron,
+  GiHealthNormal, GiMagicSwirl, GiStairsGoal, GiHourglass,
+  GiSpinalCoil, GiMuscularTorso, GiRunningShoe, GiHeartTower,
+  GiPentacle, GiBoltSpellCast, GiScrollQuill, GiSoulVessel,
+  GiSparklingSabre, GiStoneTower, GiPerspectiveDiceSixFacesRandom,
+  GiTalk, GiScales, GiMountainCave, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle
+} from 'react-icons/gi';
+import { FaSun, FaMoon } from 'react-icons/fa';
 
 export const migrateGameState = (savedGame: any): GameState => {
     let dataToProcess = { ...savedGame };
@@ -14,6 +24,7 @@ export const migrateGameState = (savedGame: any): GameState => {
             
             dataToProcess.activeMods = dataToProcess.activeMods ?? [];
             dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
+            dataToProcess.majorEvents = dataToProcess.majorEvents ?? MAJOR_EVENTS;
             dataToProcess.encounteredNpcIds = dataToProcess.encounteredNpcIds ?? [];
             dataToProcess.activeStory = dataToProcess.activeStory ?? null;
             dataToProcess.storySummary = dataToProcess.storySummary ?? '';
@@ -112,30 +123,106 @@ export const migrateGameState = (savedGame: any): GameState => {
             return sect;
         });
     }
+    
+    // Use a function to get contextual actions since WORLD_MAP is not exhaustive with mods
+    const CONTEXTUAL_ACTION_ICONS: Record<string, any> = { talk_villagers: GiTalk, rest_inn: GiBed, gather_herbs: GiHerbsBundle, mine_ore: GiStoneBlock, closed_door_cultivation: GiMountainCave, alchemy: GiCauldron };
+    const getContextualAction = (actionId: string, label: string, description: string) => ({ id: actionId, label, description, icon: CONTEXTUAL_ACTION_ICONS[actionId] || FaQuestionCircle });
 
-    const allLocationsConfig = new Map<string, Location>();
-    WORLD_MAP.forEach(loc => allLocationsConfig.set(loc.id, loc));
     if (dataToProcess.discoveredLocations) {
         dataToProcess.discoveredLocations = dataToProcess.discoveredLocations.map((loc: Location) => {
-            const config = allLocationsConfig.get(loc.id);
-            if (config && config.contextualActions) {
-                return { ...loc, contextualActions: config.contextualActions };
+            if (!loc.contextualActions) {
+                 const config = WORLD_MAP.find(l => l.id === loc.id);
+                 if (config && config.contextualActions) {
+                     return { ...loc, contextualActions: config.contextualActions };
+                 }
+                 return loc;
             }
-            return loc;
+            return {
+                ...loc,
+                contextualActions: loc.contextualActions.map((action: any) => 
+                     getContextualAction(action.id, action.label, action.description)
+                )
+            };
         });
     }
 
     return dataToProcess as GameState;
 };
 
+const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmSystem: RealmConfig[]): NPC => {
+    // A simplified conversion, full conversion would be more complex
+    const realm = realmSystem[1] || realmSystem[0]; // Default to Luyen Khi
+    return {
+        id: modNpc.id || `mod-npc-${Math.random().toString(36).substring(2, 9)}`,
+        identity: {
+            name: modNpc.name,
+            gender: 'Nam', // Default
+            appearance: modNpc.description,
+            origin: modNpc.origin,
+            personality: modNpc.personality,
+            age: 50 + Math.floor(Math.random() * 200),
+        },
+        status: modNpc.status,
+        attributes: [], // Will be generated dynamically if needed later
+        talents: [], // TODO: Link talentNames to actual talents
+        locationId: modNpc.locationId,
+        cultivation: {
+            currentRealmId: realm.id,
+            currentStageId: realm.stages[0].id,
+            spiritualQi: 0,
+            hasConqueredInnerDemon: true,
+        },
+        techniques: [],
+        inventory: { items: [], weightCapacity: 10 },
+        equipment: {},
+        healthStatus: 'HEALTHY',
+        activeEffects: [],
+        tuoiTho: 300,
+        faction: modNpc.faction,
+    };
+};
+
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'danhVong' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
         npcDensity: NpcDensity
     },
-    activeMods: FullMod[]
+    activeMods: FullMod[],
+    activeWorldId: string
 ): Promise<GameState> => {
     const { characterData, npcDensity } = gameStartData;
+
+    // --- World Data Overhaul ---
+    let worldData: ModWorldData | null = null;
+    if (activeWorldId !== DEFAULT_WORLD_ID) {
+        for (const mod of activeMods) {
+            // FIX: Find world by name, as `id` is omitted in mod content definition.
+            const foundWorld = mod.content.worldData?.find(wd => wd.name === activeWorldId);
+            if (foundWorld) {
+                // FIX: Reconstruct ModWorldData with `id` from `activeWorldId` (which is the world's name/ID).
+                worldData = { ...foundWorld, id: activeWorldId };
+                console.log(`Loading world data from mod: ${worldData.name}`);
+                break;
+            }
+        }
+        if (!worldData) {
+            console.warn(`Active world ID "${activeWorldId}" not found in active mods. Falling back to default world.`);
+        }
+    }
+
+    // FIX: Ensure locations from mods have an ID to satisfy the Location type. Use name as ID if missing.
+    const worldMapToUse: Location[] = worldData 
+        ? worldData.initialLocations.map(l => ({
+            ...l,
+            id: l.id || l.name,
+            contextualActions: [],
+        } as Location))
+        : WORLD_MAP;
+    const initialNpcsFromData = worldData ? worldData.initialNpcs.map(n => convertModNpcToNpc(n, REALM_SYSTEM)) : NPC_LIST;
+    const majorEventsToUse = worldData ? worldData.majorEvents : MAJOR_EVENTS;
+    const factionsToUse = worldData ? worldData.factions : FACTIONS;
+    const startingYear = worldData ? worldData.startingYear : 1;
+    const eraName = worldData ? worldData.eraName : 'Tiên Phong Thần';
 
     const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
     const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
@@ -185,9 +272,9 @@ export const createNewGameState = async (
         return group;
     });
 
-    const initialCoreLocations = WORLD_MAP.filter(l => l.type === 'Thành Thị' || l.type === 'Thôn Làng');
-    const startingLocation = initialCoreLocations[Math.floor(Math.random() * initialCoreLocations.length)] || WORLD_MAP[0];
-    const caveAbodeLocation = WORLD_MAP.find(l => l.id === DEFAULT_CAVE_ABODE.locationId);
+    const initialCoreLocations = worldMapToUse.filter(l => l.type === 'Thành Thị' || l.type === 'Thôn Làng');
+    const startingLocation = initialCoreLocations[Math.floor(Math.random() * initialCoreLocations.length)] || worldMapToUse[0];
+    const caveAbodeLocation = worldMapToUse.find(l => l.id === DEFAULT_CAVE_ABODE.locationId);
 
     let playerCharacter: PlayerCharacter = {
         identity: { ...characterData.identity, age: 18 },
@@ -202,8 +289,8 @@ export const createNewGameState = async (
         auxiliaryTechniques: [],
         techniquePoints: 0,
         relationships: [],
-        danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
-        reputation: FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),
+        danhVong: characterData.danhVong,
+        reputation: factionsToUse.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),
         chosenPathIds: [],
         knownRecipeIds: [],
         sect: null,
@@ -223,7 +310,7 @@ export const createNewGameState = async (
         throw new Error("AI không thể tạo ra chúng sinh. Vui lòng kiểm tra API Key.");
     }
 
-    const allNpcs = [...familyNpcs, ...generatedNpcs];
+    const allNpcs = [...initialNpcsFromData, ...familyNpcs, ...generatedNpcs];
     
     const tempGameStateForOpening = {
         playerCharacter,
@@ -239,8 +326,8 @@ export const createNewGameState = async (
     ];
 
     const initialGameDate: GameDate = {
-        era: 'Tiên Phong Thần',
-        year: 1,
+        era: eraName,
+        year: startingYear,
         season: 'Xuân',
         day: 1,
         timeOfDay: 'Buổi Sáng',
@@ -252,7 +339,7 @@ export const createNewGameState = async (
 
     const initialWorldState: WorldState = { rumors: [] };
 
-    const discoveredLocations: Location[] = [startingLocation, ...WORLD_MAP.filter(l => l.neighbors.includes(startingLocation.id))];
+    const discoveredLocations: Location[] = [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))];
     if (caveAbodeLocation && !discoveredLocations.some(l => l.id === caveAbodeLocation.id)) {
         discoveredLocations.push(caveAbodeLocation);
     }
@@ -265,6 +352,7 @@ export const createNewGameState = async (
         discoveredLocations: discoveredLocations,
         worldState: initialWorldState,
         storyLog: initialStory,
+        majorEvents: majorEventsToUse,
         encounteredNpcIds: [],
         activeMods: activeMods,
         realmSystem: realmSystemToUse,

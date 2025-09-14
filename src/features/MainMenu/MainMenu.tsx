@@ -53,10 +53,11 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
         </div>
         <div className="flex flex-col items-center space-y-6 mt-16">
             <MenuItem label="Hành Trình Mới" onClick={() => onNavigate('saveSlots')} delay={500} />
-            <MenuItem label="Mods" onClick={() => onNavigate('mods')} delay={650} />
-            <MenuItem label="Thời Thế" onClick={() => onNavigate('thoiThe')} delay={800} />
-            <MenuItem label="Cài Đặt" onClick={() => onNavigate('settings')} delay={950} />
-            <MenuItem label="Thông Tin" onClick={() => onNavigate('info')} delay={1100} />
+            <MenuItem label="Thế Giới" onClick={() => onNavigate('worldSelection')} delay={650} />
+            <MenuItem label="Mods" onClick={() => onNavigate('mods')} delay={800} />
+            <MenuItem label="Thời Thế" onClick={() => onNavigate('thoiThe')} delay={950} />
+            <MenuItem label="Cài Đặt" onClick={() => onNavigate('settings')} delay={1100} />
+            <MenuItem label="Thông Tin" onClick={() => onNavigate('info')} delay={1250} />
         </div>
 
         <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1200ms' }}>

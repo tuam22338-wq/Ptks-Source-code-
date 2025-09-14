@@ -11,14 +11,15 @@ import { GamePlayScreen } from './features/GamePlay/GamePlayScreen';
 import ThoiTheScreen from './features/Lore/LoreScreen';
 import InfoScreen from './features/Info/InfoScreen';
 import DeveloperConsole from './components/DeveloperConsole';
+import WorldSelectionScreen from './features/WorldSelection/WorldSelectionScreen';
 
 import * as db from './services/dbService';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel } from './types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong } from './types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from './constants';
 import { reloadSettings } from './services/geminiService';
 import { migrateGameState, createNewGameState } from './utils/gameStateManager';
 
-export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'thoiThe' | 'info';
+export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
 
 interface ModInLibrary {
     modInfo: { id: string };
@@ -46,6 +47,7 @@ const App: React.FC = () => {
   const [currentSlotId, setCurrentSlotId] = useState<number | null>(null);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const [storageUsage, setStorageUsage] = useState({ usageString: '0 B / 0 B', percentage: 0 });
+  const [activeWorldId, setActiveWorldId] = useState<string>('phong_than_dien_nghia');
 
   useEffect(() => {
     const setViewportHeight = () => {
@@ -196,6 +198,8 @@ const App: React.FC = () => {
 
                   setSettings({ ...DEFAULT_SETTINGS, ...savedSettings });
               }
+              const worldId = await db.getActiveWorldId();
+              setActiveWorldId(worldId);
               await loadSaveSlots();
           } catch (error) {
               console.error("Failed to load initial data from DB", error);
@@ -380,7 +384,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleGameStart = useCallback(async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'danhVong' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
       npcDensity: NpcDensity
   }) => {
     if (currentSlotId === null) {
@@ -431,7 +435,7 @@ const App: React.FC = () => {
             if (modContent) activeMods.push(modContent);
         }
         
-        const newGameState = await createNewGameState(gameStartData, activeMods);
+        const newGameState = await createNewGameState(gameStartData, activeMods, activeWorldId);
         
         await db.saveGameState(currentSlotId, newGameState);
         await loadSaveSlots();
@@ -449,7 +453,7 @@ const App: React.FC = () => {
         clearInterval(messageInterval);
         setIsLoading(false);
     }
-  }, [currentSlotId, loadSaveSlots]);
+  }, [currentSlotId, loadSaveSlots, activeWorldId]);
 
   const renderContent = () => {
     if (isMigratingData) {
@@ -476,6 +480,8 @@ const App: React.FC = () => {
         return <ThoiTheScreen onBack={() => handleNavigate('mainMenu')} />;
       case 'info':
         return <InfoScreen onBack={() => handleNavigate('mainMenu')} />;
+      case 'worldSelection':
+        return <WorldSelectionScreen onBack={() => handleNavigate('mainMenu')} activeWorldId={activeWorldId} setActiveWorldId={setActiveWorldId} />;
       case 'gamePlay':
         if (!gameState) {
             return <LoadingScreen message="Đang tải dữ liệu..." />;

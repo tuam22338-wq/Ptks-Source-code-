@@ -1,14 +1,16 @@
 
+
 import React, { useState, memo } from 'react';
-import type { GameDate } from '../types';
+import type { GameDate, MajorEvent } from '../types';
 import { GiScrollUnfurled } from 'react-icons/gi';
-import { SHICHEN_LIST, MAJOR_EVENTS, SEASON_ICONS, WEATHER_INFO, TIMEOFDAY_DETAILS } from '../constants';
+import { SHICHEN_LIST, SEASON_ICONS, WEATHER_INFO, TIMEOFDAY_DETAILS } from '../constants';
 
 interface TimelineProps {
   gameDate: GameDate;
+  majorEvents: MajorEvent[];
 }
 
-const Timeline: React.FC<TimelineProps> = ({ gameDate }) => {
+const Timeline: React.FC<TimelineProps> = ({ gameDate, majorEvents }) => {
   const [isEventsVisible, setIsEventsVisible] = useState(false);
   const timeOfDayDetails = TIMEOFDAY_DETAILS[gameDate.shichen];
   const weatherDetails = WEATHER_INFO[gameDate.weather];
@@ -49,7 +51,7 @@ const Timeline: React.FC<TimelineProps> = ({ gameDate }) => {
           <GiScrollUnfurled /> Thiên Mệnh Bất Biến
         </h3>
         <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-            {MAJOR_EVENTS.map(event => {
+            {majorEvents.map(event => {
                 const hasPassed = gameDate.year >= event.year;
                 return (
                     <div key={event.title} className={`p-2 rounded-md transition-opacity ${hasPassed ? 'opacity-50 bg-gray-800/20' : 'bg-gray-700/30'}`}>

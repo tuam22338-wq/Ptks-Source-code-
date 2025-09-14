@@ -1,7 +1,5 @@
-
-
 import React, { useState, useCallback, useEffect, memo } from 'react';
-import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter } from '../../types';
+import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter, DanhVong } from '../../types';
 import { FaArrowLeft, FaDice } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
@@ -9,13 +7,14 @@ import { generateCharacterIdentity, generateTalentChoices } from '../../services
 import LoadingSpinner from '../../components/LoadingSpinner';
 import InnateTalentSelection from './components/InnateTalentSelection';
 import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST } from '../../constants';
+// FIX: Import MAJOR_EVENTS
+import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, MAJOR_EVENTS } from '../../constants';
 import * as db from '../../services/dbService';
 
 interface CharacterCreationScreenProps {
   onBack: () => void;
   onGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog'>,
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
       npcDensity: NpcDensity
   }) => Promise<void>;
 }
@@ -216,7 +215,6 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
           }
       });
       
-      // Fix: Added the missing 'danhVong' property to align with the PlayerCharacter type.
       const characterData = {
           identity: identity,
           attributes: initialAttributes,
@@ -361,7 +359,8 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
           <FaArrowLeft className="w-5 h-5" />
         </button>
         <div className="text-center flex-grow">
-          <Timeline gameDate={gameDate} />
+          {/* FIX: Pass majorEvents prop to Timeline component */}
+          <Timeline gameDate={gameDate} majorEvents={MAJOR_EVENTS} />
         </div>
         <div className="w-9 h-9"></div>
       </div>

@@ -11,6 +11,7 @@ import { MAIN_CULTIVATION_TECHNIQUES_DATABASE } from './data/mainCultivationTech
 
 export { MAIN_CULTIVATION_TECHNIQUES_DATABASE };
 
+export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
 export const CURRENT_GAME_VERSION = "1.1.0";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
@@ -983,8 +984,8 @@ export const REALM_SYSTEM: RealmConfig[] = [
         hasTribulation: true,
         stages: [
             { id: 'dt_1', name: 'Sơ Kỳ', qiRequired: 1000000000000, bonuses: [{ attribute: 'Lực Lượng', value: 200 }, { attribute: 'Thân Pháp', value: 200 }, { attribute: 'Nguyên Thần', value: 200 }], description: 'Lĩnh ngộ hoàn toàn một đại đạo.' },
-            { id: 'dt_2', name: 'Trung Kỳ', qiRequired: 2000000000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 200 }, { attribute: 'Bền Bỉ', value: 200 }], description: 'Ngôn xuất pháp tùy, ý niệm di chuyển vạn dặm.' },
-            { id: 'dt_3', name: 'Hậu Kỳ', qiRequired: 5000000000000, bonuses: [{ attribute: 'Ngộ Tính', value: 100 }, { attribute: 'Cơ Duyên', value: 50 }], description: 'Viên mãn vô khuyết, có thể cảm ứng được tiên giới chi môn.' },
+            { id: 'dt_2', name: 'Trung Kỳ', qiRequired: 200000000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 200 }, { attribute: 'Bền Bỉ', value: 200 }], description: 'Ngôn xuất pháp tùy, ý niệm di chuyển vạn dặm.' },
+            { id: 'dt_3', name: 'Hậu Kỳ', qiRequired: 500000000000, bonuses: [{ attribute: 'Ngộ Tính', value: 100 }, { attribute: 'Cơ Duyên', value: 50 }], description: 'Viên mãn vô khuyết, có thể cảm ứng được tiên giới chi môn.' },
         ]
     },
     {

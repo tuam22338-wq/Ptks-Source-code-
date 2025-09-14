@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import type { ModCustomPanel, FullMod, ModWorldBuilding } from '../../../../../types';
+// FIX: Replace non-existent ModWorldBuilding with ModWorldData
+import type { ModCustomPanel, FullMod, ModWorldData } from '../../../../../types';
 
 interface CustomContentPanelProps {
     panelConfig: ModCustomPanel;
@@ -8,12 +9,14 @@ interface CustomContentPanelProps {
 
 const CustomContentPanel: React.FC<CustomContentPanelProps> = ({ panelConfig, activeMods }) => {
     
-    const worldBuildingEntries = panelConfig.content.flatMap((wbTitle): (ModWorldBuilding & { id: string })[] => {
+    // FIX: Update logic to use ModWorldData and worldData property
+    const worldBuildingEntries = panelConfig.content.flatMap((wbName): (Omit<ModWorldData, 'id'> & { id: string })[] => {
         for (const mod of activeMods) {
-            const entry = mod.content.worldBuilding?.find(wb => wb.title === wbTitle);
+            // FIX: Access mod.content.worldData instead of mod.content.worldBuilding
+            const entry = mod.content.worldData?.find(wb => wb.name === wbName);
             if (entry) {
-                // Augment with an ID for React key purposes, using the title as it's the identifier.
-                return [{ ...(entry as ModWorldBuilding), id: wbTitle }];
+                // Augment with an ID for React key purposes, using the name as it's the identifier.
+                return [{ ...entry, id: wbName }];
             }
         }
         return [];
@@ -28,11 +31,9 @@ const CustomContentPanel: React.FC<CustomContentPanelProps> = ({ panelConfig, ac
                 <div className="space-y-3">
                     {worldBuildingEntries.length > 0 ? worldBuildingEntries.map(entry => (
                         <div key={entry.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                            <h4 className="font-bold text-amber-300 font-title">{entry.title}</h4>
+                            {/* FIX: Use entry.name instead of non-existent entry.title */}
+                            <h4 className="font-bold text-amber-300 font-title">{entry.name}</h4>
                             {entry.description && <p className="text-sm text-gray-400 mt-1">{entry.description}</p>}
-                            <pre className="mt-2 text-xs bg-black/30 p-2 rounded text-gray-500 max-h-40 overflow-auto">
-                                {JSON.stringify(entry.data, null, 2)}
-                            </pre>
                         </div>
                     )) : (
                         <p className="text-center text-gray-500 py-4">Không có nội dung nào được định nghĩa cho bảng này.</p>

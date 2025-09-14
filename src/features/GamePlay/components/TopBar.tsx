@@ -1,6 +1,7 @@
 
+
 import React, { memo } from 'react';
-import type { GameDate } from '../../../types';
+import type { GameDate, MajorEvent } from '../../../types';
 import { FaArrowLeft, FaSave, FaBars } from 'react-icons/fa';
 import Timeline from '../../../components/Timeline';
 
@@ -9,9 +10,10 @@ interface TopBarProps {
     onSave: () => void;
     onToggleSidebar: () => void;
     gameDate: GameDate;
+    majorEvents: MajorEvent[];
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, onToggleSidebar, gameDate }) => {
+const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, onToggleSidebar, gameDate, majorEvents }) => {
     return (
         <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-3 bg-black/40 backdrop-blur-sm border-b border-gray-700/50">
             <div className="flex items-center gap-2">
@@ -32,7 +34,7 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, onToggleSidebar, gameDa
             </div>
 
             <div className="flex-grow flex justify-center">
-                <Timeline gameDate={gameDate} />
+                <Timeline gameDate={gameDate} majorEvents={majorEvents} />
             </div>
 
             <div className="flex items-center gap-2">

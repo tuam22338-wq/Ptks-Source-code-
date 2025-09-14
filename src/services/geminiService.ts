@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute, FullMod, PlayerNpcRelationship, InventoryItem } from '../types';
+// FIX: Removed non-existent type 'ModTechnique' from import.
+import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute, FullMod, PlayerNpcRelationship, InventoryItem } from '../types';
 import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS, PHAP_BAO_RANKS } from "../constants";
 import * as db from './dbService';
 import { FaQuestionCircle } from "react-icons/fa";
@@ -613,7 +614,7 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
             contentType: { type: Type.STRING, enum: ['worldBuilding'] },
             title: { type: Type.STRING },
             description: { type: Type.STRING },
-            data: { type: Type.OBJECT },
+            data: { type: Type.STRING, description: "Một chuỗi JSON chứa dữ liệu tùy chỉnh. Ví dụ: '{\"population\": 1000, \"ruler\": \"Lord Smith\"}'" },
             tags: { type: Type.ARRAY, items: { type: Type.STRING } },
         },
         required: ['contentType', 'title', 'data']
@@ -649,7 +650,7 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
                 type: Type.OBJECT,
                 properties: {
                     type: { type: Type.STRING, enum: ['DAMAGE', 'HEAL', 'BUFF', 'DEBUFF'] },
-                    details: { type: Type.OBJECT }
+                    details: { type: Type.STRING, description: "Một chuỗi JSON chứa chi tiết hiệu ứng. Ví dụ: '{\"element\": \"fire\", \"base\": 10}'" }
                 },
                 required: ['type', 'details']
             }},
@@ -787,6 +788,29 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
 
     try {
         const json = JSON.parse(response.text.trim());
+
+        // Post-process stringified JSON from AI
+        if (json.content) {
+            json.content.forEach((c: any) => {
+                if (c.contentType === 'worldBuilding' && typeof c.data === 'string') {
+                    try { c.data = JSON.parse(c.data); } catch (e) { 
+                        console.warn('Failed to parse worldBuilding data string from AI:', c.data); 
+                        c.data = {}; 
+                    }
+                }
+                if (c.contentType === 'technique' && c.effects) {
+                    c.effects.forEach((effect: any) => {
+                        if (typeof effect.details === 'string') {
+                            try { effect.details = JSON.parse(effect.details); } catch (e) { 
+                                console.warn('Failed to parse technique details string from AI:', effect.details); 
+                                effect.details = {}; 
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
         return json as AiGeneratedModData;
     } catch (e) {
         console.error("Failed to parse AI response for mod content:", e);
