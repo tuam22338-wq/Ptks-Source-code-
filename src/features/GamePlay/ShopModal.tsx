@@ -1,10 +1,9 @@
-import React from 'react';
-import type { GameState, InventoryItem, ShopItem } from '../../types';
+import React, { useState, useMemo } from 'react';
+import type { GameState, ShopItem, InventoryItem } from '../../types';
 import { SHOPS, ITEM_QUALITY_STYLES } from '../../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';
 
 interface ShopModalProps {
-    // FIX: Added isOpen prop to control modal visibility.
     isOpen: boolean;
     shopId: string;
     gameState: GameState;
@@ -13,139 +12,166 @@ interface ShopModalProps {
     onClose: () => void;
 }
 
-// FIX: Destructured the new 'isOpen' prop.
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId, gameState, setGameState, showNotification, onClose }) => {
-    if (!isOpen) return null;
-
-    const shopData = SHOPS.find(s => s.id === shopId);
+    const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
+    
+    const shop = useMemo(() => SHOPS.find(s => s.id === shopId), [shopId]);
     const { playerCharacter } = gameState;
 
     const handleBuyItem = (item: ShopItem) => {
-        const { currencyName, amount } = item.price;
-        
-        const playerCurrencyItem = playerCharacter.inventory.items.find(i => i.name === currencyName);
-        const playerCurrencyAmount = playerCurrencyItem?.quantity || 0;
+        const { price, name } = item;
+        const playerCurrency = playerCharacter.currencies[price.currencyName] || 0;
 
-        if (playerCurrencyAmount < amount) {
-            showNotification(`Không đủ ${currencyName}!`);
-            return;
-        }
-        
-        const currentWeight = playerCharacter.inventory.items.reduce((total, i) => total + (i.weight * i.quantity), 0);
-        if (currentWeight + item.weight > playerCharacter.inventory.weightCapacity) {
-             showNotification(`Túi đồ đã đầy, không thể mang thêm!`);
+        if (playerCurrency < price.amount) {
+            showNotification(`Không đủ ${price.currencyName}!`);
             return;
         }
 
         setGameState(prev => {
             if (!prev) return null;
-            const { playerCharacter } = prev;
+            const pc = { ...prev.playerCharacter };
 
-            // 1. Deduct currency
-            let newItems = playerCharacter.inventory.items.map(i => {
-                if (i.name === currencyName) {
-                    return { ...i, quantity: i.quantity - amount };
-                }
-                return i;
-            }).filter(i => i.quantity > 0);
+            // Deduct currency
+            const newCurrencies = { ...pc.currencies, [price.currencyName]: playerCurrency - price.amount };
 
-            // 2. Add purchased item
-            const existingItem = newItems.find(i => i.name === item.name);
-
+            // Add item
+            const newInventoryItems = [...pc.inventory.items];
+            const existingItem = newInventoryItems.find(i => i.name === name);
             if (existingItem) {
-                newItems = newItems.map(i => 
-                    i.name === item.name ? { ...i, quantity: i.quantity + 1 } : i
-                );
+                existingItem.quantity += 1;
             } else {
-                const newItemToAdd: InventoryItem = {
+                // Create a full InventoryItem from ShopItem
+                const { price, stock, ...baseItem } = item;
+                const newItem: InventoryItem = {
+                    ...baseItem,
                     id: `item-${Date.now()}-${Math.random()}`,
-                    name: item.name,
-                    description: item.description,
                     quantity: 1,
-                    type: item.type,
-                    rank: item.rank,
-                    icon: item.icon,
-                    bonuses: item.bonuses,
-                    weight: item.weight,
-                    quality: item.quality,
-                    value: item.value,
-                    slot: item.slot,
+                    isEquipped: false,
                 };
-                newItems.push(newItemToAdd);
+                newInventoryItems.push(newItem);
             }
-            
+
             return {
                 ...prev,
                 playerCharacter: {
-                    ...playerCharacter,
-                    inventory: { ...playerCharacter.inventory, items: newItems }
+                    ...pc,
+                    currencies: newCurrencies,
+                    inventory: {
+                        ...pc.inventory,
+                        items: newInventoryItems
+                    }
                 }
             };
         });
-        
-        showNotification(`Đã mua [${item.name}]!`);
+
+        showNotification(`Đã mua [${name}]`);
+    };
+    
+    const handleSellItem = (item: InventoryItem) => {
+        // For simplicity, let's assume sell price is half of its value or a default value
+        const sellPrice = Math.floor((item.value || 10) / 2);
+        const currencyName = 'Bạc'; // Sell for Bạc for now
+
+        setGameState(prev => {
+            if (!prev) return null;
+            const pc = { ...prev.playerCharacter };
+
+            // Add currency
+            const newCurrencies = { ...pc.currencies, [currencyName]: (pc.currencies[currencyName] || 0) + sellPrice };
+            
+            // Remove item
+            let newInventoryItems = [...pc.inventory.items];
+            const itemInInventory = newInventoryItems.find(i => i.id === item.id);
+            if (itemInInventory && itemInInventory.quantity > 1) {
+                newInventoryItems = newInventoryItems.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i);
+            } else {
+                newInventoryItems = newInventoryItems.filter(i => i.id !== item.id);
+            }
+
+            return {
+                ...prev,
+                playerCharacter: {
+                    ...pc,
+                    currencies: newCurrencies,
+                    inventory: {
+                        ...pc.inventory,
+                        items: newInventoryItems
+                    }
+                }
+            };
+        });
+
+        showNotification(`Đã bán [${item.name}] với giá ${sellPrice} ${currencyName}`);
     };
 
-    if (!shopData) {
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-                <div className="bg-gray-900 p-4 rounded-lg">Không tìm thấy cửa hàng!</div>
-            </div>
-        );
-    }
-    
-    const CurrencyIcon: React.FC<{ currency: string }> = ({ currency }) => {
-        if (currency === 'Bạc') return <FaCoins className="w-4 h-4 text-yellow-400" />;
-        if (currency.includes('Linh thạch')) return <FaGem className="w-4 h-4 text-green-400" />;
-        return null;
-    }
+    if (!isOpen || !shop) return null;
 
+    const sellableItems = playerCharacter.inventory.items.filter(i => !i.isEquipped && i.value);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in" style={{ animationDuration: '300ms' }} onClick={onClose}>
+            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <div>
-                        <h3 className="text-2xl text-[var(--primary-accent-color)] font-bold font-title">{shopData.name}</h3>
-                        <p className="text-sm text-gray-400">{shopData.description}</p>
+                        <h2 className="text-3xl font-bold font-title text-amber-300">{shop.name}</h2>
+                        <p className="text-sm text-gray-400">{shop.description}</p>
                     </div>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
                 </div>
-                
-                <div className="p-4 space-y-3 overflow-y-auto">
-                    {shopData.inventory.map((item, index) => {
-                        const qualityStyle = ITEM_QUALITY_STYLES[item.quality];
-                        return (
-                             <div key={index} className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                <div className="flex-grow">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-2xl">{item.icon}</span>
-                                        <div>
-                                            <h4 className={`font-bold font-title ${qualityStyle.color}`}>{item.name}</h4>
-                                            <p className="text-xs text-gray-400">{item.description}</p>
-                                        </div>
-                                    </div>
-                                    {item.bonuses && (
-                                        <div className="mt-2 text-xs text-teal-300">
-                                            {item.bonuses.map(b => `${b.attribute} ${b.value > 0 ? `+${b.value}`: b.value}`).join(', ')}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex-shrink-0 w-full sm:w-auto flex sm:flex-col items-center sm:items-end justify-between gap-2">
-                                    <div className="flex items-center gap-2 font-semibold">
-                                        <CurrencyIcon currency={item.price.currencyName} />
-                                        <span>{item.price.amount.toLocaleString()}</span>
-                                    </div>
-                                    <button 
-                                        onClick={() => handleBuyItem(item)}
-                                        className="px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 transition-colors"
-                                    >
-                                        Mua
-                                    </button>
-                                </div>
+
+                <div className="p-2 flex-shrink-0 border-b border-gray-700/60">
+                     <div className="flex justify-between items-center mb-2 px-2">
+                        <h3 className="text-lg font-semibold text-gray-300">Giao Dịch</h3>
+                        <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-2 text-yellow-400" title="Bạc">
+                                <FaCoins />
+                                <span>{playerCharacter.currencies['Bạc']?.toLocaleString() || 0}</span>
                             </div>
-                        )
-                    })}
+                            <div className="flex items-center gap-2 text-green-400" title="Linh thạch hạ phẩm">
+                                <FaGem />
+                                <span>{playerCharacter.currencies['Linh thạch hạ phẩm']?.toLocaleString() || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60">
+                        <button onClick={() => setActiveTab('buy')} className={`w-1/2 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'buy' ? 'bg-gray-700/80 text-white' : 'text-gray-400 hover:bg-gray-800/50'}`}>Mua Vật Phẩm</button>
+                        <button onClick={() => setActiveTab('sell')} className={`w-1/2 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'sell' ? 'bg-gray-700/80 text-white' : 'text-gray-400 hover:bg-gray-800/50'}`}>Bán Vật Phẩm</button>
+                    </div>
+                </div>
+                
+                <div className="flex-grow p-4 overflow-y-auto">
+                    {activeTab === 'buy' && (
+                        <div className="space-y-3">
+                            {shop.inventory.map((item, index) => (
+                                <div key={index} className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
+                                    <div>
+                                        <h4 className={`font-bold font-title ${ITEM_QUALITY_STYLES[item.quality].color}`}>{item.name}</h4>
+                                        <p className="text-xs text-gray-400">{item.description}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0 ml-4">
+                                        <p className="font-semibold text-amber-300">{item.price.amount.toLocaleString()} {item.price.currencyName}</p>
+                                        <button onClick={() => handleBuyItem(item)} className="mt-1 px-4 py-1 bg-teal-700/80 text-white text-sm font-bold rounded-lg hover:bg-teal-600/80">Mua</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {activeTab === 'sell' && (
+                         <div className="space-y-3">
+                            {sellableItems.length > 0 ? sellableItems.map((item) => (
+                                <div key={item.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
+                                    <div>
+                                        <h4 className={`font-bold font-title ${ITEM_QUALITY_STYLES[item.quality].color}`}>{item.name} <span className="text-xs text-gray-500">x{item.quantity}</span></h4>
+                                        <p className="text-xs text-gray-400">{item.description}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0 ml-4">
+                                        <p className="font-semibold text-yellow-300">Giá: {Math.floor((item.value || 10) / 2).toLocaleString()} Bạc</p>
+                                        <button onClick={() => handleSellItem(item)} className="mt-1 px-4 py-1 bg-yellow-700/80 text-white text-sm font-bold rounded-lg hover:bg-yellow-600/80">Bán</button>
+                                    </div>
+                                </div>
+                            )) : <p className="text-center text-gray-500">Không có vật phẩm nào để bán.</p>}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,16 +1,21 @@
 import React, { memo } from 'react';
-import type { Location, PlayerCharacter } from '../../../../../types';
+import type { Location, PlayerCharacter, NPC } from '../../../../../types';
 import MapNode from './MapNode';
+import NpcNode from './NpcNode';
 
 interface MapViewProps {
     discoveredLocations: Location[];
     playerCharacter: PlayerCharacter;
     onTravel: (destinationId: string) => void;
+    allNpcs: NPC[];
 }
 
-const MapView: React.FC<MapViewProps> = ({ discoveredLocations, playerCharacter, onTravel }) => {
+const MapView: React.FC<MapViewProps> = ({ discoveredLocations, playerCharacter, onTravel, allNpcs }) => {
     // Determine map boundaries to scale and position nodes
     const allCoords = discoveredLocations.map(l => l.coordinates);
+    if (allCoords.length === 0) {
+        return <div className="text-center text-gray-500">Chưa khám phá được địa điểm nào.</div>;
+    }
     const minX = Math.min(...allCoords.map(c => c.x));
     const maxX = Math.max(...allCoords.map(c => c.x));
     const minY = Math.min(...allCoords.map(c => c.y));
@@ -68,6 +73,26 @@ const MapView: React.FC<MapViewProps> = ({ discoveredLocations, playerCharacter,
                             location={loc}
                             isCurrent={loc.id === playerCharacter.currentLocationId}
                             onTravel={onTravel}
+                            style={{ top: `${top}%`, left: `${left}%` }}
+                        />
+                    );
+                })}
+
+                {/* Render NPC nodes */}
+                {allNpcs.map(npc => {
+                    const loc = discoveredLocations.find(l => l.id === npc.locationId);
+                    if (!loc) return null; // Don't render if location isn't discovered
+
+                    // small random offset to avoid perfect stacking
+                    const offsetX = (Math.random() - 0.5) * 2.5; 
+                    const offsetY = (Math.random() - 0.5) * 2.5;
+                    const left = ((loc.coordinates.x - minX + 2 + offsetX) / mapWidth) * 100;
+                    const top = ((loc.coordinates.y - minY + 2 + offsetY) / mapHeight) * 100;
+                    
+                    return (
+                        <NpcNode 
+                            key={npc.id}
+                            npc={npc}
                             style={{ top: `${top}%`, left: `${left}%` }}
                         />
                     );

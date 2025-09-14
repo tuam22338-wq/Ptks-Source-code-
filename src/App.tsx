@@ -1,8 +1,3 @@
-
-
-
-
-
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -51,6 +46,16 @@ const App: React.FC = () => {
   const [currentSlotId, setCurrentSlotId] = useState<number | null>(null);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const [storageUsage, setStorageUsage] = useState({ usageString: '0 B / 0 B', percentage: 0 });
+
+  useEffect(() => {
+    const setViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    return () => window.removeEventListener('resize', setViewportHeight);
+  }, []);
 
   const updateStorageUsage = useCallback(async () => {
     if (navigator.storage && navigator.storage.estimate) {
@@ -490,12 +495,12 @@ const App: React.FC = () => {
   const showHeader = view !== 'mainMenu' && view !== 'gamePlay' && !isLoading && !isMigratingData;
 
   return (
-    <div className={`min-h-screen w-full flex flex-col items-center justify-center relative transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
+    <div className={`min-h-[calc(var(--vh,1vh)*100)] w-full flex flex-col items-center justify-center relative transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
       <div className={`w-full max-w-7xl transition-opacity duration-700 ${!showHeader ? 'opacity-0 h-0 invisible' : 'opacity-100'}`}>
         {showHeader && <Header />}
       </div>
 
-      <main className={`w-full ${view === 'gamePlay' ? 'h-screen max-w-full' : 'max-w-7xl'}`}>
+      <main className={`w-full ${view === 'gamePlay' ? 'h-[calc(var(--vh,1vh)*100)] max-w-full' : 'max-w-7xl'}`}>
         {renderContent()}
       </main>
       

@@ -216,7 +216,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
           }
       });
       
-// FIX: Added the missing 'danhVong' property to align with the PlayerCharacter type.
+      // Fix: Added the missing 'danhVong' property to align with the PlayerCharacter type.
       const characterData = {
           identity: identity,
           attributes: initialAttributes,

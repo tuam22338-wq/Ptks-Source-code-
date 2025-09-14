@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
 import type { GameState, GameSettings, StoryEntry, Location, NPC, GameEvent, CultivationPath, CultivationTechnique } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -13,9 +11,10 @@ import CombatScreen from './components/CombatScreen';
 import CultivationPathModal from './components/CultivationPathModal';
 import CustomStoryPlayer from './components/CustomStoryPlayer';
 import DialoguePanel from './components/DialoguePanel';
-import ShopModal from './components/ShopModal';
+// Fix: Import the newly created ShopModal component.
+import ShopModal from './ShopModal';
 import { generateStoryContinuationStream, summarizeStory, generateBreakthroughNarrative } from '../../services/geminiService';
-import { REALM_SYSTEM, CULTIVATION_PATHS } from '../../constants';
+import { REALM_SYSTEM, CULTIVATION_PATHS, SHOPS } from '../../constants';
 import InventoryModal from './components/InventoryModal';
 
 interface GamePlayScreenProps {
@@ -241,12 +240,25 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
          setIsAiResponding(false);
 
     }, [gameState, addStoryEntry, setGameState, showNotification]);
+
+    const handleNpcInteraction = useCallback((npc: NPC) => {
+        if (npc.shopId) {
+            const shopExists = SHOPS.some(s => s.id === npc.shopId);
+            if (shopExists) {
+                setActiveShopId(npc.shopId);
+            } else {
+                console.warn(`NPC ${npc.identity.name} has invalid shopId: ${npc.shopId}`);
+                setDialogueTarget(npc); // Fallback to dialogue
+            }
+        } else {
+            setDialogueTarget(npc);
+        }
+    }, []);
     
     const allPlayerTechniques = useMemo(() => {
         const activeSkills = Object.values(gameState.playerCharacter.mainCultivationTechnique?.skillTreeNodes || {})
             .filter(node => node.isUnlocked && node.type === 'active_skill' && node.activeSkill)
-// FIX: Added missing level and maxLevel properties to conform to the CultivationTechnique type.
-            .map(node => ({ ...node.activeSkill!, id: node.id, level: 1, maxLevel: 10 }));
+            .map(node => ({ ...node.activeSkill!, id: node.id, level: 1, maxLevel: 10 } as CultivationTechnique));
 
         return [...activeSkills, ...gameState.playerCharacter.auxiliaryTechniques];
     }, [gameState.playerCharacter.mainCultivationTechnique, gameState.playerCharacter.auxiliaryTechniques]);
@@ -258,7 +270,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
     const neighbors = useMemo(() => discoveredLocations.filter(l => currentLocation.neighbors.includes(l.id)), [discoveredLocations, currentLocation]);
 
     return (
-        <div className="h-screen w-full flex flex-col bg-black/30">
+        <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col bg-black/30">
             <NotificationArea notifications={notifications} onDismiss={(id) => setNotifications(p => p.filter(n => n.id !== id))} />
             <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => {}} />
             <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} gameState={gameState} setGameState={setGameState} showNotification={showNotification} onClose={() => setActiveShopId(null)} />
@@ -306,7 +318,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
                            rumors={worldState.rumors}
                            onTravel={handleTravel}
                            onExplore={() => { /* TODO */ }}
-                           onNpcSelect={(npc) => setDialogueTarget(npc)}
+                           onNpcSelect={handleNpcInteraction}
                            allNpcs={activeNpcs}
                            encounteredNpcIds={gameState.encounteredNpcIds}
                            discoveredLocations={discoveredLocations}

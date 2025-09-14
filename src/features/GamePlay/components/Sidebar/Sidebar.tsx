@@ -100,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'genealogy' && <GenealogyPanel playerCharacter={playerCharacter} allNpcs={allNpcs} onNpcSelect={onNpcSelect} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={onNpcSelect} />}
-                {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} />}
+                {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} allNpcs={allNpcs} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}
                 {activeTab === 'aiMemory' && <AiMemoryPanel gameState={gameState} />}
                 {activeTab === 'wiki' && <WikiPanel playerCharacter={playerCharacter} allNpcs={allNpcs} encounteredNpcIds={encounteredNpcIds} discoveredLocations={discoveredLocations} />}

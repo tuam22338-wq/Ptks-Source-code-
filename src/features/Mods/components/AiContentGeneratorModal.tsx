@@ -41,12 +41,16 @@ const AiContentGeneratorModal: React.FC<AiContentGeneratorModalProps> = ({ isOpe
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
                 </div>
                 <div className="p-6 flex-grow flex flex-col gap-4">
-                    <p className="text-gray-400 text-sm">Nhập mô tả chi tiết về nội dung bạn muốn AI tạo ra. Bạn có thể yêu cầu tạo nhiều vật phẩm, nhân vật, hoặc thậm chí cả một hệ thống tu luyện mới.</p>
+                    <p className="text-gray-400 text-sm">
+                        Nhập mô tả chi tiết về nội dung bạn muốn AI tạo ra. Bạn có thể yêu cầu tạo <strong>vật phẩm, tiên tư, nhân vật, NPC, tông môn, công pháp, sự kiện, v.v.</strong>
+                        <br/>
+                        Cung cấp càng nhiều chi tiết, kết quả sẽ càng chính xác và phù hợp với ý tưởng của bạn.
+                    </p>
                     <textarea
                         value={prompt}
                         onChange={e => setPrompt(e.target.value)}
                         rows={10}
-                        placeholder="Ví dụ: Tạo một set trang bị cho kiếm tu bao gồm một thanh kiếm, một bộ giáp, và một đôi giày. Thêm một tiên tư liên quan đến kiếm pháp..."
+                        placeholder="Ví dụ 1: Tạo 3 thanh phi kiếm phẩm chất Linh Phẩm cho tu sĩ Trúc Cơ Kỳ.&#10;Ví dụ 2: Tạo một NPC trưởng lão của Xiển Giáo tên là Thanh Hư đạo trưởng, ông ta đang ở Côn Lôn Sơn.&#10;Ví dụ 3: Tạo một tiên tư Thánh Giai tên là 'Thái Cổ Lôi Thể'."
                         className="w-full bg-gray-800/50 border border-gray-600 rounded-md p-3 text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-400/50"
                         disabled={isLoading}
                     />

@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameSettings, PlayerCharacter, StoryEntry, GameDate, Location, NPC, GameEvent, Gender, CultivationTechnique, Rumor, GameState, RealmConfig, RealmStage, ModTechnique, ModNpc, ModEvent, ModTalent, ModTalentRank, TalentSystemConfig, AttributeGroup, CommunityMod, AiGeneratedModData, AIAction, NpcDensity, Attribute, FullMod, PlayerNpcRelationship, InventoryItem } from '../types';
-import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../constants";
+import { TALENT_RANK_NAMES, DEFAULT_SETTINGS, ALL_ATTRIBUTES, WORLD_MAP, NARRATIVE_STYLES, REALM_SYSTEM, COMMUNITY_MODS_URL, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS, PHAP_BAO_RANKS } from "../constants";
 import * as db from './dbService';
 import { FaQuestionCircle } from "react-icons/fa";
 
@@ -572,7 +572,150 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
         required: ['contentType', 'name', 'description', 'rank']
     };
 
-    const allSchemas = [modItemSchema, modTalentSchema];
+    const modCharacterSchema = {
+        type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['character'] },
+            name: { type: Type.STRING },
+            gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] },
+            origin: { type: Type.STRING },
+            appearance: { type: Type.STRING },
+            personality: { type: Type.STRING },
+            bonuses: { type: Type.ARRAY, items: statBonusSchema },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['contentType', 'name', 'gender', 'origin', 'appearance', 'personality']
+    };
+    
+    const modSectSchema = {
+        type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['sect'] },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            location: { type: Type.STRING },
+            members: { type: Type.ARRAY, items: {
+                type: Type.OBJECT,
+                properties: {
+                    name: { type: Type.STRING },
+                    rank: { type: Type.STRING, enum: ['Tông Chủ', 'Trưởng Lão', 'Đệ Tử Chân Truyền', 'Đệ Tử Nội Môn', 'Đệ Tử Ngoại Môn'] },
+                },
+                required: ['name', 'rank']
+            }},
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['contentType', 'name', 'description', 'location']
+    };
+    
+    const modWorldBuildingSchema = {
+        type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['worldBuilding'] },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            data: { type: Type.OBJECT },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['contentType', 'title', 'data']
+    };
+    
+    const modNpcSchema = {
+        type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['npc'] },
+            name: { type: Type.STRING },
+            status: { type: Type.STRING },
+            description: { type: Type.STRING, description: "Mô tả ngoại hình" },
+            origin: { type: Type.STRING },
+            personality: { type: Type.STRING },
+            locationId: { type: Type.STRING, enum: WORLD_MAP.map(l => l.id) },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['contentType', 'name', 'status', 'description', 'origin', 'personality', 'locationId']
+    };
+    
+    const modTechniqueSchema = {
+        type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['technique'] },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ'] },
+            cost: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'] }, value: { type: Type.NUMBER } }, required: ['type', 'value'] },
+            cooldown: { type: Type.NUMBER },
+            rank: { type: Type.STRING, enum: Object.keys(PHAP_BAO_RANKS) as any },
+            icon: { type: Type.STRING, description: "Một emoji biểu tượng" },
+            effects: { type: Type.ARRAY, items: {
+                type: Type.OBJECT,
+                properties: {
+                    type: { type: Type.STRING, enum: ['DAMAGE', 'HEAL', 'BUFF', 'DEBUFF'] },
+                    details: { type: Type.OBJECT }
+                },
+                required: ['type', 'details']
+            }},
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['contentType', 'name', 'description', 'type', 'cost', 'cooldown', 'rank', 'icon']
+    };
+    
+    const modRecipeSchema = {
+        type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['recipe'] },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            ingredients: { type: Type.ARRAY, items: {
+                type: Type.OBJECT,
+                properties: {
+                    name: { type: Type.STRING },
+                    quantity: { type: Type.NUMBER }
+                },
+                required: ['name', 'quantity']
+            }},
+            result: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] },
+            requiredAttribute: { type: Type.OBJECT, properties: { name: { type: Type.STRING, enum: ['Ngự Khí Thuật'] }, value: { type: Type.NUMBER } }, required: ['name', 'value'] },
+            icon: { type: Type.STRING, description: "Một emoji biểu tượng" },
+        },
+        required: ['contentType', 'name', 'ingredients', 'result', 'requiredAttribute']
+    };
+    
+    const modEventSchema = {
+         type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['event'] },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
+            choices: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        text: { type: Type.STRING },
+                    },
+                    required: ['text']
+                }
+            },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['contentType', 'name', 'description', 'choices']
+    };
+    
+    const modCustomPanelSchema = {
+        type: Type.OBJECT,
+        properties: {
+            contentType: { type: Type.STRING, enum: ['customPanel'] },
+            title: { type: Type.STRING },
+            iconName: { type: Type.STRING, enum: ['FaBook', 'FaGlobe', 'FaScroll', 'FaSun', 'FaGopuram'] },
+            content: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách các tiêu đề của mục WorldBuilding" },
+            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+        },
+        required: ['contentType', 'title', 'iconName', 'content']
+    };
+
+    const allSchemas = [
+        modItemSchema, modTalentSchema, modCharacterSchema, modSectSchema, modWorldBuildingSchema,
+        modNpcSchema, modTechniqueSchema, modEventSchema, modRecipeSchema, modCustomPanelSchema
+    ];
 
     const finalSchema = {
         type: Type.OBJECT,
@@ -629,6 +772,7 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
     "${prompt}"
     
     Dựa vào yêu cầu, hãy tạo ra các đối tượng nội dung game phù hợp và trả về dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
+    **QUAN TRỌNG**: Ưu tiên tạo nội dung trong mảng 'content' (vật phẩm, tiên tư, nhân vật, v.v.). Chỉ tạo 'realmConfigs' hoặc 'talentSystemConfig' nếu người dùng yêu cầu rõ ràng về việc tạo hoặc thay đổi toàn bộ hệ thống cảnh giới hoặc tiên tư.
     Hãy sáng tạo và đảm bảo nội dung phù hợp với bối cảnh tiên hiệp.
     `;
 

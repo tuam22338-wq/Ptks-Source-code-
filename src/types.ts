@@ -493,6 +493,7 @@ export interface Location {
         description: string;
         icon?: ElementType;
     }[];
+    shopIds?: string[];
 }
 
 export interface Relationship {

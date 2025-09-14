@@ -87,7 +87,8 @@ const AttributeGrid: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, talents, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, inventory } = character;
+    // Fix: Destructure currencies directly from the character prop.
+    const { identity, attributes, talents, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, inventory, currencies } = character;
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
 
     const toggleGroup = (title: string) => {
@@ -104,15 +105,6 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
 
     const finalAttributes = useMemo(() => calculateFinalAttributes(attributes, activeEffects), [attributes, activeEffects]);
     
-    const currencies = useMemo(() => {
-        const currencyMap: Record<string, number> = {};
-        CURRENCY_ITEMS.forEach(currencyDef => {
-            const itemInInventory = inventory.items.find(i => i.id === currencyDef.id);
-            currencyMap[currencyDef.name] = itemInInventory?.quantity || 0;
-        });
-        return currencyMap;
-    }, [inventory.items]);
-
 
     const currentRealmData = realmSystem.find(r => r.id === cultivation.currentRealmId);
     const currentStageData = currentRealmData?.stages.find(s => s.id === cultivation.currentStageId);
@@ -159,11 +151,11 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
              <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex justify-around">
                 <div className="flex items-center gap-2 text-yellow-400" title="Bạc">
                     <FaCoins className="w-5 h-5" />
-                    <span className="font-semibold">{currencies['Bạc']?.toLocaleString() || 0}</span>
+                    <span className="font-semibold">{currencies?.['Bạc']?.toLocaleString() || 0}</span>
                 </div>
                 <div className="flex items-center gap-2 text-green-400" title="Linh thạch hạ phẩm">
                     <FaGem className="w-5 h-5" />
-                    <span className="font-semibold">{currencies['Linh thạch hạ phẩm']?.toLocaleString() || 0}</span>
+                    <span className="font-semibold">{currencies?.['Linh thạch hạ phẩm']?.toLocaleString() || 0}</span>
                 </div>
             </div>
 

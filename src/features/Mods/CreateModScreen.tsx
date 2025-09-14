@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     FaArrowLeft, FaBoxOpen, FaUserShield, FaStar, FaPlus, FaEdit, FaTrash, FaCogs, FaGlobe, FaFilter,
@@ -10,7 +9,7 @@ import {
 import { GiCastle, GiScrollQuill } from 'react-icons/gi';
 import { ALL_ATTRIBUTES, INNATE_TALENT_PROBABILITY, INNATE_TALENT_RANKS, WORLD_MAP, FACTION_NAMES, PHAP_BAO_RANKS } from '../../constants';
 import * as db from '../../services/dbService';
-// FIX: Add necessary imports for the new panel components and remove old dummy panel imports.
+// Fix: Add necessary imports for the new panel components and remove old dummy panel imports.
 import type { 
     ModItem, ModTalent, TalentSystemConfig, RealmConfig, ModCharacter, ModWorldBuilding, ModTalentRank, ModSect, ModNpc, ModTechnique, ModEvent, ModCustomPanel, ContentType, AlchemyRecipe, AddedContentUnion, AiGeneratedModData,
     Gender, ItemType, InnateTalentRank, SectMember, SectMemberRank, NpcRelationshipInput, CultivationTechniqueType, TechniqueEffect, TechniqueEffectType, EventChoice, EventOutcome, EventOutcomeType, SkillCheck, ItemQuality
@@ -120,7 +119,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     
     // IDE Layout State
     const [selectedNavKey, setSelectedNavKey] = useState<ContentType>('item');
-    // FIX: Change editingContent state to only hold valid AddedContentUnion objects, removing the problematic generic placeholder type.
+    // Fix: Change editingContent state to only hold valid AddedContentUnion objects, removing the problematic generic placeholder type.
     const [editingContent, setEditingContent] = useState<AddedContentUnion | null>(null);
 
     const [isAiGeneratorOpen, setIsAiGeneratorOpen] = useState(false);
@@ -263,7 +262,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
         setAddedContent(prev => [...prev, newContent]);
     };
     
-    // FIX: Create a handler that generates a full default object for new content, ensuring type safety.
+    // Fix: Create a handler that generates a full default object for new content, ensuring type safety.
     const handleAddNewContent = (contentType: ContentType) => {
         const newId = timestamp();
         let newContent: AddedContentUnion;
@@ -295,7 +294,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
                 newContent = { id: newId, contentType: 'event', name: '', description: '', choices: [{ text: 'Lựa chọn 1', check: null, outcomes: [] }], tags: [] };
                 break;
             case 'recipe':
-                // FIX: Corrected attribute name from 'Đan Thuật' to 'Ngự Khí Thuật' to match the type definition.
+                // Fix: Corrected attribute name from 'Đan Thuật' to 'Ngự Khí Thuật' to match the type definition.
                 newContent = { id: newId, contentType: 'recipe', name: '', description: '', ingredients: [{ name: '', quantity: 1 }], result: { name: '', quantity: 1 }, requiredAttribute: { name: 'Ngự Khí Thuật', value: 10 }, icon: '📜', qualityCurve: [{ threshold: 50, quality: 'Linh Phẩm' }] };
                 break;
             case 'customPanel':
@@ -411,8 +410,8 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             );
         }
 
+        // Fix: Pass correctly typed props to the implemented panel components.
         switch (editingContent.contentType) {
-            // FIX: Pass correctly typed props to the implemented panel components.
             case 'item': return <ItemEditorPanel {...commonEditorProps} itemToEdit={editingContent} />;
             case 'talent': return <TalentEditorPanel {...commonEditorProps} talentToEdit={editingContent} talentRanks={talentRanks} />;
             case 'character': return <CharacterEditorPanel {...commonEditorProps} characterToEdit={editingContent} />;
@@ -530,7 +529,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     );
 };
 
-// FIX: Replace dummy components with full implementations adapted from modal files.
+// Fix: Replace dummy components with full implementations adapted from modal files.
 
 // Panel Wrapper Component for consistent header/footer/layout
 const EditorPanelWrapper: React.FC<{ title: string; onClose: () => void; onSave: () => void; children: React.ReactNode; }> = ({ title, onClose, onSave, children }) => (

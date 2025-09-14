@@ -27,7 +27,7 @@ const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> 
 
 const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center animate-fade-in-menu">
+    <div className="min-h-[calc(var(--vh,1vh)*100)] w-full flex flex-col items-center justify-center animate-fade-in-menu">
         <div className="relative text-center animate-menu-item" style={{ animationDelay: '100ms' }}>
             <GiSeaDragon className="absolute -top-12 -left-20 text-9xl text-[var(--primary-accent-color)]/30 opacity-70 transform -scale-x-100" />
             <GiSeaDragon className="absolute -bottom-12 -right-20 text-9xl text-[var(--primary-accent-color)]/30 opacity-70" />
