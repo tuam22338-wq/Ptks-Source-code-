@@ -4,6 +4,7 @@ import { SHOPS, ITEM_QUALITY_STYLES } from '../../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';
 
 interface ShopModalProps {
+    // FIX: Added isOpen prop to control modal visibility.
     isOpen: boolean;
     shopId: string;
     gameState: GameState;
@@ -12,8 +13,8 @@ interface ShopModalProps {
     onClose: () => void;
 }
 
+// FIX: Destructured the new 'isOpen' prop.
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId, gameState, setGameState, showNotification, onClose }) => {
-// FIX: Added conditional rendering based on the new 'isOpen' prop to prevent the modal from rendering when not active.
     if (!isOpen) return null;
 
     const shopData = SHOPS.find(s => s.id === shopId);

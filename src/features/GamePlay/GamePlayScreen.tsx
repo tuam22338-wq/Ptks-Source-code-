@@ -1,11 +1,10 @@
 
 
-
 import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
 import type { GameState, GameSettings, StoryEntry, Location, NPC, GameEvent, CultivationPath, CultivationTechnique } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
-import TopBar from './TopBar';
+import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
