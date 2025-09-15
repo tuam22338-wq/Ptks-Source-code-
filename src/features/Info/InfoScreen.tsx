@@ -32,6 +32,12 @@ const InfoScreen: React.FC = () => {
             <p className="text-gray-400 mt-4">Xin chân thành cảm ơn bạn đã trải nghiệm sản phẩm này!</p>
         </section>
 
+        <section>
+            <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">Nền Tảng & Triển Khai</h3>
+            <p className="text-gray-400">Trò chơi được xây dựng và tối ưu hóa để triển khai trên nền tảng <strong className="text-teal-300">Netlify</strong>.</p>
+            <p className="text-gray-400 mt-2">Netlify cung cấp một môi trường mạnh mẽ, hiệu suất cao và dễ dàng mở rộng, đảm bảo trải nghiệm mượt mà cho người chơi trên toàn cầu.</p>
+        </section>
+
       </div>
     </div>
   );

@@ -38,7 +38,8 @@ interface AppContextType {
     handleGameStart: (gameStartData: {
       characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
       npcDensity: NpcDensity,
-      difficulty: DifficultyLevel
+      difficulty: DifficultyLevel,
+      gameMode: 'classic' | 'transmigrator',
     }) => Promise<void>;
     handleSetActiveWorldId: (worldId: string) => Promise<void>;
     quitGame: () => void;
@@ -355,7 +356,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleGameStart = useCallback(async (gameStartData: {
       characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
       npcDensity: NpcDensity,
-      difficulty: DifficultyLevel
+      difficulty: DifficultyLevel,
+      gameMode: 'classic' | 'transmigrator'
     }) => {
         if (currentSlotId === null) {
             alert("Lỗi: Không có ô lưu nào được chọn.");

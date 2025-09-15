@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, memo } from 'react';
 import type { AttributeGroup, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, StatBonus, DanhVong, DifficultyLevel, SpiritualRoot } from '../../types';
-import { FaArrowLeft } from 'react-icons/fa';
-import { GiGalaxy, GiPerson, GiScrollQuill } from "react-icons/gi";
+import { FaArrowLeft, FaDesktop } from 'react-icons/fa';
+import { GiGalaxy, GiPerson } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
 import { generateCharacterIdentity } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -76,6 +76,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
   const [npcDensity, setNpcDensity] = useState<NpcDensity>('medium');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [playableCharacters, setPlayableCharacters] = useState<PlayableCharacterTemplate[]>([]);
+  const [gameMode, setGameMode] = useState<'classic' | 'transmigrator'>('classic');
   
   const [gameDate] = useState<GameDate>(() => {
     const shichen = SHICHEN_LIST[Math.floor(Math.random() * SHICHEN_LIST.length)].name;
@@ -201,7 +202,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           completedQuestIds: [],
       };
 
-      await handleGameStart({ characterData, npcDensity, difficulty });
+      await handleGameStart({ characterData, npcDensity, difficulty, gameMode });
   };
   
   const handleIdentityChange = useCallback((updatedIdentity: Partial<CharacterIdentity>) => {
@@ -223,20 +224,20 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           <div className="text-center animate-fade-in space-y-8">
             <h2 className="text-3xl font-bold font-title">Chọn Con Đường Của Bạn</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              <button onClick={() => setStep('idea')} className="group flex flex-col items-center p-6 bg-black/20 rounded-lg border-2 border-gray-700 hover:border-amber-400 hover:bg-amber-500/10 transition-all transform hover:-translate-y-1">
+              <button onClick={() => { setGameMode('classic'); setStep('idea'); }} className="group flex flex-col items-center p-6 bg-black/20 rounded-lg border-2 border-gray-700 hover:border-amber-400 hover:bg-amber-500/10 transition-all transform hover:-translate-y-1">
                 <GiGalaxy className="text-6xl text-gray-400 group-hover:text-amber-300 transition-colors mb-4"/>
-                <h3 className="text-2xl font-bold font-title text-gray-200">Sáng Tạo Tự Do</h3>
-                <p className="text-sm text-gray-500 mt-2">Dùng AI để tạo ra một nhân vật độc nhất từ ý tưởng của bạn.</p>
+                <h3 className="text-2xl font-bold font-title text-gray-200">Thân Phận Tự Do</h3>
+                <p className="text-sm text-gray-500 mt-2">Dùng AI để tạo ra một nhân vật độc nhất từ ý tưởng của bạn trong bối cảnh gốc.</p>
               </button>
-              <button onClick={() => setStep('roleplay')} className="group flex flex-col items-center p-6 bg-black/20 rounded-lg border-2 border-gray-700 hover:border-cyan-400 hover:bg-cyan-500/10 transition-all transform hover:-translate-y-1">
+              <button onClick={() => { setGameMode('transmigrator'); setStep('idea'); }} className="group flex flex-col items-center p-6 bg-black/20 rounded-lg border-2 border-gray-700 hover:border-sky-400 hover:bg-sky-500/10 transition-all transform hover:-translate-y-1">
+                <FaDesktop className="text-6xl text-gray-400 group-hover:text-sky-300 transition-colors mb-4"/>
+                <h3 className="text-2xl font-bold font-title text-gray-200">Xuyên Việt Giả</h3>
+                <p className="text-sm text-gray-500 mt-2">Bắt đầu với một 'Hệ Thống' bí ẩn và kiến thức từ thế giới khác.</p>
+              </button>
+              <button onClick={() => { setGameMode('classic'); setStep('roleplay'); }} className="group flex flex-col items-center p-6 bg-black/20 rounded-lg border-2 border-gray-700 hover:border-cyan-400 hover:bg-cyan-500/10 transition-all transform hover:-translate-y-1">
                 <GiPerson className="text-6xl text-gray-400 group-hover:text-cyan-300 transition-colors mb-4"/>
                 <h3 className="text-2xl font-bold font-title text-gray-200">Nhập Vai Nhân Vật</h3>
                 <p className="text-sm text-gray-500 mt-2">Chọn một nhân vật có sẵn trong thế giới Phong Thần hoặc từ các mod đã cài đặt.</p>
-              </button>
-               <button disabled className="group flex flex-col items-center p-6 bg-black/30 rounded-lg border-2 border-gray-800 cursor-not-allowed opacity-60">
-                <GiScrollQuill className="text-6xl text-gray-600 mb-4"/>
-                <h3 className="text-2xl font-bold font-title text-gray-600">Trả Lời Câu Hỏi</h3>
-                <p className="text-sm text-gray-700 mt-2">(Sắp ra mắt) AI sẽ hỏi bạn một loạt câu hỏi để xác định nhân vật của bạn.</p>
               </button>
             </div>
           </div>

@@ -227,14 +227,15 @@ export const createNewGameState = async (
     gameStartData: {
         characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
         npcDensity: NpcDensity,
-        difficulty: DifficultyLevel
+        difficulty: DifficultyLevel,
+        gameMode: 'classic' | 'transmigrator',
     },
     activeMods: FullMod[],
     activeWorldId: string,
     setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
-    const { characterData, npcDensity, difficulty } = gameStartData;
-    const isTransmigratorMode = activeWorldId === 'xuyen_viet_gia_phong_than';
+    const { characterData, npcDensity, difficulty, gameMode } = gameStartData;
+    const isTransmigratorMode = gameMode === 'transmigrator';
 
     // --- World Data Overhaul ---
     let worldData: ModWorldData | null = null;
@@ -389,12 +390,12 @@ export const createNewGameState = async (
     };
     
     setLoadingMessage('Đang viết nên chương truyện mở đầu cho bạn...');
-    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, activeWorldId);
+    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, isTransmigratorMode ? 'xuyen_viet_gia_phong_than' : activeWorldId);
     
     setLoadingMessage('Đang sắp đặt lại dòng thời gian...');
 
     let initialStory;
-    if (activeWorldId === 'xuyen_viet_gia_phong_than') {
+    if (isTransmigratorMode) {
         initialStory = [
             { id: 1, type: 'system-notification' as const, content: openingNarrative },
         ];
