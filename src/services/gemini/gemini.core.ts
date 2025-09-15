@@ -80,15 +80,17 @@ const performApiCall = async <T>(
     const settings = getSettings();
     ApiKeyManager.initialize(settings.apiKeys);
     const availableKeys = ApiKeyManager.getAvailableKeys();
+    
+    // Fallback to environment variable if no keys are in settings
+    const keysToTry = availableKeys.length > 0 ? availableKeys : (process.env.API_KEY ? [process.env.API_KEY] : []);
 
-    if (availableKeys.length === 0) {
-        throw new Error("Không có API Key nào được cấu hình trong Cài đặt.");
+    if (keysToTry.length === 0) {
+        throw new Error("Không có API Key nào được cấu hình trong Cài đặt hoặc biến môi trường.");
     }
 
     let lastError: any = null;
 
-    for (let i = 0; i < availableKeys.length; i++) {
-        const apiKey = ApiKeyManager.getNextKey();
+    for (const apiKey of keysToTry) {
         if (!apiKey) continue;
 
         try {
@@ -147,9 +149,8 @@ export const generateWithRetryStream = async (generationRequest: any): Promise<A
         }
     };
     
-    // Stream doesn't support rotation in the same way, we pick the next key and go.
-    // If it fails, the caller needs to handle it.
-    const apiKey = ApiKeyManager.getNextKey();
+    ApiKeyManager.initialize(settings.apiKeys);
+    const apiKey = ApiKeyManager.getNextKey() || process.env.API_KEY;
     if (!apiKey) {
         throw new Error("Không có API Key nào được cấu hình để thực hiện yêu cầu stream.");
     }

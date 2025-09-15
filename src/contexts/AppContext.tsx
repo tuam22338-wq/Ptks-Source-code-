@@ -206,9 +206,14 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                             settingsUpdated = true;
                         }
                     }
+
+                    if (!Array.isArray(savedSettings.apiKeys)) {
+                        savedSettings.apiKeys = [];
+                        settingsUpdated = true;
+                    }
                     
                     if (settingsUpdated) {
-                        console.warn("Một số cài đặt model AI không hợp lệ đã được đặt lại về mặc định.");
+                        console.warn("Một số cài đặt không hợp lệ đã được đặt lại về mặc định.");
                         await db.saveSettings(savedSettings);
                     }
 
