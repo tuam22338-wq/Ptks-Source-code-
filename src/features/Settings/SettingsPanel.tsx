@@ -104,7 +104,7 @@ const SettingsPanel: React.FC = () => {
             let keysToReset: (keyof GameSettings)[] = [];
             switch (section) {
                 case 'Giao Diện':
-                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'storyLogItemsPerPage', 'zoomLevel', 'textColor'];
+                    keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'aiResponseWordCount', 'zoomLevel', 'textColor'];
                     break;
                 case 'AI & Models':
                     keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK'];
@@ -216,8 +216,8 @@ const SettingsPanel: React.FC = () => {
                             <SettingsRow label="Vật phẩm mỗi trang" description="Số lượng vật phẩm hiển thị trên mỗi trang trong túi đồ.">
                                 <input type="number" value={settings.itemsPerPage} onChange={(e) => handleSettingChange('itemsPerPage', parseInt(e.target.value) || 10)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
-                             <SettingsRow label="Độ dài phản hồi của AI" description="Điều chỉnh độ dài phản hồi của AI kể chuyện. Số mục càng cao, AI sẽ viết càng dài và chi tiết hơn, giống như một trang tiểu thuyết.">
-                                <input type="number" min="5" max="100" value={settings.storyLogItemsPerPage} onChange={(e) => handleSettingChange('storyLogItemsPerPage', parseInt(e.target.value) || 20)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                             <SettingsRow label="Độ dài Phản hồi AI (Số từ)" description="Điều chỉnh số từ mục tiêu cho mỗi phản hồi của AI kể chuyện. Mặc định: 2000 từ.">
+                                <input type="number" min="100" max="5000" step="100" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value) || 2000)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
                             <SettingsRow label="Toàn màn hình" description="Bật chế độ toàn màn hình để có trải nghiệm tốt nhất.">
                                <button onClick={toggleFullScreen} className="flex items-center gap-2 px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors">

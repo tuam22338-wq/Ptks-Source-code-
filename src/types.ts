@@ -78,7 +78,7 @@ export interface GameSettings {
     historyTokenLimit: number;
     summarizeBeforePruning: boolean;
     itemsPerPage: number;
-    storyLogItemsPerPage: number;
+    aiResponseWordCount: number;
     enableAiSoundSystem: boolean;
     masterSafetySwitch: boolean;
     safetyLevels: SafetySettings;

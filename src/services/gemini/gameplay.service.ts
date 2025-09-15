@@ -19,8 +19,10 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - **QUAN TRỌNG NHẤT: PHẢI LUÔN LUÔN trả lời bằng TIẾNG VIỆT.**
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
 - ${difficultyText}
+- **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
+- **Bảo vệ Tam Quan nhân vật:** Bạn phải duy trì "Tam Quan" (quan điểm về thế giới, giá trị, nhân sinh) của nhân vật. Nhân vật có tính cách đã được định hình (${playerCharacter.identity.personality}) và sẽ không thực hiện các hành động phi logic, tự sát, hoặc vi phạm bản chất cốt lõi của họ mà không có lý do chính đáng. Nếu người chơi yêu cầu một hành động như vậy (ví dụ: "đột nhiên cởi hết quần áo giữa nơi công cộng", "vô cớ sỉ nhục một vị trưởng lão"), bạn phải kể lại sự đấu tranh nội tâm của nhân vật hoặc sự từ chối thẳng thừng, giải thích lý do từ góc nhìn của họ. Đừng mù quáng thực hiện hành động phi logic.
 - Chỉ kể tiếp câu chuyện, không đưa ra lời khuyên hay bình luận ngoài vai trò người kể chuyện.
-- **QUAN TRỌNG:** Hành động của người chơi không phải lúc nào cũng thành công. Dựa vào độ khó của hành động (ví dụ: trèo lên vách núi cheo leo là rất khó), bối cảnh, và chỉ số của nhân vật, hãy quyết định kết quả một cách hợp lý. Có thể có thành công, thất bại, hoặc thành công một phần với hậu quả không mong muốn.
+- **QUAN TRỌNG:** Hành động của người chơi không phải lúc nào cũng thành công. Dựa vào độ khó của hành động, bối cảnh, và chỉ số của nhân vật, hãy quyết định kết quả một cách hợp lý. Có thể có thành công, thất bại, hoặc thành công một phần với hậu quả không mong muốn.
 - Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.
 - Đừng lặp lại những thông tin đã có trong ngữ cảnh.`;
 

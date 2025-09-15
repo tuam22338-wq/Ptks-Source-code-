@@ -126,7 +126,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     historyTokenLimit: 8192,
     summarizeBeforePruning: true,
     itemsPerPage: 10,
-    storyLogItemsPerPage: 20,
+    aiResponseWordCount: 2000,
     enableAiSoundSystem: false,
     masterSafetySwitch: false,
     safetyLevels: {
@@ -140,7 +140,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     topK: 64,
     topP: 0.95,
     enableThinking: true,
-    thinkingBudget: 2500,
+    thinkingBudget: 250,
     enableDeveloperConsole: false,
 };
 
