@@ -79,19 +79,19 @@ const performApiCall = async <T>(
     await reloadSettings();
     const settings = getSettings();
     ApiKeyManager.initialize(settings.apiKeys);
-    const availableKeys = ApiKeyManager.getAvailableKeys();
     
-    // Fallback to environment variable if no keys are in settings
-    const keysToTry = availableKeys.length > 0 ? availableKeys : (process.env.API_KEY ? [process.env.API_KEY] : []);
+    const keysToTry = ApiKeyManager.getAvailableKeys();
 
     if (keysToTry.length === 0) {
-        throw new Error("Không có API Key nào được cấu hình trong Cài đặt hoặc biến môi trường.");
+        throw new Error("Không có API Key nào được cấu hình. Vui lòng vào Cài đặt -> Nâng cao và thêm một API Key.");
     }
 
     let lastError: any = null;
 
-    for (const apiKey of keysToTry) {
-        if (!apiKey) continue;
+    // We loop through the keys array size + 1 to ensure every key is tried once
+    for (let i = 0; i < keysToTry.length; i++) {
+        const apiKey = ApiKeyManager.getNextKey();
+        if (!apiKey) continue; // Should not happen with the check above, but for type safety
 
         try {
             const ai = getAiClient(apiKey);
@@ -105,7 +105,8 @@ const performApiCall = async <T>(
 
             if (isAuthError) {
                 console.error(`API call failed with auth error on key ending with ...${apiKey.slice(-4)}: ${errorMessage}`);
-                throw new Error(`Lỗi xác thực API: ${error.message}. Vui lòng kiểm tra lại các API Key của bạn.`);
+                // Continue to the next key if auth fails, maybe it's just this one key
+                continue;
             }
             
             if (isQuotaError) {
@@ -150,9 +151,9 @@ export const generateWithRetryStream = async (generationRequest: any): Promise<A
     };
     
     ApiKeyManager.initialize(settings.apiKeys);
-    const apiKey = ApiKeyManager.getNextKey() || process.env.API_KEY;
+    const apiKey = ApiKeyManager.getNextKey();
     if (!apiKey) {
-        throw new Error("Không có API Key nào được cấu hình để thực hiện yêu cầu stream.");
+        throw new Error("Không có API Key nào được cấu hình để thực hiện yêu cầu stream. Vui lòng vào Cài đặt -> Nâng cao.");
     }
     const ai = getAiClient(apiKey);
     return ai.models.generateContentStream(finalRequest);
