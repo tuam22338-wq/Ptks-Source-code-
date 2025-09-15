@@ -52,7 +52,6 @@ export interface SafetySettings {
 }
 
 export interface GameSettings {
-    apiKey: string;
     layoutMode: LayoutMode;
     gameSpeed: GameSpeed;
     narrativeStyle: NarrativeStyle;

@@ -75,7 +75,7 @@ const SettingsPanel: React.FC = () => {
                     keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'aiResponseWordCount', 'zoomLevel', 'textColor'];
                     break;
                 case 'AI & Models':
-                    keysToReset = ['apiKey', 'mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK'];
+                    keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK'];
                     break;
                 case 'An Toàn':
                     keysToReset = ['masterSafetySwitch', 'safetyLevels'];
@@ -214,18 +214,6 @@ const SettingsPanel: React.FC = () => {
                 )}
                  {activeTab === 'ai_models' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <SettingsSection title="API Key Cá Nhân (Tùy chọn & Rủi ro)">
-                            <SettingsRow label="Gemini API Key" description="CẢNH BÁO: Chỉ sử dụng nếu bạn hiểu rõ. Key của bạn sẽ được lưu trên trình duyệt này. Nếu để trống, game sẽ sử dụng proxy mặc định an toàn của nhà phát triển.">
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    value={settings.apiKey}
-                                    onChange={(e) => handleSettingChange('apiKey', e.target.value)}
-                                    placeholder="Dán API key của bạn vào đây"
-                                    className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2"
-                                />
-                            </SettingsRow>
-                        </SettingsSection>
                         <SettingsSection title="Phân Vai Model AI (Nâng cao)">
                            <SettingsRow label="Model Chính" description="Model mạnh nhất, dùng cho các tác vụ chính như kể chuyện, tạo sự kiện.">
                                 <select value={settings.mainTaskModel} onChange={(e) => handleSettingChange('mainTaskModel', e.target.value as AIModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">

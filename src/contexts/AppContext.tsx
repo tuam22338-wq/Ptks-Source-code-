@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, FC, PropsWithChildren } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from '../constants';
-import { reloadSettings } from '../services/geminiService';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
 
@@ -214,7 +213,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
                     setSettings({ ...DEFAULT_SETTINGS, ...savedSettings });
                 }
-                await reloadSettings();
                 const worldId = await db.getActiveWorldId();
                 _setActiveWorldId(worldId);
                 await loadSaveSlots();
@@ -265,7 +263,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleSettingsSave = useCallback(async () => {
         try {
             await db.saveSettings(settings);
-            await reloadSettings();
             await updateStorageUsage();
             alert('Cài đặt đã được lưu!');
         } catch (error) {
