@@ -1,6 +1,5 @@
 import { FaQuestionCircle } from 'react-icons/fa';
 import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID } from "../constants";
-// FIX: Import RealmConfig type
 import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 import {
@@ -84,7 +83,6 @@ export const migrateGameState = (savedGame: any): GameState => {
          dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
          dataToProcess.playerCharacter.activeQuests = dataToProcess.playerCharacter.activeQuests ?? [];
          dataToProcess.playerCharacter.completedQuestIds = dataToProcess.playerCharacter.completedQuestIds ?? [];
-// FIX: Add element to player character on migration for older saves.
          if (!dataToProcess.playerCharacter.element) {
             dataToProcess.playerCharacter.element = 'Vô';
          }
@@ -211,7 +209,8 @@ export const createNewGameState = async (
         difficulty: DifficultyLevel
     },
     activeMods: FullMod[],
-    activeWorldId: string
+    activeWorldId: string,
+    setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
     const { characterData, npcDensity, difficulty } = gameStartData;
 
@@ -219,10 +218,8 @@ export const createNewGameState = async (
     let worldData: ModWorldData | null = null;
     if (activeWorldId !== DEFAULT_WORLD_ID) {
         for (const mod of activeMods) {
-            // FIX: Find world by name, as `id` is omitted in mod content definition.
             const foundWorld = mod.content.worldData?.find(wd => wd.name === activeWorldId);
             if (foundWorld) {
-                // FIX: Reconstruct ModWorldData with `id` from `activeWorldId` (which is the world's name/ID).
                 worldData = { ...foundWorld, id: activeWorldId };
                 console.log(`Loading world data from mod: ${worldData.name}`);
                 break;
@@ -233,7 +230,6 @@ export const createNewGameState = async (
         }
     }
 
-    // FIX: Ensure locations from mods have an ID to satisfy the Location type. Use name as ID if missing.
     const worldMapToUse: Location[] = worldData 
         ? worldData.initialLocations.map(l => ({
             ...l,
@@ -324,14 +320,19 @@ export const createNewGameState = async (
         activeQuests: [],
         completedQuestIds: [],
         inventoryActionLog: [],
-// FIX: Initialize the player's element property.
         element: 'Vô',
     };
     
-    const { npcs: familyNpcs, relationships: familyRelationships } = await generateFamilyAndFriends(playerCharacter.identity, startingLocation.id);
+    setLoadingMessage('Đang tạo ra gia đình và chúng sinh trong thế giới...');
+
+    const [familyResult, generatedNpcs] = await Promise.all([
+        generateFamilyAndFriends(playerCharacter.identity, startingLocation.id),
+        generateDynamicNpcs(npcDensity)
+    ]);
+    
+    const { npcs: familyNpcs, relationships: familyRelationships } = familyResult;
     playerCharacter.relationships = familyRelationships;
 
-    const generatedNpcs = await generateDynamicNpcs(npcDensity);
     if (!generatedNpcs || generatedNpcs.length === 0) {
         throw new Error("AI không thể tạo ra chúng sinh. Vui lòng kiểm tra API Key.");
     }
@@ -343,8 +344,11 @@ export const createNewGameState = async (
         activeNpcs: allNpcs,
         discoveredLocations: [startingLocation],
     } as GameState;
-
+    
+    setLoadingMessage('Đang viết nên chương truyện mở đầu cho bạn...');
     const openingNarrative = await generateOpeningScene(tempGameStateForOpening);
+    
+    setLoadingMessage('Đang sắp đặt lại dòng thời gian...');
 
     const initialStory = [
         { id: 1, type: 'narrative' as const, content: openingNarrative },

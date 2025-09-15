@@ -23,17 +23,32 @@ const SettingsManager = (() => {
     };
 })();
 
+// --- API Key Manager for Rotation and Load Balancing ---
+const ApiKeyManager = (() => {
+    let keys: string[] = [];
+    let currentIndex = 0;
+
+    return {
+        initialize: (apiKeys: string[]) => {
+            keys = apiKeys;
+            currentIndex = 0;
+        },
+        getNextKey: (): string | null => {
+            if (keys.length === 0) return null;
+            const key = keys[currentIndex];
+            currentIndex = (currentIndex + 1) % keys.length;
+            return key;
+        },
+        getAvailableKeys: () => keys,
+    };
+})();
+
+
 export const reloadSettings = SettingsManager.reload;
 
-const getAiClient = () => {
-    const settings = getSettings();
-    const apiKey = settings.apiKey || process.env.API_KEY;
-    if (!apiKey) {
-        throw new Error("API Key của Gemini chưa được cấu hình trong Cài đặt hoặc biến môi trường.");
-    }
+const getAiClient = (apiKey: string) => {
     return new GoogleGenAI({ apiKey });
 };
-
 
 const getSettings = (): GameSettings => {
     return SettingsManager.get();
@@ -59,52 +74,57 @@ const getSafetySettingsForApi = () => {
 
 const performApiCall = async <T>(
     apiFunction: (client: GoogleGenAI, request: any) => Promise<T>,
-    baseRequest: any,
-    maxRetries = 3
+    baseRequest: any
 ): Promise<T> => {
     await reloadSettings();
-    
-    let attempt = 0;
-    while (attempt < maxRetries) {
+    const settings = getSettings();
+    ApiKeyManager.initialize(settings.apiKeys);
+    const availableKeys = ApiKeyManager.getAvailableKeys();
+
+    if (availableKeys.length === 0) {
+        throw new Error("Không có API Key nào được cấu hình trong Cài đặt.");
+    }
+
+    let lastError: any = null;
+
+    for (let i = 0; i < availableKeys.length; i++) {
+        const apiKey = ApiKeyManager.getNextKey();
+        if (!apiKey) continue;
+
         try {
-            const ai = getAiClient();
+            const ai = getAiClient(apiKey);
             const response = await apiFunction(ai, baseRequest);
             return response;
         } catch (error: any) {
-            attempt++;
+            lastError = error;
             const errorMessage = error.toString().toLowerCase();
             const isAuthError = errorMessage.includes('400') || errorMessage.includes('permission') || errorMessage.includes('api key not valid');
             const isQuotaError = errorMessage.includes('429') || errorMessage.includes('resource_exhausted');
-            const isOverloaded = errorMessage.includes('503') || errorMessage.includes('model is overloaded');
 
             if (isAuthError) {
-                console.error(`API call failed with auth error: ${errorMessage}`);
-                throw new Error(`Lỗi xác thực API: ${error.message}. Vui lòng kiểm tra API Key của bạn.`);
-            }
-            if (isQuotaError) {
-                console.error(`API call failed with quota error: ${errorMessage}`);
-                 throw new Error(`Hết dung lượng API. Vui lòng thử lại sau hoặc kiểm tra gói cước của bạn.`);
+                console.error(`API call failed with auth error on key ending with ...${apiKey.slice(-4)}: ${errorMessage}`);
+                throw new Error(`Lỗi xác thực API: ${error.message}. Vui lòng kiểm tra lại các API Key của bạn.`);
             }
             
-            if (attempt >= maxRetries) {
-                console.error(`API call failed after ${maxRetries} retries.`, error);
-                if (isOverloaded) {
-                    throw new Error("Máy chủ AI đang quá tải. Vui lòng thử lại sau ít phút.");
-                }
-                throw error;
+            if (isQuotaError) {
+                console.warn(`API Key ending with ...${apiKey.slice(-4)} has reached its quota. Trying next key...`);
+                // Silently continue to the next key
+                continue;
             }
 
-            const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-            console.warn(`API call failed. Retrying in ${delay.toFixed(0)}ms... (Attempt ${attempt}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            // For other errors, fail fast
+            console.error(`API call failed with an unexpected error on key ...${apiKey.slice(-4)}:`, error);
+            throw error;
         }
     }
     
-    throw new Error("API call failed after multiple retries.");
+    console.error("All API keys failed.", lastError);
+    throw new Error(`Tất cả các API Key đều không thành công. Lỗi cuối cùng: ${lastError.message}`);
 };
 
 
-export const generateWithRetryStream = async (generationRequest: any, maxRetries = 3): Promise<AsyncIterable<GenerateContentResponse>> => {
+export const generateWithRetryStream = async (generationRequest: any): Promise<AsyncIterable<GenerateContentResponse>> => {
+    await reloadSettings();
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
     
@@ -127,11 +147,17 @@ export const generateWithRetryStream = async (generationRequest: any, maxRetries
         }
     };
     
-    const ai = getAiClient();
+    // Stream doesn't support rotation in the same way, we pick the next key and go.
+    // If it fails, the caller needs to handle it.
+    const apiKey = ApiKeyManager.getNextKey();
+    if (!apiKey) {
+        throw new Error("Không có API Key nào được cấu hình để thực hiện yêu cầu stream.");
+    }
+    const ai = getAiClient(apiKey);
     return ai.models.generateContentStream(finalRequest);
 };
 
-export const generateWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateContentResponse> => {
+export const generateWithRetry = (generationRequest: any): Promise<GenerateContentResponse> => {
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
     
@@ -154,13 +180,13 @@ export const generateWithRetry = (generationRequest: any, maxRetries = 3): Promi
         }
     };
     
-    return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest, maxRetries);
+    return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest);
 };
 
-export const generateImagesWithRetry = (generationRequest: any, maxRetries = 3): Promise<GenerateImagesResponse> => {
+export const generateImagesWithRetry = (generationRequest: any): Promise<GenerateImagesResponse> => {
     const settings = getSettings();
     const finalRequest = { ...generationRequest, model: settings.imageGenerationModel };
-    return performApiCall((ai, req) => ai.models.generateImages(req), finalRequest, maxRetries);
+    return performApiCall((ai, req) => ai.models.generateImages(req), finalRequest);
 };
 
 export const testApiKey = async (apiKey: string): Promise<{ status: 'valid' | 'invalid', error?: string }> => {

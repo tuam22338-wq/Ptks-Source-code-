@@ -1,4 +1,4 @@
-import type { GameState, NPC, ActiveQuest, QuestObjective } from '../types';
+import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem } from '../types';
 import { generateMainQuestFromEvent, generateSideQuestFromNpc } from '../services/geminiService';
 
 interface QuestUpdateResult {
@@ -151,14 +151,38 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             if (rewards.danhVong) pc.danhVong.value += rewards.danhVong;
             if (rewards.currencies) {
                 for (const [currency, amount] of Object.entries(rewards.currencies)) {
-                    pc.currencies[currency] = (pc.currencies[currency] || 0) + amount;
+                    if (amount) {
+                      pc.currencies[currency] = (pc.currencies[currency] || 0) + amount;
+                    }
                 }
             }
-            // TODO: Add items to inventory
+            if (rewards.items) {
+                let newItems = [...pc.inventory.items];
+                rewards.items.forEach(rewardItem => {
+                    const existingItem = newItems.find(i => i.name === rewardItem.name);
+                    if (existingItem) {
+                        existingItem.quantity += rewardItem.quantity;
+                    } else {
+                        // Create a placeholder item since we don't have a full item database here.
+                        newItems.push({
+                            id: `reward-${rewardItem.name.replace(/\s+/g, '_')}-${Date.now()}`,
+                            name: rewardItem.name,
+                            quantity: rewardItem.quantity,
+                            description: 'Vật phẩm nhận được từ nhiệm vụ.',
+                            type: 'Tạp Vật',
+                            quality: 'Phàm Phẩm',
+                            weight: 0.1,
+                            icon: '🎁',
+                        } as InventoryItem);
+                    }
+                    notifications.push(`Bạn nhận được [${rewardItem.name} x${rewardItem.quantity}]`);
+                });
+                pc.inventory = { ...pc.inventory, items: newItems };
+            }
         });
         
         pc.activeQuests = remainingQuests;
-        pc.completedQuestIds = [...pc.completedQuestIds, ...completedQuests.map(q => q.id)];
+        pc.completedQuestIds = [...pc.completedQuestIds, ...completedQuests.map(q => q.source)];
         
         newState = { ...newState, playerCharacter: pc };
     }

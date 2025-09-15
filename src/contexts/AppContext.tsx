@@ -36,7 +36,7 @@ interface AppContextType {
     handleDeleteGame: (slotId: number) => Promise<void>;
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
     handleGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
       npcDensity: NpcDensity,
       difficulty: DifficultyLevel
     }) => Promise<void>;
@@ -353,7 +353,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, []);
 
     const handleGameStart = useCallback(async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
       npcDensity: NpcDensity,
       difficulty: DifficultyLevel
     }) => {
@@ -362,7 +362,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             return;
         }
         setIsLoading(true);
-        setLoadingMessage('Đang khởi tạo thế giới mới... Do sự phức tạp của việc tạo ra một thế giới sống động với các NPC, gia đình, và sự kiện, quá trình này có thể mất vài phút. Vui lòng chờ...');
+        setLoadingMessage('Đang khởi tạo thế giới mới... Quá trình này có thể mất vài phút. Vui lòng chờ...');
 
         try {
             const modLibrary: db.DbModInLibrary[] = await db.getModLibrary();
@@ -373,7 +373,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 if (modContent) activeMods.push(modContent);
             }
             
-            const newGameState = await createNewGameState(gameStartData, activeMods, activeWorldId);
+            const newGameState = await createNewGameState(gameStartData, activeMods, activeWorldId, setLoadingMessage);
             
             setLoadingMessage('Lưu lại dòng thời gian đầu tiên...');
             await db.saveGameState(currentSlotId, newGameState);
@@ -386,6 +386,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (error) {
             console.error("Failed to start new game:", error);
             alert(`Lỗi nghiêm trọng khi tạo thế giới: ${(error as Error).message}. Vui lòng thử lại.`);
+        } finally {
             setIsLoading(false);
         }
     }, [currentSlotId, loadSaveSlots, activeWorldId]);

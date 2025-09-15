@@ -38,7 +38,7 @@ export interface SafetySettings {
 }
 
 export interface GameSettings {
-    apiKey: string;
+    apiKeys: string[];
     layoutMode: LayoutMode;
     gameSpeed: GameSpeed;
     narrativeStyle: NarrativeStyle;
@@ -750,7 +750,6 @@ export interface PlayerCharacter {
     activeQuests: ActiveQuest[];
     completedQuestIds: string[];
     inventoryActionLog: string[];
-// FIX: Add optional element property to PlayerCharacter for combat calculations.
     element?: Element;
 }
 
