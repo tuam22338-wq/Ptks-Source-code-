@@ -1,5 +1,16 @@
 import Dexie, { type Table } from 'dexie';
-import type { GameState, GameSettings, ModInfo, FullMod, SaveSlot, AttributeGroup, NPC, Sect, Location } from '../types';
+import { 
+    type GameState, 
+    type GameSettings, 
+    type ModInfo, 
+    type FullMod, 
+    type SaveSlot, 
+    type AttributeGroup, 
+    type NPC, 
+    type Sect, 
+    type Location,
+    REALM_SYSTEM
+} from '../models';
 
 export interface DbSaveSlot {
   id: number;
@@ -66,8 +77,12 @@ const dehydrateAttributesForSave = (groups: AttributeGroup[]): any[] => {
 };
 
 const dehydrateGameStateForSave = (gameState: GameState): GameState => {
-    // Create new objects/arrays for modified paths to avoid mutating the live state
-    const dehydratedState: GameState = { ...gameState };
+    // Create a shallow copy to avoid mutating the live state
+    const dehydratedState: any = { ...gameState };
+
+    // Remove non-serializable or reconstructable data to optimize save size
+    delete dehydratedState.activeMods;
+    delete dehydratedState.realmSystem;
 
     if (dehydratedState.playerCharacter?.attributes) {
         dehydratedState.playerCharacter = {
@@ -85,7 +100,6 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
                     attributes: dehydrateAttributesForSave(newNpc.attributes) as AttributeGroup[]
                 };
             }
-            // Ensure obsolete currencies property is removed for forward compatibility
             if ('currencies' in newNpc) {
                 delete newNpc.currencies;
             }
@@ -115,7 +129,7 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
         });
     }
     
-    return dehydratedState;
+    return dehydratedState as GameState;
 };
 
 

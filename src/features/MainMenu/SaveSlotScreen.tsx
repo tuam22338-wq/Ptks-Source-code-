@@ -1,14 +1,13 @@
 import React, { memo } from 'react';
-import type { SaveSlot } from '../../types';
+import { type SaveSlot, REALM_SYSTEM, CURRENT_GAME_VERSION } from '../../models';
 import { FaArrowLeft, FaTrash, FaTools } from 'react-icons/fa';
-import { REALM_SYSTEM, CURRENT_GAME_VERSION } from '../../constants';
+import { useAppContext } from '../../contexts/AppContext';
 
-interface SaveSlotScreenProps {
-  slots: SaveSlot[];
-  onSelectSlot: (slotId: number) => void;
-  onBack: () => void;
-  onDeleteSlot: (slotId: number) => void;
-  onVerifySlot: (slotId: number) => void;
+interface SaveSlotCardProps {
+    slot: SaveSlot;
+    onSelect: () => void;
+    onDelete: () => void;
+    onVerify: () => void;
 }
 
 const formatSaveDate = (isoDate?: string) => {
@@ -27,12 +26,7 @@ const formatSaveDate = (isoDate?: string) => {
     }
 }
 
-const SaveSlotCard: React.FC<{
-    slot: SaveSlot;
-    onSelect: () => void;
-    onDelete: () => void;
-    onVerify: () => void;
-}> = memo(({ slot, onSelect, onDelete, onVerify }) => {
+const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDelete, onVerify }) => {
     const isNew = slot.data === null;
     const isOutdated = !isNew && slot.data?.version !== CURRENT_GAME_VERSION;
     const character = slot.data?.playerCharacter;
@@ -56,7 +50,7 @@ const SaveSlotCard: React.FC<{
         >
             <button
               onClick={onSelect}
-              className="w-full h-full flex flex_col items-center justify-center text-center p-4"
+              className="w-full h-full flex flex-col items-center justify-center text-center p-4"
             >
               {isNew ? (
                 <>
@@ -111,13 +105,14 @@ const SaveSlotCard: React.FC<{
 });
 
 
-const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, onBack, onDeleteSlot, onVerifySlot }) => {
+const SaveSlotScreen: React.FC = () => {
+  const { saveSlots, handleSlotSelection, handleNavigate, handleDeleteGame, handleVerifyAndRepairSlot } = useAppContext();
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-3xl font-bold font-title">Thiên Mệnh Thư</h2>
          <button 
-          onClick={onBack} 
+          onClick={() => handleNavigate('mainMenu')} 
           className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
           title="Quay Lại Menu"
         >
@@ -127,13 +122,13 @@ const SaveSlotScreen: React.FC<SaveSlotScreenProps> = ({ slots, onSelectSlot, on
       <p className="text-center mb-8" style={{color: 'var(--text-muted-color)'}}>Hãy chọn một trang để viết nên câu chuyện của riêng bạn, hoặc tiếp tục một hành trình dang dở.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 max-w-2xl mx-auto">
-        {slots.map((slot) => (
+        {saveSlots.map((slot) => (
           <SaveSlotCard 
             key={slot.id} 
             slot={slot} 
-            onSelect={() => onSelectSlot(slot.id)}
-            onDelete={() => onDeleteSlot(slot.id)}
-            onVerify={() => onVerifySlot(slot.id)}
+            onSelect={() => handleSlotSelection(slot.id)}
+            onDelete={() => handleDeleteGame(slot.id)}
+            onVerify={() => handleVerifyAndRepairSlot(slot.id)}
           />
         ))}
       </div>

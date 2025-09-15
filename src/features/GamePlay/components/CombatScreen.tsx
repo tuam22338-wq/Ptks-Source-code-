@@ -1,19 +1,14 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect } from '../../../types';
-import { generateCombatNarrative } from '../../../services/geminiService';
+import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, SkillTreeNode } from '../../../types';
+import { decideNpcCombatAction } from '../../../services/geminiService';
+import * as combatManager from '../../../utils/combatManager';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { FaTimes } from 'react-icons/fa';
 import { PHAP_BAO_RANKS } from '../../../constants';
-
-interface CombatScreenProps {
-    gameState: GameState;
-    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
-    showNotification: (message: string) => void;
-    addStoryEntry: (newEntryData: { type: 'combat', content: string }) => void;
-    allPlayerTechniques: CultivationTechnique[];
-}
+import { useGameUIContext } from '../../../contexts/GameUIContext';
+import { useAppContext } from '../../../contexts/AppContext';
 
 const getBaseAttributeValue = (character: PlayerCharacter | NPC, name: string): number => {
     if ('attributes' in character && character.attributes) {
@@ -81,8 +76,28 @@ const TechniqueSelectionModal: React.FC<{
 };
 
 
-const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, showNotification, addStoryEntry, allPlayerTechniques }) => {
-    const { combatState } = gameState;
+const CombatScreen: React.FC = () => {
+    const { gameState, setGameState } = useAppContext();
+    const { showNotification } = useGameUIContext();
+    const { combatState } = gameState!;
+
+    const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
+        setGameState(prev => {
+            if (!prev) return null;
+            const newId = (prev.storyLog[prev.storyLog.length - 1]?.id || 0) + 1;
+            const newEntry = { ...newEntryData, id: newId };
+            return { ...prev, storyLog: [...prev.storyLog, newEntry] };
+        });
+    }, [setGameState]);
+
+    const allPlayerTechniques = React.useMemo(() => {
+        if (!gameState) return [];
+        const activeSkills = Object.values(gameState.playerCharacter.mainCultivationTechnique?.skillTreeNodes || {})
+            .filter((node: SkillTreeNode) => node.isUnlocked && node.type === 'active_skill' && node.activeSkill)
+            .map((node: SkillTreeNode) => ({ ...node.activeSkill!, id: node.id, level: 1, maxLevel: 10 } as CultivationTechnique));
+        return [...activeSkills, ...gameState.playerCharacter.auxiliaryTechniques];
+    }, [gameState]);
+
     const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
     const [isProcessingTurn, setIsProcessingTurn] = useState(false);
     const [showTechniqueModal, setShowTechniqueModal] = useState(false);
@@ -98,77 +113,58 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
 
     const advanceTurn = useCallback((currentState: GameState): GameState => {
         if (!currentState.combatState) return currentState;
-
         const { combatState } = currentState;
-        const newTurnOrder = combatState.turnOrder.filter(id => id === 'player' || combatState.enemies.some(e => e.id === id));
+        const newTurnOrder = combatState.turnOrder.filter(id => id === 'player' || combatState.enemies.some(e => e.id === id && getBaseAttributeValue(e, 'Sinh Mệnh') > 0));
         if (newTurnOrder.length === 0) {
              return { ...currentState, combatState: null };
         }
-        
         const newIndex = (combatState.currentTurnIndex + 1) % newTurnOrder.length;
         const nextActorId = newTurnOrder[newIndex];
-
-        let { playerCharacter, activeNpcs } = currentState;
-
-        // Tick down cooldowns and effects for the character whose turn is about to start
+        let { playerCharacter } = currentState;
         if (nextActorId === 'player') {
             const newCooldowns = { ...playerCharacter.techniqueCooldowns };
             Object.keys(newCooldowns).forEach(key => { newCooldowns[key] = Math.max(0, newCooldowns[key] - 1); });
             playerCharacter = { ...playerCharacter, techniqueCooldowns: newCooldowns };
-        } else {
-            // Future: Tick down enemy cooldowns/effects here
         }
-        
-        return {
-            ...currentState,
-            playerCharacter,
-            activeNpcs,
-            combatState: {
-                ...combatState,
-                turnOrder: newTurnOrder,
-                currentTurnIndex: newIndex,
-            },
-        };
+        return { ...currentState, playerCharacter, combatState: { ...combatState, turnOrder: newTurnOrder, currentTurnIndex: newIndex, } };
     }, []);
-    
 
     useEffect(() => {
         const processEnemyTurn = async () => {
-            if (!isPlayerTurn && combatState && !isProcessingTurn) {
+            if (!isPlayerTurn && combatState && !isProcessingTurn && gameState) {
                 setIsProcessingTurn(true);
-                await new Promise(res => setTimeout(res, 1000)); // Dramatic pause
+                await new Promise(res => setTimeout(res, 1000));
                 const enemy = combatState.enemies.find(e => e.id === currentActorId);
                 
                 if (enemy) {
-                    const enemyAttack = getFinalAttributeValue(enemy, 'Tiên Lực');
-                    const playerDefense = getFinalAttributeValue(gameState.playerCharacter, 'Căn Cốt') / 2; // Căn Cốt provides physical resistance
-                    const damage = Math.max(1, Math.floor(enemyAttack - playerDefense));
-
-                    const narrative = await generateCombatNarrative(gameState, `${enemy.identity.name} tấn công ${gameState.playerCharacter.identity.name}, gây ra ${damage} sát thương.`);
-                    addStoryEntry({ type: 'combat', content: narrative });
+                    const action = await decideNpcCombatAction(gameState, enemy);
+                    addStoryEntry({ type: 'combat', content: action.narrative });
                     
+                    let damage = 0;
+                    if (action.action === 'BASIC_ATTACK') {
+                        damage = combatManager.calculateDamage(enemy, gameState.playerCharacter, false).damage;
+                    } else if (action.action === 'USE_TECHNIQUE' && action.techniqueId) {
+                        const tech = enemy.techniques.find(t => t.id === action.techniqueId);
+                        if (tech) {
+                           damage = combatManager.calculateDamage(enemy, gameState.playerCharacter, true, tech.element).damage;
+                        }
+                    }
+
                     setGameState(gs => {
                         if (!gs) return null;
-                        
                         let newPlayer = { ...gs.playerCharacter };
                         const sinhMenhAttr = newPlayer.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
                         if (sinhMenhAttr) {
                             const newSinhMenh = (sinhMenhAttr.value as number) - damage;
-                            const updatedAttributes = newPlayer.attributes.map(g => ({
-                                ...g,
-                                attributes: g.attributes.map(a => a.name === 'Sinh Mệnh' ? { ...a, value: newSinhMenh } : a)
-                            }));
+                            const updatedAttributes = newPlayer.attributes.map(g => ({ ...g, attributes: g.attributes.map(a => a.name === 'Sinh Mệnh' ? { ...a, value: newSinhMenh } : a) }));
                             newPlayer = { ...newPlayer, attributes: updatedAttributes };
                         }
-                        
                         const nextState = advanceTurn({ ...gs, playerCharacter: newPlayer });
-
                         if ((getBaseAttributeValue(newPlayer, 'Sinh Mệnh')) <= 0) {
                             addStoryEntry({ type: 'combat', content: 'Bạn đã bị đánh bại!' });
                             showNotification("Thất bại!");
                             return { ...nextState, combatState: null };
                         }
-
                         return nextState;
                     });
                 }
@@ -178,27 +174,20 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
         processEnemyTurn();
     }, [currentActorId, isPlayerTurn, combatState, gameState, setGameState, addStoryEntry, isProcessingTurn, showNotification, advanceTurn]);
 
-
     const handleBasicAttack = async () => {
-        if (!isPlayerTurn || !selectedTargetId || isProcessingTurn) return;
+        if (!isPlayerTurn || !selectedTargetId || isProcessingTurn || !gameState) return;
         setIsProcessingTurn(true);
-
         const target = combatState?.enemies.find(e => e.id === selectedTargetId);
         if (!target) {
             setIsProcessingTurn(false);
             return;
         }
-
-        const playerAttack = getFinalAttributeValue(gameState.playerCharacter, 'Lực Lượng') + getFinalAttributeValue(gameState.playerCharacter, 'Linh Lực Sát Thương');
-        const targetDefense = getFinalAttributeValue(target, 'Phòng Ngự');
-        const damage = Math.max(1, Math.floor(playerAttack - targetDefense));
         
-        const narrative = await generateCombatNarrative(gameState, `${gameState.playerCharacter.identity.name} dùng đòn đánh thường lên ${target.identity.name}, gây ra ${damage} sát thương.`);
-        addStoryEntry({ type: 'combat', content: narrative });
+        const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, false);
+        addStoryEntry({ type: 'combat', content: `Bạn dùng đòn đánh thường lên ${target.identity.name}. ${narrative}` });
 
         setGameState(gs => {
             if (!gs || !gs.combatState) return null;
-
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
                     const sinhMenhAttr = e.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
@@ -208,54 +197,36 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
                 }
                 return e;
             });
-            
-            const postActionState = advanceTurn({ ...gs, combatState: { ...gs.combatState, enemies: newEnemies }});
-            
-            const defeatedEnemy = postActionState.combatState?.enemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'Sinh Mệnh') <= 0);
+            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'Sinh Mệnh') <= 0);
             if(defeatedEnemy) {
                 addStoryEntry({ type: 'combat', content: `${defeatedEnemy.identity.name} đã bị đánh bại!` });
-                const finalEnemies = postActionState.combatState!.enemies.filter(e => e.id !== defeatedEnemy.id);
-                if (finalEnemies.length === 0) {
-                    showNotification("Chiến thắng!");
-                    return { ...postActionState, combatState: null };
-                }
-                return { ...postActionState, combatState: {...postActionState.combatState!, enemies: finalEnemies}};
+                newEnemies = newEnemies.filter(e => e.id !== defeatedEnemy.id);
             }
-
+            const postActionState = advanceTurn({ ...gs, combatState: { ...gs.combatState, enemies: newEnemies }});
+            if (newEnemies.length === 0) {
+                showNotification("Chiến thắng!");
+                return { ...postActionState, combatState: null };
+            }
             return postActionState;
         });
         setIsProcessingTurn(false);
     };
     
     const handleUseTechnique = async (technique: CultivationTechnique) => {
-        if (!isPlayerTurn || !selectedTargetId || isProcessingTurn) return;
+        if (!isPlayerTurn || !selectedTargetId || isProcessingTurn || !gameState) return;
         setIsProcessingTurn(true);
         setShowTechniqueModal(false);
-
         const target = combatState?.enemies.find(e => e.id === selectedTargetId);
         if (!target) {
             setIsProcessingTurn(false);
             return;
         }
-
-        // For now, assume first effect is main damage effect
-        const damageEffect = technique.effects?.find(e => e.type === 'DAMAGE');
-        let damage = 0;
-        if (damageEffect) {
-            const playerAttack = getFinalAttributeValue(gameState.playerCharacter, 'Linh Lực Sát Thương');
-            const baseDamage = damageEffect.details.base || 0;
-            const multiplier = damageEffect.details.multiplier || 1.0;
-            const targetDefense = getFinalAttributeValue(target, 'Phòng Ngự');
-            damage = Math.max(1, Math.floor((baseDamage + playerAttack * multiplier) - targetDefense));
-        }
         
-        const narrative = await generateCombatNarrative(gameState, `${gameState.playerCharacter.identity.name} thi triển [${technique.name}] lên ${target.identity.name}, gây ra ${damage} sát thương.`);
-        addStoryEntry({ type: 'combat', content: narrative });
+        const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, true, technique.element);
+        addStoryEntry({ type: 'combat', content: `Bạn thi triển [${technique.name}] lên ${target.identity.name}. ${narrative}` });
 
         setGameState(gs => {
             if (!gs || !gs.combatState) return null;
-            
-            // 1. Update target health
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
                     const sinhMenhAttr = e.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
@@ -265,8 +236,6 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
                 }
                 return e;
             });
-            
-            // 2. Update player state (mana cost, cooldown)
             let newPlayer = { ...gs.playerCharacter };
             const linhLucAttr = newPlayer.attributes.flatMap(g => g.attributes).find(a => a.name === 'Linh Lực');
             if (linhLucAttr) {
@@ -277,28 +246,22 @@ const CombatScreen: React.FC<CombatScreenProps> = ({ gameState, setGameState, sh
             const newCooldowns = { ...newPlayer.techniqueCooldowns, [technique.id]: technique.cooldown };
             newPlayer = { ...newPlayer, techniqueCooldowns: newCooldowns };
             
-            // 3. Advance turn & check for defeat
-            const stateAfterAction = { ...gs, playerCharacter: newPlayer, combatState: { ...gs.combatState, enemies: newEnemies } };
-            const postActionState = advanceTurn(stateAfterAction);
-
-            const defeatedEnemy = postActionState.combatState?.enemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'Sinh Mệnh') <= 0);
+            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'Sinh Mệnh') <= 0);
             if(defeatedEnemy) {
                 addStoryEntry({ type: 'combat', content: `${defeatedEnemy.identity.name} đã bị đánh bại!` });
-                const finalEnemies = postActionState.combatState!.enemies.filter(e => e.id !== defeatedEnemy.id);
-                if (finalEnemies.length === 0) {
-                    showNotification("Chiến thắng!");
-                    return { ...postActionState, combatState: null };
-                }
-                return { ...postActionState, combatState: {...postActionState.combatState!, enemies: finalEnemies}};
+                newEnemies = newEnemies.filter(e => e.id !== defeatedEnemy.id);
             }
-            
+            const postActionState = advanceTurn({ ...gs, playerCharacter: newPlayer, combatState: { ...gs.combatState, enemies: newEnemies } });
+            if (newEnemies.length === 0) {
+                showNotification("Chiến thắng!");
+                return { ...postActionState, combatState: null };
+            }
             return postActionState;
         });
-
         setIsProcessingTurn(false);
     };
 
-    if (!combatState) return null;
+    if (!combatState || !gameState) return null;
 
     const playerSinhMenh = gameState.playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
     

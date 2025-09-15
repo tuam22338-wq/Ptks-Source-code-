@@ -1,17 +1,13 @@
-
-
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS } from '../../../constants';
 import { GiWeight, GiSwapBag, GiPerson, GiBroadsword, GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace } from "react-icons/gi";
 import { FaTimes } from 'react-icons/fa';
+import { useAppContext } from '../../../contexts/AppContext';
+import { useGameUIContext } from '../../../contexts/GameUIContext';
 
 interface InventoryModalProps {
     isOpen: boolean;
-    gameState: GameState;
-    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
-    showNotification: (message: string) => void;
-    onClose: () => void;
 }
 
 const EQUIPMENT_SLOT_ICONS: Record<EquipmentSlot, React.ElementType> = {
@@ -54,13 +50,23 @@ const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add
     return newAttributes;
 };
 
-const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, gameState, setGameState, showNotification, onClose }) => {
-    const { playerCharacter } = gameState;
+const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
+    const { gameState, setGameState } = useAppContext();
+    const { showNotification, closeInventoryModal } = useGameUIContext();
+    
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
+    const handleClose = useCallback(() => {
+        setSelectedItem(null);
+        closeInventoryModal();
+    }, [closeInventoryModal]);
+
+    const playerCharacter = gameState?.playerCharacter;
+
     const currentWeight = useMemo(() => {
+        if (!playerCharacter) return 0;
         return playerCharacter.inventory.items.reduce((total, item) => total + (item.weight * item.quantity), 0);
-    }, [playerCharacter.inventory.items]);
+    }, [playerCharacter]);
 
     const handleEquip = useCallback((itemToEquip: InventoryItem) => {
         setGameState(pcState => {
@@ -93,15 +99,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, gameState, setG
 
             const logMessage = `- Trang bị [${itemToEquip.name}].`;
             
-            return {
-                ...pcState,
-                playerCharacter: {
-                    ...pc,
-                    inventory: { ...pc.inventory, items: newInventoryItems },
-                    equipment: newEquipment,
-                    inventoryActionLog: [...pc.inventoryActionLog, logMessage],
-                }
-            };
+            return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment, inventoryActionLog: [...pc.inventoryActionLog, logMessage] } };
         });
         showNotification(`Đã trang bị [${itemToEquip.name}]`);
         setSelectedItem(null);
@@ -128,22 +126,13 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, gameState, setG
             
             const newEquipment = { ...pc.equipment };
             newEquipment[slot] = null;
-            
             const logMessage = `- Tháo [${itemToUnequip.name}].`;
 
-            return {
-                ...pcState,
-                playerCharacter: {
-                    ...pc,
-                    inventory: { ...pc.inventory, items: newInventoryItems },
-                    equipment: newEquipment,
-                    inventoryActionLog: [...pc.inventoryActionLog, logMessage],
-                }
-            };
+            return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment, inventoryActionLog: [...pc.inventoryActionLog, logMessage] } };
         });
-         showNotification(`Đã tháo [${playerCharacter.equipment[slot]?.name}]`);
+         showNotification(`Đã tháo [${playerCharacter?.equipment[slot]?.name}]`);
          setSelectedItem(null);
-    }, [playerCharacter.equipment, setGameState, showNotification]);
+    }, [playerCharacter, setGameState, showNotification]);
 
     const handleDrop = useCallback((itemToDrop: InventoryItem) => {
         if (!window.confirm(`Bạn có chắc muốn vứt bỏ ${itemToDrop.name}?`)) return;
@@ -152,24 +141,14 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, gameState, setG
              if (!pcState) return null;
              let { playerCharacter: pc } = pcState;
              const logMessage = `- Vứt bỏ [${itemToDrop.name}].`;
-
-             return {
-                ...pcState,
-                playerCharacter: {
-                    ...pc,
-                    inventory: {
-                        ...pc.inventory,
-                        items: pc.inventory.items.filter(i => i.id !== itemToDrop.id)
-                    },
-                    inventoryActionLog: [...pc.inventoryActionLog, logMessage],
-                }
-             };
+             return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: pc.inventory.items.filter(i => i.id !== itemToDrop.id) }, inventoryActionLog: [...pc.inventoryActionLog, logMessage] } };
         });
         showNotification(`Đã vứt bỏ [${itemToDrop.name}]`);
         setSelectedItem(null);
     }, [setGameState, showNotification]);
     
     const handleUse = useCallback((itemToUse: InventoryItem) => {
+        if (!playerCharacter) return;
         let actionMessage = '';
         if (itemToUse.type === 'Đan Phương') {
             if (itemToUse.recipeId && !playerCharacter.knownRecipeIds.includes(itemToUse.recipeId)) {
@@ -180,7 +159,6 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, gameState, setG
             }
         } else if (itemToUse.type === 'Đan Dược') {
             actionMessage = `Đã sử dụng [${itemToUse.name}].`;
-            // Add actual effect logic here in the future
         }
 
         setGameState(pcState => {
@@ -188,47 +166,33 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, gameState, setG
             let { playerCharacter: pc } = pcState;
             let newItems = pc.inventory.items;
             let newKnownRecipes = pc.knownRecipeIds;
-
             if (itemToUse.type === 'Đan Phương' && itemToUse.recipeId) {
                 newKnownRecipes = [...pc.knownRecipeIds, itemToUse.recipeId];
             }
-            
             const itemInInventory = newItems.find(i => i.id === itemToUse.id);
             if(itemInInventory && itemInInventory.quantity > 1) {
                 newItems = newItems.map(i => i.id === itemToUse.id ? { ...i, quantity: i.quantity - 1 } : i);
             } else {
                 newItems = newItems.filter(i => i.id !== itemToUse.id);
             }
-            
             const logMessage = `- Sử dụng [${itemToUse.name}].`;
-
-            return {
-                ...pcState,
-                playerCharacter: {
-                    ...pc,
-                    knownRecipeIds: newKnownRecipes,
-                    inventory: {...pc.inventory, items: newItems},
-                    inventoryActionLog: [...pc.inventoryActionLog, logMessage],
-                }
-            };
+            return { ...pcState, playerCharacter: { ...pc, knownRecipeIds: newKnownRecipes, inventory: {...pc.inventory, items: newItems}, inventoryActionLog: [...pc.inventoryActionLog, logMessage] } };
         });
-
         showNotification(actionMessage);
         setSelectedItem(null);
-    }, [playerCharacter.knownRecipeIds, setGameState, showNotification]);
+    }, [playerCharacter, setGameState, showNotification]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !playerCharacter) return null;
 
     return (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={() => { setSelectedItem(null); onClose(); }}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={handleClose}>
             <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <h3 className="text-2xl text-[var(--primary-accent-color)] font-bold font-title">Túi Càn Khôn</h3>
-                    <button onClick={() => { setSelectedItem(null); onClose(); }} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
+                    <button onClick={handleClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
                 </div>
                 
                 <div className="flex-grow flex p-4 gap-4 min-h-0">
-                    {/* Equipment Panel */}
                     <div className="w-1/3 flex-shrink-0 flex flex-col gap-3">
                          {Object.keys(EQUIPMENT_SLOTS).map((slotKey) => {
                             const slot = slotKey as EquipmentSlot;
@@ -252,7 +216,6 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen, gameState, setG
                             );
                         })}
                     </div>
-                    {/* Inventory Panel */}
                     <div className="w-2/3 flex flex-col bg-black/20 p-3 rounded-lg border border-gray-700/60">
                         <div className="grid grid-cols-8 gap-2 flex-grow overflow-y-auto pr-2">
                             {playerCharacter.inventory.items.map(item => (

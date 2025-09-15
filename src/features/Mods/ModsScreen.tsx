@@ -2,16 +2,11 @@ import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
     FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch 
 } from 'react-icons/fa';
-import type { View } from '../../App';
 import type { FullMod, ModInfo, CommunityMod } from '../../types';
 import * as db from '../../services/dbService';
 import { fetchCommunityMods } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
-
-interface ModsScreenProps {
-  onBack: () => void;
-  onNavigate: (view: View) => void;
-}
+import { useAppContext } from '../../contexts/AppContext';
 
 interface ModInLibrary {
     modInfo: ModInfo;
@@ -50,7 +45,8 @@ const MenuButton: React.FC<{
     </button>
 ));
 
-const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
+const ModsScreen: React.FC = () => {
+    const { handleNavigate } = useAppContext();
     const [installedMods, setInstalledMods] = useState<ModInLibrary[]>([]);
     const [communityMods, setCommunityMods] = useState<CommunityMod[]>([]);
     const [view, setView] = useState<LibraryView>('main');
@@ -209,7 +205,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
                 icon={FaFileSignature}
                 title="Tạo Mod"
                 description="Sử dụng GameMaster AI để tạo vật phẩm, nhân vật, và hệ thống tu luyện của riêng bạn."
-                onClick={() => onNavigate('createMod')}
+                onClick={() => handleNavigate('createMod')}
             />
              <MenuButton 
                 icon={FaUpload}
@@ -299,7 +295,7 @@ const ModsScreen: React.FC<ModsScreenProps> = ({ onBack, onNavigate }) => {
         <div className="w-full h-full max-h-[85vh] animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 flex flex-col">
             <div className="flex justify-between items-center mb-6 flex-shrink-0">
                 <h2 className="text-3xl font-bold font-title">Quản lý Mods</h2>
-                <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
+                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
                     <FaArrowLeft className="w-5 h-5" />
                 </button>
             </div>

@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect, memo, useCallback, useRef } from 'react';
-import type { GameState, GameSettings, StoryEntry, Location, NPC, GameEvent, CultivationPath, CultivationTechnique } from '../../types';
+import React, { useState, useMemo, memo, useCallback, useRef } from 'react';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
 import Sidebar from './components/Sidebar/Sidebar';
+import LoadingScreen from '../../components/LoadingScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
 import EventPanel from './EventPanel';
@@ -11,38 +12,41 @@ import CombatScreen from './components/CombatScreen';
 import CultivationPathModal from './components/CultivationPathModal';
 import CustomStoryPlayer from './components/CustomStoryPlayer';
 import ShopModal from './components/ShopModal';
-import { generateStoryContinuationStream, summarizeStory, generateBreakthroughNarrative } from '../../services/geminiService';
-import { REALM_SYSTEM, CULTIVATION_PATHS, SHOPS } from '../../constants';
+import InnerDemonTrialModal from './components/InnerDemonTrialModal';
+import { generateStoryContinuationStream, summarizeStory, generateInnerDemonTrial } from '../../services/geminiService';
+import { REALM_SYSTEM, CULTIVATION_PATHS } from '../../constants';
 import InventoryModal from './components/InventoryModal';
+import { useAppContext } from '../../contexts/AppContext';
+import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
+import { advanceGameTime } from '../../utils/timeManager';
+import { simulateWorldTurn } from '../../services/worldSimulator';
+import * as questManager from '../../utils/questManager';
 
-interface GamePlayScreenProps {
-    gameState: GameState;
-    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
-    onSaveGame: (currentState: GameState, showNotification: (message: string) => void) => Promise<void>;
-    onBack: () => void;
-    settings: GameSettings;
-}
+const GamePlayScreenContent: React.FC = memo(() => {
+    const { gameState, setGameState, handleSaveGame, quitGame, settings } = useAppContext();
+    const { 
+        isSidebarOpen, toggleSidebar, notifications, dismissNotification, availablePaths,
+        openCultivationPathModal, closeCultivationPathModal, showNotification,
+        activeShopId, openShopModal, closeShopModal, isInventoryOpen, openInventoryModal, closeInventoryModal,
+        activeEvent, setActiveEvent,
+        activeInnerDemonTrial, openInnerDemonTrial, closeInnerDemonTrial
+    } = useGameUIContext();
 
-export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, setGameState, onSaveGame, onBack, settings }) => {
     const [isAiResponding, setIsAiResponding] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
     const [activeActionTab, setActiveActionTab] = useState<'say' | 'act'>('act');
-    const [notifications, setNotifications] = useState<{ id: number, message: string }[]>([]);
-    const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
-    const [availablePaths, setAvailablePaths] = useState<CultivationPath[]>([]);
-    const [activeShopId, setActiveShopId] = useState<string | null>(null);
-    const [isInventoryOpen, setIsInventoryOpen] = useState(false);
     
-    const storyContainerRef = useRef<HTMLDivElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const showNotification = useCallback((message: string) => {
-        const id = Date.now();
-        setNotifications(prev => [...prev, { id, message }]);
-        setTimeout(() => {
-            setNotifications(prev => prev.filter(n => n.id !== id));
-        }, 3000);
-    }, []);
+    const saveGame = useCallback(async () => {
+        if (!gameState) return;
+        try {
+            await handleSaveGame(gameState);
+            showNotification('Đã lưu game thành công!');
+        } catch (error) {
+            console.error("Failed to save game", error);
+            showNotification('Lỗi: Không thể lưu game.');
+        }
+    }, [gameState, handleSaveGame, showNotification]);
 
     const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
         setGameState(prev => {
@@ -52,36 +56,55 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
             return { ...prev, storyLog: [...prev.storyLog, newEntry] };
         });
     }, [setGameState]);
-
-    const handleActionSubmit = useCallback(async (text: string, type: 'say' | 'act') => {
-        if (isAiResponding) return;
-
-        // Intercept special commands before sending to AI
+    
+    const handleActionSubmit = useCallback(async (text: string, type: 'say' | 'act' = 'act', apCost: number = 1) => {
+        if (isAiResponding || !gameState) return;
+    
         if (text.trim().toLowerCase() === 'mở túi đồ') {
-            setIsInventoryOpen(true);
+            openInventoryModal();
             return;
         }
-
+    
         setIsAiResponding(true);
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
         abortControllerRef.current = new AbortController();
-
-        const playerActionEntry: StoryEntry = {
-            id: -1, // Temporary ID
-            type: type === 'say' ? 'player-dialogue' : 'player-action',
-            content: text,
-        };
-        addStoryEntry(playerActionEntry);
+    
+        addStoryEntry({ type: type === 'say' ? 'player-dialogue' : 'player-action', content: text });
+    
+        let tempState = gameState;
         
-        // Add a placeholder for AI response
-        addStoryEntry({ type: 'narrative', content: '...' });
+        // Advance time and maybe simulate world
+        const { newState: stateAfterTime, newDay } = advanceGameTime(tempState, apCost);
+        tempState = stateAfterTime;
 
+        if (newDay) {
+            addStoryEntry({ type: 'system', content: `Một ngày mới đã bắt đầu: ${tempState.gameDate.season}, ngày ${tempState.gameDate.day}` });
+            const { newState: stateAfterSim, rumors } = await simulateWorldTurn(tempState);
+            tempState = stateAfterSim;
+            if (rumors.length > 0) {
+                const rumorText = rumors.map(r => `Có tin đồn rằng: ${r.text}`).join('\n');
+                addStoryEntry({ type: 'narrative', content: rumorText });
+            }
+        }
+
+        // Process quests
+        const { newState: stateAfterQuests, notifications: questNotifications } = await questManager.processQuestUpdates(tempState);
+        tempState = stateAfterQuests;
+        questNotifications.forEach(showNotification);
+        setGameState(tempState);
+    
+        addStoryEntry({ type: 'narrative', content: '...' });
+    
         try {
-            const stream = generateStoryContinuationStream(gameState, text, type);
+            const stream = generateStoryContinuationStream(tempState, text, type);
             let fullResponse = '';
             for await (const chunk of stream) {
+                if (abortControllerRef.current.signal.aborted) {
+                  console.log("Stream aborted by user.");
+                  break;
+                }
                 fullResponse += chunk;
                 setGameState(prev => {
                     if (!prev) return null;
@@ -96,15 +119,15 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
         } catch (error: any) {
             console.error("AI story generation failed:", error);
             const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${error.message}`;
-            addStoryEntry({ type: 'system', content: errorMessage });
-             setGameState(prev => {
+            setGameState(prev => {
                 if (!prev) return null;
-                return { ...prev, storyLog: prev.storyLog.filter(entry => entry.content !== '...') };
+                const filteredLog = prev.storyLog.filter(entry => entry.content !== '...');
+                return { ...prev, storyLog: [...filteredLog, { id: Date.now(), type: 'system', content: errorMessage }] };
             });
         } finally {
             setIsAiResponding(false);
             if (gameState.storyLog.length > 0 && gameState.storyLog.length % settings.autoSummaryFrequency === 0) {
-                 try {
+                try {
                     const summary = await summarizeStory(gameState.storyLog);
                     setGameState(prev => prev ? { ...prev, storySummary: summary } : null);
                     console.log("Story summarized and saved to AI memory.");
@@ -113,65 +136,24 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
                 }
             }
         }
-
-    }, [isAiResponding, addStoryEntry, gameState, setGameState, settings.autoSummaryFrequency]);
+    }, [isAiResponding, addStoryEntry, gameState, setGameState, settings.autoSummaryFrequency, openInventoryModal, showNotification]);
 
     const handleTravel = useCallback(async (destinationId: string) => {
+        if (!gameState || isAiResponding) return;
         const destination = gameState.discoveredLocations.find(l => l.id === destinationId);
-        if (!destination || isAiResponding) return;
+        if (!destination) return;
         
-        setIsSidebarOpen(false);
-        setIsAiResponding(true);
-
-        const travelActionText = `Ta quyết định đi đến ${destination.name}.`;
-        addStoryEntry({ type: 'player-action', content: travelActionText });
-
-        const aiPrompt = `Hành trình đến ${destination.name}.`;
-        addStoryEntry({ type: 'narrative', content: '...' });
-
-        try {
-            const stream = generateStoryContinuationStream(gameState, aiPrompt, 'act');
-            let fullResponse = '';
-            for await (const chunk of stream) {
-                fullResponse += chunk;
-                setGameState(prev => {
-                    if (!prev) return null;
-                    const newLog = [...prev.storyLog];
-                    const lastEntry = newLog[newLog.length - 1];
-                    if (lastEntry) lastEntry.content = fullResponse;
-                    return { ...prev, storyLog: newLog };
-                });
-            }
-            
-            // After narration completes, update game state
-            setGameState(prev => {
-                if (!prev) return null;
-                const newGameDate = { ...prev.gameDate };
-                // Simple time advance for now
-                newGameDate.day += 1; 
-
-                return {
-                    ...prev,
-                    playerCharacter: {
-                        ...prev.playerCharacter,
-                        currentLocationId: destinationId
-                    },
-                    gameDate: newGameDate
-                };
-            });
-
-        } catch (error: any) {
-            console.error("AI travel narration failed:", error);
-            addStoryEntry({ type: 'system', content: `[Lỗi] Hành trình đã bị gián đoạn: ${error.message}` });
-        } finally {
-            setIsAiResponding(false);
-        }
-
-    }, [isAiResponding, gameState, addStoryEntry, setGameState]);
+        if(isSidebarOpen) toggleSidebar();
+    
+        setGameState(prev => prev ? { ...prev, playerCharacter: { ...prev.playerCharacter, currentLocationId: destinationId } } : null);
+        await handleActionSubmit(`Ta quyết định đi đến ${destination.name}.`, 'act', 1);
+    
+    }, [gameState, isAiResponding, isSidebarOpen, toggleSidebar, handleActionSubmit, setGameState]);
 
     const handleBreakthrough = useCallback(async () => {
-         const { playerCharacter, realmSystem } = gameState;
-         const { cultivation } = playerCharacter;
+         if (!gameState) return;
+         const { realmSystem } = gameState;
+         const { cultivation } = gameState.playerCharacter;
          const currentRealm = realmSystem.find(r => r.id === cultivation.currentRealmId);
          if (!currentRealm) return;
 
@@ -187,78 +169,93 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
          }
 
          setIsAiResponding(true);
-         const targetRealmName = nextRealm ? nextRealm.name : currentRealm.name;
-         const targetStageName = nextRealm ? nextRealm.stages[0].name : nextStage.name;
-         addStoryEntry({ type: 'system', content: `Bắt đầu đột phá ${targetRealmName} - ${targetStageName}...` });
-         await new Promise(r => setTimeout(r, 1000));
+         addStoryEntry({ type: 'system', content: `Bắt đầu đột phá...` });
 
-         const isSuccess = Math.random() > 0.1; // 90% success for now
-         const narrative = await generateBreakthroughNarrative(gameState, nextRealm || currentRealm, nextRealm ? nextRealm.stages[0] : nextStage, isSuccess);
-         addStoryEntry({ type: 'narrative', content: narrative });
+         try {
+            const targetRealmName = nextRealm ? nextRealm.name : currentRealm.name;
+            const targetStageName = nextRealm ? nextRealm.stages[0].name : nextStage.name;
+            const trial = await generateInnerDemonTrial(gameState, targetRealmName, targetStageName);
+            openInnerDemonTrial(trial);
+         } catch(error) {
+             console.error("Failed to generate inner demon trial:", error);
+             showNotification("Đột phá thất bại! Thiên cơ hỗn loạn.");
+         } finally {
+            setIsAiResponding(false);
+         }
+    }, [gameState, addStoryEntry, showNotification, openInnerDemonTrial]);
 
-         if (isSuccess) {
+    const handleInnerDemonChoice = useCallback((choice: { text: string; isCorrect: boolean; }) => {
+        closeInnerDemonTrial();
+        addStoryEntry({ type: 'player-dialogue', content: choice.text });
+
+        if (choice.isCorrect) {
+            showNotification("Đạo tâm kiên định, đột phá thành công!");
+            addStoryEntry({ type: 'system', content: 'Vượt qua tâm ma, bạn đã đột phá thành công!' });
             setGameState(prev => {
                 if (!prev) return null;
-                const pc = { ...prev.playerCharacter };
+                const { playerCharacter, realmSystem } = prev;
+                const { cultivation } = playerCharacter;
+                const currentRealm = realmSystem.find(r => r.id === cultivation.currentRealmId)!;
+                const currentStageIndex = currentRealm.stages.findIndex(s => s.id === cultivation.currentStageId);
+                const nextStage = currentRealm.stages[currentStageIndex + 1];
+                const nextRealm = !nextStage ? realmSystem[realmSystem.findIndex(r => r.id === currentRealm.id) + 1] : null;
+                
                 let newRealmId = cultivation.currentRealmId;
                 let newStageId = cultivation.currentStageId;
                 
-                if (nextStage) {
-                    newStageId = nextStage.id;
-                } else if (nextRealm) {
+                if (nextStage) newStageId = nextStage.id;
+                else if (nextRealm) {
                     newRealmId = nextRealm.id;
                     newStageId = nextRealm.stages[0].id;
                 }
 
                 const pathsToShow = CULTIVATION_PATHS.filter(p => p.requiredRealmId === newRealmId);
-                if (pathsToShow.length > 0) {
-                    setAvailablePaths(pathsToShow);
-                }
+                if (pathsToShow.length > 0) openCultivationPathModal(pathsToShow);
                 
                 return {
                     ...prev,
                     playerCharacter: {
-                        ...pc,
-                        cultivation: {
-                            ...pc.cultivation,
-                            currentRealmId: newRealmId,
-                            currentStageId: newStageId,
-                            spiritualQi: 0,
-                        },
-                         techniquePoints: pc.techniquePoints + 1,
+                        ...playerCharacter,
+                        cultivation: { ...cultivation, currentRealmId: newRealmId, currentStageId: newStageId, spiritualQi: 0 },
+                        techniquePoints: playerCharacter.techniquePoints + 1,
                     }
                 };
             });
-            showNotification("Đột phá thành công!");
-         } else {
-            showNotification("Đột phá thất bại!");
-         }
-         setIsAiResponding(false);
-
-    }, [gameState, addStoryEntry, setGameState, showNotification]);
-
-    const handleNpcInteraction = useCallback((npc: NPC) => {
-        if (npc.shopId) {
-            const shopExists = SHOPS.some(s => s.id === npc.shopId);
-            if (shopExists) {
-                setActiveShopId(npc.shopId);
-            } else {
-                console.warn(`NPC ${npc.identity.name} has invalid shopId: ${npc.shopId}`);
-                handleActionSubmit(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act');
-            }
         } else {
-            handleActionSubmit(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act');
+            showNotification("Đột phá thất bại, tâm ma quấy nhiễu!");
+            addStoryEntry({ type: 'system', content: 'Bạn đã thất bại trong việc chống lại tâm ma. Tu vi bị tổn hại.' });
+            // Optionally add a debuff effect here
         }
-    }, [handleActionSubmit]);
+
+    }, [closeInnerDemonTrial, addStoryEntry, showNotification, setGameState, openCultivationPathModal]);
+
+    const handleNpcDialogue = useCallback(async (npc: NPC) => {
+        if (isAiResponding || !gameState) return;
+        
+        await handleActionSubmit(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act');
+
+        setGameState((prevState) => {
+            if (!prevState) return null;
+            
+            (async () => {
+                const { newState, notifications } = await questManager.checkForNewSideQuest(prevState, npc);
+                notifications.forEach(showNotification);
+                setGameState(newState);
+            })();
+
+            return prevState;
+        });
+    }, [isAiResponding, gameState, handleActionSubmit, setGameState, showNotification]);
     
     const allPlayerTechniques = useMemo(() => {
+        if (!gameState) return [];
         const activeSkills = Object.values(gameState.playerCharacter.mainCultivationTechnique?.skillTreeNodes || {})
-            .filter(node => node.isUnlocked && node.type === 'active_skill' && node.activeSkill)
-            .map(node => ({ ...node.activeSkill!, id: node.id, level: 1, maxLevel: 10 } as CultivationTechnique));
-
+            .filter((node: SkillTreeNode) => node.isUnlocked && node.type === 'active_skill' && node.activeSkill)
+            .map((node: SkillTreeNode) => ({ ...node.activeSkill!, id: node.id, level: 1, maxLevel: 10 } as CultivationTechnique));
         return [...activeSkills, ...gameState.playerCharacter.auxiliaryTechniques];
-    }, [gameState.playerCharacter.mainCultivationTechnique, gameState.playerCharacter.auxiliaryTechniques]);
+    }, [gameState]);
 
+    if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
     const { playerCharacter, discoveredLocations, activeNpcs, worldState, combatState, activeStory } = gameState;
     const currentLocation = useMemo(() => discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!, [discoveredLocations, playerCharacter.currentLocationId]);
@@ -267,15 +264,16 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
 
     return (
         <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col bg-black/30">
-            <NotificationArea notifications={notifications} onDismiss={(id) => setNotifications(p => p.filter(n => n.id !== id))} />
-            <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => {}} />
-            <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} gameState={gameState} setGameState={setGameState} showNotification={showNotification} onClose={() => setActiveShopId(null)} />
-            <InventoryModal isOpen={isInventoryOpen} gameState={gameState} setGameState={setGameState} showNotification={showNotification} onClose={() => setIsInventoryOpen(false)} />
+            <NotificationArea notifications={notifications} onDismiss={dismissNotification} />
+            <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
+            <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} />
+            <InventoryModal isOpen={isInventoryOpen} />
+            <InnerDemonTrialModal isOpen={!!activeInnerDemonTrial} trial={activeInnerDemonTrial} onChoice={handleInnerDemonChoice} />
             
-            <TopBar onBack={onBack} onSave={() => onSaveGame(gameState, showNotification)} onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} gameDate={gameState.gameDate} majorEvents={gameState.majorEvents} />
+            <TopBar onBack={quitGame} onSave={saveGame} gameDate={gameState.gameDate} majorEvents={gameState.majorEvents} />
             
             <div className="gameplay-main-content">
-                {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>}
+                {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop" onClick={toggleSidebar}></div>}
 
                 <main className="gameplay-story-panel w-full flex flex-col bg-black/40 min-h-0">
                     <StoryLog story={gameState.storyLog} inventoryItems={playerCharacter.inventory.items} techniques={allPlayerTechniques} />
@@ -286,7 +284,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
                         </div>
                     )}
                     
-                    {combatState && <CombatScreen gameState={gameState} setGameState={setGameState} showNotification={showNotification} addStoryEntry={addStoryEntry} allPlayerTechniques={allPlayerTechniques}/>}
+                    <CombatScreen />
                     {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={playerCharacter.attributes.flatMap(g => g.attributes)} />}
                     {activeStory && <CustomStoryPlayer gameState={gameState} setGameState={setGameState} />}
 
@@ -297,6 +295,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
                             currentLocation={currentLocation}
                             activeTab={activeActionTab}
                             setActiveTab={setActiveActionTab}
+                            gameState={gameState}
                         />
                     )}
                 </main>
@@ -313,7 +312,7 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
                            rumors={worldState.rumors}
                            onTravel={handleTravel}
                            onExplore={() => { /* TODO */ }}
-                           onNpcSelect={handleNpcInteraction}
+                           onNpcDialogue={handleNpcDialogue}
                            allNpcs={activeNpcs}
                            encounteredNpcIds={gameState.encounteredNpcIds}
                            discoveredLocations={discoveredLocations}
@@ -329,3 +328,11 @@ export const GamePlayScreen: React.FC<GamePlayScreenProps> = memo(({ gameState, 
         </div>
     );
 });
+
+export const GamePlayScreen: React.FC = () => {
+  return (
+    <GameUIProvider>
+      <GamePlayScreenContent />
+    </GameUIProvider>
+  );
+};

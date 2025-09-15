@@ -1,15 +1,7 @@
 import React, { memo } from 'react';
-import type { View } from '../../App';
 import { GiSeaDragon } from 'react-icons/gi';
 import { FaDatabase } from 'react-icons/fa';
-
-interface MainMenuProps {
-  onNavigate: (view: View) => void;
-  storageUsage: {
-    usageString: string;
-    percentage: number;
-  };
-}
+import { useAppContext } from '../../contexts/AppContext';
 
 const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> = memo(({ label, onClick, delay }) => (
     <button
@@ -25,7 +17,8 @@ const MenuItem: React.FC<{ label: string; onClick: () => void; delay: number }> 
     </button>
 ));
 
-const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
+const MainMenu: React.FC = () => {
+  const { handleNavigate, storageUsage } = useAppContext();
   return (
     <div className="min-h-[calc(var(--vh,1vh)*100)] w-full flex flex-col items-center justify-center animate-fade-in-menu">
         <div className="relative text-center animate-menu-item" style={{ animationDelay: '100ms' }}>
@@ -52,12 +45,12 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate, storageUsage }) => {
             </h2>
         </div>
         <div className="flex flex-col items-center space-y-6 mt-16">
-            <MenuItem label="Hành Trình Mới" onClick={() => onNavigate('saveSlots')} delay={500} />
-            <MenuItem label="Thế Giới" onClick={() => onNavigate('worldSelection')} delay={650} />
-            <MenuItem label="Mods" onClick={() => onNavigate('mods')} delay={800} />
-            <MenuItem label="Thời Thế" onClick={() => onNavigate('thoiThe')} delay={950} />
-            <MenuItem label="Cài Đặt" onClick={() => onNavigate('settings')} delay={1100} />
-            <MenuItem label="Thông Tin" onClick={() => onNavigate('info')} delay={1250} />
+            <MenuItem label="Hành Trình Mới" onClick={() => handleNavigate('saveSlots')} delay={500} />
+            <MenuItem label="Thế Giới" onClick={() => handleNavigate('worldSelection')} delay={650} />
+            <MenuItem label="Mods" onClick={() => handleNavigate('mods')} delay={800} />
+            <MenuItem label="Thời Thế" onClick={() => handleNavigate('thoiThe')} delay={950} />
+            <MenuItem label="Cài Đặt" onClick={() => handleNavigate('settings')} delay={1100} />
+            <MenuItem label="Thông Tin" onClick={() => handleNavigate('info')} delay={1250} />
         </div>
 
         <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1200ms' }}>

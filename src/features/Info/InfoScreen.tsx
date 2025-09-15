@@ -1,10 +1,8 @@
-import React, { memo } from 'react';
-import { FaArrowLeft, FaUserCog, FaListUl, FaBrain, FaDollarSign, FaUserClock, FaBookDead, FaWrench, FaFeatherAlt, FaPalette, FaProjectDiagram } from 'react-icons/fa';
+import React, { useState, memo } from 'react';
+import { FaArrowLeft, FaUserCog, FaListUl, FaBrain, FaDollarSign, FaUserClock, FaBookDead, FaWrench, FaFeatherAlt, FaPalette, FaProjectDiagram, FaCode } from 'react-icons/fa';
 import { GiCastle, GiMountainCave, GiCauldron } from 'react-icons/gi';
-
-interface InfoScreenProps {
-  onBack: () => void;
-}
+import { useAppContext } from '../../contexts/AppContext';
+import SourceCodeViewer from './SourceCodeViewer';
 
 const FeatureItem: React.FC<{ icon: React.ElementType, title: string, description: string }> = ({ icon: Icon, title, description }) => (
     <div className="flex items-start gap-4">
@@ -30,13 +28,20 @@ const FEATURES = [
     { icon: FaPalette, title: 'Giao Diện Tùy Biến Cao', description: 'Cho phép người chơi thay đổi font chữ, chủ đề màu sắc, ảnh nền, và nhiều yếu tố khác để cá nhân hóa trải nghiệm.' },
 ];
 
-const InfoScreen: React.FC<InfoScreenProps> = ({ onBack }) => {
+const InfoScreen: React.FC = () => {
+  const { handleNavigate } = useAppContext();
+  const [showSourceViewer, setShowSourceViewer] = useState(false);
+
+  if (showSourceViewer) {
+    return <SourceCodeViewer onExit={() => setShowSourceViewer(false)} />;
+  }
+
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold font-title">Thông Tin Trò Chơi</h2>
         <button
-          onClick={onBack}
+          onClick={() => handleNavigate('mainMenu')}
           className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
           title="Quay Lại Menu"
         >
@@ -49,6 +54,12 @@ const InfoScreen: React.FC<InfoScreenProps> = ({ onBack }) => {
             <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">Nhà Phát Triển</h3>
             <p className="text-gray-400">Trò chơi này được phát triển bởi <strong className="text-amber-300">Nguyen Hoang Truong (Daniel, Nobita)</strong>.</p>
             <p className="text-gray-400 mt-2">Xin chân thành cảm ơn bạn đã trải nghiệm sản phẩm này!</p>
+            <button
+                onClick={() => setShowSourceViewer(true)}
+                className="mt-4 flex items-center gap-2 px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors"
+            >
+                <FaCode /> Xem Mã Nguồn
+            </button>
         </section>
 
         <section>

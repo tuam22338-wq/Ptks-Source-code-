@@ -2,20 +2,23 @@ import React, { useState, useMemo } from 'react';
 import type { GameState, ShopItem, InventoryItem } from '../../types';
 import { SHOPS, ITEM_QUALITY_STYLES } from '../../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';
+import { useAppContext } from '../../contexts/AppContext';
+import { useGameUIContext } from '../../contexts/GameUIContext';
 
 interface ShopModalProps {
     isOpen: boolean;
     shopId: string;
-    gameState: GameState;
-    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
-    showNotification: (message: string) => void;
-    onClose: () => void;
 }
 
-const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId, gameState, setGameState, showNotification, onClose }) => {
+const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
+    const { gameState, setGameState } = useAppContext();
+    const { showNotification, closeShopModal } = useGameUIContext();
     const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
     
     const shop = useMemo(() => SHOPS.find(s => s.id === shopId), [shopId]);
+
+    if (!isOpen || !shop || !gameState) return null;
+    
     const { playerCharacter } = gameState;
 
     const handleBuyItem = (item: ShopItem) => {
@@ -30,56 +33,30 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId, gameState, setGam
         setGameState(prev => {
             if (!prev) return null;
             const pc = { ...prev.playerCharacter };
-
-            // Deduct currency
             const newCurrencies = { ...pc.currencies, [price.currencyName]: playerCurrency - price.amount };
-
-            // Add item
             const newInventoryItems = [...pc.inventory.items];
             const existingItem = newInventoryItems.find(i => i.name === name);
             if (existingItem) {
                 existingItem.quantity += 1;
             } else {
-                // Create a full InventoryItem from ShopItem
-                const { price, stock, ...baseItem } = item;
-                const newItem: InventoryItem = {
-                    ...baseItem,
-                    id: `item-${Date.now()}-${Math.random()}`,
-                    quantity: 1,
-                    isEquipped: false,
-                };
+                const { price: itemPrice, stock, ...baseItem } = item;
+                const newItem: InventoryItem = { ...baseItem, id: `item-${Date.now()}-${Math.random()}`, quantity: 1, isEquipped: false };
                 newInventoryItems.push(newItem);
             }
-
-            return {
-                ...prev,
-                playerCharacter: {
-                    ...pc,
-                    currencies: newCurrencies,
-                    inventory: {
-                        ...pc.inventory,
-                        items: newInventoryItems
-                    }
-                }
-            };
+            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
         });
 
         showNotification(`Đã mua [${name}]`);
     };
     
     const handleSellItem = (item: InventoryItem) => {
-        // For simplicity, let's assume sell price is half of its value or a default value
         const sellPrice = Math.floor((item.value || 10) / 2);
-        const currencyName = 'Bạc'; // Sell for Bạc for now
+        const currencyName = 'Bạc';
 
         setGameState(prev => {
             if (!prev) return null;
             const pc = { ...prev.playerCharacter };
-
-            // Add currency
             const newCurrencies = { ...pc.currencies, [currencyName]: (pc.currencies[currencyName] || 0) + sellPrice };
-            
-            // Remove item
             let newInventoryItems = [...pc.inventory.items];
             const itemInInventory = newInventoryItems.find(i => i.id === item.id);
             if (itemInInventory && itemInInventory.quantity > 1) {
@@ -87,36 +64,23 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId, gameState, setGam
             } else {
                 newInventoryItems = newInventoryItems.filter(i => i.id !== item.id);
             }
-
-            return {
-                ...prev,
-                playerCharacter: {
-                    ...pc,
-                    currencies: newCurrencies,
-                    inventory: {
-                        ...pc.inventory,
-                        items: newInventoryItems
-                    }
-                }
-            };
+            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
         });
 
         showNotification(`Đã bán [${item.name}] với giá ${sellPrice} ${currencyName}`);
     };
 
-    if (!isOpen || !shop) return null;
-
     const sellableItems = playerCharacter.inventory.items.filter(i => !i.isEquipped && i.value);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in" style={{ animationDuration: '300ms' }} onClick={onClose}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in" style={{ animationDuration: '300ms' }} onClick={closeShopModal}>
             <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <div>
                         <h2 className="text-3xl font-bold font-title text-amber-300">{shop.name}</h2>
                         <p className="text-sm text-gray-400">{shop.description}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
+                    <button onClick={closeShopModal} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
                 </div>
 
                 <div className="p-2 flex-shrink-0 border-b border-gray-700/60">

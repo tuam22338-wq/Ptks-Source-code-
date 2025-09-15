@@ -1,5 +1,5 @@
 import { FaQuestionCircle } from 'react-icons/fa';
-import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, INITIAL_TECHNIQUES, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID } from "../constants";
+import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID } from "../constants";
 // FIX: Import RealmConfig type
 import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
@@ -38,9 +38,13 @@ export const migrateGameState = (savedGame: any): GameState => {
                 dataToProcess.playerCharacter.sect = dataToProcess.playerCharacter.sect ?? null;
                 dataToProcess.playerCharacter.caveAbode = dataToProcess.playerCharacter.caveAbode ?? DEFAULT_CAVE_ABODE;
                 dataToProcess.playerCharacter.techniqueCooldowns = dataToProcess.playerCharacter.techniqueCooldowns ?? {};
-                dataToProcess.playerCharacter.activeMissions = dataToProcess.playerCharacter.activeMissions ?? [];
                 dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
                 dataToProcess.playerCharacter.danhVong = dataToProcess.playerCharacter.danhVong ?? { value: 0, status: 'Vô Danh Tiểu Tốt' };
+                
+                // Quest system migration
+                dataToProcess.playerCharacter.activeQuests = dataToProcess.playerCharacter.activeQuests ?? [];
+                dataToProcess.playerCharacter.completedQuestIds = dataToProcess.playerCharacter.completedQuestIds ?? [];
+                delete dataToProcess.playerCharacter.activeMissions;
             }
             
             dataToProcess.version = "1.1.0";
@@ -63,7 +67,7 @@ export const migrateGameState = (savedGame: any): GameState => {
         }
 
         dataToProcess.playerCharacter.mainCultivationTechnique = newTechnique;
-        dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || INITIAL_TECHNIQUES;
+        dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
         delete dataToProcess.playerCharacter.techniques;
         dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
     }
@@ -74,8 +78,22 @@ export const migrateGameState = (savedGame: any): GameState => {
     dataToProcess.dialogueChoices = dataToProcess.dialogueChoices ?? null;
     if (dataToProcess.playerCharacter) {
          dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
+         dataToProcess.playerCharacter.activeQuests = dataToProcess.playerCharacter.activeQuests ?? [];
+         dataToProcess.playerCharacter.completedQuestIds = dataToProcess.playerCharacter.completedQuestIds ?? [];
+// FIX: Add element to player character on migration for older saves.
+         if (!dataToProcess.playerCharacter.element) {
+            dataToProcess.playerCharacter.element = 'Vô';
+         }
     }
     dataToProcess.storySummary = dataToProcess.storySummary ?? '';
+
+    // Re-hydrate data that was stripped for saving
+    if (!dataToProcess.realmSystem) {
+        dataToProcess.realmSystem = REALM_SYSTEM; // TODO: Reconstruct from mods if necessary
+    }
+    if (!dataToProcess.activeMods) {
+        dataToProcess.activeMods = []; // TODO: Reconstruct from DB on load
+    }
 
 
     const allAttributesConfig = new Map<string, any>();
@@ -184,7 +202,7 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element'> & { danhVong: DanhVong },
         npcDensity: NpcDensity
     },
     activeMods: FullMod[],
@@ -298,8 +316,11 @@ export const createNewGameState = async (
         healthStatus: 'HEALTHY',
         activeEffects: [],
         techniqueCooldowns: {},
-        activeMissions: [],
+        activeQuests: [],
+        completedQuestIds: [],
         inventoryActionLog: [],
+// FIX: Initialize the player's element property.
+        element: 'Vô',
     };
     
     const { npcs: familyNpcs, relationships: familyRelationships } = await generateFamilyAndFriends(playerCharacter.identity, startingLocation.id);

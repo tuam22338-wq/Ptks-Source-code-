@@ -10,14 +10,7 @@ import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
 // FIX: Import MAJOR_EVENTS
 import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, MAJOR_EVENTS } from '../../constants';
 import * as db from '../../services/dbService';
-
-interface CharacterCreationScreenProps {
-  onBack: () => void;
-  onGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
-      npcDensity: NpcDensity
-  }) => Promise<void>;
-}
+import { useAppContext } from '../../contexts/AppContext';
 
 interface PlayableCharacterTemplate {
   id: string;
@@ -50,7 +43,8 @@ const NpcDensitySelector: React.FC<{ value: NpcDensity, onChange: (value: NpcDen
     </div>
 );
 
-export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = memo(({ onBack, onGameStart }) => {
+export const CharacterCreationScreen: React.FC = memo(() => {
+  const { handleNavigate, handleGameStart } = useAppContext();
   const [step, setStep] = useState<'modeSelection' | 'idea' | 'roleplay' | 'generating' | 'results'>('modeSelection');
   const [characterConcept, setCharacterConcept] = useState('');
   const [gender, setGender] = useState<Gender>('Nam');
@@ -154,7 +148,17 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
     setIsGenerating(true);
     try {
       const newIdentity = await generateCharacterIdentity(characterConcept, gender);
-      setIdentity({ ...newIdentity, gender, age: 18 });
+      // FIX: Explicitly create a full CharacterIdentity object to satisfy the type checker, which seems to incorrectly infer the type from the spread operator.
+      const fullIdentity: CharacterIdentity = {
+        name: newIdentity.name,
+        origin: newIdentity.origin,
+        appearance: newIdentity.appearance,
+        personality: newIdentity.personality,
+        familyName: newIdentity.familyName,
+        gender: gender,
+        age: 18,
+      };
+      setIdentity(fullIdentity);
       setStep('results');
     } catch (err: any) {
       setGenerationError(err.message || 'Lỗi không xác định.');
@@ -215,6 +219,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
           }
       });
       
+      // FIX: Add missing properties activeQuests and completedQuestIds to satisfy the type.
       const characterData = {
           identity: identity,
           attributes: initialAttributes,
@@ -222,9 +227,11 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
           danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
+          activeQuests: [],
+          completedQuestIds: [],
       };
 
-      await onGameStart({ characterData, npcDensity });
+      await handleGameStart({ characterData, npcDensity });
   };
   
   const handleIdentityChange = useCallback((updatedIdentity: Partial<CharacterIdentity>) => {
@@ -232,6 +239,8 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = m
       setIdentity(prev => ({ ...prev!, ...updatedIdentity }));
     }
   }, [identity]);
+
+  const onBack = () => handleNavigate('saveSlots');
 
   const renderContent = () => {
     if (isGenerating) {

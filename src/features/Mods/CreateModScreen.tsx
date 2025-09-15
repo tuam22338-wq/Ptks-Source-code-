@@ -20,10 +20,7 @@ import MainTechniqueEditorModal from './components/MainTechniqueEditorModal';
 import EventEditorModal from './components/EventEditorModal';
 import RecipeEditorModal from './components/RecipeEditorModal';
 import { ALL_ATTRIBUTES } from '../../constants';
-
-interface CreateModScreenProps {
-    onBack: () => void;
-}
+import { useAppContext } from '../../contexts/AppContext';
 
 const CONTENT_TYPE_INFO: Record<Exclude<ContentType, 'realm' | 'realmSystem' | 'talentSystem' | 'customPanel' | 'technique'>, { label: string; icon: React.ElementType; color: string }> = {
     item: { label: 'Vật Phẩm', icon: FaBoxOpen, color: 'text-sky-400' },
@@ -40,7 +37,8 @@ const CONTENT_TYPE_INFO: Record<Exclude<ContentType, 'realm' | 'realmSystem' | '
 };
 
 
-const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
+const CreateModScreen: React.FC = () => {
+    const { handleNavigate } = useAppContext();
     const [modInfo, setModInfo] = useState<ModInfo>({ id: '', name: '', author: '', description: '', version: '1.0.0' });
     const [addedContent, setAddedContent] = useState<AddedContentUnion[]>([]);
     const [modal, setModal] = useState<{ type: ContentType | null, content: AddedContentUnion | null }>({ type: null, content: null });
@@ -184,7 +182,7 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
             
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <h2 className="text-3xl font-bold font-title">Trình Chỉnh Sửa Mod</h2>
-                <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button>
+                <button onClick={() => handleNavigate('mods')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-shrink-0">
@@ -251,4 +249,4 @@ const CreateModScreen: React.FC<CreateModScreenProps> = ({ onBack }) => {
     );
 };
 
-export default CreateModScreen;
+export default memo(CreateModScreen);

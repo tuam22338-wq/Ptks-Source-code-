@@ -87,7 +87,6 @@ const AttributeGrid: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    // Fix: Destructure currencies directly from the character prop.
     const { identity, attributes, talents, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, inventory, currencies } = character;
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
 

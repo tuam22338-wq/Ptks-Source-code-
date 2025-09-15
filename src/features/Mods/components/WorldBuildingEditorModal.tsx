@@ -50,14 +50,25 @@ const WorldContentEditorModal: React.FC<WorldContentEditorModalProps> = ({ isOpe
                     factions: [],
                     tags: [],
                 };
-                // Stringify JSON fields for the textareas
+                // FIX: Safely handle contentToEdit which could be ModLocation, ensuring we only access ModWorldData properties.
+                const worldData = 'majorEvents' in initialData ? (initialData as ModWorldData) : {
+                    id: Date.now().toString(),
+                    name: '',
+                    description: '',
+                    startingYear: 1,
+                    eraName: 'Kỷ Nguyên Mới',
+                    majorEvents: [],
+                    initialLocations: [],
+                    initialNpcs: [],
+                    factions: [],
+                    tags: [],
+                };
                 const stringifiedData = {
-                    ...initialData,
-                    // FIX: Cast initialData to ModWorldData to access properties safely
-                    majorEvents: JSON.stringify((initialData as ModWorldData).majorEvents, null, 2),
-                    initialLocations: JSON.stringify((initialData as ModWorldData).initialLocations, null, 2),
-                    initialNpcs: JSON.stringify((initialData as ModWorldData).initialNpcs, null, 2),
-                    factions: JSON.stringify((initialData as ModWorldData).factions, null, 2),
+                    ...worldData,
+                    majorEvents: JSON.stringify(worldData.majorEvents, null, 2),
+                    initialLocations: JSON.stringify(worldData.initialLocations, null, 2),
+                    initialNpcs: JSON.stringify(worldData.initialNpcs, null, 2),
+                    factions: JSON.stringify(worldData.factions, null, 2),
                 };
                 setContent(stringifiedData);
             }

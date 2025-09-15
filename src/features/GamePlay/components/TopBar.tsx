@@ -1,19 +1,18 @@
-
-
 import React, { memo } from 'react';
 import type { GameDate, MajorEvent } from '../../../types';
 import { FaArrowLeft, FaSave, FaBars } from 'react-icons/fa';
 import Timeline from '../../../components/Timeline';
+import { useGameUIContext } from '../../../contexts/GameUIContext';
 
 interface TopBarProps {
     onBack: () => void;
     onSave: () => void;
-    onToggleSidebar: () => void;
     gameDate: GameDate;
     majorEvents: MajorEvent[];
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, onToggleSidebar, gameDate, majorEvents }) => {
+const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }) => {
+    const { toggleSidebar } = useGameUIContext();
     return (
         <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-3 bg-black/40 backdrop-blur-sm border-b border-gray-700/50">
             <div className="flex items-center gap-2">
@@ -40,7 +39,7 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, onToggleSidebar, gameDa
             <div className="flex items-center gap-2">
                 {/* This button is automatically hidden on desktop via CSS in index.html */}
                 <button 
-                    onClick={onToggleSidebar} 
+                    onClick={toggleSidebar} 
                     className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors top-bar-sidebar-toggle"
                     title="Mở/Đóng Bảng Điều Khiển"
                 >

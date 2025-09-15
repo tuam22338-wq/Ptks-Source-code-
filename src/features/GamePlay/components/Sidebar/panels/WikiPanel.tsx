@@ -147,41 +147,35 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ playerCharacter, allNpcs, encount
                                 <button key={npc.id} onClick={() => handleSelectNpc(npc)} className="w-full text-left bg-black/20 p-2 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-cyan-400/50 transition-colors">
                                     <div className="flex justify-between items-center">
                                         <h4 className={`font-bold font-title text-sm ${isEncountered ? 'text-cyan-300' : 'text-gray-400'}`}>{npc.identity.name}</h4>
-                                        <div className="flex items-center gap-2">
-                                            {rel && <span className="text-xs text-yellow-300">{rel.status}</span>}
-                                            {isEncountered && <FaEye className="text-cyan-400" title="Đã gặp"/>}
-                                        </div>
+                                        {isEncountered && <FaEye className="text-gray-500" title="Đã gặp" />}
                                     </div>
+                                    {rel && <p className="text-xs text-yellow-400">{rel.type} ({rel.status})</p>}
                                 </button>
                             );
                         })
                     ) : (
-                        <p className="text-center text-sm text-gray-500 py-2">Chưa có thông tin.</p>
+                        <p className="text-center text-sm text-gray-500">Chưa gặp gỡ ai.</p>
                     )}
                 </div>
             </div>
 
             <div>
                 <h3 className="flex items-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
-                    <FaMapMarkedAlt className="text-lime-300" /> Cửu Châu Địa Mạch
+                    <FaMapMarkedAlt className="text-lime-300" /> Cửu Châu Tứ Hải
                 </h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                    {combinedLocations.length > 0 ? (
-                        combinedLocations.map(loc => {
-                            const isDiscovered = discoveredLocations.some(l => l.id === loc.id);
-                            return (
-                                <button key={loc.id} onClick={() => handleSelectLocation(loc)} className="w-full text-left p-2 bg-black/20 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-lime-400/50 transition-colors">
-                                    <div className="flex justify-between items-center">
-                                        <h4 className={`font-bold font-title text-sm ${isDiscovered ? 'text-lime-300' : 'text-gray-400'}`}>{loc.name}</h4>
-                                        {isDiscovered && <FaEye className="text-lime-400" title="Đã khám phá"/>}
-                                    </div>
-                                    <p className="text-xs text-gray-500">{loc.type}</p>
-                                </button>
-                            );
-                        })
-                    ) : (
-                        <p className="text-center text-sm text-gray-500 py-2">Chưa có thông tin.</p>
-                    )}
+                    {combinedLocations.map(location => {
+                         const isDiscovered = discoveredLocations.some(l => l.id === location.id);
+                         return (
+                            <button key={location.id} onClick={() => handleSelectLocation(location)} className={`w-full text-left bg-black/20 p-2 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-lime-400/50 transition-colors ${!isDiscovered ? 'opacity-60' : ''}`}>
+                                <div className="flex justify-between items-center">
+                                     <h4 className={`font-bold font-title text-sm ${isDiscovered ? 'text-lime-300' : 'text-gray-500'}`}>{location.name}</h4>
+                                     {!isDiscovered && <span className="text-xs text-gray-600">Chưa khám phá</span>}
+                                </div>
+                                <p className="text-xs text-gray-500">{location.type}</p>
+                            </button>
+                         )
+                    })}
                 </div>
             </div>
         </div>

@@ -4,12 +4,7 @@ import type { FullMod, ModWorldData } from '../../types';
 import * as db from '../../services/dbService';
 import { DEFAULT_WORLD_ID, MAJOR_EVENTS } from '../../constants';
 import LoadingSpinner from '../../components/LoadingSpinner';
-
-interface WorldSelectionScreenProps {
-    onBack: () => void;
-    activeWorldId: string;
-    setActiveWorldId: (worldId: string) => void;
-}
+import { useAppContext } from '../../contexts/AppContext';
 
 interface WorldInfo extends ModWorldData {
     source: 'default' | 'mod';
@@ -41,7 +36,8 @@ const WorldCard: React.FC<{ world: WorldInfo; isActive: boolean; onSelect: () =>
 });
 
 
-const WorldSelectionScreen: React.FC<WorldSelectionScreenProps> = ({ onBack, activeWorldId, setActiveWorldId }) => {
+const WorldSelectionScreen: React.FC = () => {
+    const { handleNavigate, activeWorldId, handleSetActiveWorldId } = useAppContext();
     const [worlds, setWorlds] = useState<WorldInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -71,7 +67,6 @@ const WorldSelectionScreen: React.FC<WorldSelectionScreenProps> = ({ onBack, act
                         for (const worldData of modContent.content.worldData) {
                             modWorlds.push({
                                 ...worldData,
-                                // FIX: Add missing 'id' property. Use name as id.
                                 id: worldData.name,
                                 source: 'mod',
                                 author: modContent.modInfo.author,
@@ -90,8 +85,7 @@ const WorldSelectionScreen: React.FC<WorldSelectionScreenProps> = ({ onBack, act
     }, []);
 
     const handleSelectWorld = async (worldId: string) => {
-        await db.setActiveWorldId(worldId);
-        setActiveWorldId(worldId);
+        await handleSetActiveWorldId(worldId);
         alert(`Đã chọn thế giới: ${worlds.find(w => w.id === worldId)?.name}`);
     };
 
@@ -99,7 +93,7 @@ const WorldSelectionScreen: React.FC<WorldSelectionScreenProps> = ({ onBack, act
         <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-bold font-title">Lựa Chọn Thế Giới</h2>
-                <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
+                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
                     <FaArrowLeft className="w-5 h-5" />
                 </button>
             </div>

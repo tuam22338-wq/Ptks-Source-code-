@@ -7,6 +7,8 @@ export interface Faction {
   imageUrl: string;
 }
 
+export type Element = 'Kim' | 'Mộc' | 'Thủy' | 'Hỏa' | 'Thổ' | 'Vô';
+
 // --- Save Slot Types ---
 export interface SaveSlot {
   id: number;
@@ -555,6 +557,7 @@ export interface NPC {
     activeEffects: ActiveEffect[];
     loot?: { itemId: string; chance: number; min: number; max: number }[];
     tuoiTho: number;
+    element?: Element;
 }
 
 export interface InventoryItem {
@@ -604,6 +607,7 @@ export interface CultivationTechnique {
     level: number;
     maxLevel: number;
     levelBonuses?: { level: number, bonuses: StatBonus[] }[];
+    element?: Element;
 }
 
 
@@ -668,11 +672,6 @@ export interface PlayerSectInfo {
   contribution: number;
 }
 
-export interface ActiveMission {
-    missionId: string;
-    progress: number;
-}
-
 export interface CaveAbode {
     name: string;
     level: number;
@@ -681,6 +680,43 @@ export interface CaveAbode {
     alchemyRoomLevel: number;         // Luyện Đan Thất
     storageUpgradeLevel: number;      // Kho chứa đồ
     locationId: string;
+}
+
+// --- Quest System Types ---
+export type QuestObjectiveType = 'TRAVEL' | 'GATHER' | 'TALK' | 'DEFEAT';
+
+export interface QuestObjective {
+    type: QuestObjectiveType;
+    description: string;
+    target: string; // Location ID, Item Name, NPC ID, Enemy Tag
+    required: number;
+    current: number;
+    isCompleted: boolean;
+}
+
+export interface QuestReward {
+    spiritualQi?: number;
+    currencies?: Partial<Currency>;
+    items?: { name: string; quantity: number }[];
+    danhVong?: number;
+}
+
+export interface ActiveQuest {
+    id: string;
+    title: string;
+    description: string;
+    type: 'MAIN' | 'SIDE';
+    source: string; // e.g., 'event:tru_vuong_de_tho' or 'npc:npc_khuong_tu_nha'
+    objectives: QuestObjective[];
+    rewards: QuestReward;
+}
+
+export interface InnerDemonTrial {
+    challenge: string;
+    choices: {
+        text: string;
+        isCorrect: boolean;
+    }[];
 }
 
 export interface PlayerCharacter {
@@ -708,8 +744,11 @@ export interface PlayerCharacter {
     healthStatus: CharacterStatus;
     activeEffects: ActiveEffect[];
     techniqueCooldowns: Record<string, number>;
-    activeMissions: ActiveMission[];
+    activeQuests: ActiveQuest[];
+    completedQuestIds: string[];
     inventoryActionLog: string[];
+// FIX: Add optional element property to PlayerCharacter for combat calculations.
+    element?: Element;
 }
 
 export interface StoryEntry {
