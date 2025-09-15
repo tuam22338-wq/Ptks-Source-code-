@@ -65,6 +65,13 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }
                     case 'system':
                         return <p key={entry.id} style={animationStyle} className="text-center text-xs text-gray-500 tracking-widest my-4 uppercase animate-fade-in">{contentWithHighlight}</p>;
                     
+                    case 'system-notification':
+                        return (
+                            <div key={entry.id} style={animationStyle} className="my-4 p-3 bg-blue-900/20 border-l-4 border-blue-400 rounded-r-lg animate-fade-in">
+                                <p className="font-mono text-blue-300 whitespace-pre-wrap">{contentWithHighlight}</p>
+                            </div>
+                        );
+
                     case 'player-action':
                     case 'player-dialogue':
                         return (
