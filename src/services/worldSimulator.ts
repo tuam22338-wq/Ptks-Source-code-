@@ -1,52 +1,107 @@
-import type { GameState, NPC, Rumor } from '../types';
-import { simulateNpcAction } from './geminiService';
+import type { GameState, Rumor, NPC, DynamicWorldEvent } from '../types';
+import { generateWithRetry } from './geminiService';
+import * as db from './dbService';
+import { Type } from '@google/genai';
+import { WORLD_MAP } from '../constants';
+import { generateFactionEvent } from './gemini/gameplay.service';
 
 export const simulateWorldTurn = async (
     gameState: GameState
 ): Promise<{ newState: GameState; rumors: Rumor[] }> => {
-    const { activeNpcs, playerCharacter } = gameState;
+    let { activeNpcs, playerCharacter, worldState, majorEvents, gameDate } = gameState;
+    const { dynamicEvents } = worldState;
     const newRumors: Rumor[] = [];
 
-    // Select a subset of NPCs to simulate to save on API calls and time
-    // We only simulate NPCs who are not in the same location as the player
+    // Chỉ mô phỏng một vài NPC mỗi lượt để tiết kiệm API calls và thời gian
     const npcsToSimulate = activeNpcs
         .filter(npc => npc.locationId !== playerCharacter.currentLocationId)
         .sort(() => 0.5 - Math.random()) // Shuffle
-        .slice(0, Math.ceil(activeNpcs.length * 0.1)); // Simulate 10% of NPCs
+        .slice(0, 2); // Simulate 2 random NPCs per turn
 
-    if (npcsToSimulate.length === 0) {
-        return { newState: gameState, rumors: [] };
+    const updatedNpcData: { id: string, locationId: string, trangThaiHanhDong: string }[] = [];
+    
+    const activeEventsInfo = (dynamicEvents || [])
+        .map(e => `- ${e.title} (Ảnh hưởng: ${e.affectedFactions.join(', ')} tại ${e.affectedLocationIds.join(', ')})`)
+        .join('\n');
+
+
+    for (const npc of npcsToSimulate) {
+        try {
+            const currentLocation = WORLD_MAP.find(l => l.id === npc.locationId);
+            const neighborLocations = (currentLocation?.neighbors || [])
+                .map(id => WORLD_MAP.find(l => l.id === id))
+                .filter(Boolean) as { id: string, name: string }[];
+
+            const responseSchema = {
+                type: Type.OBJECT,
+                properties: {
+                    action: { type: Type.STRING, description: "Hành động ngắn gọn mà NPC thực hiện. Ví dụ: 'Đi đến quán trà nghe ngóng tin tức', 'Bế quan luyện một môn thần thông mới'." },
+                    newLocationId: { type: Type.STRING, description: `ID của địa điểm mới. Nếu NPC di chuyển, chọn một ID từ danh sách hàng xóm. Nếu không, trả về ID hiện tại ('${npc.locationId}').`, enum: [npc.locationId, ...neighborLocations.map(l => l.id)] },
+                    rumorText: { type: Type.STRING, description: "Một tin đồn có thể được tạo ra từ hành động này. Nếu không có tin đồn, trả về một chuỗi rỗng." },
+                },
+                required: ['action', 'newLocationId', 'rumorText'],
+            };
+
+            const prompt = `Bạn là AI mô phỏng hành vi cho một NPC trong game tu tiên.
+- **NPC:** ${npc.identity.name} (${npc.faction || 'Tán tu'})
+- **Tính cách:** ${npc.identity.personality}
+- **Mục tiêu:** ${npc.mucTieu || 'Không có mục tiêu cụ thể'}
+- **Vị trí hiện tại:** ${currentLocation?.name} (ID: ${npc.locationId})
+- **Các địa điểm lân cận:** ${neighborLocations.map(l => `${l.name} (ID: ${l.id})`).join(', ') || 'Không có'}
+- **Bối cảnh thế giới:** Năm ${gameDate.year}, ${majorEvents.find(e => e.year <= gameDate.year)?.title || 'Thế giới đang yên bình'}.
+- **Sự kiện đang diễn ra:**
+${activeEventsInfo || "Không có sự kiện đặc biệt nào."}
+
+Nhiệm vụ: Dựa trên TOÀN BỘ thông tin trên (đặc biệt là các sự kiện đang diễn ra), hãy quyết định một hành động hợp lý cho NPC này. Nếu phe phái hoặc vị trí của họ bị ảnh hưởng bởi một sự kiện, họ nên có phản ứng phù hợp (ví dụ: chạy trốn, tham gia, điều tra). Trả về JSON theo schema.`;
+
+            const settings = await db.getSettings();
+            const response = await generateWithRetry({
+                model: settings?.npcSimulationModel || 'gemini-2.5-flash',
+                contents: prompt,
+                config: { responseMimeType: "application/json", responseSchema },
+            });
+
+            const data = JSON.parse(response.text);
+
+            if (data) {
+                 updatedNpcData.push({
+                    id: npc.id,
+                    locationId: data.newLocationId,
+                    trangThaiHanhDong: data.action,
+                });
+
+                if (data.rumorText) {
+                    const rumor: Rumor = {
+                        id: `rumor-${Date.now()}-${Math.random()}`,
+                        locationId: Math.random() < 0.5 ? npc.locationId : data.newLocationId,
+                        text: data.rumorText
+                    };
+                    newRumors.push(rumor);
+                }
+            }
+        } catch (error) {
+            console.error(`Failed to simulate action for NPC ${npc.identity.name}:`, error);
+            // Continue to the next NPC even if one fails
+        }
     }
 
-    console.log(`Simulating turn for ${npcsToSimulate.length} NPCs...`);
-
-    const simulationPromises = npcsToSimulate.map(npc => 
-        simulateNpcAction(npc, gameState)
-            .catch(err => {
-                console.error(`Failed to simulate action for NPC ${npc.identity.name}:`, err);
-                return { updatedNpc: npc, rumor: null }; // Return original NPC on error
-            })
-    );
-
-    const results = await Promise.all(simulationPromises);
-
-    const updatedNpcsMap = new Map<string, NPC>(activeNpcs.map(n => [n.id, n]));
-    
-    results.forEach(({ updatedNpc, rumor }) => {
-        if (updatedNpc) {
-            updatedNpcsMap.set(updatedNpc.id, updatedNpc);
+    // Cập nhật lại danh sách NPC trong gameState
+    const finalNpcs = activeNpcs.map(originalNpc => {
+        const updatedData = updatedNpcData.find(u => u.id === originalNpc.id);
+        if (updatedData) {
+            return {
+                ...originalNpc,
+                locationId: updatedData.locationId,
+                trangThaiHanhDong: updatedData.trangThaiHanhDong,
+                status: updatedData.trangThaiHanhDong, // Also update status for consistency
+            };
         }
-        if (rumor) {
-            newRumors.push(rumor);
-        }
+        return originalNpc;
     });
 
-    const finalNpcs = Array.from(updatedNpcsMap.values());
-    
-    // Add new rumors to world state, maybe prune old ones later
     const newWorldState = {
         ...gameState.worldState,
-        rumors: [...gameState.worldState.rumors, ...newRumors],
+        rumors: [...gameState.worldState.rumors, ...newRumors.filter(nr => !gameState.worldState.rumors.some(r => r.text === nr.text))],
     };
 
     return {
@@ -57,4 +112,30 @@ export const simulateWorldTurn = async (
         },
         rumors: newRumors,
     };
+};
+
+export const simulateFactionTurn = async (
+    gameState: GameState
+): Promise<{ newEvent: DynamicWorldEvent | null, narrative: string | null }> => {
+    try {
+        const eventData = await generateFactionEvent(gameState);
+        if (!eventData) {
+            return { newEvent: null, narrative: null };
+        }
+        
+        const totalDays = (gameState.gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(gameState.gameDate.season) * 30) + gameState.gameDate.day;
+
+        const newEvent: DynamicWorldEvent = {
+            ...eventData,
+            id: `world-event-${Date.now()}`,
+            turnStart: totalDays,
+        };
+
+        const narrative = `[Thiên Hạ Đại Sự] ${eventData.title}: ${eventData.description}`;
+        return { newEvent, narrative };
+
+    } catch (error) {
+        console.error("Failed to simulate faction turn:", error);
+        return { newEvent: null, narrative: "Thiên cơ hỗn loạn, không thể suy diễn được đại sự trong thiên hạ." };
+    }
 };

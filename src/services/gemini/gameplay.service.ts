@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element } from '../../types';
+import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent } from '../../types';
 import { NARRATIVE_STYLES, REALM_SYSTEM, FACTIONS, PHAP_BAO_RANKS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
@@ -362,4 +362,56 @@ export const generateRandomTechnique = async (gameState: GameState): Promise<Cul
         level: 1,
         maxLevel: 10,
     } as CultivationTechnique;
+};
+
+export const generateFactionEvent = async (gameState: GameState): Promise<Omit<DynamicWorldEvent, 'id' | 'turnStart'>> => {
+    const { gameDate, majorEvents, worldState } = gameState;
+    
+    const eventSchema = {
+        type: Type.OBJECT,
+        properties: {
+            title: { type: Type.STRING, description: "Tiêu đề ngắn gọn, kịch tính của sự kiện." },
+            description: { type: Type.STRING, description: "Mô tả chi tiết về sự kiện, điều gì đã xảy ra, ở đâu, và tại sao." },
+            duration: { type: Type.NUMBER, description: "Thời gian sự kiện này sẽ kéo dài (tính bằng ngày trong game, ví dụ: 7, 14, 30)." },
+            affectedFactions: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách tên các phe phái bị ảnh hưởng chính." },
+            affectedLocationIds: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách ID các địa điểm bị ảnh hưởng chính." }
+        },
+        required: ['title', 'description', 'duration', 'affectedFactions', 'affectedLocationIds']
+    };
+
+    const factionList = FACTIONS.map(f => f.name).join(', ');
+    const activeEvents = (worldState.dynamicEvents || []).map(e => `- ${e.title}: ${e.description}`).join('\n');
+
+    const prompt = `Bạn là một Game Master cho game tu tiên "Tam Thiên Thế Giới". Dựa trên tình hình thế giới, hãy tạo ra một sự kiện thế giới (World Event) mới.
+
+    **Bối cảnh hiện tại:**
+    - Năm: ${gameDate.year}
+    - Các phe phái chính: ${factionList}
+    - Sự kiện lịch sử lớn gần nhất: ${majorEvents.slice(-1)[0]?.title || 'Không có'}
+    - Các sự kiện đang diễn ra: ${activeEvents || 'Không có'}
+
+    **Nhiệm vụ:**
+    Tạo ra một sự kiện mới, có thể là một cuộc xung đột, một liên minh, một tai họa thiên nhiên, hoặc sự xuất hiện của một bí cảnh/di tích.
+    - Sự kiện phải có logic và phù hợp với bối cảnh Phong Thần Diễn Nghĩa.
+    - Tránh lặp lại các sự kiện đang diễn ra.
+    - Sự kiện phải có ảnh hưởng rõ ràng đến các phe phái và địa điểm.
+
+    Ví dụ: 
+    - "Ma đạo trỗi dậy, các tu sĩ Ma Phái bắt đầu tấn công các tuyến đường giao thương gần Rừng Mê Vụ."
+    - "Một bí cảnh thượng cổ bất ngờ xuất hiện tại Sa Mạc Vô Tận, thu hút vô số tu sĩ đến tìm cơ duyên."
+    - "Xiển Giáo và Triệt Giáo đạt được một thỏa thuận ngừng chiến tạm thời để cùng nhau đối phó với một đại yêu."
+
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
+
+    const settings = await db.getSettings();
+    const response = await generateWithRetry({
+        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: eventSchema,
+        }
+    });
+
+    return JSON.parse(response.text) as Omit<DynamicWorldEvent, 'id' | 'turnStart'>;
 };

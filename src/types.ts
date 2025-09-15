@@ -575,6 +575,8 @@ export interface NPC {
     loot?: { itemId: string; chance: number; min: number; max: number }[];
     tuoiTho: number;
     element?: Element;
+    mucTieu?: string;
+    trangThaiHanhDong?: string;
 }
 
 export interface InventoryItem {
@@ -802,8 +804,19 @@ export interface Rumor {
     text: string;
 }
 
+export interface DynamicWorldEvent {
+  id: string;
+  title: string;
+  description: string;
+  turnStart: number; // Game day number (absolute)
+  duration: number; // in game days
+  affectedFactions: string[]; // Faction names
+  affectedLocationIds: string[]; // Location IDs
+}
+
 export interface WorldState {
     rumors: Rumor[];
+    dynamicEvents?: DynamicWorldEvent[];
 }
 
 export interface ActiveStoryState {

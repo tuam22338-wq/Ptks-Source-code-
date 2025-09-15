@@ -102,6 +102,12 @@ export const migrateGameState = (savedGame: any): GameState => {
          }
          // FIX: Removed incorrect migration logic that deleted properties still in use.
     }
+    if(dataToProcess.worldState) {
+        dataToProcess.worldState.rumors = dataToProcess.worldState.rumors ?? [];
+        dataToProcess.worldState.dynamicEvents = dataToProcess.worldState.dynamicEvents ?? [];
+    } else {
+        dataToProcess.worldState = { rumors: [], dynamicEvents: [] };
+    }
     dataToProcess.storySummary = dataToProcess.storySummary ?? '';
 
     // Re-hydrate data that was stripped for saving
@@ -411,7 +417,7 @@ export const createNewGameState = async (
         maxActionPoints: 4,
     };
 
-    const initialWorldState: WorldState = { rumors: [] };
+    const initialWorldState: WorldState = { rumors: [], dynamicEvents: [] };
 
     const discoveredLocations: Location[] = [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))];
 

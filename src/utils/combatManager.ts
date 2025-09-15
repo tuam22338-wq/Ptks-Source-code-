@@ -1,4 +1,4 @@
-import type { NPC, PlayerCharacter, CultivationTechnique, Element } from '@/types';
+import type { NPC, PlayerCharacter, CultivationTechnique, Element } from '../types';
 
 const ELEMENTAL_CHART: Record<Element, { strongAgainst: Element[], weakAgainst: Element[] }> = {
     'Kim': { strongAgainst: ['Mộc'], weakAgainst: ['Hỏa'] },
@@ -6,7 +6,10 @@ const ELEMENTAL_CHART: Record<Element, { strongAgainst: Element[], weakAgainst: 
     'Thủy': { strongAgainst: ['Hỏa'], weakAgainst: ['Thổ'] },
     'Hỏa': { strongAgainst: ['Kim'], weakAgainst: ['Thủy'] },
     'Thổ': { strongAgainst: ['Thủy'], weakAgainst: ['Mộc'] },
-    'Vô': { strongAgainst: [], weakAgainst: [] }
+    'Vô': { strongAgainst: [], weakAgainst: [] },
+    // Dị and Hỗn Độn can be considered neutral or have special rules
+    'Dị': { strongAgainst: [], weakAgainst: [] }, 
+    'Hỗn Độn': { strongAgainst: ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ'], weakAgainst: [] },
 };
 
 const getFinalAttributeValue = (character: PlayerCharacter | NPC, name: string): number => {

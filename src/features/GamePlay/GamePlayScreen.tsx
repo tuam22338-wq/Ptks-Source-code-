@@ -19,7 +19,7 @@ import InventoryModal from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { advanceGameTime } from '../../utils/timeManager';
-import { simulateWorldTurn } from '../../services/worldSimulator';
+import { simulateWorldTurn, simulateFactionTurn } from '../../services/worldSimulator';
 import * as questManager from '../../utils/questManager';
 
 const GamePlayScreenContent: React.FC = memo(() => {
@@ -137,6 +137,22 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
         if (newDay) {
             addStoryEntry({ type: 'system', content: `Một ngày mới đã bắt đầu: ${tempState.gameDate.season}, ngày ${tempState.gameDate.day}` });
+            
+            // Faction simulation (once a week)
+            if (tempState.gameDate.day % 7 === 1) {
+                const { newEvent, narrative } = await simulateFactionTurn(tempState);
+                if (newEvent && narrative) {
+                    addStoryEntry({ type: 'system-notification', content: narrative });
+                    tempState = {
+                        ...tempState,
+                        worldState: {
+                            ...tempState.worldState,
+                            dynamicEvents: [...(tempState.worldState.dynamicEvents || []), newEvent]
+                        }
+                    };
+                }
+            }
+            
             const { newState: stateAfterSim, rumors } = await simulateWorldTurn(tempState);
             tempState = stateAfterSim;
             if (rumors.length > 0) {
