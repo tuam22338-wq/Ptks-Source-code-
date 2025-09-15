@@ -207,10 +207,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                         }
                     }
 
-                    if (!Array.isArray(savedSettings.apiKeys)) {
-                        savedSettings.apiKeys = [];
-                        settingsUpdated = true;
-                    }
+                    // FIX: Removed deprecated API key management from settings.
+                    // The API key is now exclusively managed via the process.env.API_KEY environment variable.
                     
                     if (settingsUpdated) {
                         console.warn("Một số cài đặt không hợp lệ đã được đặt lại về mặc định.");

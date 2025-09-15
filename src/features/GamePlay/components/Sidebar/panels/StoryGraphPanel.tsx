@@ -3,7 +3,6 @@ import type { StoryEntry } from '../../../../../types';
 import { FaUser, FaBookOpen, FaCog, FaFeatherAlt } from 'react-icons/fa';
 import { GiBroadsword } from 'react-icons/gi';
 
-// FIX: Add 'system-notification' to the NODE_INFO object to cover all possible StoryEntry types.
 const NODE_INFO: { [key in StoryEntry['type']]: { icon: React.ElementType, color: string, label: string } } = {
     'narrative': { icon: FaBookOpen, color: 'border-gray-500', label: 'Tường thuật' },
     'dialogue': { icon: FaFeatherAlt, color: 'border-amber-500', label: 'Đối thoại' },

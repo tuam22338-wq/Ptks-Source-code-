@@ -1,8 +1,8 @@
 import React, { useState, useEffect, memo } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../../constants';
-import { generateBackgroundImage, testApiKey } from '../../services/geminiService';
+import { generateBackgroundImage } from '../../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme, RagEmbeddingModel } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaKey, FaCheckCircle, FaTimesCircle, FaExpand, FaBook, FaTrash, FaTerminal, FaPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaBook, FaTrash, FaTerminal } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
@@ -46,13 +46,6 @@ const TabButton: React.FC<{
   </button>
 ));
 
-type KeyStatus = {
-    key: string;
-    status: 'untested' | 'testing' | 'valid' | 'invalid';
-    error?: string;
-};
-
-
 const SettingsPanel: React.FC = () => {
     const { settings, handleNavigate, handleSettingsSave, handleSettingChange } = useAppContext();
     const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
@@ -60,31 +53,6 @@ const SettingsPanel: React.FC = () => {
     const [isGeneratingBg, setIsGeneratingBg] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
     
-    const [keyStatuses, setKeyStatuses] = useState<KeyStatus[]>([]);
-    const [newApiKey, setNewApiKey] = useState('');
-
-    useEffect(() => {
-        setKeyStatuses(settings.apiKeys.map(key => ({ key, status: 'untested' })));
-    }, [settings.apiKeys]);
-
-    const handleTestApiKey = async (keyToTest: string) => {
-        setKeyStatuses(prev => prev.map(s => s.key === keyToTest ? { ...s, status: 'testing' } : s));
-        const result = await testApiKey(keyToTest);
-        setKeyStatuses(prev => prev.map(s => s.key === keyToTest ? { ...s, status: result.status, error: result.error } : s));
-    };
-    
-    const handleAddApiKey = () => {
-        if (newApiKey.trim() && !settings.apiKeys.includes(newApiKey.trim())) {
-            handleSettingChange('apiKeys', [...settings.apiKeys, newApiKey.trim()]);
-            setNewApiKey('');
-        }
-    };
-
-    const handleRemoveApiKey = (keyToRemove: string) => {
-        handleSettingChange('apiKeys', settings.apiKeys.filter(k => k !== keyToRemove));
-    };
-
-
     const handleGenerateBg = async () => {
         if (!bgPrompt) return;
         setIsGeneratingBg(true);
@@ -93,7 +61,7 @@ const SettingsPanel: React.FC = () => {
             handleSettingChange('backgroundImage', imageUrl);
         } catch (error) {
             console.error("Failed to generate background image:", error);
-            alert('Lỗi: Không thể tạo ảnh nền.');
+            alert('Lỗi: Không thể tạo ảnh nền. Vui lòng kiểm tra API Key và model tạo ảnh trong cài đặt.');
         } finally {
             setIsGeneratingBg(false);
         }
@@ -116,7 +84,7 @@ const SettingsPanel: React.FC = () => {
                     keysToReset = ['gameSpeed', 'narrativeStyle', 'enablePerformanceMode', 'enableAiSoundSystem'];
                     break;
                  case 'Nâng Cao':
-                    keysToReset = ['apiKeys', 'historyTokenLimit', 'summarizeBeforePruning', 'ragSummaryModel', 'ragSourceIdModel', 'ragEmbeddingModel', 'autoSummaryFrequency', 'ragTopK', 'enableDeveloperConsole'];
+                    keysToReset = ['historyTokenLimit', 'summarizeBeforePruning', 'ragSummaryModel', 'ragSourceIdModel', 'ragEmbeddingModel', 'autoSummaryFrequency', 'ragTopK', 'enableDeveloperConsole'];
                     break;
             }
             keysToReset.forEach(key => handleSettingChange(key, DEFAULT_SETTINGS[key]));
@@ -349,44 +317,6 @@ const SettingsPanel: React.FC = () => {
                 )}
                 {activeTab === 'advanced' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <SettingsSection title="Quản lý API Key">
-                             <SettingsRow label="Danh sách API Keys" description="Thêm nhiều API key để luân phiên sử dụng khi một key hết hạn ngạch. Các tác vụ sẽ được phân phối giữa các key.">
-                                 <div className="space-y-2">
-                                     {keyStatuses.map((status, index) => (
-                                         <div key={index} className="flex items-center gap-2 p-2 bg-black/20 rounded-md border border-gray-700/60">
-                                             <FaKey className="text-gray-500" />
-                                             <span className="flex-grow font-mono text-gray-300">
-                                                 {`${status.key.slice(0, 4)}...${status.key.slice(-4)}`}
-                                             </span>
-                                             <div className="flex items-center gap-2">
-                                                 {status.status === 'testing' && <LoadingSpinner size="sm" />}
-                                                 {status.status === 'valid' && <FaCheckCircle className="text-green-400" title="Hợp lệ" />}
-                                                 {status.status === 'invalid' && <FaTimesCircle className="text-red-400" title={`Lỗi: ${status.error}`} />}
-                                                 <button onClick={() => handleTestApiKey(status.key)} disabled={status.status === 'testing'} className="px-3 py-1 bg-gray-700 text-white text-xs font-bold rounded-lg hover:bg-gray-600 disabled:opacity-50">Test</button>
-                                                 <button onClick={() => handleRemoveApiKey(status.key)} className="p-2 text-gray-400 hover:text-red-400" title="Xóa Key"><FaTrash /></button>
-                                             </div>
-                                         </div>
-                                     ))}
-                                      <div className="flex gap-2">
-                                         <input
-                                             type="password"
-                                             autoComplete="off"
-                                             value={newApiKey}
-                                             onChange={(e) => setNewApiKey(e.target.value)}
-                                             className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2"
-                                             placeholder="Dán API Key mới vào đây"
-                                         />
-                                         <button
-                                             onClick={handleAddApiKey}
-                                             disabled={!newApiKey.trim()}
-                                             className="px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 disabled:opacity-50"
-                                         >
-                                             <FaPlus />
-                                         </button>
-                                     </div>
-                                 </div>
-                             </SettingsRow>
-                        </SettingsSection>
                         <SettingsSection title="Quản lý Lịch sử Chat">
                             <SettingsRow label="Giới hạn Token Lịch sử" description="Số token tối đa giữ lại trong lịch sử chat để gửi cho AI. Giá trị cao hơn giúp AI nhớ ngữ cảnh tốt hơn nhưng tốn kém hơn.">
                                 <input type="number" step="256" value={settings.historyTokenLimit} onChange={e => handleSettingChange('historyTokenLimit', parseInt(e.target.value) || 8192)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />

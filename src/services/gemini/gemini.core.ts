@@ -1,9 +1,9 @@
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
-import type { GameSettings, CommunityMod, AIModel } from '../../types';
-import { DEFAULT_SETTINGS, COMMUNITY_MODS_URL } from "../../constants";
+import type { GameSettings } from '../../types';
+import { DEFAULT_SETTINGS } from "../../constants";
 import * as db from '../dbService';
 
-// --- Settings Manager ---
+// --- Settings Manager (Simplified: No longer handles API keys) ---
 const SettingsManager = (() => {
     let settingsCache: GameSettings | null = null;
 
@@ -23,32 +23,11 @@ const SettingsManager = (() => {
     };
 })();
 
-// --- API Key Manager for Rotation and Load Balancing ---
-const ApiKeyManager = (() => {
-    let keys: string[] = [];
-    let currentIndex = 0;
-
-    return {
-        initialize: (apiKeys: string[]) => {
-            keys = apiKeys;
-            currentIndex = 0;
-        },
-        getNextKey: (): string | null => {
-            if (keys.length === 0) return null;
-            const key = keys[currentIndex];
-            currentIndex = (currentIndex + 1) % keys.length;
-            return key;
-        },
-        getAvailableKeys: () => keys,
-    };
-})();
-
-
 export const reloadSettings = SettingsManager.reload;
 
-const getAiClient = (apiKey: string) => {
-    return new GoogleGenAI({ apiKey });
-};
+// Initialize the Gemini client once with the environment variable.
+// This is a hard requirement for security and best practices.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
 const getSettings = (): GameSettings => {
     return SettingsManager.get();
@@ -71,60 +50,6 @@ const getSafetySettingsForApi = () => {
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: settings.safetyLevels.dangerousContent as HarmBlockThreshold },
     ];
 };
-
-const performApiCall = async <T>(
-    apiFunction: (client: GoogleGenAI, request: any) => Promise<T>,
-    baseRequest: any
-): Promise<T> => {
-    await reloadSettings();
-    const settings = getSettings();
-    ApiKeyManager.initialize(settings.apiKeys);
-    
-    const keysToTry = ApiKeyManager.getAvailableKeys();
-
-    if (keysToTry.length === 0) {
-        throw new Error("Không có API Key nào được cấu hình. Vui lòng vào Cài đặt -> Nâng cao và thêm một API Key.");
-    }
-
-    let lastError: any = null;
-
-    // We loop through the keys array size + 1 to ensure every key is tried once
-    for (let i = 0; i < keysToTry.length; i++) {
-        const apiKey = ApiKeyManager.getNextKey();
-        if (!apiKey) continue; // Should not happen with the check above, but for type safety
-
-        try {
-            const ai = getAiClient(apiKey);
-            const response = await apiFunction(ai, baseRequest);
-            return response;
-        } catch (error: any) {
-            lastError = error;
-            const errorMessage = error.toString().toLowerCase();
-            const isAuthError = errorMessage.includes('400') || errorMessage.includes('permission') || errorMessage.includes('api key not valid');
-            const isQuotaError = errorMessage.includes('429') || errorMessage.includes('resource_exhausted');
-
-            if (isAuthError) {
-                console.error(`API call failed with auth error on key ending with ...${apiKey.slice(-4)}: ${errorMessage}`);
-                // Continue to the next key if auth fails, maybe it's just this one key
-                continue;
-            }
-            
-            if (isQuotaError) {
-                console.warn(`API Key ending with ...${apiKey.slice(-4)} has reached its quota. Trying next key...`);
-                // Silently continue to the next key
-                continue;
-            }
-
-            // For other errors, fail fast
-            console.error(`API call failed with an unexpected error on key ...${apiKey.slice(-4)}:`, error);
-            throw error;
-        }
-    }
-    
-    console.error("All API keys failed.", lastError);
-    throw new Error(`Tất cả các API Key đều không thành công. Lỗi cuối cùng: ${lastError.message}`);
-};
-
 
 export const generateWithRetryStream = async (generationRequest: any): Promise<AsyncIterable<GenerateContentResponse>> => {
     await reloadSettings();
@@ -150,16 +75,15 @@ export const generateWithRetryStream = async (generationRequest: any): Promise<A
         }
     };
     
-    ApiKeyManager.initialize(settings.apiKeys);
-    const apiKey = ApiKeyManager.getNextKey();
-    if (!apiKey) {
-        throw new Error("Không có API Key nào được cấu hình để thực hiện yêu cầu stream. Vui lòng vào Cài đặt -> Nâng cao.");
+    if (!process.env.API_KEY) {
+        throw new Error("API Key không được cấu hình. Vui lòng liên hệ quản trị viên.");
     }
-    const ai = getAiClient(apiKey);
+    
     return ai.models.generateContentStream(finalRequest);
 };
 
-export const generateWithRetry = (generationRequest: any): Promise<GenerateContentResponse> => {
+export const generateWithRetry = async (generationRequest: any): Promise<GenerateContentResponse> => {
+    await reloadSettings();
     const settings = getSettings();
     const safetySettings = getSafetySettingsForApi();
     
@@ -182,31 +106,33 @@ export const generateWithRetry = (generationRequest: any): Promise<GenerateConte
         }
     };
     
-    return performApiCall((ai, req) => ai.models.generateContent(req), finalRequest);
+    if (!process.env.API_KEY) {
+        throw new Error("API Key không được cấu hình. Vui lòng liên hệ quản trị viên.");
+    }
+    
+    try {
+        const response = await ai.models.generateContent(finalRequest);
+        return response;
+    } catch (error) {
+        console.error("API call failed:", error);
+        throw new Error(`Lỗi gọi API: ${error}`);
+    }
 };
 
-export const generateImagesWithRetry = (generationRequest: any): Promise<GenerateImagesResponse> => {
+export const generateImagesWithRetry = async (generationRequest: any): Promise<GenerateImagesResponse> => {
+    await reloadSettings();
     const settings = getSettings();
     const finalRequest = { ...generationRequest, model: settings.imageGenerationModel };
-    return performApiCall((ai, req) => ai.models.generateImages(req), finalRequest);
-};
-
-export const testApiKey = async (apiKey: string): Promise<{ status: 'valid' | 'invalid', error?: string }> => {
-    if (!apiKey) {
-        return { status: 'invalid', error: 'API key không được để trống.' };
+    
+    if (!process.env.API_KEY) {
+        throw new Error("API Key không được cấu hình. Vui lòng liên hệ quản trị viên.");
     }
 
     try {
-        const testAi = new GoogleGenAI({ apiKey });
-        await testAi.models.generateContent({ model: 'gemini-2.5-flash', contents: 'test' });
-        return { status: 'valid' as const };
-    } catch (e: any) {
-        let errorMessage = e.message;
-        if (e.toString().includes('API key not valid')) {
-            errorMessage = "API Key không hợp lệ. Vui lòng kiểm tra lại.";
-        } else if (e.toString().includes('fetch failed')) {
-            errorMessage = "Không thể kết nối đến máy chủ Gemini. Vui lòng kiểm tra kết nối mạng của bạn.";
-        }
-        return { status: 'invalid' as const, error: errorMessage };
+        const response = await ai.models.generateImages(finalRequest);
+        return response;
+    } catch (error) {
+        console.error("Image generation failed:", error);
+        throw new Error(`Lỗi tạo ảnh: ${error}`);
     }
 };

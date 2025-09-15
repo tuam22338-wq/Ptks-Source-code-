@@ -100,7 +100,6 @@ export const THEME_OPTIONS: { value: Theme; label: string }[] = [
 ];
 
 export const DEFAULT_SETTINGS: GameSettings = {
-    apiKeys: [],
     layoutMode: 'auto',
     gameSpeed: 'normal',
     narrativeStyle: 'classic_wuxia',
