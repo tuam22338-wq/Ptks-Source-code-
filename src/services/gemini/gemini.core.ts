@@ -1,138 +1,127 @@
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
-import type { GameSettings } from '../../types';
-import { DEFAULT_SETTINGS } from "../../constants";
+import { GoogleGenAI, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
 import * as db from '../dbService';
 
-// --- Settings Manager (Simplified: No longer handles API keys) ---
-const SettingsManager = (() => {
-    let settingsCache: GameSettings | null = null;
+const PROXY_URL = '/.netlify/functions/gemini-proxy';
 
-    const loadSettings = async () => {
+let userAiClient: GoogleGenAI | null = null;
+
+// This function needs to be called when settings change.
+export const reloadSettings = async () => {
+    const settings = await db.getSettings();
+    if (settings?.apiKey) {
         try {
-            const settings = await db.getSettings() || DEFAULT_SETTINGS;
-            settingsCache = settings;
-        } catch (e) {
-            console.error("Could not load settings from DB.", e);
-            settingsCache = DEFAULT_SETTINGS;
+            // Per Gemini guidelines, the API key is passed as a named parameter.
+            userAiClient = new GoogleGenAI({ apiKey: settings.apiKey });
+            console.log("Sử dụng API Key của người dùng.");
+        } catch (error) {
+            console.error("Lỗi khởi tạo Gemini client với API key của người dùng:", error);
+            userAiClient = null;
         }
-    };
-
-    return {
-        reload: loadSettings,
-        get: (): GameSettings => settingsCache || DEFAULT_SETTINGS,
-    };
-})();
-
-export const reloadSettings = SettingsManager.reload;
-
-// Initialize the Gemini client once with the environment variable.
-// This is a hard requirement for security and best practices.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-
-const getSettings = (): GameSettings => {
-    return SettingsManager.get();
-};
-
-const getSafetySettingsForApi = () => {
-    const settings = getSettings();
-    if (settings.masterSafetySwitch) {
-        return [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        ];
+    } else {
+        userAiClient = null;
+        console.log("Sử dụng proxy mặc định.");
     }
-    return [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: settings.safetyLevels.harassment as HarmBlockThreshold },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: settings.safetyLevels.hateSpeech as HarmBlockThreshold },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: settings.safetyLevels.sexuallyExplicit as HarmBlockThreshold },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: settings.safetyLevels.dangerousContent as HarmBlockThreshold },
-    ];
 };
 
-export const generateWithRetryStream = async (generationRequest: any): Promise<AsyncIterable<GenerateContentResponse>> => {
-    await reloadSettings();
-    const settings = getSettings();
-    const safetySettings = getSafetySettingsForApi();
-    
-    const modelToUse = generationRequest.model || settings.mainTaskModel;
+// Call it once on module load to initialize
+reloadSettings();
 
-    const thinkingConfig = modelToUse.includes('flash') 
-        ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
-        : {};
-    
-    const finalRequest = {
-        ...generationRequest,
-        model: modelToUse,
-        config: { 
-            ...generationRequest.config, 
-            safetySettings,
-            temperature: settings.temperature,
-            topK: settings.topK,
-            topP: settings.topP,
-            ...thinkingConfig,
+// Helper to handle API call errors
+const handleApiError = async (response: Response) => {
+    const errorBody = await response.json().catch(() => ({ error: 'Phản hồi không hợp lệ từ server' }));
+    console.error("Lỗi từ Proxy:", errorBody);
+    throw new Error(errorBody.error || `Lỗi không xác định từ server (status: ${response.status})`);
+};
+
+export async function* generateWithRetryStream(generationRequest: any): AsyncIterable<any> {
+    if (userAiClient) {
+        const streamResponse = await userAiClient.models.generateContentStream(generationRequest);
+        for await (const chunk of streamResponse) {
+            yield chunk;
         }
-    };
-    
-    if (!process.env.API_KEY) {
-        throw new Error("API Key không được cấu hình. Vui lòng liên hệ quản trị viên.");
+    } else {
+        const response = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                task: 'generateContentStream',
+                ...generationRequest
+            }),
+        });
+
+        if (!response.ok || !response.body) {
+            await handleApiError(response);
+            return;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n\n').filter(line => line.startsWith('data: '));
+
+                for (const line of lines) {
+                    try {
+                        const jsonString = line.substring('data: '.length);
+                        const parsedChunk = JSON.parse(jsonString);
+                        yield parsedChunk;
+                    } catch (e) {
+                        console.error("Lỗi khi phân tích một chunk stream:", e, line);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Lỗi khi đọc stream:", error);
+            throw error;
+        } finally {
+            reader.releaseLock();
+        }
     }
-    
-    return ai.models.generateContentStream(finalRequest);
-};
+}
 
 export const generateWithRetry = async (generationRequest: any): Promise<GenerateContentResponse> => {
-    await reloadSettings();
-    const settings = getSettings();
-    const safetySettings = getSafetySettingsForApi();
-    
-    const modelToUse = generationRequest.model || settings.mainTaskModel;
+    if (userAiClient) {
+        return userAiClient.models.generateContent(generationRequest);
+    }
 
-    const thinkingConfig = modelToUse.includes('flash') 
-        ? { thinkingConfig: { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 } }
-        : {};
-    
-    const finalRequest = {
-        ...generationRequest,
-        model: modelToUse,
-        config: { 
-            ...generationRequest.config, 
-            safetySettings,
-            temperature: settings.temperature,
-            topK: settings.topK,
-            topP: settings.topP,
-            ...thinkingConfig,
-        }
-    };
-    
-    if (!process.env.API_KEY) {
-        throw new Error("API Key không được cấu hình. Vui lòng liên hệ quản trị viên.");
+    const response = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            task: 'generateContent',
+            ...generationRequest
+        }),
+    });
+
+    if (!response.ok) {
+        await handleApiError(response);
     }
     
-    try {
-        const response = await ai.models.generateContent(finalRequest);
-        return response;
-    } catch (error) {
-        console.error("API call failed:", error);
-        throw new Error(`Lỗi gọi API: ${error}`);
-    }
+    return response.json();
 };
 
 export const generateImagesWithRetry = async (generationRequest: any): Promise<GenerateImagesResponse> => {
-    await reloadSettings();
-    const settings = getSettings();
-    const finalRequest = { ...generationRequest, model: settings.imageGenerationModel };
+    if (userAiClient) {
+        return userAiClient.models.generateImages(generationRequest);
+    }
     
-    if (!process.env.API_KEY) {
-        throw new Error("API Key không được cấu hình. Vui lòng liên hệ quản trị viên.");
-    }
+    const response = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            task: 'generateImages',
+            ...generationRequest
+        }),
+    });
 
-    try {
-        const response = await ai.models.generateImages(finalRequest);
-        return response;
-    } catch (error) {
-        console.error("Image generation failed:", error);
-        throw new Error(`Lỗi tạo ảnh: ${error}`);
+    if (!response.ok) {
+        await handleApiError(response);
     }
+    
+    return response.json();
 };

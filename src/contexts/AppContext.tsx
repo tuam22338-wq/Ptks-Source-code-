@@ -206,9 +206,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                             settingsUpdated = true;
                         }
                     }
-
-                    // FIX: Removed deprecated API key management from settings.
-                    // The API key is now exclusively managed via the process.env.API_KEY environment variable.
                     
                     if (settingsUpdated) {
                         console.warn("Một số cài đặt không hợp lệ đã được đặt lại về mặc định.");
@@ -217,6 +214,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
                     setSettings({ ...DEFAULT_SETTINGS, ...savedSettings });
                 }
+                await reloadSettings();
                 const worldId = await db.getActiveWorldId();
                 _setActiveWorldId(worldId);
                 await loadSaveSlots();
