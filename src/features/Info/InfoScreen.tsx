@@ -1,8 +1,7 @@
-import React, { useState, memo } from 'react';
-import { FaArrowLeft, FaUserCog, FaListUl, FaBrain, FaDollarSign, FaUserClock, FaBookDead, FaWrench, FaFeatherAlt, FaPalette, FaProjectDiagram, FaCode } from 'react-icons/fa';
+import React, { memo } from 'react';
+import { FaArrowLeft, FaUserCog, FaListUl, FaBrain, FaDollarSign, FaUserClock, FaBookDead, FaWrench, FaFeatherAlt, FaPalette, FaProjectDiagram, FaLightbulb } from 'react-icons/fa';
 import { GiCastle, GiMountainCave, GiCauldron } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
-import SourceCodeViewer from './SourceCodeViewer';
 
 const FeatureItem: React.FC<{ icon: React.ElementType, title: string, description: string }> = ({ icon: Icon, title, description }) => (
     <div className="flex items-start gap-4">
@@ -14,7 +13,7 @@ const FeatureItem: React.FC<{ icon: React.ElementType, title: string, descriptio
     </div>
 );
 
-const FEATURES = [
+const FEATURES_1_0_0 = [
     { icon: FaBrain, title: 'Hệ Thống Thuộc Tính "Tinh - Khí - Thần"', description: 'Hệ thống thuộc tính sâu sắc dựa trên triết lý tu chân, bao gồm các chỉ số về Nhục Thân, Chân Nguyên, và Linh Hồn.' },
     { icon: FaDollarSign, title: 'Hệ Thống Kinh Tế & Tiền Tệ "Lưỡng Giới"', description: 'Phân chia tiền tệ thành Phàm Tệ (Đồng, Bạc, Vàng) và Linh Tệ (Linh Thạch) cho thế giới phàm nhân và tu chân.' },
     { icon: FaUserClock, title: 'NPC Có Tuổi Thọ', description: 'Các NPC trong game sẽ già đi và có thể qua đời, tạo ra một thế giới luôn biến đổi.' },
@@ -30,11 +29,6 @@ const FEATURES = [
 
 const InfoScreen: React.FC = () => {
   const { handleNavigate } = useAppContext();
-  const [showSourceViewer, setShowSourceViewer] = useState(false);
-
-  if (showSourceViewer) {
-    return <SourceCodeViewer onExit={() => setShowSourceViewer(false)} />;
-  }
 
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
@@ -54,18 +48,23 @@ const InfoScreen: React.FC = () => {
             <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">Nhà Phát Triển</h3>
             <p className="text-gray-400">Trò chơi này được phát triển bởi <strong className="text-amber-300">Nguyen Hoang Truong (Daniel, Nobita)</strong>.</p>
             <p className="text-gray-400 mt-2">Xin chân thành cảm ơn bạn đã trải nghiệm sản phẩm này!</p>
-            <button
-                onClick={() => setShowSourceViewer(true)}
-                className="mt-4 flex items-center gap-2 px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors"
-            >
-                <FaCode /> Xem Mã Nguồn
-            </button>
+        </section>
+
+        <section>
+            <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300 flex items-center gap-2"><FaListUl /> Tính Năng Mới (Phiên bản 1.0.1 - Preview)</h3>
+            <div className="space-y-4">
+                <FeatureItem 
+                    icon={FaLightbulb}
+                    title="Gợi Ý Hành Động Bằng AI"
+                    description="Thêm nút gợi ý hành động trong màn hình game, giúp người chơi có thêm ý tưởng tương tác với thế giới khi bị bí."
+                />
+            </div>
         </section>
 
         <section>
             <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300 flex items-center gap-2"><FaListUl /> Tính Năng Cập Nhật 1.0.0</h3>
             <div className="space-y-4">
-                {FEATURES.map(feature => <FeatureItem key={feature.title} {...feature} />)}
+                {FEATURES_1_0_0.map(feature => <FeatureItem key={feature.title} {...feature} />)}
             </div>
         </section>
 
