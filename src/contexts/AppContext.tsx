@@ -362,25 +362,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             return;
         }
         setIsLoading(true);
+        setLoadingMessage('Đang khởi tạo thế giới mới... Do sự phức tạp của việc tạo ra một thế giới sống động với các NPC, gia đình, và sự kiện, quá trình này có thể mất vài phút. Vui lòng chờ...');
 
-        const npcCount = NPC_DENSITY_LEVELS.find(d => d.id === gameStartData.npcDensity)?.count ?? 20;
-        let remainingTime = Math.ceil(npcCount * 0.3) + 3;
-        const messages = ['Đang nạp các mod đã kích hoạt...', 'Thỉnh mời các vị thần...', 'Vẽ nên sông núi, cây cỏ...', 'Tạo ra chúng sinh vạn vật...', 'An bài số mệnh, định ra nhân quả...'];
-        let messageIndex = 0;
-        const updateLoadingMessage = () => {
-            const timeString = remainingTime > 0 ? ` (Ước tính còn: ${remainingTime}s)` : ' (Sắp xong...)';
-            setLoadingMessage(messages[messageIndex] + timeString);
-        };
-        updateLoadingMessage();
-        const timerInterval = setInterval(() => {
-            remainingTime = Math.max(0, remainingTime - 1);
-            updateLoadingMessage();
-        }, 1000);
-        const messageInterval = setInterval(() => {
-            messageIndex = (messageIndex + 1) % messages.length;
-            updateLoadingMessage();
-        }, 4000);
-        
         try {
             const modLibrary: db.DbModInLibrary[] = await db.getModLibrary();
             const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
@@ -389,18 +372,20 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 const modContent = await db.getModContent(modInfo.modInfo.id);
                 if (modContent) activeMods.push(modContent);
             }
+            
             const newGameState = await createNewGameState(gameStartData, activeMods, activeWorldId);
+            
+            setLoadingMessage('Lưu lại dòng thời gian đầu tiên...');
             await db.saveGameState(currentSlotId, newGameState);
             await loadSaveSlots();
+            
+            setLoadingMessage('Hoàn tất!');
             const hydratedGameState = migrateGameState(newGameState);
             setGameState(hydratedGameState);
             setView('gamePlay');
         } catch (error) {
             console.error("Failed to start new game:", error);
             alert(`Lỗi nghiêm trọng khi tạo thế giới: ${(error as Error).message}. Vui lòng thử lại.`);
-        } finally {
-            clearInterval(timerInterval);
-            clearInterval(messageInterval);
             setIsLoading(false);
         }
     }, [currentSlotId, loadSaveSlots, activeWorldId]);

@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import type { PlayerCharacter, Sect } from '../../../../../types';
+import type { PlayerCharacter, Sect, CultivationTechnique } from '../../../../../types';
 import { SECTS } from '../../../../../constants';
 import { FaUsers, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
@@ -22,14 +22,28 @@ const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter, setPlayerCharact
             }
         }
         
-        setPlayerCharacter(pc => ({
-            ...pc,
-            sect: {
+        setPlayerCharacter(pc => {
+            const updatedPc = { ...pc };
+            updatedPc.sect = {
                 sectId: sectToJoin.id,
                 rank: sectToJoin.ranks[0].name,
                 contribution: 0,
+            };
+
+            // Grant starting technique
+            if (sectToJoin.startingTechnique && !updatedPc.auxiliaryTechniques.some(t => t.name === sectToJoin.startingTechnique!.name)) {
+                const newTechnique: CultivationTechnique = {
+                    id: `tech_${sectToJoin.id}_start`,
+                    level: 1,
+                    maxLevel: 10,
+                    ...sectToJoin.startingTechnique,
+                };
+                updatedPc.auxiliaryTechniques = [...updatedPc.auxiliaryTechniques, newTechnique];
+                showNotification(`Đã học được công pháp nhập môn: [${newTechnique.name}]!`);
             }
-        }));
+            
+            return updatedPc;
+        });
 
         showNotification(`Chúc mừng bạn đã gia nhập ${sectToJoin.name}!`);
     };

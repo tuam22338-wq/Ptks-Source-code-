@@ -590,7 +590,7 @@ export interface CultivationState {
     hasConqueredInnerDemon: boolean;
 }
 
-export type CultivationTechniqueType = 'Linh Kỹ' | 'Thần Thông' | 'Độn Thuật' | 'Tuyệt Kỹ';
+export type CultivationTechniqueType = 'Linh Kỹ' | 'Thần Thông' | 'Độn Thuật' | 'Tuyệt Kỹ' | 'Tâm Pháp' | 'Luyện Thể' | 'Kiếm Quyết';
 
 export interface CultivationTechnique {
     id: string;
@@ -609,6 +609,8 @@ export interface CultivationTechnique {
     maxLevel: number;
     levelBonuses?: { level: number, bonuses: StatBonus[] }[];
     element?: Element;
+    requirements?: StatBonus[];
+    tags?: string[];
 }
 
 
@@ -873,4 +875,5 @@ export interface Sect {
     joinRequirements: { attribute: string; value: number; greaterThan?: boolean }[];
     missions: SectMission[];
     icon?: ElementType;
+    startingTechnique?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
 }

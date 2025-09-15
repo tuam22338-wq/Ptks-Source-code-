@@ -1,4 +1,4 @@
-import type { Sect, SectMission } from '../types';
+import type { Sect, SectMission, CultivationTechnique } from '../types';
 import { FaSun } from 'react-icons/fa';
 import { GiYinYang } from 'react-icons/gi';
 
@@ -46,7 +46,18 @@ export const SECTS: Sect[] = [
             { name: 'Đệ tử Nội môn', contributionRequired: 2000 },
             { name: 'Đệ tử Chân truyền', contributionRequired: 10000 },
         ],
-        missions: XIEN_GIAO_MISSIONS
+        missions: XIEN_GIAO_MISSIONS,
+        startingTechnique: {
+            name: 'Ngọc Thanh Sơ Quyết',
+            description: 'Công pháp nhập môn của Xiển Giáo, giúp dẫn khí nhập thể, củng cố căn cơ.',
+            type: 'Tâm Pháp',
+            cost: { type: 'Linh Lực', value: 0 },
+            cooldown: 0,
+            effects: [],
+            rank: 'Phàm Giai',
+            icon: '📜',
+            element: 'Kim'
+        }
     },
     {
         id: 'triet_giao',
@@ -61,6 +72,17 @@ export const SECTS: Sect[] = [
             { name: 'Nội môn Đệ tử', contributionRequired: 1800 },
             { name: 'Thân truyền Đệ tử', contributionRequired: 9000 },
         ],
-        missions: TRIET_GIAO_MISSIONS
+        missions: TRIET_GIAO_MISSIONS,
+        startingTechnique: {
+            name: 'Thượng Thanh Chân Kinh',
+            description: 'Công pháp nhập môn của Triệt Giáo, hữu giáo vô loại, vạn pháp quy nhất.',
+            type: 'Tâm Pháp',
+            cost: { type: 'Linh Lực', value: 0 },
+            cooldown: 0,
+            effects: [],
+            rank: 'Phàm Giai',
+            icon: '📖',
+            element: 'Thủy'
+        }
     },
 ];

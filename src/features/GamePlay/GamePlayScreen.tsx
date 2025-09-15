@@ -13,7 +13,7 @@ import CultivationPathModal from './components/CultivationPathModal';
 import CustomStoryPlayer from './components/CustomStoryPlayer';
 import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
-import { generateStoryContinuationStream, summarizeStory, generateInnerDemonTrial } from '../../services/geminiService';
+import { generateStoryContinuationStream, summarizeStory, generateInnerDemonTrial, generateWeeklyRumor, generateRandomTechnique } from '../../services/geminiService';
 import { REALM_SYSTEM, CULTIVATION_PATHS } from '../../constants';
 import InventoryModal from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
@@ -64,6 +64,63 @@ const GamePlayScreenContent: React.FC = memo(() => {
             openInventoryModal();
             return;
         }
+
+        if (type === 'act' && text.toLowerCase().includes('tham ngộ đại đạo')) {
+            setIsAiResponding(true);
+            addStoryEntry({ type: 'player-action', content: 'Ta quyết định tĩnh tâm, thử tham ngộ đại đạo trong trời đất...' });
+            
+            (async () => {
+                try {
+                    const technique = await generateRandomTechnique(gameState);
+                    setGameState(prev => {
+                        if (!prev) return null;
+                        const pc = { ...prev.playerCharacter };
+                        pc.auxiliaryTechniques = [...pc.auxiliaryTechniques, technique];
+                        return { ...prev, playerCharacter: pc };
+                    });
+                    const narrative = `Giữa lúc tĩnh tọa, trong đầu ngươi bỗng lóe lên một tia sáng. Một bộ công pháp huyền ảo mang tên [${technique.name}] tựa như được khắc sâu vào trong ký ức của ngươi!`;
+                    addStoryEntry({ type: 'narrative', content: narrative });
+                    showNotification(`Lĩnh ngộ được công pháp mới: ${technique.name}!`);
+                } catch (error) {
+                    console.error("Failed to generate technique:", error);
+                    addStoryEntry({ type: 'system', content: `Linh khí hỗn loạn, tham ngộ thất bại.` });
+                    showNotification('Tham ngộ thất bại!');
+                } finally {
+                    setIsAiResponding(false);
+                }
+            })();
+            return;
+        }
+
+        const cultivationKeywords = ['tu luyện', 'tĩnh tọa', 'hấp thụ linh khí', 'đả tọa'];
+        if (type === 'act' && cultivationKeywords.some(kw => text.toLowerCase().includes(kw))) {
+            const hasCultivationTechnique = 
+                !!gameState.playerCharacter.mainCultivationTechnique || 
+                gameState.playerCharacter.auxiliaryTechniques.some(t => t.type === 'Tâm Pháp');
+
+            if (!hasCultivationTechnique) {
+                addStoryEntry({ type: 'system', content: 'Bạn chưa học được bất kỳ công pháp nào, không thể tu luyện. Có lẽ nên tìm một tông môn để gia nhập, hoặc tìm kiếm kỳ duyên khác.' });
+                return;
+            }
+
+            const currentLocation = gameState.discoveredLocations.find(l => l.id === gameState.playerCharacter.currentLocationId);
+            const qiGain = Math.floor(10 * (currentLocation?.qiConcentration || 10) / 10 * (1 + Math.random() * 0.2));
+            
+            setGameState(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    playerCharacter: {
+                        ...prev.playerCharacter,
+                        cultivation: {
+                            ...prev.playerCharacter.cultivation,
+                            spiritualQi: prev.playerCharacter.cultivation.spiritualQi + qiGain,
+                        }
+                    }
+                }
+            });
+            text = `Ta ngồi xuống tu luyện, hấp thụ được ${qiGain} điểm linh khí.`;
+        }
     
         setIsAiResponding(true);
         if (abortControllerRef.current) {
@@ -75,7 +132,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
     
         let tempState = gameState;
         
-        // Advance time and maybe simulate world
         const { newState: stateAfterTime, newDay } = advanceGameTime(tempState, apCost);
         tempState = stateAfterTime;
 
@@ -86,6 +142,15 @@ const GamePlayScreenContent: React.FC = memo(() => {
             if (rumors.length > 0) {
                 const rumorText = rumors.map(r => `Có tin đồn rằng: ${r.text}`).join('\n');
                 addStoryEntry({ type: 'narrative', content: rumorText });
+            }
+
+            if (tempState.gameDate.day % 7 === 1) {
+                try {
+                    const weeklyNews = await generateWeeklyRumor(tempState);
+                    addStoryEntry({ type: 'system', content: `[Thiên Hạ Sự] ${weeklyNews}` });
+                } catch (e) {
+                    console.error("Failed to generate weekly rumor:", e);
+                }
             }
         }
 

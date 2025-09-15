@@ -181,8 +181,8 @@ const SettingsPanel: React.FC = () => {
                                 <div className="flex items-center gap-4">
                                     <input
                                         type="range"
-                                        min="75"
-                                        max="150"
+                                        min="50"
+                                        max="200"
                                         step="5"
                                         value={settings.zoomLevel}
                                         onChange={e => handleSettingChange('zoomLevel', parseInt(e.target.value))}

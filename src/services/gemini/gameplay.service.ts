@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial } from '../../types';
-import { NARRATIVE_STYLES, REALM_SYSTEM } from "../../constants";
+import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element } from '../../types';
+import { NARRATIVE_STYLES, REALM_SYSTEM, FACTIONS, PHAP_BAO_RANKS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 
@@ -20,15 +20,23 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
 - ${difficultyText}
 - Chỉ kể tiếp câu chuyện, không đưa ra lời khuyên hay bình luận ngoài vai trò người kể chuyện.
+- **QUAN TRỌNG:** Hành động của người chơi không phải lúc nào cũng thành công. Dựa vào độ khó của hành động (ví dụ: trèo lên vách núi cheo leo là rất khó), bối cảnh, và chỉ số của nhân vật, hãy quyết định kết quả một cách hợp lý. Có thể có thành công, thất bại, hoặc thành công một phần với hậu quả không mong muốn.
 - Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.
 - Đừng lặp lại những thông tin đã có trong ngữ cảnh.`;
 
     const historyContext = storySummary
       ? `**Lịch sử tóm tắt:**\n${storySummary}\n\n**Sự kiện gần đây nhất:**\n${storyLog.slice(-3).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}`
       : `**Lịch sử gần đây (5 mục cuối):**\n${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}`;
+    
+    const keyAttributes = playerCharacter.attributes
+        .flatMap(g => g.attributes)
+        .filter(a => ['Lực Lượng', 'Thân Pháp', 'Ngộ Tính', 'Cơ Duyên', 'Căn Cốt'].includes(a.name))
+        .map(a => `${a.name}: ${a.value}`)
+        .join(', ');
 
     const contextSummary = [
         `**Nhân vật:** Tên: ${playerCharacter.identity.name}. Xuất thân: ${playerCharacter.identity.origin}. Tính cách: ${playerCharacter.identity.personality}. Danh vọng: ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value} điểm).`,
+        `**Chỉ số chính:** ${keyAttributes}.`,
         `**Bối cảnh:** Hiện tại là giờ ${gameDate.shichen}, ngày ${gameDate.day} mùa ${gameDate.season} năm ${gameDate.era} ${gameDate.year}.`,
         `**Vị trí:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.`,
         npcsHere.length > 0 ? `**Nhân vật khác tại đây:** ${npcsHere.map(n => `${n.identity.name} (${n.status})`).join(', ')}.` : "Không có ai khác ở đây.",
@@ -251,4 +259,106 @@ export const generateActionSuggestions = async (gameState: GameState): Promise<s
 
     const result = JSON.parse(response.text);
     return result.suggestions || [];
+};
+
+export const generateWeeklyRumor = async (gameState: GameState): Promise<string> => {
+    const { gameDate, majorEvents } = gameState;
+
+    const upcomingEvent = majorEvents.find(e => e.year > gameDate.year);
+
+    const prompt = `Bạn là một người kể chuyện trong game tu tiên. Thế giới đang vận động. Hãy tạo ra một tin tức, tin đồn, hoặc sự kiện nhỏ xảy ra trong tuần qua.
+    
+    Bối cảnh hiện tại:
+    - Năm: ${gameDate.year}
+    - Sự kiện lớn sắp tới: ${upcomingEvent ? `${upcomingEvent.title} (dự kiến năm ${upcomingEvent.year})` : 'Đại kiếp Phong Thần sắp kết thúc.'}
+    - Các thế lực chính: ${FACTIONS.map(f => f.name).join(', ')}.
+
+    Nhiệm vụ:
+    Tạo ra một đoạn tin tức ngắn gọn (1-2 câu) về một sự kiện nhỏ vừa xảy ra. Sự kiện này có thể liên quan đến:
+    - Một trận giao tranh nhỏ giữa các tu sĩ.
+    - Một dị bảo xuất hiện ở đâu đó.
+    - Hoạt động của một trong các phe phái chính.
+    - Một lời tiên tri hoặc điềm báo.
+
+    Ví dụ: "Có tin đồn rằng người ta nhìn thấy một luồng bảo quang xuất hiện ở Hắc Long Đàm, dường như có dị bảo sắp xuất thế." hoặc "Đệ tử Xiển Giáo và Triệt Giáo lại xảy ra xung đột ở gần Tam Sơn Quan, một vài tu sĩ cấp thấp đã bị thương."
+
+    Chỉ trả về đoạn văn tin tức, không thêm bất kỳ lời dẫn nào.`;
+    
+    const settings = await db.getSettings();
+    const response = await generateWithRetry({
+        model: settings?.quickSupportModel || 'gemini-2.5-flash',
+        contents: prompt,
+    });
+    
+    return response.text.trim();
+};
+
+// FIX: Add generateRandomTechnique function to resolve import error.
+export const generateRandomTechnique = async (gameState: GameState): Promise<CultivationTechnique> => {
+    const { playerCharacter } = gameState;
+    const currentRealm = REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+    
+    const techniqueSchema = {
+        type: Type.OBJECT,
+        properties: {
+            name: { type: Type.STRING, description: 'Tên của công pháp, ngắn gọn và độc đáo.' },
+            description: { type: Type.STRING, description: 'Mô tả ngắn gọn về công pháp.' },
+            type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] as CultivationTechniqueType[] },
+            rank: { type: Type.STRING, enum: Object.keys(PHAP_BAO_RANKS) as any[] },
+            cost: {
+                type: Type.OBJECT,
+                properties: {
+                    type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'] },
+                    value: { type: Type.NUMBER },
+                },
+                required: ['type', 'value'],
+            },
+            cooldown: { type: Type.NUMBER, description: 'Số lượt hồi chiêu.' },
+            icon: { type: Type.STRING, description: 'Một emoji biểu tượng cho công pháp.' },
+            element: { type: Type.STRING, enum: ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ', 'Vô'] as Element[] },
+            effects: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        type: { type: Type.STRING, enum: ['DAMAGE', 'HEAL', 'BUFF', 'DEBUFF', 'APPLY_EFFECT'] },
+                        details: { type: Type.OBJECT, description: "Chi tiết hiệu ứng. Ví dụ: { \"value\": 50, \"duration\": 3 }" }
+                    },
+                    required: ['type', 'details']
+                }
+            }
+        },
+        required: ['name', 'description', 'type', 'rank', 'cost', 'cooldown', 'icon', 'effects'],
+    };
+
+    const prompt = `Bạn là một Game Master. Hãy tạo ra một công pháp (Cultivation Technique) ngẫu nhiên và độc đáo cho người chơi khi họ "Tham Ngộ Đại Đạo".
+    Công pháp này phải phù hợp với cảnh giới hiện tại của người chơi.
+
+    **Thông tin người chơi:**
+    - Cảnh giới: ${currentRealm?.name || 'Không rõ'}
+    - Các chỉ số chính: ${playerCharacter.attributes.flatMap(g => g.attributes).filter(a => typeof a.value === 'number' && a.value > 10).map(a => `${a.name}: ${a.value}`).join(', ')}
+
+    **Nhiệm vụ:**
+    - Tạo ra một công pháp có tên, mô tả, loại, cấp bậc, tiêu hao, hồi chiêu, và hiệu ứng thú vị.
+    - Cấp bậc (rank) của công pháp nên tương xứng với cảnh giới của người chơi. Ví dụ, người chơi ở Luyện Khí Kỳ thì chỉ nên ngộ ra công pháp Phàm Giai hoặc Tiểu Giai.
+    - Chỉ trả về một đối tượng JSON duy nhất theo schema.`;
+
+    const settings = await db.getSettings();
+    const response = await generateWithRetry({
+        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: techniqueSchema,
+        }
+    });
+
+    const techniqueData = JSON.parse(response.text);
+    
+    return {
+        ...techniqueData,
+        id: `random-tech-${Date.now()}`,
+        level: 1,
+        maxLevel: 10,
+    } as CultivationTechnique;
 };
