@@ -25,31 +25,30 @@ const GuidePanel: React.FC = () => {
                     Nhiều tính năng của game đã được tích hợp vào AI kể chuyện để mang lại trải nghiệm nhập vai sâu sắc hơn. Hãy dùng ngôn ngữ tự nhiên để tương tác với thế giới!
                 </div>
                 <div className="space-y-4">
-                    <GuideSection icon={GiSwapBag} title="Túi Đồ & Trang Bị">
+                    <GuideSection icon={GiSwapBag} title="Túi Đồ & Tiền Tệ">
                         <p>Bạn có thể mở túi đồ bất cứ lúc nào bằng cách ra lệnh:</p>
                         <ul className="list-disc list-inside text-gray-400 italic">
                             <li>"mở túi đồ"</li>
                             <li>"kiểm tra hành trang"</li>
-                            <li>"xem trang bị của ta"</li>
                         </ul>
-                        <p className="mt-2">Sau khi bạn trang bị, sử dụng hoặc vứt bỏ vật phẩm và đóng túi đồ lại, AI kể chuyện sẽ tự động nhận biết và tiếp nối câu chuyện một cách hợp lý.</p>
+                        <p className="mt-2">Tiền tệ (Bạc, Linh Thạch,...) được coi như vật phẩm và nằm trong túi đồ của bạn.</p>
+                        <p>Sau khi bạn trang bị, sử dụng hoặc vứt bỏ vật phẩm và đóng túi đồ lại, AI kể chuyện sẽ tự động nhận biết và tiếp nối câu chuyện một cách hợp lý.</p>
                     </GuideSection>
                     
-                     <GuideSection icon={FaCoins} title="Hệ Thống Tiền Tệ">
-                        <p>Tiền tệ trong game được xem như vật phẩm trong túi đồ của bạn, chia thành nhiều loại:</p>
-                        <ul className="list-disc list-inside text-gray-400">
-                            <li><strong>Phàm Tệ:</strong> Dùng trong giao dịch của người thường, bao gồm Đồng, Bạc, Vàng.</li>
-                            <li><strong>Linh Tệ:</strong> Tiền tệ chính trong giới tu tiên, là các loại Linh Thạch chứa đựng linh khí.</li>
-                            <li><strong>Tiên Tệ & Đặc Biệt:</strong> Các loại tiền tệ cao cấp hơn như Tiên Ngọc, hoặc điểm Cống hiến Tông môn, điểm Danh Vọng sẽ xuất hiện ở các giai đoạn sau của game.</li>
+                     <GuideSection icon={GiCastle} title="Bái Sư & Tu Luyện">
+                        <p>Bạn không thể tu luyện nếu chưa có sư phụ. Hãy tìm một vị cao nhân và thể hiện thành ý để bái sư.</p>
+                        <ul className="list-disc list-inside text-gray-400 italic">
+                            <li>"Ta muốn bái ngài làm sư phụ."</li>
+                            <li>"Xin tiền bối hãy thu nhận ta làm đồ đệ."</li>
                         </ul>
+                         <p className="mt-2">Một khi đã có sư phụ và công pháp, bạn có thể dùng lệnh "tu luyện" để tăng linh khí.</p>
                     </GuideSection>
 
-                     <GuideSection icon={GiGears} title="Tính Năng Khác">
-                        <p>Tương tự như túi đồ, các tính năng khác cũng được điều khiển bằng lời nói:</p>
+                     <GuideSection icon={GiGears} title="Các Hành Động Khác">
+                        <p>Các hành động phức tạp hơn cũng được điều khiển bằng lời nói:</p>
                         <ul className="list-disc list-inside text-gray-400 italic">
-                            <li><strong className="text-gray-300">Tông Môn (<GiCastle className="inline-block mb-1"/>):</strong> "quay về tông môn", "đến Tàng Kinh Các", "nhận nhiệm vụ tông môn".</li>
-                            <li><strong className="text-gray-300">Động Phủ (<GiMountainCave className="inline-block mb-1"/>):</strong> "trở về động phủ", "bế quan tu luyện", "chăm sóc linh điền".</li>
-                            <li><strong className="text-gray-300">Luyện Đan (<GiCauldron className="inline-block mb-1"/>):</strong> "bắt đầu luyện đan", "luyện chế Hồi Khí Đan".</li>
+                            <li><strong className="text-gray-300">Nơi ở (<GiMountainCave className="inline-block mb-1"/>):</strong> "tìm một hang động để bế quan", "thuê một phòng ở quán trọ".</li>
+                            <li><strong className="text-gray-300">Luyện Đan (<GiCauldron className="inline-block mb-1"/>):</strong> "bắt đầu luyện đan", "luyện chế Hồi Khí Đan". AI sẽ tự kiểm tra xem bạn có đan phương, nguyên liệu, và đan lô hay không.</li>
                         </ul>
                     </GuideSection>
 

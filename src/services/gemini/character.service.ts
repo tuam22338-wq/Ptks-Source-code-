@@ -1,15 +1,9 @@
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig } from '../../types';
-import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES } from "../../constants";
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element } from '../../types';
+import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
-
-interface ModTalentConfig {
-    systemConfig: TalentSystemConfig;
-    ranks: ModTalentRank[];
-    availableTalents: ModTalent[];
-}
 
 export const generateCharacterIdentity = async (concept: string, gender: Gender): Promise<Omit<CharacterIdentity, 'gender' | 'age'>> => {
     const identitySchema = {
@@ -20,8 +14,9 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
             origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật, chi tiết và lôi cuốn.' },
             appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo.' },
             personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê.' },
+            suggestedElement: { type: Type.STRING, enum: Object.keys(SPIRITUAL_ROOT_CONFIG).filter(k => k !== 'Vô' && k !== 'Dị' && k !== 'Hỗn Độn'), description: 'Gợi ý một nguyên tố Linh Căn phù hợp nhất với ý tưởng nhân vật.' },
         },
-        required: ['name', 'origin', 'appearance', 'personality', 'familyName'],
+        required: ['name', 'origin', 'appearance', 'personality', 'familyName', 'suggestedElement'],
     };
 
     const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Tam Thiên Thế Giới, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
@@ -29,7 +24,7 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
     - **Giới tính nhân vật:** ${gender}
     - **Ý tưởng gốc từ người chơi:** "${concept}"
     
-    Nhiệm vụ: Sáng tạo ra một cái tên, họ, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
+    Nhiệm vụ: Sáng tạo ra một cái tên, họ, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh. Đồng thời, gợi ý một thuộc tính Linh Căn (Kim, Mộc, Thủy, Hỏa, Thổ) phù hợp nhất với bản chất nhân vật.
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
     `;
     
@@ -43,77 +38,6 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
 
     const json = JSON.parse(response.text);
     return json as Omit<CharacterIdentity, 'gender' | 'age'>;
-};
-
-export const generateTalentChoices = async (identity: CharacterIdentity, concept: string, modTalentConfig: ModTalentConfig): Promise<InnateTalent[]> => {
-    const talentRanks = modTalentConfig.ranks.length > 0 ? modTalentConfig.ranks.map(r => r.name) : TALENT_RANK_NAMES;
-    const choicesPerRoll = modTalentConfig.systemConfig.choicesPerRoll || 6;
-    
-    const talentsSchema = {
-        type: Type.OBJECT,
-        properties: {
-            talents: {
-                type: Type.ARRAY,
-                description: `Một danh sách gồm chính xác ${choicesPerRoll} tiên tư độc đáo.`,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        name: { type: Type.STRING, description: 'Tên của tiên tư, ngắn gọn và độc đáo (ví dụ: "Thánh Thể Hoang Cổ", "Kiếm Tâm Thông Minh").' },
-                        description: { type: Type.STRING, description: 'Mô tả ngắn gọn về bản chất của tiên tư.' },
-                        rank: { type: Type.STRING, enum: talentRanks, description: 'Cấp bậc của tiên tư.' },
-                        effect: { type: Type.STRING, description: 'Mô tả hiệu ứng trong game của tiên tư.' },
-                        bonuses: {
-                            type: Type.ARRAY,
-                            description: 'Danh sách các chỉ số được cộng thêm. Có thể là một mảng rỗng.',
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES, description: 'Tên chỉ số được cộng.' },
-                                    value: { type: Type.NUMBER, description: 'Giá trị cộng thêm.' },
-                                },
-                                required: ['attribute', 'value'],
-                            },
-                        },
-                        triggerCondition: { type: Type.STRING, description: 'Điều kiện kích hoạt đặc biệt (nếu có). Ví dụ: "Khi sinh mệnh dưới 20%".' },
-                        synergy: { type: Type.STRING, description: 'Tương tác đặc biệt với các yếu tố khác (nếu có). Ví dụ: "Mạnh hơn khi trang bị kiếm".' },
-                    },
-                    required: ['name', 'description', 'rank', 'effect'],
-                },
-            }
-        },
-        required: ['talents'],
-    };
-
-    const talentInstructions = modTalentConfig.systemConfig.allowAIGeneratedTalents !== false
-    ? `Tạo ra ${choicesPerRoll} tiên tư độc đáo, có liên quan mật thiết đến thân phận và ý tưởng gốc của nhân vật. Phân bổ cấp bậc của chúng một cách ngẫu nhiên và hợp lý (sử dụng các cấp bậc: ${talentRanks.join(', ')}). Các tiên tư phải có chiều sâu, có thể có điều kiện kích hoạt hoặc tương tác đặc biệt.`
-    : `CHỈ được chọn ${choicesPerRoll} tiên tư từ danh sách có sẵn sau: ${modTalentConfig.availableTalents.map(t => t.name).join(', ')}.`;
-
-    const prompt = `Dựa trên thông tin về nhân vật, hãy tạo ra một bộ Tiên Tư (Innate Talents) cho họ.
-    - **Bối cảnh:** Game tu tiên Tam Thiên Thế Giới.
-    - **Ý tưởng gốc:** "${concept}"
-    - **Thân phận nhân vật:**
-        - Tên: ${identity.name}
-        - Giới tính: ${identity.gender}
-        - Xuất thân: ${identity.origin}
-        - Ngoại hình: ${identity.appearance}
-        - Tính cách: ${identity.personality}
-
-    Nhiệm vụ:
-    ${talentInstructions}
-
-    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
-    `;
-
-    const response = await generateWithRetry({
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: talentsSchema,
-        }
-    });
-
-    const json = JSON.parse(response.text);
-    return json.talents as InnateTalent[];
 };
 
 export const generateFamilyAndFriends = async (identity: CharacterIdentity, locationId: string): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[] }> => {
@@ -206,7 +130,7 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
     return { npcs: generatedNpcs, relationships: generatedRelationships };
 };
 
-export const generateOpeningScene = async (gameState: GameState): Promise<string> => {
+export const generateOpeningScene = async (gameState: GameState, worldId: string): Promise<string> => {
     const { playerCharacter, discoveredLocations, activeNpcs } = gameState;
     const currentLocation = discoveredLocations.find(loc => loc.id === playerCharacter.currentLocationId);
     
@@ -221,17 +145,33 @@ export const generateOpeningScene = async (gameState: GameState): Promise<string
     const settings = await db.getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
-    const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
-    - **Giọng văn:** ${narrativeStyle}.
-    - **Nhân vật chính:** ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi. Xuất thân: ${playerCharacter.identity.origin}.
+    const isTransmigrator = worldId === 'xuyen_viet_gia_phong_than';
+    const transmigratorInstructions = isTransmigrator
+    ? `
+**LƯU Ý CỰC KỲ QUAN TRỌNG:** Đây là chế độ "Xuyên Việt Giả". Người chơi là người từ thế giới hiện đại xuyên không tới.
+1. Bắt đầu bằng việc mô tả sự bàng hoàng, lạ lẫm của nhân vật khi nhận ra mình đã xuyên không.
+2. Ngay sau đó, hãy mô tả sự xuất hiện của "Hệ Thống". Mô tả nó như một giao diện holographic (toàn息投影) màu xanh lam hiện ra trước mắt người chơi, với âm thanh máy móc, vô cảm.
+3. Hệ Thống phải thông báo: "Kích hoạt Hệ Thống Xuyên Việt Giả. Chào mừng Ký Chủ."
+4. Hệ Thống sau đó phải giao nhiệm vụ đầu tiên: "[Nhiệm vụ Tân Thủ]: Làm quen với thế giới. Mục tiêu: Trò chuyện với một người thân để tìm hiểu bối cảnh."
+5. Sử dụng định dạng [HỆ THỐNG]: cho các thông báo của Hệ Thống. Ví dụ: "[HỆ THỐNG]: Nhiệm vụ đã được ban hành."
+`
+    : '';
+
+    const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi, lồng ghép vào đó là cảnh kiểm tra linh căn của họ.
+    - **Giọng văn:** ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
+    - **Nhân vật chính:**
+        - Tên: ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi.
+        - Xuất thân: ${playerCharacter.identity.origin}.
+        - **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Không có'}. Mô tả: ${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'}
     - **Địa điểm hiện tại:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.
     - **Gia đình & Người thân:**
-    ${familyInfo}
+    ${familyInfo || 'Không có ai thân thích.'}
+    ${transmigratorInstructions}
 
-    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 2-3 câu. Đoạn văn phải thiết lập bối cảnh ngay lập tức: người chơi đang ở đâu, đang làm gì, và có thể đề cập đến một người thân để tạo sự kết nối ban đầu.
+    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh: người chơi đang ở đâu, và mô tả lại khoảnh khắc họ vừa biết được kết quả linh căn của mình. Cảm xúc của họ (vui mừng, thất vọng, hay bình thản) nên phản ánh phẩm chất linh căn của họ.
     
-    Ví dụ:
-    "Ánh nắng ban mai xuyên qua khe cửa, rọi lên gương mặt của Lý Thanh Vân. Ngươi đang ngồi trong căn nhà gỗ đơn sơ ở Thanh Hà Trấn, tiếng phụ thân Lý Đại Ngưu đang rèn sắt từ ngoài sân vọng vào đều đặn. Hôm nay là một ngày trọng đại..."
+    Ví dụ cho chế độ thường:
+    "Tảng đá trắc linh trước mặt Lý Thanh Vân nguội dần, ánh sáng màu đỏ rực rỡ cũng từ từ lụi tắt. Vị trưởng lão vuốt râu gật gù, 'Hỏa Thiên Linh Căn, phẩm chất tuyệt hảo, là hạt giống tốt để tu luyện Hỏa hệ công pháp!'. Tin tức này khiến cả gia tộc chấn động, còn ngươi thì vẫn đang ngây người trước kết quả ngoài sức tưởng tượng này."
     
     Hãy viết một đoạn văn độc đáo và phù hợp với nhân vật. Chỉ trả về đoạn văn tường thuật, không thêm bất kỳ lời dẫn hay bình luận nào khác.`;
 

@@ -1,6 +1,6 @@
 import { FaQuestionCircle } from 'react-icons/fa';
-import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID } from "../constants";
-import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel } from "../types";
+import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, FACTIONS, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID, CURRENCY_ITEMS } from "../constants";
+import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 import {
   GiCauldron,
@@ -18,6 +18,20 @@ export const migrateGameState = (savedGame: any): GameState => {
     if (!dataToProcess.difficulty) {
         dataToProcess.difficulty = 'medium';
     }
+    
+    // Add spiritualRoot migration if old save detected
+    if (dataToProcess.playerCharacter && dataToProcess.playerCharacter.talents && !dataToProcess.playerCharacter.spiritualRoot) {
+        console.log("Migrating save from Talents to Spiritual Root system...");
+        dataToProcess.playerCharacter.spiritualRoot = {
+            elements: [{ type: 'Vô', purity: 100 }],
+            quality: 'Phàm Căn',
+            name: 'Phàm Nhân (Chưa kiểm tra)',
+            description: 'Linh căn của người thường, chưa được kiểm tra.',
+            bonuses: [],
+        };
+        delete dataToProcess.playerCharacter.talents;
+    }
+
 
     if (dataToProcess.version !== CURRENT_GAME_VERSION) {
         let version = dataToProcess.version || "1.0.0";
@@ -39,7 +53,7 @@ export const migrateGameState = (savedGame: any): GameState => {
                 dataToProcess.playerCharacter.chosenPathIds = dataToProcess.playerCharacter.chosenPathIds ?? [];
                 dataToProcess.playerCharacter.knownRecipeIds = dataToProcess.playerCharacter.knownRecipeIds ?? [];
                 dataToProcess.playerCharacter.sect = dataToProcess.playerCharacter.sect ?? null;
-                dataToProcess.playerCharacter.caveAbode = dataToProcess.playerCharacter.caveAbode ?? DEFAULT_CAVE_ABODE;
+                dataToProcess.playerCharacter.caveAbode = dataToProcess.playerCharacter.caveAbode ?? {};
                 dataToProcess.playerCharacter.techniqueCooldowns = dataToProcess.playerCharacter.techniqueCooldowns ?? {};
                 dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
                 dataToProcess.playerCharacter.danhVong = dataToProcess.playerCharacter.danhVong ?? { value: 0, status: 'Vô Danh Tiểu Tốt' };
@@ -86,6 +100,7 @@ export const migrateGameState = (savedGame: any): GameState => {
          if (!dataToProcess.playerCharacter.element) {
             dataToProcess.playerCharacter.element = 'Vô';
          }
+         // FIX: Removed incorrect migration logic that deleted properties still in use.
     }
     dataToProcess.storySummary = dataToProcess.storySummary ?? '';
 
@@ -204,7 +219,7 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element'> & { danhVong: DanhVong },
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
         npcDensity: NpcDensity,
         difficulty: DifficultyLevel
     },
@@ -213,6 +228,7 @@ export const createNewGameState = async (
     setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
     const { characterData, npcDensity, difficulty } = gameStartData;
+    const isTransmigratorMode = activeWorldId === 'xuyen_viet_gia_phong_than';
 
     // --- World Data Overhaul ---
     let worldData: ModWorldData | null = null;
@@ -251,6 +267,14 @@ export const createNewGameState = async (
     const canCotAttr = characterData.attributes.flatMap(g => g.attributes).find(a => a.name === 'Căn Cốt');
     const canCotValue = (canCotAttr?.value as number) || 10;
     const initialWeightCapacity = 20 + (canCotValue - 10) * 2;
+    
+    const initialCurrencies: Currency = {
+        'Bạc': 50,
+        'Linh thạch hạ phẩm': 20,
+    };
+    if (isTransmigratorMode) {
+        initialCurrencies['Điểm Nguồn'] = 100;
+    }
 
     const initialInventory: Inventory = {
         weightCapacity: initialWeightCapacity,
@@ -261,12 +285,6 @@ export const createNewGameState = async (
             { id: 'item4', name: 'Lệnh Bài Thân Phận', description: 'Một lệnh bài bằng gỗ, khắc tên và xuất thân của bạn.', quantity: 1, type: 'Tạp Vật', icon: '🪪', weight: 0.1, quality: 'Phàm Phẩm' },
             { id: 'item7', name: 'Hồi Khí Đan - Đan Phương', description: 'Ghi lại phương pháp luyện chế Hồi Khí Đan Hạ Phẩm. Có thể học bằng cách sử dụng.', quantity: 1, type: 'Đan Phương', icon: '📜', weight: 0.1, quality: 'Phàm Phẩm', recipeId: 'recipe_hoi_khi_dan_ha_pham' },
         ]
-    };
-    const initialCurrencies: Currency = { 
-        'Đồng': 1000, 
-        'Bạc': 50,
-        'Vàng': 0,
-        'Linh thạch hạ phẩm': 20,
     };
 
     const initialCultivation: CultivationState = {
@@ -293,12 +311,25 @@ export const createNewGameState = async (
 
     const initialCoreLocations = worldMapToUse.filter(l => l.type === 'Thành Thị' || l.type === 'Thôn Làng');
     const startingLocation = initialCoreLocations[Math.floor(Math.random() * initialCoreLocations.length)] || worldMapToUse[0];
-    const caveAbodeLocation = worldMapToUse.find(l => l.id === DEFAULT_CAVE_ABODE.locationId);
+    
+    const initialCaveAbode: CaveAbode = {
+        name: `${characterData.identity.name} Động Phủ`,
+        level: 1,
+        spiritGatheringArrayLevel: 0,
+        spiritHerbFieldLevel: 0,
+        alchemyRoomLevel: 0,
+        storageUpgradeLevel: 0,
+        locationId: 'dong_phu'
+    };
+    
+    const initialSystemInfo: SystemInfo | undefined = isTransmigratorMode
+        ? { unlockedFeatures: ['status', 'quests'] }
+        : undefined;
 
     let playerCharacter: PlayerCharacter = {
         identity: { ...characterData.identity, age: 18 },
         attributes: updatedAttributes,
-        talents: characterData.talents,
+        spiritualRoot: characterData.spiritualRoot,
         inventory: initialInventory,
         currencies: initialCurrencies,
         cultivation: initialCultivation,
@@ -313,20 +344,25 @@ export const createNewGameState = async (
         chosenPathIds: [],
         knownRecipeIds: [],
         sect: null,
-        caveAbode: DEFAULT_CAVE_ABODE,
+        caveAbode: initialCaveAbode,
         healthStatus: 'HEALTHY',
         activeEffects: [],
         techniqueCooldowns: {},
         activeQuests: [],
         completedQuestIds: [],
         inventoryActionLog: [],
-        element: 'Vô',
+        element: characterData.spiritualRoot.elements[0]?.type || 'Vô',
+        systemInfo: initialSystemInfo,
     };
     
     setLoadingMessage('Đang tạo ra gia đình và chúng sinh trong thế giới...');
 
+    const familyPromise = isTransmigratorMode
+        ? Promise.resolve({ npcs: [], relationships: [] }) // Transmigrators start alone
+        : generateFamilyAndFriends(playerCharacter.identity, startingLocation.id);
+
     const [familyResult, generatedNpcs] = await Promise.all([
-        generateFamilyAndFriends(playerCharacter.identity, startingLocation.id),
+        familyPromise,
         generateDynamicNpcs(npcDensity)
     ]);
     
@@ -340,20 +376,28 @@ export const createNewGameState = async (
     const allNpcs = [...initialNpcsFromData, ...familyNpcs, ...generatedNpcs];
     
     const tempGameStateForOpening = {
+        ...({} as GameState), // Cast to avoid full property list
         playerCharacter,
         activeNpcs: allNpcs,
         discoveredLocations: [startingLocation],
-    } as GameState;
+    };
     
     setLoadingMessage('Đang viết nên chương truyện mở đầu cho bạn...');
-    const openingNarrative = await generateOpeningScene(tempGameStateForOpening);
+    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, activeWorldId);
     
     setLoadingMessage('Đang sắp đặt lại dòng thời gian...');
 
-    const initialStory = [
-        { id: 1, type: 'narrative' as const, content: openingNarrative },
-        { id: 2, type: 'system' as const, content: 'Bạn có thể dùng ô "Nói" để giao tiếp, "Hành Động" để tương tác, hoặc nhập "tu luyện" để tĩnh tọa hấp thụ linh khí.' },
-    ];
+    let initialStory;
+    if (activeWorldId === 'xuyen_viet_gia_phong_than') {
+        initialStory = [
+            { id: 1, type: 'system-notification' as const, content: openingNarrative },
+        ];
+    } else {
+        initialStory = [
+            { id: 1, type: 'narrative' as const, content: openingNarrative },
+            { id: 2, type: 'system' as const, content: 'Hành trình của bạn bắt đầu. Hãy tìm kiếm một vị sư phụ để học cách tu tiên, hoặc khám phá thế giới rộng lớn này. Dùng ô "Hành Động" để tương tác.' },
+        ];
+    }
 
     const initialGameDate: GameDate = {
         era: eraName,
@@ -370,9 +414,6 @@ export const createNewGameState = async (
     const initialWorldState: WorldState = { rumors: [] };
 
     const discoveredLocations: Location[] = [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))];
-    if (caveAbodeLocation && !discoveredLocations.some(l => l.id === caveAbodeLocation.id)) {
-        discoveredLocations.push(caveAbodeLocation);
-    }
 
     return {
         version: CURRENT_GAME_VERSION,
@@ -394,5 +435,6 @@ export const createNewGameState = async (
         eventIllustrations: [],
         storySummary: '',
         difficulty: difficulty,
+        gameMode: isTransmigratorMode ? 'transmigrator' : 'classic',
     };
 };

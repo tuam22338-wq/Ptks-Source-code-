@@ -8,7 +8,7 @@ interface GenealogyPanelProps {
     onNpcSelect: (npc: NPC) => void;
 }
 
-const RelationshipCard: React.FC<{ npc: NPC, relationship: PlayerNpcRelationship, onSelect: () => void }> = ({ npc, relationship, onSelect }) => (
+const RelationshipCard: React.FC<{ npc: NPC, relationship: PlayerNpcRelationship, onSelect: () => void }> = memo(({ npc, relationship, onSelect }) => (
     <button onClick={onSelect} className="w-full text-left bg-black/20 p-3 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-cyan-400/50 transition-colors">
         <div className="flex justify-between items-start">
             <div>
@@ -22,40 +22,56 @@ const RelationshipCard: React.FC<{ npc: NPC, relationship: PlayerNpcRelationship
         </div>
         <p className="text-xs text-gray-500 mt-2 italic">"{npc.status}"</p>
     </button>
-);
+));
 
 const GenealogyPanel: React.FC<GenealogyPanelProps> = ({ playerCharacter, allNpcs, onNpcSelect }) => {
     const { relationships } = playerCharacter;
 
-    const { family, friends } = useMemo(() => {
+    const { family, friends, masters } = useMemo(() => {
         const familyKeywords = ['phụ thân', 'mẫu thân', 'huynh đệ', 'tỷ muội', 'gia'];
+        const masterKeywords = ['sư phụ', 'sư tôn', 'sư nương'];
         const familyRels: { npc: NPC, relationship: PlayerNpcRelationship }[] = [];
         const friendRels: { npc: NPC, relationship: PlayerNpcRelationship }[] = [];
+        const masterRels: { npc: NPC, relationship: PlayerNpcRelationship }[] = [];
         
         relationships.forEach(rel => {
             const npc = allNpcs.find(n => n.id === rel.npcId);
             if (!npc) return;
             
-            if (familyKeywords.some(kw => rel.type.toLowerCase().includes(kw))) {
+            const relTypeLower = rel.type.toLowerCase();
+            if (masterKeywords.some(kw => relTypeLower.includes(kw))) {
+                masterRels.push({ npc, relationship: rel });
+            } else if (familyKeywords.some(kw => relTypeLower.includes(kw))) {
                 familyRels.push({ npc, relationship: rel });
             } else {
                 friendRels.push({ npc, relationship: rel });
             }
         });
 
-        return { family: familyRels, friends: friendRels };
+        return { family: familyRels, friends: friendRels, masters: masterRels };
     }, [relationships, allNpcs]);
 
     return (
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
             <div>
                 <h3 className="flex items-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
-                    <GiFamilyTree className="text-amber-300" /> Gia Phả & Thân Hữu
+                    <GiFamilyTree className="text-amber-300" /> Thân Hữu
                 </h3>
                 
                 <div className="space-y-4">
+                     <section>
+                        <h4 className="font-semibold text-gray-400 mb-2">Sư Môn</h4>
+                        <div className="space-y-2">
+                            {masters.length > 0 ? (
+                                masters.map(item => <RelationshipCard key={item.npc.id} {...item} onSelect={() => onNpcSelect(item.npc)} />)
+                            ) : (
+                                <p className="text-center text-sm text-gray-500 py-2">Chưa bái sư. Hãy tìm một vị cao nhân và thể hiện thành ý.</p>
+                            )}
+                        </div>
+                    </section>
+
                     <section>
-                        <h4 className="font-semibold text-gray-400 mb-2">Gia Đình Trực Hệ</h4>
+                        <h4 className="font-semibold text-gray-400 mb-2">Gia Đình</h4>
                         <div className="space-y-2">
                             {family.length > 0 ? (
                                 family.map(item => <RelationshipCard key={item.npc.id} {...item} onSelect={() => onNpcSelect(item.npc)} />)
@@ -66,7 +82,7 @@ const GenealogyPanel: React.FC<GenealogyPanelProps> = ({ playerCharacter, allNpc
                     </section>
                     
                     <section>
-                        <h4 className="font-semibold text-gray-400 mb-2">Quan Hệ Thân Thích</h4>
+                        <h4 className="font-semibold text-gray-400 mb-2">Bằng Hữu</h4>
                         <div className="space-y-2">
                             {friends.length > 0 ? (
                                 friends.map(item => <RelationshipCard key={item.npc.id} {...item} onSelect={() => onNpcSelect(item.npc)} />)

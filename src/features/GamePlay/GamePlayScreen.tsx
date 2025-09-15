@@ -155,7 +155,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
         }
 
         // Process quests
-        const { newState: stateAfterQuests, notifications: questNotifications } = await questManager.processQuestUpdates(tempState);
+        const { newState: stateAfterQuests, notifications: questNotifications } = await questManager.processQuestUpdates(tempState, newDay);
         tempState = stateAfterQuests;
         questNotifications.forEach(showNotification);
         setGameState(tempState);
@@ -386,6 +386,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                            activeMods={gameState.activeMods}
                            storyLog={gameState.storyLog}
                            gameState={gameState}
+                           setGameState={setGameState}
                         />
                     </div>
                 </div>

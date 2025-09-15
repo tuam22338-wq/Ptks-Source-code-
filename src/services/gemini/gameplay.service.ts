@@ -293,7 +293,6 @@ export const generateWeeklyRumor = async (gameState: GameState): Promise<string>
     return response.text.trim();
 };
 
-// FIX: Add generateRandomTechnique function to resolve import error.
 export const generateRandomTechnique = async (gameState: GameState): Promise<CultivationTechnique> => {
     const { playerCharacter } = gameState;
     const currentRealm = REALM_SYSTEM.find(r => r.id === playerCharacter.cultivation.currentRealmId);

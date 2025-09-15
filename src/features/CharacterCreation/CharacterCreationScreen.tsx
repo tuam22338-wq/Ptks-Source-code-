@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect, memo } from 'react';
-import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter, DanhVong, DifficultyLevel } from '../../types';
-import { FaArrowLeft, FaDice } from 'react-icons/fa';
+import type { AttributeGroup, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, StatBonus, DanhVong, DifficultyLevel, SpiritualRoot } from '../../types';
+import { FaArrowLeft } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
-import { generateCharacterIdentity, generateTalentChoices } from '../../services/geminiService';
+import { generateCharacterIdentity } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import InnateTalentSelection from './components/InnateTalentSelection';
+import SpiritualRootSelection from './components/SpiritualRootSelection';
 import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
-// FIX: Import MAJOR_EVENTS
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, MAJOR_EVENTS, DIFFICULTY_LEVELS } from '../../constants';
+import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, MAJOR_EVENTS, DIFFICULTY_LEVELS, SPIRITUAL_ROOT_CONFIG } from '../../constants';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -17,7 +16,7 @@ interface PlayableCharacterTemplate {
   source: 'canon' | 'mod';
   identity: Omit<CharacterIdentity, 'age'>;
   bonuses: StatBonus[];
-  talents: InnateTalent[];
+  spiritualRoot: SpiritualRoot;
 }
 
 const GENDERS: Gender[] = ['Nam', 'Nữ'];
@@ -25,7 +24,7 @@ const GENERATING_MESSAGES = [
     'Đang xem xét nhân quả...',
     'Thiên cơ đang hiển lộ...',
     'Định hình cốt cách...',
-    'Truy tìm tiên tư phù hợp...',
+    'Truy tìm linh căn phù hợp...',
     'Số mệnh sắp được an bài...'
 ];
 
@@ -70,18 +69,12 @@ export const CharacterCreationScreen: React.FC = memo(() => {
   const [characterConcept, setCharacterConcept] = useState('');
   const [gender, setGender] = useState<Gender>('Nam');
   const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
-  const [talentChoices, setTalentChoices] = useState<InnateTalent[]>([]);
-  const [selectedTalents, setSelectedTalents] = useState<InnateTalent[]>([]);
+  const [determinedRoot, setDeterminedRoot] = useState<SpiritualRoot | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState('');
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [npcDensity, setNpcDensity] = useState<NpcDensity>('medium');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
-  const [modTalentConfig, setModTalentConfig] = useState<{ systemConfig: TalentSystemConfig, ranks: ModTalentRank[], availableTalents: ModTalent[] }>({
-    systemConfig: { systemName: 'Tiên Tư', choicesPerRoll: 6, maxSelectable: 3, allowAIGeneratedTalents: true },
-    ranks: [],
-    availableTalents: [],
-  });
   const [playableCharacters, setPlayableCharacters] = useState<PlayableCharacterTemplate[]>([]);
   
   const [gameDate] = useState<GameDate>(() => {
@@ -107,58 +100,27 @@ export const CharacterCreationScreen: React.FC = memo(() => {
   
   useEffect(() => {
     const loadModData = async () => {
-      const activeMods: FullMod[] = [];
-      const modLibrary = await db.getModLibrary();
-      const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
+        const defaultRoot: SpiritualRoot = {
+            elements: [{ type: 'Kim', purity: 80 }],
+            quality: 'Linh Căn',
+            name: 'Kim Linh Căn',
+            description: 'Linh căn của Khương Tử Nha, ẩn chứa sức mạnh của thiên mệnh.',
+            bonuses: [{ attribute: 'Ngộ Tính', value: 10 }]
+        };
 
-      for (const modInfo of enabledModsInfo) {
-          const modContent = await db.getModContent(modInfo.modInfo.id);
-          if (modContent) activeMods.push(modContent);
-      }
-      
-      let finalTalentConfig = modTalentConfig;
-      let finalPlayableChars: PlayableCharacterTemplate[] = [];
-
-      // Add canon characters
-      finalPlayableChars.push({
-        id: 'canon_khuong_tu_nha',
-        source: 'canon',
-        identity: NPC_LIST.find(npc => npc.id === 'npc_khuong_tu_nha')!.identity,
-        bonuses: [],
-        talents: NPC_LIST.find(npc => npc.id === 'npc_khuong_tu_nha')!.talents,
-      });
-
-      activeMods.forEach(mod => {
-        const talentSystem = mod.content.talentSystemConfig;
-        if (talentSystem) {
-          finalTalentConfig.systemConfig = { ...finalTalentConfig.systemConfig, ...talentSystem };
-        }
-        const ranks = mod.content.talentRanks;
-        if (ranks) {
-          finalTalentConfig.ranks.push(...ranks.map((r, i) => ({ ...r, id: `mod:${mod.modInfo.id}:rank:${i}` })));
-        }
-        const talents = mod.content.talents;
-        if (talents) {
-          finalTalentConfig.availableTalents.push(...talents.map(t => ({ ...t, id: t.name })));
-        }
-        const characters = mod.content.characters;
-        if(characters) {
-            finalPlayableChars.push(...characters.map(c => ({
-                id: `mod_${mod.modInfo.id}_${c.name}`,
-                source: 'mod' as const,
-                identity: { name: c.name, gender: c.gender, origin: c.origin, appearance: c.appearance, personality: c.personality },
-                bonuses: c.bonuses || [],
-                talents: [], // Mod characters start with bonuses, not fixed talents
-            })));
-        }
-      });
-
-      setModTalentConfig(finalTalentConfig);
-      setPlayableCharacters(finalPlayableChars);
+        const canonChars: PlayableCharacterTemplate[] = [
+            {
+                id: 'canon_khuong_tu_nha',
+                source: 'canon',
+                identity: NPC_LIST.find(npc => npc.id === 'npc_khuong_tu_nha')!.identity,
+                bonuses: [],
+                spiritualRoot: defaultRoot,
+            }
+        ];
+        
+        setPlayableCharacters(canonChars);
     };
-
     loadModData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGenerateIdentity = async () => {
@@ -170,7 +132,6 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     setIsGenerating(true);
     try {
       const newIdentity = await generateCharacterIdentity(characterConcept, gender);
-      // FIX: Explicitly create a full CharacterIdentity object to satisfy the type checker, which seems to incorrectly infer the type from the spread operator.
       const fullIdentity: CharacterIdentity = {
         name: newIdentity.name,
         origin: newIdentity.origin,
@@ -179,6 +140,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
         familyName: newIdentity.familyName,
         gender: gender,
         age: 18,
+        suggestedElement: newIdentity.suggestedElement
       };
       setIdentity(fullIdentity);
       setStep('results');
@@ -188,43 +150,16 @@ export const CharacterCreationScreen: React.FC = memo(() => {
       setIsGenerating(false);
     }
   };
-
-  const handleGenerateTalents = async () => {
-    if (!identity) return;
-    setGenerationError(null);
-    setIsGenerating(true);
-    try {
-      const choices = await generateTalentChoices(identity, characterConcept, modTalentConfig);
-      setTalentChoices(choices);
-      setSelectedTalents([]);
-    } catch (err: any) {
-      setGenerationError(err.message || 'Lỗi không xác định.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
   
   const handleSelectTemplate = (template: PlayableCharacterTemplate) => {
       setIdentity({ ...template.identity, age: 18 });
-      setSelectedTalents(template.talents);
-      setTalentChoices(template.talents); // Show them as choices
+      setDeterminedRoot(template.spiritualRoot);
       setStep('results');
   };
 
-  useEffect(() => {
-    if (step === 'results' && identity && talentChoices.length === 0) {
-      handleGenerateTalents();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, identity, talentChoices]);
-
   const handleFinalize = async () => {
-      if (!identity || selectedTalents.length === 0) {
-          alert("Vui lòng hoàn thành việc tạo nhân vật và chọn tiên tư.");
-          return;
-      }
-      if (selectedTalents.length > modTalentConfig.systemConfig.maxSelectable) {
-          alert(`Bạn chỉ có thể chọn tối đa ${modTalentConfig.systemConfig.maxSelectable} tiên tư.`);
+      if (!identity || !determinedRoot) {
+          alert("Vui lòng hoàn thành việc tạo nhân vật và xác định linh căn.");
           return;
       }
 
@@ -243,7 +178,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           }
       });
       
-      const allBonuses = selectedTalents.flatMap(t => t.bonuses || []);
+      const allBonuses = determinedRoot.bonuses || [];
       
       allBonuses.forEach(bonus => {
           for (const group of initialAttributes) {
@@ -255,11 +190,10 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           }
       });
       
-      // FIX: Add missing properties activeQuests and completedQuestIds to satisfy the type.
       const characterData = {
           identity: identity,
           attributes: initialAttributes,
-          talents: selectedTalents,
+          spiritualRoot: determinedRoot,
           danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
@@ -312,7 +246,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
         return (
           <div className="text-center max-w-2xl mx-auto animate-fade-in">
             <h2 className="text-3xl font-bold font-title">Nêu Lên Ý Tưởng Của Bạn</h2>
-            <p className="text-gray-400 mt-2 mb-6">Mô tả nhân vật mà bạn muốn tạo ra. AI sẽ dựa vào đây để tạo thân phận và tiên tư.</p>
+            <p className="text-gray-400 mt-2 mb-6">Mô tả nhân vật mà bạn muốn tạo ra. AI sẽ dựa vào đây để tạo thân phận và gợi ý linh căn.</p>
             {generationError && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4">{generationError}</p>}
             <textarea
               value={characterConcept}
@@ -361,29 +295,21 @@ export const CharacterCreationScreen: React.FC = memo(() => {
       case 'results':
         if (!identity) return <LoadingSpinner message="Đang tải..." />;
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto animate-fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto animate-fade-in">
             <div className="space-y-4">
-              <h2 className="text-3xl font-bold font-title text-center">Thân Phận & Tiên Tư</h2>
+              <h2 className="text-3xl font-bold font-title text-center">Thân Phận</h2>
               <CharacterIdentityDisplay identity={identity} onIdentityChange={handleIdentityChange} />
-              {generationError && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30">{generationError}</p>}
+               <NpcDensitySelector value={npcDensity} onChange={setNpcDensity} />
             </div>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold">Chọn Tiên Tư (Tối đa {modTalentConfig.systemConfig.maxSelectable})</h3>
-                <button onClick={handleGenerateTalents} className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/80 text-white text-xs font-bold rounded-lg hover:bg-gray-600/80 transition-colors">
-                    <FaDice /> Tung Xúc Xắc Lại
-                </button>
-              </div>
-              <InnateTalentSelection 
-                  talents={talentChoices} 
-                  selectedTalents={selectedTalents}
-                  onSelectionChange={setSelectedTalents}
-                  maxSelectable={modTalentConfig.systemConfig.maxSelectable}
+              <h2 className="text-3xl font-bold font-title text-center">Linh Căn</h2>
+              <SpiritualRootSelection
+                suggestedElement={identity.suggestedElement}
+                onRootDetermined={setDeterminedRoot}
               />
-              <NpcDensitySelector value={npcDensity} onChange={setNpcDensity} />
-               <button 
+              <button 
                 onClick={handleFinalize} 
-                disabled={selectedTalents.length === 0 || selectedTalents.length > modTalentConfig.systemConfig.maxSelectable}
+                disabled={!determinedRoot}
                 className="w-full py-4 bg-teal-700/80 text-white text-xl font-bold rounded-lg hover:bg-teal-600/80 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
               >
                 Bắt Đầu Hành Trình
@@ -407,7 +333,6 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           <FaArrowLeft className="w-5 h-5" />
         </button>
         <div className="text-center flex-grow">
-          {/* FIX: Pass majorEvents prop to Timeline component */}
           <Timeline gameDate={gameDate} majorEvents={MAJOR_EVENTS} />
         </div>
         <div className="w-9 h-9"></div>

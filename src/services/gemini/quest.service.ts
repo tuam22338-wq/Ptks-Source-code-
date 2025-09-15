@@ -26,6 +26,12 @@ const questRewardSchema = {
                 properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } },
                 required: ['name', 'quantity']
             }
+        },
+        currencies: {
+            type: Type.OBJECT,
+            properties: {
+                "Điểm Nguồn": { type: Type.NUMBER, description: "Lượng Điểm Nguồn thưởng." }
+            }
         }
     }
 };
@@ -92,6 +98,36 @@ export const generateSideQuestFromNpc = async (npc: NPC, relationship: PlayerNpc
     1.  **Tạo một nhiệm vụ cá nhân:** Nhiệm vụ phải phù hợp với tính cách, trạng thái và hoàn cảnh hiện tại của NPC. Ví dụ: một thợ rèn có thể nhờ tìm khoáng thạch, một trưởng lão có thể nhờ điều tra một bí mật.
     2.  **Mục tiêu hợp lý:** Mục tiêu không nên quá khó hoặc quá dễ.
     3.  **Phần thưởng có ý nghĩa:** Phần thưởng có thể là vật phẩm, tiền tệ, hoặc một ít danh vọng.
+
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
+
+    const settings = await db.getSettings();
+    const response = await generateWithRetry({
+        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: questSchema,
+        }
+    });
+
+    return JSON.parse(response.text);
+};
+
+export const generateSystemQuest = async (gameState: GameState): Promise<Partial<ActiveQuest>> => {
+    const { playerCharacter } = gameState;
+    const prompt = `Bạn là AI "Hệ Thống" trong game. Dựa trên trạng thái hiện tại của Ký Chủ (người chơi), hãy tạo một nhiệm vụ phụ phù hợp để giúp họ mạnh hơn hoặc khám phá thế giới.
+
+    **Thông tin Ký Chủ:**
+    - **Tên:** ${playerCharacter.identity.name}
+    - **Cảnh giới:** ${playerCharacter.cultivation.currentRealmId}
+    - **Vị trí:** ${playerCharacter.currentLocationId}
+    - **Nhiệm vụ đang làm:** ${playerCharacter.activeQuests.map(q => q.title).join(', ') || 'Không có'}
+
+    **Nhiệm vụ:**
+    1.  **Phân tích tình hình:** Dựa vào cảnh giới và vị trí của người chơi, tạo một nhiệm vụ có độ khó phù hợp.
+    2.  **Mục tiêu đa dạng:** Có thể là săn một loại yêu thú cụ thể, thu thập tài nguyên, hoặc khám phá một địa điểm chưa tới.
+    3.  **Phần thưởng:** Phần thưởng chính nên là "Điểm Nguồn", cùng với một ít linh khí hoặc vật phẩm phụ.
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 

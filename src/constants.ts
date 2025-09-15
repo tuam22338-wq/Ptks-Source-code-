@@ -1,10 +1,11 @@
-import type { GameSettings, AttributeGroup, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel } from './types';
+import type { GameSettings, AttributeGroup, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
   GiRunningShoe, GiScrollQuill, GiSparklingSabre, GiStairsGoal, GiStoneTower, GiYinYang,
   GiSpinalCoil, GiMuscularTorso, GiSoulVessel, GiBoltSpellCast, GiHeartTower, GiScales,
-  GiMountainCave, GiDoubleDragon, GiTalk, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle
+  GiMountainCave, GiDoubleDragon, GiTalk, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle,
+  GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire, GiGroundbreaker
 } from 'react-icons/gi';
 import { FaSun, FaMoon, FaShieldAlt } from 'react-icons/fa';
 
@@ -26,6 +27,25 @@ export const CURRENT_GAME_VERSION = "1.0.2";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
+export const SPIRITUAL_ROOT_CONFIG: Record<Element, { name: string, icon: React.ElementType, description: string, baseBonuses: StatBonus[] }> = {
+    'Kim': { name: 'Kim', icon: GiGoldBar, description: 'Chủ về sát伐, cương mãnh vô song. Tu sĩ Kim Linh Căn có lực công kích và phòng ngự vật lý vượt trội.', baseBonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },
+    'Mộc': { name: 'Mộc', icon: GiTreeBranch, description: 'Chủ về sinh cơ, chữa trị và khống chế. Tu sĩ Mộc Linh Căn có khả năng hồi phục mạnh mẽ và am hiểu thảo dược.', baseBonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Ngự Khí Thuật', value: 3 }] },
+    'Thủy': { name: 'Thủy', icon: GiWaterDrop, description: 'Chủ về biến hóa, linh hoạt và khống chế. Tu sĩ Thủy Linh Căn có thân pháp nhanh nhẹn và pháp thuật đa dạng.', baseBonuses: [{ attribute: 'Thân Pháp', value: 5 }, { attribute: 'Linh Lực', value: 15 }] },
+    'Hỏa': { name: 'Hỏa', icon: GiFire, description: 'Chủ về bùng nổ, hủy diệt. Tu sĩ Hỏa Linh Căn có sát thương pháp thuật cực cao, thiêu đốt vạn vật.', baseBonuses: [{ attribute: 'Linh Lực Sát Thương', value: 5 }, { attribute: 'Nguyên Thần', value: 3 }] },
+    'Thổ': { name: 'Thổ', icon: GiGroundbreaker, description: 'Chủ về phòng ngự, vững chắc và bền bỉ. Tu sĩ Thổ Linh Căn có sức phòng ngự và sức bền không gì sánh bằng.', baseBonuses: [{ attribute: 'Bền Bỉ', value: 5 }, { attribute: 'Nguyên Thần Kháng', value: 3 }] },
+    'Vô': { name: 'Vô', icon: GiYinYang, description: 'Không có linh căn.', baseBonuses: [] },
+    'Dị': { name: 'Dị', icon: GiYinYang, description: 'Linh căn biến dị đặc biệt.', baseBonuses: [] },
+    'Hỗn Độn': { name: 'Hỗn Độn', icon: GiYinYang, description: 'Linh căn trong truyền thuyết.', baseBonuses: [] },
+};
+
+export const SPIRITUAL_ROOT_QUALITY_CONFIG: Record<SpiritualRootQuality, { color: string, glow?: string, weight: number, multiplier: number }> = {
+    'Phàm Căn': { color: 'text-gray-400', weight: 50, multiplier: 0.5 },
+    'Linh Căn': { color: 'text-green-400', weight: 30, multiplier: 1.0 },
+    'Địa Căn': { color: 'text-blue-400', weight: 15, multiplier: 1.5 },
+    'Thiên Căn': { color: 'text-purple-400', weight: 4, multiplier: 2.5 },
+    'Thánh Căn': { color: 'text-amber-400', glow: 'talent-saint-glow', weight: 1, multiplier: 4.0 },
+};
+
 export const CURRENCY_ITEMS: Omit<InventoryItem, 'quantity'>[] = [
     { id: 'currency_dong', name: 'Đồng', description: 'Tiền tệ cơ bản nhất của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 1, icon: '🪙' },
     { id: 'currency_bac', name: 'Bạc', description: 'Tiền tệ phổ biến của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 100, icon: '⚪' },
@@ -33,21 +53,17 @@ export const CURRENCY_ITEMS: Omit<InventoryItem, 'quantity'>[] = [
     { id: 'currency_lthp', name: 'Linh thạch hạ phẩm', description: 'Đá chứa linh khí, tiền tệ của tu sĩ.', type: 'Tạp Vật', weight: 0.1, quality: 'Linh Phẩm', value: 10000, icon: '💎' },
 ];
 
+export const SYSTEM_SHOP_ITEMS: SystemShopItem[] = [
+    { id: 'sys_item_stat_boost', name: 'Dịch Cân Tẩy Tủy Dịch', description: 'Một liều thuốc từ thế giới khác, giúp cải thiện toàn bộ thuộc tính cơ bản vĩnh viễn.', cost: 250, effect: { type: 'CHANGE_STAT', details: { attribute: 'all_base', change: 1 } } },
+    { id: 'sys_item_qi_boost', name: 'Linh Khí Kết Tinh', description: 'Một khối tinh thể chứa đựng linh khí thuần khiết, giúp tăng mạnh tu vi hiện tại.', cost: 100, effect: { type: 'CHANGE_STAT', details: { attribute: 'spiritualQi', change: 5000 } } },
+    { id: 'sys_item_gacha_ticket', name: 'Vé Gacha Vận Mệnh', description: 'Một chiếc vé bí ẩn, có thể rút ra một vật phẩm hoặc kỳ ngộ ngẫu nhiên.', cost: 50, effect: { type: 'START_EVENT', details: { eventId: 'system_gacha' } } },
+];
+
 export const CHARACTER_STATUS_CONFIG: Record<CharacterStatus, { label: string; threshold: number; debuffs: StatBonus[]; color: string }> = {
   HEALTHY: { label: 'Khỏe mạnh', threshold: 0.9, debuffs: [], color: 'text-green-400' },
   LIGHTLY_INJURED: { label: 'Bị thương nhẹ', threshold: 0.5, debuffs: [{ attribute: 'Thân Pháp', value: -2 }, { attribute: 'Lực Lượng', value: -2 }], color: 'text-yellow-400' },
   HEAVILY_INJURED: { label: 'Bị thương nặng', threshold: 0.1, debuffs: [{ attribute: 'Thân Pháp', value: -5 }, { attribute: 'Lực Lượng', value: -5 }, { attribute: 'Nguyên Thần', value: -3 }], color: 'text-orange-500' },
   NEAR_DEATH: { label: 'Sắp chết', threshold: 0, debuffs: [{ attribute: 'Thân Pháp', value: -10 }, { attribute: 'Lực Lượng', value: -10 }, { attribute: 'Nguyên Thần', value: -5 }, { attribute: 'Ngộ Tính', value: -5 }], color: 'text-red-600' },
-};
-
-export const DEFAULT_CAVE_ABODE: CaveAbode = {
-    name: 'Tiên Phủ Sơ Khai',
-    level: 1,
-    spiritGatheringArrayLevel: 0,
-    spiritHerbFieldLevel: 0,
-    alchemyRoomLevel: 0,
-    storageUpgradeLevel: 0,
-    locationId: 'dong_phu',
 };
 
 export const FACTION_REPUTATION_TIERS: { threshold: number; status: FactionReputationStatus }[] = [

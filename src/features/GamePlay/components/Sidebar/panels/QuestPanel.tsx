@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import type { ActiveQuest } from '../../../../../types';
-import { FaTasks, FaChevronDown, FaCheckCircle, FaCircle } from 'react-icons/fa';
+import { FaTasks, FaChevronDown, FaCheckCircle, FaCircle, FaHourglassHalf } from 'react-icons/fa';
 
 interface QuestPanelProps {
     quests: ActiveQuest[];
@@ -15,7 +15,15 @@ const QuestItem: React.FC<{ quest: ActiveQuest }> = memo(({ quest }) => {
         <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
             <button onClick={() => setIsExpanded(!isExpanded)} className="w-full flex justify-between items-center text-left">
                 <h4 className={`font-bold font-title ${questColor}`}>{quest.title}</h4>
-                <FaChevronDown className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                <div className="flex items-center gap-2">
+                    {quest.timeLimit && (
+                        <div className="flex items-center gap-1 text-xs text-red-400" title={`Còn lại ${quest.timeLimit} ngày`}>
+                            <FaHourglassHalf />
+                            <span>{quest.timeLimit}</span>
+                        </div>
+                    )}
+                    <FaChevronDown className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
             </button>
             {isExpanded && (
                 <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-3 animate-fade-in" style={{animationDuration: '300ms'}}>

@@ -1,10 +1,22 @@
-import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem } from '../types';
+import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem, EventOutcome } from '../types';
 import { generateMainQuestFromEvent, generateSideQuestFromNpc } from '../services/geminiService';
 
 interface QuestUpdateResult {
     newState: GameState;
     notifications: string[];
 }
+
+const applyOutcomes = (currentState: GameState, outcomes: EventOutcome[]): GameState => {
+    let newState = { ...currentState };
+    // This is a simplified outcome application logic. A full implementation would be more robust.
+    outcomes.forEach(outcome => {
+        if (outcome.type === 'CHANGE_STAT') {
+            // Placeholder logic
+            console.log("Applying failure outcome:", outcome.details);
+        }
+    });
+    return newState;
+};
 
 const addQuest = (currentState: GameState, questData: Partial<ActiveQuest>, type: 'MAIN' | 'SIDE', source: string): GameState => {
     const newQuest: ActiveQuest = {
@@ -15,6 +27,8 @@ const addQuest = (currentState: GameState, questData: Partial<ActiveQuest>, type
         source: source,
         objectives: (questData.objectives || []).map(obj => ({ ...obj, current: 0, isCompleted: false })),
         rewards: questData.rewards || {},
+        timeLimit: questData.timeLimit, // Can be undefined
+        onFailure: questData.onFailure, // Can be undefined
     };
     return {
         ...currentState,
@@ -56,7 +70,7 @@ export const checkForNewSideQuest = async (currentState: GameState, npc: NPC): P
     const relationship = playerCharacter.relationships.find(r => r.npcId === npc.id);
     if (relationship && relationship.value > 50 && Math.random() < 0.25) { // 25% chance for friendly NPCs
         const questSourceId = `npc:${npc.id}`;
-        const hasQuest = playerCharacter.activeQuests.some(q => q.source === questSourceId) || playerCharacter.completedQuestIds.includes(questSourceId);
+        const hasQuest = playerCharacter.activeQuests.some(q => q.source === questSourceId);
         
         if (!hasQuest) {
             try {
@@ -149,13 +163,6 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             const { rewards } = quest;
             if (rewards.spiritualQi) pc.cultivation.spiritualQi += rewards.spiritualQi;
             if (rewards.danhVong) pc.danhVong.value += rewards.danhVong;
-            if (rewards.currencies) {
-                for (const [currency, amount] of Object.entries(rewards.currencies)) {
-                    if (amount) {
-                      pc.currencies[currency] = (pc.currencies[currency] || 0) + amount;
-                    }
-                }
-            }
             if (rewards.items) {
                 let newItems = [...pc.inventory.items];
                 rewards.items.forEach(rewardItem => {
@@ -182,7 +189,7 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
         });
         
         pc.activeQuests = remainingQuests;
-        pc.completedQuestIds = [...pc.completedQuestIds, ...completedQuests.map(q => q.source)];
+        pc.completedQuestIds = [...pc.completedQuestIds, ...completedQuests.map(q => q.id)];
         
         newState = { ...newState, playerCharacter: pc };
     }
@@ -190,9 +197,61 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
     return { newState, notifications };
 };
 
-export const processQuestUpdates = async (currentState: GameState): Promise<QuestUpdateResult> => {
+export const checkFailedQuests = (currentState: GameState): QuestUpdateResult => {
+    let newState = { ...currentState };
+    const notifications: string[] = [];
+    
+    const remainingQuests: ActiveQuest[] = [];
+    const failedQuests: ActiveQuest[] = [];
+
+    newState.playerCharacter.activeQuests.forEach(quest => {
+        if (quest.timeLimit && quest.timeLimit <= 0) {
+            failedQuests.push(quest);
+        } else {
+            remainingQuests.push(quest);
+        }
+    });
+
+    if (failedQuests.length > 0) {
+        failedQuests.forEach(quest => {
+            notifications.push(`Nhiệm vụ thất bại: ${quest.title}`);
+            if (quest.onFailure) {
+                newState = applyOutcomes(newState, quest.onFailure);
+            }
+        });
+
+        newState = {
+            ...newState,
+            playerCharacter: {
+                ...newState.playerCharacter,
+                activeQuests: remainingQuests,
+                completedQuestIds: [...newState.playerCharacter.completedQuestIds, ...failedQuests.map(q => q.id)] // Also add to completed to prevent re-triggering
+            }
+        };
+    }
+    
+    return { newState, notifications };
+};
+
+export const processQuestUpdates = async (currentState: GameState, isNewDay: boolean): Promise<QuestUpdateResult> => {
+    let state1 = { ...currentState };
+    let notifications1: string[] = [];
+
+    if (isNewDay) {
+        // Decrement timers on quests
+        const timedQuests = state1.playerCharacter.activeQuests.map(q => 
+            q.timeLimit ? { ...q, timeLimit: q.timeLimit - 1 } : q
+        );
+        state1 = { ...state1, playerCharacter: { ...state1.playerCharacter, activeQuests: timedQuests }};
+        
+        // Check for failed quests
+        const failResult = checkFailedQuests(state1);
+        state1 = failResult.newState;
+        notifications1 = failResult.notifications;
+    }
+
     // 1. Check for new main quests based on game state (e.g., time)
-    const { newState: stateAfterMainQuests, notifications: mainQuestNotifications } = await checkForNewMainQuests(currentState);
+    const { newState: stateAfterMainQuests, notifications: mainQuestNotifications } = await checkForNewMainQuests(state1);
     
     // 2. Update progress on existing quests
     const { newState: stateAfterProgress, notifications: progressNotifications } = updateQuestProgress(stateAfterMainQuests);
@@ -202,6 +261,6 @@ export const processQuestUpdates = async (currentState: GameState): Promise<Ques
 
     return {
         newState: stateAfterCompletion,
-        notifications: [...mainQuestNotifications, ...progressNotifications, ...completionNotifications],
+        notifications: [...notifications1, ...mainQuestNotifications, ...progressNotifications, ...completionNotifications],
     };
 };

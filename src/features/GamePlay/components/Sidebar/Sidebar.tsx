@@ -12,11 +12,9 @@ import MapView from './panels/MapView';
 import StoryGraphPanel from './panels/StoryGraphPanel';
 import AiMemoryPanel from './panels/AiMemoryPanel';
 import GenealogyPanel from './panels/GenealogyPanel';
-import SectPanel from './panels/SectPanel';
-import AlchemyPanel from './panels/AlchemyPanel';
-import CaveAbodePanel from './panels/CaveAbodePanel';
 import QuestPanel from './panels/QuestPanel';
-import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaProjectDiagram, FaBrain, FaSitemap, FaUsers, FaMountain, FaFlask, FaTasks } from 'react-icons/fa';
+import SystemPanel from './panels/SystemPanel';
+import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaProjectDiagram, FaBrain, FaSitemap, FaUsers, FaMountain, FaFlask, FaTasks, FaDesktop } from 'react-icons/fa';
 import { useGameUIContext } from '../../../../contexts/GameUIContext';
 import { SHOPS } from '../../../../constants';
 
@@ -39,15 +37,17 @@ interface SidebarProps {
     showNotification: (message: string) => void;
     activeMods: FullMod[];
     gameState: GameState;
+    // FIX: Add setGameState to props to be passed down to child components like SystemPanel.
+    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
 }
-type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | 'aiMemory' | 'genealogy' | 'sect' | 'caveAbode' | 'alchemy' | 'quests' | string;
+type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | 'aiMemory' | 'genealogy' | 'quests' | 'system' | string;
 
 const ICON_MAP: { [key: string]: React.ElementType } = {
     FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram
 };
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcDialogue, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog, gameState } = props;
+    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcDialogue, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog, gameState, setGameState } = props;
     const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     const { openShopModal } = useGameUIContext();
     
@@ -59,22 +59,20 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         }
     }, [openShopModal, onNpcDialogue]);
 
-    const baseTabs: {id: SidebarTab, label: string, icon: React.ElementType}[] = [
-        {id: 'character', label: 'Nhân Vật', icon: FaUser },
-        {id: 'quests', label: 'Nhiệm Vụ', icon: FaTasks },
-        {id: 'techniques', label: 'Công Pháp', icon: FaScroll },
-        {id: 'alchemy', label: 'Luyện Đan', icon: FaFlask },
-        {id: 'genealogy', label: 'Gia Phả', icon: FaSitemap },
-        {id: 'sect', label: 'Tông Môn', icon: FaUsers },
-        {id: 'caveAbode', label: 'Động Phủ', icon: FaMountain },
-        {id: 'world', label: 'Thế Giới', icon: FaGlobe },
-        {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt },
-        {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaProjectDiagram },
-        {id: 'aiMemory', label: 'AI Ký Ức', icon: FaBrain },
-        {id: 'wiki', label: 'Bách Khoa', icon: FaBook },
-        {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram },
-        {id: 'lore', label: 'Thiên Mệnh', icon: FaSun },
-        {id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle },
+    const baseTabs: {id: SidebarTab, label: string, icon: React.ElementType, condition?: boolean}[] = [
+        {id: 'character', label: 'Nhân Vật', icon: FaUser, condition: true },
+        {id: 'system', label: 'Hệ Thống', icon: FaDesktop, condition: gameState.gameMode === 'transmigrator' },
+        {id: 'quests', label: 'Nhiệm Vụ', icon: FaTasks, condition: true },
+        {id: 'techniques', label: 'Công Pháp', icon: FaScroll, condition: true },
+        {id: 'genealogy', label: 'Thân Hữu', icon: FaSitemap, condition: true },
+        {id: 'world', label: 'Thế Giới', icon: FaGlobe, condition: true },
+        {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, condition: true },
+        {id: 'storyGraph', label: 'Tuyến Truyện', icon: FaProjectDiagram, condition: true },
+        {id: 'aiMemory', label: 'AI Ký Ức', icon: FaBrain, condition: true },
+        {id: 'wiki', label: 'Bách Khoa', icon: FaBook, condition: true },
+        {id: 'realms', label: 'Cảnh Giới', icon: FaGopuram, condition: true },
+        {id: 'lore', label: 'Thiên Mệnh', icon: FaSun, condition: true },
+        {id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle, condition: true },
     ];
 
     const moddedTabs = useMemo(() => {
@@ -84,12 +82,13 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 id: `modpanel-${mod.modInfo.id}-${index}`,
                 label: panel.title,
                 icon: ICON_MAP[panel.iconName] || FaQuestionCircle,
-                panelConfig: { ...panel, id: `modpanel-${mod.modInfo.id}-${index}` }
+                panelConfig: { ...panel, id: `modpanel-${mod.modInfo.id}-${index}` },
+                condition: true
             })) || []
         );
     }, [activeMods]);
 
-    const allTabs = [...baseTabs, ...moddedTabs];
+    const allTabs = [...baseTabs, ...moddedTabs].filter(tab => tab.condition);
     const activeModPanelConfig = moddedTabs.find(tab => tab.id === activeTab)?.panelConfig;
 
     return (
@@ -116,12 +115,10 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
             <div className="flex-grow overflow-y-auto pr-2">
                 {activeTab === 'guide' && <GuidePanel />}
                 {activeTab === 'character' && <CharacterPanel character={playerCharacter} onBreakthrough={onBreakthrough} realmSystem={realmSystem} />}
+                {activeTab === 'system' && <SystemPanel gameState={gameState} setGameState={setGameState} showNotification={showNotification} />}
                 {activeTab === 'quests' && <QuestPanel quests={playerCharacter.activeQuests} />}
                 {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
-                {activeTab === 'alchemy' && <AlchemyPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'genealogy' && <GenealogyPanel playerCharacter={playerCharacter} allNpcs={allNpcs} onNpcSelect={handleNpcInteraction} />}
-                {activeTab === 'sect' && <SectPanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
-                {activeTab === 'caveAbode' && <CaveAbodePanel playerCharacter={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} currentLocation={currentLocation} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={handleNpcInteraction} />}
                 {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} allNpcs={allNpcs} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}

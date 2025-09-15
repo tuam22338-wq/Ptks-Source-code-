@@ -1,7 +1,8 @@
 import React, { memo, useMemo, useState } from 'react';
 import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup, InventoryItem } from '../../../../../types';
-import { INNATE_TALENT_RANKS, CULTIVATION_PATHS, CHARACTER_STATUS_CONFIG, CURRENCY_ITEMS } from '../../../../../constants';
+import { CHARACTER_STATUS_CONFIG, CULTIVATION_PATHS, SPIRITUAL_ROOT_QUALITY_CONFIG } from '../../../../../constants';
 import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers, FaChevronDown, FaShieldAlt } from 'react-icons/fa';
+import { GiPentacle } from 'react-icons/gi';
 
 interface CharacterPanelProps {
     character: PlayerCharacter;
@@ -87,7 +88,7 @@ const AttributeGrid: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, talents, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, inventory, currencies } = character;
+    const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, inventory } = character;
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
 
     const toggleGroup = (title: string) => {
@@ -146,18 +147,6 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                  <ProgressBar current={linhLuc.value} max={linhLuc.maxValue} label="Linh Lực" color="bg-blue-500" icon={linhLuc.icon} />
             </div>
 
-            {/* Currencies */}
-             <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex justify-around">
-                <div className="flex items-center gap-2 text-yellow-400" title="Bạc">
-                    <FaCoins className="w-5 h-5" />
-                    <span className="font-semibold">{currencies?.['Bạc']?.toLocaleString() || 0}</span>
-                </div>
-                <div className="flex items-center gap-2 text-green-400" title="Linh thạch hạ phẩm">
-                    <FaGem className="w-5 h-5" />
-                    <span className="font-semibold">{currencies?.['Linh thạch hạ phẩm']?.toLocaleString() || 0}</span>
-                </div>
-            </div>
-
             {/* Cultivation */}
             <div>
                 <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Tu Luyện</h3>
@@ -181,6 +170,19 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                 </div>
             </div>
 
+            {/* Spiritual Root */}
+            {spiritualRoot && (
+                <div>
+                    <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
+                        <GiPentacle /> Linh Căn
+                    </h3>
+                     <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60" title={spiritualRoot.description}>
+                        <h4 className={`font-bold font-title ${SPIRITUAL_ROOT_QUALITY_CONFIG[spiritualRoot.quality].color} ${SPIRITUAL_ROOT_QUALITY_CONFIG[spiritualRoot.quality].glow || ''}`}>{spiritualRoot.name}</h4>
+                        <p className="text-xs text-gray-400">{spiritualRoot.description}</p>
+                    </div>
+                </div>
+            )}
+
             {/* Reputation */}
             <div>
                 <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
@@ -195,27 +197,6 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                 </div>
             </div>
 
-            {/* Talents */}
-            <div>
-                <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Tiên Tư</h3>
-                <div className="space-y-3">
-                    {talents.map(talent => {
-                        const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
-                        const detailTooltip = [
-                            `Hiệu ứng: ${talent.effect}`,
-                            talent.triggerCondition ? `Kích hoạt: ${talent.triggerCondition}` : null,
-                            talent.synergy ? `Tương tác: ${talent.synergy}` : null,
-                        ].filter(Boolean).join('\n');
-
-                        return (
-                            <div key={talent.name} className="bg-black/20 p-3 rounded-lg border border-gray-700/60" title={detailTooltip}>
-                                <h4 className={`font-bold font-title ${rankStyle.color} ${rankStyle.glow || ''}`}>{talent.name}</h4>
-                                <p className="text-xs text-gray-400">{talent.description}</p>
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
 
             {/* Destiny Paths */}
             {chosenPaths.length > 0 && (

@@ -58,6 +58,20 @@ const WorldSelectionScreen: React.FC = () => {
                 eraName: 'Tiên Phong Thần',
             };
 
+            const transmigratorWorld: WorldInfo = {
+                id: 'xuyen_viet_gia_phong_than',
+                name: 'Xuyên Việt Giả & Hệ Thống',
+                description: "Bạn không phải là người của thế giới này. Mang theo một 'Hệ Thống' bí ẩn, bạn xuyên không vào thế giới Phong Thần. Liệu bạn sẽ tuân theo dòng chảy định mệnh, hay dùng kiến thức của người hiện đại để thay đổi kịch bản, tạo ra một kết cục hoàn toàn mới?",
+                source: 'default',
+                author: 'Nhà phát triển',
+                majorEvents: MAJOR_EVENTS,
+                initialNpcs: [],
+                initialLocations: [],
+                factions: [],
+                startingYear: 1,
+                eraName: 'Tiên Phong Thần',
+            };
+
             const modWorlds: WorldInfo[] = [];
             try {
                 const modLibrary = await db.getModLibrary();
@@ -78,7 +92,7 @@ const WorldSelectionScreen: React.FC = () => {
                 console.error("Failed to load modded worlds:", error);
             }
 
-            setWorlds([defaultWorld, ...modWorlds]);
+            setWorlds([defaultWorld, transmigratorWorld, ...modWorlds]);
             setIsLoading(false);
         };
         loadWorlds();

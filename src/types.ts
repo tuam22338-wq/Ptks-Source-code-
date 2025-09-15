@@ -7,7 +7,21 @@ export interface Faction {
   imageUrl: string;
 }
 
-export type Element = 'Kim' | 'Mộc' | 'Thủy' | 'Hỏa' | 'Thổ' | 'Vô';
+export type Element = 'Kim' | 'Mộc' | 'Thủy' | 'Hỏa' | 'Thổ' | 'Vô' | 'Dị' | 'Hỗn Độn';
+
+
+// --- New Spiritual Root System Types ---
+export type SpiritualRootQuality = 'Phàm Căn' | 'Linh Căn' | 'Địa Căn' | 'Thiên Căn' | 'Thánh Căn';
+
+export interface SpiritualRoot {
+  elements: { type: Element; purity: number }[]; // Purity from 1-100
+  quality: SpiritualRootQuality;
+  name: string; // e.g., "Hỏa Thiên Linh Căn", "Kim Mộc Thủy Tạp Linh Căn"
+  description: string;
+  bonuses: StatBonus[];
+}
+// --- End New System ---
+
 
 // --- Save Slot Types ---
 export interface SaveSlot {
@@ -113,6 +127,7 @@ export interface CharacterIdentity {
   personality: string;
   age: number;
   familyName?: string;
+  suggestedElement?: Element;
 }
 
 // --- Timeline Types ---
@@ -499,6 +514,7 @@ export interface Currency {
    * Đặc Biệt (Special Currency):
    * - Điểm Cống Hiến Tông Môn: Sect Contribution Points
    * - Điểm Danh Vọng: Reputation Points
+   * - Điểm Nguồn: Origin Points (for Transmigrator System)
    */
   [key: string]: number;
 }
@@ -543,7 +559,7 @@ export interface NPC {
     identity: CharacterIdentity;
     status: string;
     attributes: AttributeGroup[];
-    talents: InnateTalent[];
+    talents: InnateTalent[]; // NPCs still use talents for now
     locationId: string;
     relationships?: Relationship[];
     cultivation: CultivationState;
@@ -708,10 +724,13 @@ export interface ActiveQuest {
     id: string;
     title: string;
     description: string;
-    type: 'MAIN' | 'SIDE';
-    source: string; // e.g., 'event:tru_vuong_de_tho' or 'npc:npc_khuong_tu_nha'
+    type: 'MAIN' | 'SIDE' | 'SYSTEM';
+    source: string; // e.g., 'event:tru_vuong_de_tho' or 'npc:npc_khuong_tu_nha' or 'system'
     objectives: QuestObjective[];
     rewards: QuestReward;
+    // FIX: Add optional timeLimit and onFailure properties to ActiveQuest
+    timeLimit?: number; // in game days
+    onFailure?: EventOutcome[];
 }
 
 export interface InnerDemonTrial {
@@ -722,10 +741,27 @@ export interface InnerDemonTrial {
     }[];
 }
 
+// --- New Transmigrator System Types ---
+export interface SystemShopItem {
+    id: string;
+    name: string;
+    description: string;
+    cost: number; // in System Points
+    effect: EventOutcome;
+    stock?: number;
+}
+
+export type SystemFeature = 'status' | 'quests' | 'store' | 'analysis';
+
+export interface SystemInfo {
+    unlockedFeatures: SystemFeature[];
+}
+// --- End Transmigrator System Types ---
+
 export interface PlayerCharacter {
     identity: CharacterIdentity;
     attributes: AttributeGroup[];
-    talents: InnateTalent[];
+    spiritualRoot: SpiritualRoot | null;
     inventory: Inventory;
     currencies: Currency;
     cultivation: CultivationState;
@@ -751,11 +787,12 @@ export interface PlayerCharacter {
     completedQuestIds: string[];
     inventoryActionLog: string[];
     element?: Element;
+    systemInfo?: SystemInfo;
 }
 
 export interface StoryEntry {
     id: number;
-    type: 'narrative' | 'dialogue' | 'action-result' | 'system' | 'player-action' | 'player-dialogue' | 'combat';
+    type: 'narrative' | 'dialogue' | 'action-result' | 'system' | 'player-action' | 'player-dialogue' | 'combat' | 'system-notification';
     content: string;
 }
 
@@ -803,6 +840,7 @@ export interface GameState {
     worldSects?: Sect[];
     eventIllustrations?: { eventId: string; imageUrl: string; narrative: string }[];
     storySummary?: string;
+    gameMode?: 'classic' | 'transmigrator';
 }
 
 // --- Gameplay Event Types ---
