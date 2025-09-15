@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, memo } from 'react';
-import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter, DanhVong } from '../../types';
+import type { AttributeGroup, InnateTalent, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, ModTalent, ModTalentRank, TalentSystemConfig, StatBonus, ModCharacter, DanhVong, DifficultyLevel } from '../../types';
 import { FaArrowLeft, FaDice } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
@@ -8,7 +8,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import InnateTalentSelection from './components/InnateTalentSelection';
 import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
 // FIX: Import MAJOR_EVENTS
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, MAJOR_EVENTS } from '../../constants';
+import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, MAJOR_EVENTS, DIFFICULTY_LEVELS } from '../../constants';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -43,6 +43,27 @@ const NpcDensitySelector: React.FC<{ value: NpcDensity, onChange: (value: NpcDen
     </div>
 );
 
+const DifficultySelector: React.FC<{ value: DifficultyLevel, onChange: (value: DifficultyLevel) => void }> = ({ value, onChange }) => (
+    <div>
+        <p className="text-sm text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Chọn Độ Khó</p>
+        <div className="flex flex-col gap-3">
+            {DIFFICULTY_LEVELS.map(level => (
+                <button 
+                    key={level.id} 
+                    onClick={() => onChange(level.id)} 
+                    className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${value === level.id ? `${level.color} bg-white/10` : 'bg-black/20 border-gray-700 hover:border-gray-500'}`}
+                >
+                    <div className="flex justify-between items-center">
+                        <span className="font-bold text-md text-white">{level.name}</span>
+                        <span className="text-xs font-mono text-gray-400">Chỉ số: {level.baseStatValue}</span>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-1">{level.description}</p>
+                </button>
+            ))}
+        </div>
+    </div>
+);
+
 export const CharacterCreationScreen: React.FC = memo(() => {
   const { handleNavigate, handleGameStart } = useAppContext();
   const [step, setStep] = useState<'modeSelection' | 'idea' | 'roleplay' | 'generating' | 'results'>('modeSelection');
@@ -55,6 +76,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
   const [generationMessage, setGenerationMessage] = useState('');
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [npcDensity, setNpcDensity] = useState<NpcDensity>('medium');
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [modTalentConfig, setModTalentConfig] = useState<{ systemConfig: TalentSystemConfig, ranks: ModTalentRank[], availableTalents: ModTalent[] }>({
     systemConfig: { systemName: 'Tiên Tư', choicesPerRoll: 6, maxSelectable: 3, allowAIGeneratedTalents: true },
     ranks: [],
@@ -207,6 +229,20 @@ export const CharacterCreationScreen: React.FC = memo(() => {
       }
 
       const initialAttributes = JSON.parse(JSON.stringify(ATTRIBUTES_CONFIG)) as AttributeGroup[];
+      
+      const selectedDifficulty = DIFFICULTY_LEVELS.find(d => d.id === difficulty) || DIFFICULTY_LEVELS.find(d => d.id === 'medium')!;
+      const baseStatValue = selectedDifficulty.baseStatValue;
+
+      initialAttributes.forEach(group => {
+          if (['Tinh (精 - Nhục Thân)', 'Khí (气 - Chân Nguyên)', 'Thần (神 - Linh Hồn)', 'Ngoại Duyên (外缘 - Yếu Tố Bên Ngoài)'].includes(group.title)) {
+              group.attributes.forEach(attr => {
+                  if (typeof attr.value === 'number') {
+                      attr.value = baseStatValue;
+                  }
+              });
+          }
+      });
+      
       const allBonuses = selectedTalents.flatMap(t => t.bonuses || []);
       
       allBonuses.forEach(bonus => {
@@ -231,7 +267,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           completedQuestIds: [],
       };
 
-      await handleGameStart({ characterData, npcDensity });
+      await handleGameStart({ characterData, npcDensity, difficulty });
   };
   
   const handleIdentityChange = useCallback((updatedIdentity: Partial<CharacterIdentity>) => {
@@ -292,6 +328,9 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                   {g}
                 </button>
               ))}
+            </div>
+            <div className="mt-4">
+                <DifficultySelector value={difficulty} onChange={setDifficulty} />
             </div>
             <div className="mt-8 flex justify-center gap-4">
               <button onClick={() => setStep('modeSelection')} className="px-6 py-3 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">Quay Lại</button>

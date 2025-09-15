@@ -61,7 +61,7 @@ const AttributeGrid: React.FC<{
     attributes: Attribute[];
     baseAttributes?: Attribute[];
 }> = ({ attributes, baseAttributes }) => (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
       {attributes.map(attr => {
         const baseAttr = baseAttributes?.find(ba => ba.name === attr.name);
         const baseValue = baseAttr?.value;

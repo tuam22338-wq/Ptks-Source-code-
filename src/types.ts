@@ -27,6 +27,7 @@ export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'B
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
 export type Theme = 'theme-amber' | 'theme-jade-green' | 'theme-amethyst-purple' | 'theme-celestial-light' | 'theme-blood-moon' | 'theme-bamboo-forest';
+export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
 
 
 export interface SafetySettings {
@@ -782,6 +783,7 @@ export interface CombatState {
 
 export interface GameState {
     version?: string;
+    difficulty?: DifficultyLevel;
     playerCharacter: PlayerCharacter;
     activeNpcs: NPC[];
     discoveredLocations: Location[];

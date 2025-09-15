@@ -5,17 +5,20 @@ import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 
 export async function* generateStoryContinuationStream(gameState: GameState, userInput: string, inputType: 'say' | 'act'): AsyncIterable<string> {
-    const { playerCharacter, gameDate, storyLog, discoveredLocations, activeNpcs, storySummary } = gameState;
+    const { playerCharacter, gameDate, storyLog, discoveredLocations, activeNpcs, storySummary, difficulty } = gameState;
     const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
     const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
     
     const settings = await db.getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
+    const difficultyText = `Độ khó hiện tại là "${difficulty || 'Trung Bình'}". Hãy điều chỉnh mức độ thử thách và kết quả của các sự kiện cho phù hợp: độ khó cao hơn nên có nhiều tình huống nguy hiểm và kết quả bất lợi hơn; độ khó thấp hơn nên mang lại nhiều cơ hội và may mắn hơn.`;
+
     const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai text-based có tên "Tam Thiên Thế Giới".
 - Bối cảnh: Thế giới tiên hiệp huyền huyễn.
 - **QUAN TRỌNG NHẤT: PHẢI LUÔN LUÔN trả lời bằng TIẾNG VIỆT.**
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
+- ${difficultyText}
 - Chỉ kể tiếp câu chuyện, không đưa ra lời khuyên hay bình luận ngoài vai trò người kể chuyện.
 - Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.
 - Đừng lặp lại những thông tin đã có trong ngữ cảnh.`;

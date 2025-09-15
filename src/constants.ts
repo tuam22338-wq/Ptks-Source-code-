@@ -1,4 +1,4 @@
-import type { GameSettings, AttributeGroup, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem } from './types';
+import type { GameSettings, AttributeGroup, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel } from './types';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -22,7 +22,7 @@ export * from './data/realmSystem';
 
 
 export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
-export const CURRENT_GAME_VERSION = "1.1.0";
+export const CURRENT_GAME_VERSION = "1.0.2";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
@@ -89,9 +89,9 @@ export const DEFAULT_SETTINGS: GameSettings = {
     gameSpeed: 'normal',
     narrativeStyle: 'classic_wuxia',
     fontFamily: "'Noto Serif', serif",
-    theme: 'theme-amber',
+    theme: 'theme-celestial-light',
     backgroundImage: '',
-    zoomLevel: 100,
+    zoomLevel: 50,
     textColor: '#d1d5db',
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
@@ -157,6 +157,14 @@ export const GAME_SPEEDS: { value: GameSpeed; label: string }[] = [
     { value: 'normal', label: 'Bình thường' },
     { value: 'fast', label: 'Nhanh' },
     { value: 'very_fast', label: 'Rất nhanh' },
+];
+
+export const DIFFICULTY_LEVELS: { id: DifficultyLevel; name: string; description: string; baseStatValue: number; color: string }[] = [
+    { id: 'rookie', name: 'Tân Thủ', description: 'Trải nghiệm thư giãn, phù hợp cho người mới làm quen.', baseStatValue: 15, color: 'border-green-500' },
+    { id: 'easy', name: 'Dễ', description: 'Thuộc tính khởi đầu cao hơn một chút. Phù hợp cho người mới.', baseStatValue: 12, color: 'border-sky-500' },
+    { id: 'medium', name: 'Trung Bình', description: 'Trải nghiệm cân bằng, đúng với ý đồ của trò chơi.', baseStatValue: 10, color: 'border-gray-500' },
+    { id: 'hard', name: 'Khó', description: 'Thử thách cao hơn, thuộc tính khởi đầu bị giảm.', baseStatValue: 8, color: 'border-orange-500' },
+    { id: 'hell', name: 'Gà Đất Chó Sành', description: 'Thử thách cực đại, khởi đầu như một kẻ tay mơ giữa thế giới tu chân tàn khốc.', baseStatValue: 5, color: 'border-red-600' },
 ];
 
 export const SAFETY_CATEGORIES = [

@@ -1,7 +1,7 @@
 import { FaQuestionCircle } from 'react-icons/fa';
 import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, DEFAULT_CAVE_ABODE, FACTIONS, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID } from "../constants";
 // FIX: Import RealmConfig type
-import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData } from "../types";
+import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 import {
   GiCauldron,
@@ -15,6 +15,10 @@ import { FaSun, FaMoon } from 'react-icons/fa';
 
 export const migrateGameState = (savedGame: any): GameState => {
     let dataToProcess = { ...savedGame };
+
+    if (!dataToProcess.difficulty) {
+        dataToProcess.difficulty = 'medium';
+    }
 
     if (dataToProcess.version !== CURRENT_GAME_VERSION) {
         let version = dataToProcess.version || "1.0.0";
@@ -203,12 +207,13 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 export const createNewGameState = async (
     gameStartData: {
         characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element'> & { danhVong: DanhVong },
-        npcDensity: NpcDensity
+        npcDensity: NpcDensity,
+        difficulty: DifficultyLevel
     },
     activeMods: FullMod[],
     activeWorldId: string
 ): Promise<GameState> => {
-    const { characterData, npcDensity } = gameStartData;
+    const { characterData, npcDensity, difficulty } = gameStartData;
 
     // --- World Data Overhaul ---
     let worldData: ModWorldData | null = null;
@@ -384,5 +389,6 @@ export const createNewGameState = async (
         worldSects: [],
         eventIllustrations: [],
         storySummary: '',
+        difficulty: difficulty,
     };
 };

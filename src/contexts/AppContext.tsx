@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, FC, PropsWithChildren } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong } from '../types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from '../constants';
 import { reloadSettings } from '../services/geminiService';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
@@ -37,7 +37,8 @@ interface AppContextType {
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
     handleGameStart: (gameStartData: {
       characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
-      npcDensity: NpcDensity
+      npcDensity: NpcDensity,
+      difficulty: DifficultyLevel
     }) => Promise<void>;
     handleSetActiveWorldId: (worldId: string) => Promise<void>;
     quitGame: () => void;
@@ -353,7 +354,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
     const handleGameStart = useCallback(async (gameStartData: {
       characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeMissions' | 'inventoryActionLog' | 'danhVong'> & { danhVong: DanhVong },
-      npcDensity: NpcDensity
+      npcDensity: NpcDensity,
+      difficulty: DifficultyLevel
     }) => {
         if (currentSlotId === null) {
             alert("Lỗi: Không có ô lưu nào được chọn.");
@@ -362,7 +364,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         setIsLoading(true);
 
         const npcCount = NPC_DENSITY_LEVELS.find(d => d.id === gameStartData.npcDensity)?.count ?? 20;
-        let remainingTime = Math.ceil(npcCount * 0.4) + 5;
+        let remainingTime = Math.ceil(npcCount * 0.3) + 3;
         const messages = ['Đang nạp các mod đã kích hoạt...', 'Thỉnh mời các vị thần...', 'Vẽ nên sông núi, cây cỏ...', 'Tạo ra chúng sinh vạn vật...', 'An bài số mệnh, định ra nhân quả...'];
         let messageIndex = 0;
         const updateLoadingMessage = () => {

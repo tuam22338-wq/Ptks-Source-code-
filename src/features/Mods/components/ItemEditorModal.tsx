@@ -50,7 +50,7 @@ const ItemEditorModal: React.FC<ItemEditorModalProps> = ({ isOpen, onClose, onSa
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }}>
-            <div className="bg-gray-900/95 border border-gray-700 rounded-lg shadow-2xl shadow-black/50 w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div className="bg-gray-900/95 border border-gray-700 rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
                     <h3 className="text-xl text-gray-200 font-bold font-title">{itemToEdit ? 'Chỉnh Sửa Vật Phẩm' : 'Tạo Vật Phẩm Mới'}</h3>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>

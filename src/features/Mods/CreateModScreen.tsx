@@ -176,7 +176,7 @@ const CreateModScreen: React.FC = () => {
     );
 
     return (
-        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 flex flex-col h-full max-h-[85vh]">
+        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 flex flex-col h-[85vh]">
             {renderModals()}
             <AiContentGeneratorModal isOpen={isAiGeneratorOpen} onClose={() => setIsAiGeneratorOpen(false)} onGenerate={handleAiGeneratedContent} modContext={{ modInfo, addedContent }} />
             
