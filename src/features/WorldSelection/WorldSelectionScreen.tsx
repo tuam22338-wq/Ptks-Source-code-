@@ -22,7 +22,7 @@ const WorldCard: React.FC<{ world: WorldInfo; isActive: boolean; onSelect: () =>
                 }`}
         >
             {isActive && (
-                <div className="absolute top-3 right-3 text-green-400">
+                <div className="absolute top-3 right-3 text-amber-300">
                     <FaCheckCircle size={20} title="Thế giới đang hoạt động" />
                 </div>
             )}

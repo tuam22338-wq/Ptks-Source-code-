@@ -1,8 +1,8 @@
 import React, { useState, useEffect, memo } from 'react';
-import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../../constants';
+import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
-import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme, RagEmbeddingModel } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaBook, FaTrash, FaTerminal, FaKey, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
+import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, RagEmbeddingModel } from '../../types';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
@@ -10,19 +10,19 @@ import { useAppContext } from '../../contexts/AppContext';
 type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'advanced';
 
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = memo(({ title, children }) => (
-  <section className="mb-8">
-    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-muted-color)'}}>{title}</h3>
-    <div className="space-y-4">{children}</div>
+  <section className="settings-section">
+    <h3 className="settings-section-title">{title}</h3>
+    <div className="space-y-6">{children}</div>
   </section>
 ));
 
 const SettingsRow: React.FC<{ label: string; description: string; children: React.ReactNode }> = memo(({ label, description, children }) => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start py-2">
-    <div className="md:col-span-1">
-      <label className="block text-md font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
-      <p className="text-sm" style={{color: 'var(--text-muted-color)'}}>{description}</p>
+  <div className="settings-row">
+    <div className="settings-row-label">
+      <label>{label}</label>
+      <p>{description}</p>
     </div>
-    <div className="md:col-span-2">{children}</div>
+    <div className="settings-row-control">{children}</div>
   </div>
 ));
 
@@ -35,14 +35,10 @@ const TabButton: React.FC<{
 }> = memo(({ tabId, activeTab, onClick, icon: Icon, label }) => (
   <button
     onClick={() => onClick(tabId)}
-    className={`flex-shrink-0 flex flex-col sm:flex-row items-center justify-center gap-2 p-3 text-sm font-bold rounded-lg transition-colors duration-200 whitespace-nowrap sm:flex-1 ${
-      activeTab === tabId
-        ? 'bg-[color:var(--primary-accent-color)]/20 text-[color:var(--primary-accent-color)]'
-        : 'text-[color:var(--text-muted-color)] hover:bg-black/10'
-    }`}
+    className={`settings-tab-button ${activeTab === tabId ? 'active' : ''}`}
   >
-    <Icon className="w-5 h-5 mb-1 sm:mb-0" />
-    <span>{label}</span>
+    <Icon className="icon" />
+    <span className="label">{label}</span>
   </button>
 ));
 
@@ -136,47 +132,42 @@ const SettingsPanel: React.FC = () => {
     };
 
     return (
-        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold font-title">Cài Đặt</h2>
+        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 settings-panel-container">
+            <div className="settings-header">
+                <h2 className="settings-main-title">Cài Đặt</h2>
                 <button 
                   onClick={() => handleNavigate('mainMenu')} 
-                  className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+                  className="settings-back-button"
                   title="Quay Lại Menu"
                 >
                   <FaArrowLeft className="w-5 h-5" />
                 </button>
             </div>
             
-            <div className="flex items-stretch gap-1 p-1 bg-black/20 rounded-lg border border-gray-700/60 mb-8 overflow-x-auto">
+            <nav className="settings-tab-nav">
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI & Models" />
                 <TabButton tabId="safety" activeTab={activeTab} onClick={setActiveTab} icon={FaShieldAlt} label="An Toàn" />
                 <TabButton tabId="gameplay" activeTab={activeTab} onClick={setActiveTab} icon={FaGamepad} label="Lối Chơi" />
                 <TabButton tabId="advanced" activeTab={activeTab} onClick={setActiveTab} icon={FaCog} label="Nâng Cao" />
-            </div>
+            </nav>
 
-            <div className="max-h-[calc(100vh-28rem)] overflow-y-auto pr-2">
+            <div className="settings-content">
                 {activeTab === 'interface' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                         <SettingsSection title="Giao Diện Chung">
                             <SettingsRow label="Bố Cục" description="Ép bố cục cho máy tính hoặc di động, hoặc để tự động phát hiện.">
-                                <div className="flex gap-2">
+                                <div className="themed-button-group">
                                     {LAYOUT_MODES.map(mode => (
-                                        <button key={mode.value} onClick={() => handleSettingChange('layoutMode', mode.value)} className={`px-4 py-2 text-sm rounded-md border transition-all duration-200 ${settings.layoutMode === mode.value ? 'bg-teal-500/20 border-teal-400 text-white' : 'bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50'}`}>
+                                        <button key={mode.value} onClick={() => handleSettingChange('layoutMode', mode.value)} className={settings.layoutMode === mode.value ? 'active' : ''}>
                                             {mode.label}
                                         </button>
                                     ))}
                                 </div>
                             </SettingsRow>
                             <SettingsRow label="Font Chữ" description="Chọn font chữ chính cho toàn bộ trò chơi.">
-                                <select value={settings.fontFamily} onChange={(e) => handleSettingChange('fontFamily', e.target.value)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.fontFamily} onChange={(e) => handleSettingChange('fontFamily', e.target.value)} className="themed-select">
                                     {FONT_OPTIONS.map(font => <option key={font.value} value={font.value}>{font.label}</option>)}
-                                </select>
-                            </SettingsRow>
-                             <SettingsRow label="Chủ Đề (Theme)" description="Thay đổi bảng màu của giao diện người dùng.">
-                                <select value={settings.theme} onChange={(e) => handleSettingChange('theme', e.target.value as Theme)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
-                                    {THEME_OPTIONS.map(theme => <option key={theme.value} value={theme.value}>{theme.label}</option>)}
                                 </select>
                             </SettingsRow>
                             <SettingsRow label="Màu Chữ Chính" description="Thay đổi màu sắc của văn bản chính trong game.">
@@ -184,7 +175,7 @@ const SettingsPanel: React.FC = () => {
                                     type="color" 
                                     value={settings.textColor} 
                                     onChange={(e) => handleSettingChange('textColor', e.target.value)}
-                                    className="w-full h-10 p-1 bg-gray-800/50 border border-gray-600 rounded cursor-pointer"
+                                    className="themed-color-input"
                                 />
                             </SettingsRow>
                             <SettingsRow label="Mức Thu Phóng Giao Diện" description="Thay đổi kích thước tổng thể của tất cả các thành phần giao diện.">
@@ -196,19 +187,19 @@ const SettingsPanel: React.FC = () => {
                                         step="5"
                                         value={settings.zoomLevel}
                                         onChange={e => handleSettingChange('zoomLevel', parseInt(e.target.value))}
-                                        className="w-full"
+                                        className="themed-slider"
                                     />
-                                    <span className="font-mono text-lg w-20 text-center">{settings.zoomLevel}%</span>
+                                    <span className="themed-slider-value">{settings.zoomLevel}%</span>
                                 </div>
                             </SettingsRow>
                             <SettingsRow label="Vật phẩm mỗi trang" description="Số lượng vật phẩm hiển thị trên mỗi trang trong túi đồ.">
-                                <input type="number" value={settings.itemsPerPage} onChange={(e) => handleSettingChange('itemsPerPage', parseInt(e.target.value) || 10)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                                <input type="number" value={settings.itemsPerPage} onChange={(e) => handleSettingChange('itemsPerPage', parseInt(e.target.value) || 10)} className="themed-input" />
                             </SettingsRow>
                              <SettingsRow label="Độ dài Phản hồi AI (Số từ)" description="Điều chỉnh số từ mục tiêu cho mỗi phản hồi của AI kể chuyện. Mặc định: 2000 từ.">
-                                <input type="number" min="100" max="5000" step="100" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value) || 2000)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                                <input type="number" min="100" max="5000" step="100" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value) || 2000)} className="themed-input" />
                             </SettingsRow>
                             <SettingsRow label="Toàn màn hình" description="Bật chế độ toàn màn hình để có trải nghiệm tốt nhất.">
-                               <button onClick={toggleFullScreen} className="flex items-center gap-2 px-4 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80 transition-colors">
+                               <button onClick={toggleFullScreen} className="settings-button flex items-center gap-2">
                                     <FaExpand /> {isFullScreen ? "Thoát Toàn màn hình" : "Vào Toàn màn hình"}
                                 </button>
                             </SettingsRow>
@@ -218,15 +209,15 @@ const SettingsPanel: React.FC = () => {
                         <SettingsSection title="Ảnh Nền">
                             <SettingsRow label="Tạo Ảnh Nền Bằng AI" description="Mô tả ảnh nền bạn muốn, AI sẽ tạo ra nó. (Yêu cầu API Key có model tạo ảnh)">
                                 <div className="flex gap-2">
-                                    <input type="text" value={bgPrompt} onChange={e => setBgPrompt(e.target.value)} placeholder="Ví dụ: một thung lũng tiên cảnh trong sương sớm" className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
-                                    <button onClick={handleGenerateBg} disabled={isGeneratingBg} className="px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 w-32 flex justify-center items-center">
+                                    <input type="text" value={bgPrompt} onChange={e => setBgPrompt(e.target.value)} placeholder="Ví dụ: một thung lũng tiên cảnh trong sương sớm" className="themed-input" />
+                                    <button onClick={handleGenerateBg} disabled={isGeneratingBg} className="settings-button-primary w-32 flex justify-center items-center">
                                         {isGeneratingBg ? <LoadingSpinner size="sm" /> : 'Tạo'}
                                     </button>
                                 </div>
                             </SettingsRow>
                             <SettingsRow label="Xóa Nền" description="Xóa ảnh nền hiện tại để sử dụng màu nền của chủ đề.">
-                                <button onClick={() => handleSettingChange('backgroundImage', '')} disabled={!settings.backgroundImage} className="px-4 py-2 bg-red-800/80 text-white font-bold rounded-lg hover:bg-red-700/80 disabled:bg-gray-600 disabled:cursor-not-allowed">
-                                    <FaTrash className="inline-block mr-2" /> Xóa Nền
+                                <button onClick={() => handleSettingChange('backgroundImage', '')} disabled={!settings.backgroundImage} className="settings-button-danger flex items-center gap-2">
+                                    <FaTrash /> Xóa Nền
                                 </button>
                             </SettingsRow>
                         </SettingsSection>
@@ -243,8 +234,8 @@ const SettingsPanel: React.FC = () => {
                             </div>
                             <SettingsRow label="Thêm API Key Mới" description="Dán API key của bạn vào đây. Key sẽ được lưu trữ cục bộ trên trình duyệt của bạn.">
                                 <div className="flex gap-2">
-                                    <input type="password" value={newApiKey} onChange={e => setNewApiKey(e.target.value)} placeholder="Dán API key của bạn ở đây" className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
-                                    <button onClick={handleAddApiKey} className="px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 flex items-center gap-2"><FaPlus/> Thêm</button>
+                                    <input type="password" value={newApiKey} onChange={e => setNewApiKey(e.target.value)} placeholder="Dán API key của bạn ở đây" className="themed-input" />
+                                    <button onClick={handleAddApiKey} className="settings-button-primary flex items-center gap-2"><FaPlus/> Thêm</button>
                                 </div>
                             </SettingsRow>
                              <SettingsRow label="Các Key Hiện Tại" description="Danh sách các API key đã được thêm.">
@@ -265,54 +256,54 @@ const SettingsPanel: React.FC = () => {
 
                         <SettingsSection title="Phân Vai Model AI (Nâng cao)">
                            <SettingsRow label="Model Chính" description="Model mạnh nhất, dùng cho các tác vụ chính như kể chuyện, tạo sự kiện.">
-                                <select value={settings.mainTaskModel} onChange={(e) => handleSettingChange('mainTaskModel', e.target.value as AIModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.mainTaskModel} onChange={(e) => handleSettingChange('mainTaskModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
                            <SettingsRow label="Model Game Master" description="Điều khiển cốt truyện, sự kiện và tạo mod bằng AI.">
-                                <select value={settings.gameMasterModel} onChange={(e) => handleSettingChange('gameMasterModel', e.target.value as AIModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.gameMasterModel} onChange={(e) => handleSettingChange('gameMasterModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
                            <SettingsRow label="Model Hỗ trợ Nhanh" description="Dùng cho các tác vụ nhỏ, phân tích nhanh (vd: phân tích hành động).">
-                                <select value={settings.quickSupportModel} onChange={(e) => handleSettingChange('quickSupportModel', e.target.value as AIModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.quickSupportModel} onChange={(e) => handleSettingChange('quickSupportModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
                             <SettingsRow label="Model Mô phỏng NPC" description="Điều khiển hành vi và sự phát triển của NPC trong thế giới.">
-                                <select value={settings.npcSimulationModel} onChange={(e) => handleSettingChange('npcSimulationModel', e.target.value as AIModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.npcSimulationModel} onChange={(e) => handleSettingChange('npcSimulationModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
                            <SettingsRow label="Model Tạo Ảnh" description="Model dùng để tạo ảnh đại diện và ảnh nền.">
-                                <select value={settings.imageGenerationModel} onChange={(e) => handleSettingChange('imageGenerationModel', e.target.value as ImageModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.imageGenerationModel} onChange={(e) => handleSettingChange('imageGenerationModel', e.target.value as ImageModel)} className="themed-select">
                                     {IMAGE_AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
                         </SettingsSection>
                         <SettingsSection title="Tham Số AI">
                             <SettingsRow label="Thinking (Tư duy)" description="Cho phép các model 'flash' sử dụng một phần token để 'suy nghĩ' trước khi trả lời, giúp tăng chất lượng.">
-                                <input type="checkbox" checked={settings.enableThinking} onChange={e => handleSettingChange('enableThinking', e.target.checked)} className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500" />
+                                <input type="checkbox" checked={settings.enableThinking} onChange={e => handleSettingChange('enableThinking', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
                              <SettingsRow label="Thinking Budget" description="Số lượng token tối đa mà AI được phép dùng để 'suy nghĩ'. Chỉ áp dụng khi Thinking được bật.">
-                                <input type="number" value={settings.thinkingBudget} onChange={e => handleSettingChange('thinkingBudget', parseInt(e.target.value) || 0)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                                <input type="number" value={settings.thinkingBudget} onChange={e => handleSettingChange('thinkingBudget', parseInt(e.target.value) || 0)} className="themed-input" />
                             </SettingsRow>
-                            <SettingsRow label="Temperature" description="Kiểm soát độ 'sáng tạo' của AI. Giá trị cao hơn (ví dụ: 1.0) sẽ tạo ra các phản hồi đa dạng hơn, trong khi giá trị thấp hơn (ví dụ: 0.2) sẽ làm cho các phản hồi trở nên tập trung và xác định hơn.">
+                            <SettingsRow label="Temperature" description="Kiểm soát độ 'sáng tạo' của AI. Cao hơn = đa dạng hơn, thấp hơn = tập trung hơn.">
                                 <div className="flex items-center gap-4">
-                                    <input type="range" min="0" max="1" step="0.05" value={settings.temperature} onChange={e => handleSettingChange('temperature', parseFloat(e.target.value))} className="w-full" />
-                                    <span className="font-mono text-lg">{settings.temperature.toFixed(2)}</span>
+                                    <input type="range" min="0" max="1" step="0.05" value={settings.temperature} onChange={e => handleSettingChange('temperature', parseFloat(e.target.value))} className="themed-slider" />
+                                    <span className="themed-slider-value">{settings.temperature.toFixed(2)}</span>
                                 </div>
                             </SettingsRow>
-                            <SettingsRow label="Top-K" description="Giới hạn việc lựa chọn token tiếp theo từ K token có xác suất cao nhất. Giá trị thấp hơn làm giảm sự ngẫu nhiên.">
+                            <SettingsRow label="Top-K" description="Giới hạn việc lựa chọn token tiếp theo từ K token có xác suất cao nhất.">
                                 <div className="flex items-center gap-4">
-                                    <input type="range" min="1" max="100" step="1" value={settings.topK} onChange={e => handleSettingChange('topK', parseInt(e.target.value))} className="w-full" />
-                                    <span className="font-mono text-lg w-12 text-center">{settings.topK}</span>
+                                    <input type="range" min="1" max="100" step="1" value={settings.topK} onChange={e => handleSettingChange('topK', parseInt(e.target.value))} className="themed-slider" />
+                                    <span className="themed-slider-value">{settings.topK}</span>
                                 </div>
                             </SettingsRow>
-                            <SettingsRow label="Top-P" description="Chọn token tiếp theo từ các token có tổng xác suất tích lũy là P. Giá trị thấp hơn làm giảm sự ngẫu nhiên.">
+                            <SettingsRow label="Top-P" description="Chọn token tiếp theo từ các token có tổng xác suất tích lũy là P.">
                                 <div className="flex items-center gap-4">
-                                    <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={e => handleSettingChange('topP', parseFloat(e.target.value))} className="w-full" />
-                                    <span className="font-mono text-lg">{settings.topP.toFixed(2)}</span>
+                                    <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={e => handleSettingChange('topP', parseFloat(e.target.value))} className="themed-slider" />
+                                    <span className="themed-slider-value">{settings.topP.toFixed(2)}</span>
                                 </div>
                             </SettingsRow>
                             <button onClick={() => handleResetToDefault('AI & Models')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt AI & Models</button>
@@ -322,15 +313,15 @@ const SettingsPanel: React.FC = () => {
                  {activeTab === 'safety' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                         <SettingsSection title="Cài Đặt An Toàn">
-                             <SettingsRow label="Tắt Toàn Bộ Lọc An Toàn" description="Tắt tất cả các bộ lọc nội dung của Gemini. CẢNH BÁO: Điều này có thể tạo ra nội dung không mong muốn. Chỉ bật khi bạn hiểu rõ rủi ro.">
-                                <input type="checkbox" checked={settings.masterSafetySwitch} onChange={e => handleSettingChange('masterSafetySwitch', e.target.checked)} className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" />
+                             <SettingsRow label="Tắt Toàn Bộ Lọc An Toàn" description="CẢNH BÁO: Điều này có thể tạo ra nội dung không mong muốn. Chỉ bật khi bạn hiểu rõ rủi ro.">
+                                <input type="checkbox" checked={settings.masterSafetySwitch} onChange={e => handleSettingChange('masterSafetySwitch', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
                             {SAFETY_CATEGORIES.map(category => (
                                 <SettingsRow key={category.id} label={category.name} description={`Mức độ chặn cho nội dung ${category.name.toLowerCase()}.`}>
                                      <select
                                         value={settings.safetyLevels[category.id as keyof typeof settings.safetyLevels]}
                                         onChange={(e) => handleSettingChange('safetyLevels', { ...settings.safetyLevels, [category.id]: e.target.value as SafetyLevel })}
-                                        className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2"
+                                        className="themed-select"
                                         disabled={settings.masterSafetySwitch}
                                     >
                                         {SAFETY_LEVELS.map(level => <option key={level.value} value={level.value}>{level.label}</option>)}
@@ -345,20 +336,20 @@ const SettingsPanel: React.FC = () => {
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                         <SettingsSection title="Lối Chơi">
                             <SettingsRow label="Tốc Độ Game" description="Điều chỉnh tốc độ trôi qua của thời gian trong game.">
-                                 <select value={settings.gameSpeed} onChange={(e) => handleSettingChange('gameSpeed', e.target.value as GameSpeed)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                 <select value={settings.gameSpeed} onChange={(e) => handleSettingChange('gameSpeed', e.target.value as GameSpeed)} className="themed-select">
                                     {GAME_SPEEDS.map(speed => <option key={speed.value} value={speed.value}>{speed.label}</option>)}
                                 </select>
                             </SettingsRow>
                              <SettingsRow label="Văn Phong Tường Thuật" description="Chọn phong cách viết của AI khi kể chuyện.">
-                                <select value={settings.narrativeStyle} onChange={(e) => handleSettingChange('narrativeStyle', e.target.value as NarrativeStyle)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.narrativeStyle} onChange={(e) => handleSettingChange('narrativeStyle', e.target.value as NarrativeStyle)} className="themed-select">
                                     {NARRATIVE_STYLES.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
                                 </select>
                             </SettingsRow>
                              <SettingsRow label="Hệ thống Âm thanh AI" description="Cho phép AI tự động tạo ra các hiệu ứng âm thanh và nhạc nền (tính năng thử nghiệm).">
-                                <input type="checkbox" checked={settings.enableAiSoundSystem} onChange={e => handleSettingChange('enableAiSoundSystem', e.target.checked)} className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500" />
+                                <input type="checkbox" checked={settings.enableAiSoundSystem} onChange={e => handleSettingChange('enableAiSoundSystem', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
                             <SettingsRow label="Chế độ Hiệu Năng" description="Tắt một số hiệu ứng hình ảnh để tăng hiệu năng trên các thiết bị yếu.">
-                                <input type="checkbox" checked={settings.enablePerformanceMode} onChange={e => handleSettingChange('enablePerformanceMode', e.target.checked)} className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500" />
+                                <input type="checkbox" checked={settings.enablePerformanceMode} onChange={e => handleSettingChange('enablePerformanceMode', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
                              <button onClick={() => handleResetToDefault('Lối Chơi')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt Lối Chơi</button>
                         </SettingsSection>
@@ -367,29 +358,29 @@ const SettingsPanel: React.FC = () => {
                 {activeTab === 'advanced' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
                         <SettingsSection title="Quản lý Lịch sử Chat">
-                            <SettingsRow label="Giới hạn Token Lịch sử" description="Số token tối đa giữ lại trong lịch sử chat để gửi cho AI. Giá trị cao hơn giúp AI nhớ ngữ cảnh tốt hơn nhưng tốn kém hơn.">
-                                <input type="number" step="256" value={settings.historyTokenLimit} onChange={e => handleSettingChange('historyTokenLimit', parseInt(e.target.value) || 8192)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                            <SettingsRow label="Giới hạn Token Lịch sử" description="Số token tối đa giữ lại trong lịch sử chat để gửi cho AI.">
+                                <input type="number" step="256" value={settings.historyTokenLimit} onChange={e => handleSettingChange('historyTokenLimit', parseInt(e.target.value) || 8192)} className="themed-input" />
                             </SettingsRow>
                             <SettingsRow label="Tóm tắt trước khi cắt" description="Khi lịch sử chat quá dài, AI sẽ tóm tắt phần cũ thay vì cắt bỏ hoàn toàn.">
-                                <input type="checkbox" checked={settings.summarizeBeforePruning} onChange={e => handleSettingChange('summarizeBeforePruning', e.target.checked)} className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500" />
+                                <input type="checkbox" checked={settings.summarizeBeforePruning} onChange={e => handleSettingChange('summarizeBeforePruning', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
                         </SettingsSection>
                         <SettingsSection title="Hệ thống RAG (Truy xuất Tăng cường - Thử nghiệm)">
                             <SettingsRow label="Model Tóm tắt RAG" description="Model dùng để tóm tắt các nguồn tài liệu được truy xuất.">
-                                <select value={settings.ragSummaryModel} onChange={(e) => handleSettingChange('ragSummaryModel', e.target.value as AIModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.ragSummaryModel} onChange={(e) => handleSettingChange('ragSummaryModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                             </SettingsRow>
                             <SettingsRow label="Model Embedding RAG" description="Model dùng để tạo vector cho các tài liệu và truy vấn.">
-                                <select value={settings.ragEmbeddingModel} onChange={(e) => handleSettingChange('ragEmbeddingModel', e.target.value as RagEmbeddingModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
+                                <select value={settings.ragEmbeddingModel} onChange={(e) => handleSettingChange('ragEmbeddingModel', e.target.value as RagEmbeddingModel)} className="themed-select">
                                     {RAG_EMBEDDING_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                             </SettingsRow>
                              <SettingsRow label="Tần suất Tóm tắt Tự động" description="Số lượt tương tác trước khi AI tự động tóm tắt lịch sử (dùng cho RAG).">
-                                <input type="number" value={settings.autoSummaryFrequency} onChange={e => handleSettingChange('autoSummaryFrequency', parseInt(e.target.value) || 5)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                                <input type="number" value={settings.autoSummaryFrequency} onChange={e => handleSettingChange('autoSummaryFrequency', parseInt(e.target.value) || 5)} className="themed-input" />
                             </SettingsRow>
                             <SettingsRow label="RAG Top-K" description="Số lượng tài liệu liên quan nhất được truy xuất để cung cấp cho AI.">
-                                <input type="number" value={settings.ragTopK} onChange={e => handleSettingChange('ragTopK', parseInt(e.target.value) || 5)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                                <input type="number" value={settings.ragTopK} onChange={e => handleSettingChange('ragTopK', parseInt(e.target.value) || 5)} className="themed-input" />
                             </SettingsRow>
                              <button onClick={() => handleResetToDefault('Nâng Cao')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt Nâng Cao</button>
                         </SettingsSection>
@@ -399,7 +390,7 @@ const SettingsPanel: React.FC = () => {
                                     type="checkbox" 
                                     checked={settings.enableDeveloperConsole} 
                                     onChange={e => handleSettingChange('enableDeveloperConsole', e.target.checked)} 
-                                    className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-teal-500 focus:ring-teal-500" 
+                                    className="themed-checkbox" 
                                 />
                             </SettingsRow>
                              <SettingsRow label="Xóa Toàn Bộ Dữ Liệu" description="CẢNH BÁO: Hành động này sẽ xóa tất cả các ô lưu, cài đặt và mod đã cài. Không thể hoàn tác.">
@@ -416,9 +407,9 @@ const SettingsPanel: React.FC = () => {
                                             }
                                         }
                                     }}
-                                    className="px-4 py-2 bg-red-800/80 text-white font-bold rounded-lg hover:bg-red-700/80"
+                                    className="settings-button-danger flex items-center gap-2"
                                 >
-                                    <FaTrash className="inline-block mr-2" /> Xóa Dữ Liệu
+                                    <FaTrash /> Xóa Dữ Liệu
                                 </button>
                             </SettingsRow>
                         </SettingsSection>
@@ -426,9 +417,9 @@ const SettingsPanel: React.FC = () => {
                 )}
             </div>
 
-            <div className="flex justify-end items-center gap-4 mt-8 border-t border-gray-700/50 pt-6">
-                <button onClick={() => handleNavigate('mainMenu')} className="px-6 py-2 bg-gray-800/80 text-white font-bold rounded-lg hover:bg-gray-700/80 transition-colors">Hủy</button>
-                <button onClick={handleSettingsSave} className="px-6 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 transition-colors">Lưu Cài Đặt</button>
+            <div className="settings-footer">
+                <button onClick={() => handleNavigate('mainMenu')} className="settings-button">Hủy</button>
+                <button onClick={handleSettingsSave} className="settings-button-primary">Lưu Cài Đặt</button>
             </div>
         </div>
     );

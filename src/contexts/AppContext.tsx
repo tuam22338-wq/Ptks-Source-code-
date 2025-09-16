@@ -250,7 +250,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         document.documentElement.style.fontSize = `${settings.zoomLevel}%`;
         document.documentElement.style.setProperty('--text-color', settings.textColor || '#d1d5db');
         THEME_OPTIONS.forEach(themeOption => document.body.classList.remove(themeOption.value));
-        if (settings.theme && settings.theme !== 'theme-amber') {
+        // FIX: The comparison `settings.theme !== 'theme-amber'` caused a type error because 'theme-amber' is not a valid theme.
+        // The check was likely a remnant from a previous implementation and is no longer needed.
+        if (settings.theme) {
             document.body.classList.add(settings.theme);
         }
         document.body.style.backgroundImage = settings.backgroundImage ? `url("${settings.backgroundImage}")` : 'none';

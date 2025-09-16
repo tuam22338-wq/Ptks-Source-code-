@@ -1,5 +1,3 @@
-
-
 import React, { useState, memo } from 'react';
 import type { GameDate, MajorEvent } from '../types';
 import { GiScrollUnfurled } from 'react-icons/gi';

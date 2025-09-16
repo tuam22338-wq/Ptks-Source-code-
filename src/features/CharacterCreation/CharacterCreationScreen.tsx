@@ -31,11 +31,10 @@ const GENERATING_MESSAGES = [
 const NpcDensitySelector: React.FC<{ value: NpcDensity, onChange: (value: NpcDensity) => void }> = ({ value, onChange }) => (
     <div>
         <p className="text-sm text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Mật độ Chúng Sinh</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="themed-button-group">
             {NPC_DENSITY_LEVELS.map(level => (
-                <button key={level.id} onClick={() => onChange(level.id)} title={level.description} className={`p-3 text-sm rounded-md border text-center transition-all duration-200 ${value === level.id ? 'bg-teal-500/20 border-teal-400 text-white' : 'bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50'}`}>
-                    <span className="font-bold">{level.name}</span>
-                    <span className="block text-xs text-gray-400 mt-1 hidden sm:block">{level.description}</span>
+                <button key={level.id} onClick={() => onChange(level.id)} title={level.description} className={`${value === level.id ? 'active' : ''}`}>
+                    {level.name}
                 </button>
             ))}
         </div>
@@ -254,22 +253,24 @@ export const CharacterCreationScreen: React.FC = memo(() => {
               onChange={(e) => setCharacterConcept(e.target.value)}
               rows={4}
               placeholder="Ví dụ: Một tán tu bí ẩn chuyên dùng độc, xuất thân từ một ngôi làng bị tàn sát, mang trong mình mối thù sâu đậm..."
-              className="w-full bg-gray-900/50 border border-gray-600 rounded-md p-3 text-lg text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+              className="themed-input"
             />
             <div className="flex justify-center items-center gap-4 mt-4">
               <p className="text-gray-400">Giới tính:</p>
-              {GENDERS.map(g => (
-                <button key={g} onClick={() => setGender(g)} className={`px-4 py-2 text-sm rounded-md border transition-all duration-200 ${gender === g ? 'bg-teal-500/20 border-teal-400 text-white' : 'bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50'}`}>
-                  {g}
-                </button>
-              ))}
+              <div className="themed-button-group">
+                {GENDERS.map(g => (
+                    <button key={g} onClick={() => setGender(g)} className={gender === g ? 'active' : ''}>
+                    {g}
+                    </button>
+                ))}
+              </div>
             </div>
             <div className="mt-4">
                 <DifficultySelector value={difficulty} onChange={setDifficulty} />
             </div>
             <div className="mt-8 flex justify-center gap-4">
               <button onClick={() => setStep('modeSelection')} className="px-6 py-3 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">Quay Lại</button>
-              <button onClick={handleGenerateIdentity} className="px-6 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80">Tiếp Tục</button>
+              <button onClick={handleGenerateIdentity} className="themed-button-primary px-6 py-3 font-bold rounded-lg">Tiếp Tục</button>
             </div>
           </div>
         );
@@ -311,7 +312,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
               <button 
                 onClick={handleFinalize} 
                 disabled={!determinedRoot}
-                className="w-full py-4 bg-teal-700/80 text-white text-xl font-bold rounded-lg hover:bg-teal-600/80 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                className="w-full py-4 text-xl font-bold rounded-lg themed-button-primary disabled:bg-gray-600 disabled:cursor-not-allowed"
               >
                 Bắt Đầu Hành Trình
               </button>

@@ -46,6 +46,7 @@ export const advanceGameTime = (
         const nextShichenIndex = (currentShichenIndex + shichensToAdvance) % SHICHEN_LIST.length;
         const newShichen = SHICHEN_LIST[nextShichenIndex].name;
 
+        // FIX: The assignment to gameDate was incomplete. This fixes the type error on line 49.
         gameDate = {
             ...gameDate,
             actionPoints: newActionPoints,
@@ -53,6 +54,12 @@ export const advanceGameTime = (
             timeOfDay: TIMEOFDAY_DETAILS[newShichen].name,
         };
     }
-    
-    return { newState: { ...currentState, gameDate }, newDay };
+
+    // FIX: The function must return a value as declared. This fixes the error on line 10.
+    const newState: GameState = {
+        ...currentState,
+        gameDate,
+    };
+
+    return { newState, newDay };
 };

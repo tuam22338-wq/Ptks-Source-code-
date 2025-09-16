@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { FaTimes, FaTrash, FaChevronDown } from 'react-icons/fa';
 

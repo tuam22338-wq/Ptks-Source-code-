@@ -91,12 +91,7 @@ export const FONT_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const THEME_OPTIONS: { value: Theme; label: string }[] = [
-    { value: 'theme-amber', label: 'Hổ Phách' },
-    { value: 'theme-jade-green', label: 'Bích Ngọc' },
-    { value: 'theme-amethyst-purple', label: 'Tử Tinh' },
-    { value: 'theme-celestial-light', label: 'Thiên Quang' },
-    { value: 'theme-blood-moon', label: 'Vong Xuyên Huyết Nguyệt' },
-    { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch (Mặc định)' },
+    { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch' },
 ];
 
 export const DEFAULT_SETTINGS: GameSettings = {

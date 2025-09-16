@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useEffect, memo } from 'react';
 import type { Element, SpiritualRoot, SpiritualRootQuality, StatBonus } from '../../../types';
 import { SPIRITUAL_ROOT_CONFIG, SPIRITUAL_ROOT_QUALITY_CONFIG } from '../../../constants';
@@ -70,7 +68,7 @@ const SpiritualRootSelection: React.FC<SpiritualRootSelectionProps> = ({ suggest
 
     if (isDetermining) {
         return (
-            <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center bg-[var(--bg-subtle)] rounded-lg p-4 border border-[var(--border-subtle)]">
+            <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center bg-black/20 rounded-lg p-4 border border-[var(--border-subtle)]">
                 <LoadingSpinner message="Thiên Mệnh đang định đoạt..." size="lg" />
             </div>
         );
@@ -79,7 +77,7 @@ const SpiritualRootSelection: React.FC<SpiritualRootSelectionProps> = ({ suggest
     if (determinedRoot) {
         const qualityStyle = SPIRITUAL_ROOT_QUALITY_CONFIG[determinedRoot.quality];
         return (
-             <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center bg-[var(--bg-subtle)] rounded-lg p-6 border-2 border-amber-500/50 animate-fade-in">
+             <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center bg-black/20 rounded-lg p-6 border-2 border-amber-500/50 animate-fade-in">
                 <h3 className={`text-3xl font-bold font-title ${qualityStyle.color} ${qualityStyle.glow || ''}`}>{determinedRoot.name}</h3>
                 <p className="text-md text-[var(--text-muted-color)] mt-2 text-center">{determinedRoot.description}</p>
                 <div className="mt-4 border-t border-[var(--border-subtle)] pt-4 w-full max-w-xs">
@@ -99,7 +97,7 @@ const SpiritualRootSelection: React.FC<SpiritualRootSelectionProps> = ({ suggest
     }
 
     return (
-        <div className="w-full h-full min-h-[300px] bg-[var(--bg-subtle)] rounded-lg p-4 border border-[var(--border-subtle)] flex flex-col md:flex-row gap-4">
+        <div className="w-full h-full min-h-[300px] bg-black/20 rounded-lg p-4 border border-[var(--border-subtle)] flex flex-col md:flex-row gap-4">
             <div className="w-full md:w-2/5 flex items-center justify-center">
                 <div className="relative w-48 h-48">
                     {Object.entries(SPIRITUAL_ROOT_CONFIG).filter(([key]) => ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ'].includes(key)).map(([key, config], index) => {
@@ -140,7 +138,7 @@ const SpiritualRootSelection: React.FC<SpiritualRootSelectionProps> = ({ suggest
                 ) : (
                     <p>Hãy chọn một linh căn.</p>
                 )}
-                 <button onClick={handleDetermineRoot} disabled={!selectedElement || isDetermining} className="w-full mt-4 py-3 bg-teal-700/80 text-white text-lg font-bold rounded-lg hover:bg-teal-600/80 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed">
+                 <button onClick={handleDetermineRoot} disabled={!selectedElement || isDetermining} className="w-full mt-4 py-3 text-lg font-bold rounded-lg themed-button-primary disabled:bg-gray-600 disabled:cursor-not-allowed">
                     Đoán Mệnh
                 </button>
             </div>

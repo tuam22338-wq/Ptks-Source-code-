@@ -200,7 +200,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                             const item = playerCharacter.equipment[slot];
                             const Icon = EQUIPMENT_SLOT_ICONS[slot];
                             return (
-                                <div key={slot} onClick={() => item && handleUnequip(slot)} title={item ? 'Nhấn để tháo' : ''} className="flex items-center gap-3 bg-[var(--bg-interactive)] p-2 rounded-lg border border-[var(--border-subtle)] h-1/6 cursor-pointer hover:border-amber-400/50">
+                                <div key={slot} onClick={() => item && handleUnequip(slot)} title={item ? 'Nhấn để tháo' : ''} className="flex items-center gap-3 bg-[var(--bg-interactive)] p-2 rounded-lg border border-[var(--border-subtle)] h-1/6 cursor-pointer hover:border-[color:var(--primary-accent-color)]/50">
                                     <div className="w-14 h-full bg-black/30 border border-gray-600 rounded-md flex items-center justify-center text-3xl flex-shrink-0">
                                         {item ? <span className="text-4xl">{item.icon}</span> : <Icon className="text-gray-600" />}
                                     </div>
@@ -219,7 +219,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     <div className="w-2/3 flex flex-col bg-[var(--bg-subtle)] p-3 rounded-lg border border-[var(--border-subtle)]">
                         <div className="grid grid-cols-8 gap-2 flex-grow overflow-y-auto pr-2">
                             {playerCharacter.inventory.items.map(item => (
-                                <div key={item.id} onClick={() => setSelectedItem(item)} className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors ${selectedItem?.id === item.id ? 'bg-amber-500/30 border-amber-400' : 'bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-amber-400/70'}`}>
+                                <div key={item.id} onClick={() => setSelectedItem(item)} className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors ${selectedItem?.id === item.id ? 'bg-[color:var(--primary-accent-color)]/30 border-[var(--primary-accent-color)]' : 'bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-[color:var(--primary-accent-color)]/70'}`}>
                                     <span className="text-4xl select-none" role="img">{item.icon || '📜'}</span>
                                     {item.quantity > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
                                 </div>
@@ -251,7 +251,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                              <span className="font-mono">{currentWeight.toFixed(1)} / {playerCharacter.inventory.weightCapacity.toFixed(1)}</span>
                          </div>
                          <div className="w-full bg-black/40 rounded-full h-1.5 border border-gray-800">
-                             <div className={`h-1 rounded-full transition-all duration-300 ${currentWeight / playerCharacter.inventory.weightCapacity > 0.9 ? 'bg-red-500' : 'bg-yellow-500'}`} style={{ width: `${(currentWeight / playerCharacter.inventory.weightCapacity) * 100}%` }}></div>
+                             <div className={`h-1 rounded-full transition-all duration-300 ${currentWeight / playerCharacter.inventory.weightCapacity > 0.9 ? 'bg-red-500' : 'bg-[var(--primary-accent-color)]'}`} style={{ width: `${(currentWeight / playerCharacter.inventory.weightCapacity) * 100}%` }}></div>
                          </div>
                     </div>
                 </div>

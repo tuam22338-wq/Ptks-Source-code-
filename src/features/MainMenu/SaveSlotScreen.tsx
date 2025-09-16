@@ -40,14 +40,14 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
         realmDisplay = `${realmData?.name || ''} ${stageData?.name || ''}`;
     }
 
-    const outdatedClass = isOutdated ? 'border-amber-500 ring-2 ring-amber-500/30 ring-offset-2 ring-offset-[var(--bg-color)]' : '';
+    const outdatedClass = isOutdated ? 'border-amber-500 ring-2 ring-amber-500/30' : '';
 
     return (
-        <div className={`group relative aspect-[3/4] rounded-lg border-2
+        <div className={`group relative h-64 rounded-lg border-2
                         transition-all duration-300 ease-in-out
                         focus:outline-none focus:ring-2 focus:ring-offset-2 ring-offset-[var(--bg-color)]
-                        ${isNew ? 'bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-gray-400 hover:bg-[var(--bg-interactive-hover)] focus:ring-gray-400' 
-                                : `bg-[color:var(--primary-accent-color)]/10 border-[color:var(--primary-accent-color)]/50 hover:border-[color:var(--primary-accent-color)] hover:bg-[color:var(--primary-accent-color)]/20 focus:ring-[var(--primary-accent-color)] ${outdatedClass}`}`}
+                        ${isNew ? 'bg-black/20 border-[var(--border-subtle)] hover:border-amber-400 hover:bg-amber-500/10 focus:ring-amber-400' 
+                                : `bg-amber-900/10 border-amber-600/50 hover:border-amber-500 hover:bg-amber-800/20 focus:ring-[var(--primary-accent-color)] ${outdatedClass}`}`}
         >
             <button
               onClick={onSelect}
@@ -55,8 +55,8 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
             >
               {isNew ? (
                 <>
-                  <span className="text-5xl text-[var(--text-muted-color)]/70 group-hover:text-[var(--text-muted-color)] transition-colors duration-300">
-                    ?
+                  <span className="font-calligraphy text-6xl text-[var(--text-muted-color)]/70 group-hover:text-[var(--text-muted-color)] transition-colors duration-300">
+                    新
                   </span>
                   <h3 className="mt-4 font-title text-xl text-[var(--text-muted-color)] group-hover:text-[var(--text-color)] transition-colors duration-300">
                     Hành Trình Mới
@@ -65,9 +65,9 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
                 </>
               ) : (
                  <div className="flex flex-col h-full justify-between w-full">
-                    <div>
-                        <h3 className="font-title text-xl text-[var(--primary-accent-color)]">{character?.identity.name}</h3>
-                        <p className="text-xs text-cyan-300">{realmDisplay}</p>
+                    <div className="writing-vertical">
+                        <h3 className="font-calligraphy text-4xl text-[var(--primary-accent-color)]">{character?.identity.name}</h3>
+                        <p className="font-title text-lg text-cyan-300 mt-2">{realmDisplay}</p>
                     </div>
                     <div className="text-center">
                         {isOutdated && (
@@ -84,7 +84,7 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
               )}
             </button>
             {!isNew && (
-              <div className="absolute top-1.5 right-1.5 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="absolute top-1.5 right-1.5 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                   onClick={(e) => { e.stopPropagation(); onVerify(); }}
                   className={`p-1.5 bg-[var(--bg-interactive)] rounded-full text-[var(--text-muted-color)] hover:bg-blue-600/80 hover:text-white transition-colors ${isOutdated ? 'text-amber-300 animate-pulse' : ''}`}

@@ -19,10 +19,10 @@ const ThoiTheScreen: React.FC = () => {
       </div>
       <p className="text-center mb-10" style={{color: 'var(--text-muted-color)'}}>Thế giới đang trong cơn biến động. Thiên mệnh đã định, nhưng lựa chọn là của bạn. Hãy xem xét các sự kiện lớn đang diễn ra để quyết định con đường của mình.</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-4">
+      <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-8">
         {MAJOR_EVENTS.map((event, index) => (
-          <div key={index} className="bg-black/20 p-5 rounded-xl border border-gray-700/60 flex flex-col h-full transform transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-900/30 animate-fade-in" style={{animationDelay: `${index * 50}ms`}}>
-            <div className="border-b-2 border-amber-800/50 pb-3 mb-4 text-center">
+          <div key={index} className="bg-black/20 p-5 rounded-xl border-y-2 border-amber-800/50 flex flex-col animate-fade-in" style={{animationDelay: `${index * 50}ms`}}>
+            <div className="pb-3 mb-4 text-center">
                 <p className="text-lg font-bold text-amber-400 font-title tracking-wider">
                     Dự kiến: Năm {event.year}
                 </p>

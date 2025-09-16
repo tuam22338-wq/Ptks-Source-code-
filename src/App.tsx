@@ -65,16 +65,25 @@ const AppContent: React.FC = () => {
     const showHeader = view !== 'mainMenu' && view !== 'gamePlay' && !isLoading && !isMigratingData;
 
     return (
-        <div className={`min-h-[calc(var(--vh,1vh)*100)] w-full flex flex-col items-center justify-center relative transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
-          <div className={`w-full max-w-7xl transition-opacity duration-700 ${!showHeader ? 'opacity-0 h-0 invisible' : 'opacity-100'}`}>
-            {showHeader && <Header />}
-          </div>
-    
-          <main className={`w-full ${view === 'gamePlay' ? 'h-[calc(var(--vh,1vh)*100)] max-w-full' : 'max-w-7xl'}`}>
-            {renderContent()}
-          </main>
-          
-          {settings.enableDeveloperConsole && <DeveloperConsole />}
+        <div className="relative w-full min-h-[calc(var(--vh,1vh)*100)]">
+            <div className="ink-background-container">
+                <div className="ink-layer ink-layer-1"></div>
+                <div className="ink-layer ink-layer-2"></div>
+                <div className="ink-layer ink-layer-3"></div>
+                <div className="ink-layer ink-layer-4"></div>
+            </div>
+
+            <div className={`relative z-10 w-full min-h-[calc(var(--vh,1vh)*100)] flex flex-col items-center justify-center transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
+              <div className={`w-full max-w-7xl transition-opacity duration-700 ${!showHeader ? 'opacity-0 h-0 invisible' : 'opacity-100'}`}>
+                {showHeader && <Header />}
+              </div>
+        
+              <main className={`w-full ${view === 'gamePlay' ? 'h-[calc(var(--vh,1vh)*100)] max-w-full' : 'max-w-7xl'}`}>
+                {renderContent()}
+              </main>
+              
+              {settings.enableDeveloperConsole && <DeveloperConsole />}
+            </div>
         </div>
     );
 };
