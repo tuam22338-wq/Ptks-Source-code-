@@ -3,6 +3,7 @@ import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDe
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
+import { apiKeyManager } from '../services/gemini/gemini.core';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
 
@@ -194,25 +195,29 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             if (isMigratingData) return;
             try {
                 const savedSettings = await db.getSettings();
+                const finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
+
                 if (savedSettings) {
                     const validAiModel: AIModel = 'gemini-2.5-flash';
                     const modelKeys = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'ragSummaryModel', 'ragSourceIdModel'] as const;
                     
                     let settingsUpdated = false;
                     for (const key of modelKeys) {
-                        if (savedSettings[key] !== validAiModel) {
-                            savedSettings[key] = validAiModel;
+                        if (finalSettings[key] !== validAiModel) {
+                            finalSettings[key] = validAiModel;
                             settingsUpdated = true;
                         }
                     }
                     
                     if (settingsUpdated) {
                         console.warn("Một số cài đặt không hợp lệ đã được đặt lại về mặc định.");
-                        await db.saveSettings(savedSettings);
+                        await db.saveSettings(finalSettings);
                     }
-
-                    setSettings({ ...DEFAULT_SETTINGS, ...savedSettings });
                 }
+                
+                setSettings(finalSettings);
+                apiKeyManager.updateKeys(finalSettings.apiKeys || []);
+
                 const worldId = await db.getActiveWorldId();
                 _setActiveWorldId(worldId);
                 await loadSaveSlots();
@@ -263,6 +268,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleSettingsSave = useCallback(async () => {
         try {
             await db.saveSettings(settings);
+            apiKeyManager.updateKeys(settings.apiKeys || []);
             await updateStorageUsage();
             alert('Cài đặt đã được lưu!');
         } catch (error) {

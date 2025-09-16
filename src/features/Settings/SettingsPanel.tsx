@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, Theme, RagEmbeddingModel } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaBook, FaTrash, FaTerminal } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaBook, FaTrash, FaTerminal, FaKey, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
@@ -52,6 +52,7 @@ const SettingsPanel: React.FC = () => {
     const [bgPrompt, setBgPrompt] = useState('');
     const [isGeneratingBg, setIsGeneratingBg] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
+    const [newApiKey, setNewApiKey] = useState('');
     
     const handleGenerateBg = async () => {
         if (!bgPrompt) return;
@@ -75,7 +76,7 @@ const SettingsPanel: React.FC = () => {
                     keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'aiResponseWordCount', 'zoomLevel', 'textColor'];
                     break;
                 case 'AI & Models':
-                    keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK'];
+                    keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK', 'apiKeys'];
                     break;
                 case 'An Toàn':
                     keysToReset = ['masterSafetySwitch', 'safetyLevels'];
@@ -114,6 +115,25 @@ const SettingsPanel: React.FC = () => {
         return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
     }, []);
 
+    const handleAddApiKey = () => {
+        const key = newApiKey.trim();
+        if (!key) return;
+        if (settings.apiKeys.includes(key)) {
+            alert("API key này đã tồn tại.");
+            return;
+        }
+        handleSettingChange('apiKeys', [...settings.apiKeys, key]);
+        setNewApiKey('');
+    };
+
+    const handleRemoveApiKey = (keyToRemove: string) => {
+        handleSettingChange('apiKeys', settings.apiKeys.filter(k => k !== keyToRemove));
+    };
+
+    const maskApiKey = (key: string) => {
+        if (key.length < 8) return '***';
+        return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
+    };
 
     return (
         <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
@@ -214,6 +234,33 @@ const SettingsPanel: React.FC = () => {
                 )}
                  {activeTab === 'ai_models' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                        <SettingsSection title="Quản lý API Key">
+                            <div className="p-4 bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg text-yellow-200">
+                                <div className="flex items-center gap-2 font-bold"><FaExclamationTriangle /> Ghi Chú Quan Trọng</div>
+                                <p className="text-sm mt-1">
+                                    Game sẽ tự động xoay vòng các API key khi một key gặp lỗi hết hạn ngạch (quota). Để có trải nghiệm mượt mà nhất, bạn nên cung cấp ít nhất 3 API key.
+                                </p>
+                            </div>
+                            <SettingsRow label="Thêm API Key Mới" description="Dán API key của bạn vào đây. Key sẽ được lưu trữ cục bộ trên trình duyệt của bạn.">
+                                <div className="flex gap-2">
+                                    <input type="password" value={newApiKey} onChange={e => setNewApiKey(e.target.value)} placeholder="Dán API key của bạn ở đây" className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
+                                    <button onClick={handleAddApiKey} className="px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 flex items-center gap-2"><FaPlus/> Thêm</button>
+                                </div>
+                            </SettingsRow>
+                             <SettingsRow label="Các Key Hiện Tại" description="Danh sách các API key đã được thêm.">
+                                <div className="space-y-2">
+                                    {(settings.apiKeys || []).length > 0 ? (settings.apiKeys.map(key => (
+                                        <div key={key} className="flex justify-between items-center p-2 bg-black/20 rounded-md">
+                                            <span className="font-mono text-gray-400 flex items-center gap-2"><FaKey/> {maskApiKey(key)}</span>
+                                            <button onClick={() => handleRemoveApiKey(key)} className="p-2 text-gray-500 hover:text-red-400 transition-colors" title="Xóa Key"><FaTrash/></button>
+                                        </div>
+                                    ))) : (
+                                        <p className="text-gray-500 italic">Chưa có API key nào được thêm.</p>
+                                    )}
+                                </div>
+                            </SettingsRow>
+                        </SettingsSection>
+
                         <SettingsSection title="Phân Vai Model AI (Nâng cao)">
                            <SettingsRow label="Model Chính" description="Model mạnh nhất, dùng cho các tác vụ chính như kể chuyện, tạo sự kiện.">
                                 <select value={settings.mainTaskModel} onChange={(e) => handleSettingChange('mainTaskModel', e.target.value as AIModel)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2">
@@ -342,7 +389,7 @@ const SettingsPanel: React.FC = () => {
                             <SettingsRow label="RAG Top-K" description="Số lượng tài liệu liên quan nhất được truy xuất để cung cấp cho AI.">
                                 <input type="number" value={settings.ragTopK} onChange={e => handleSettingChange('ragTopK', parseInt(e.target.value) || 5)} className="w-full bg-gray-800/50 border border-gray-600 rounded px-3 py-2" />
                             </SettingsRow>
-                             <button onClick={() => handleResetToDefault('Nâng Cao')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt Nâng cao</button>
+                             <button onClick={() => handleResetToDefault('Nâng Cao')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt Nâng Cao</button>
                         </SettingsSection>
                         <SettingsSection title="Dữ Liệu Game & Gỡ Lỗi">
                             <SettingsRow label="Bảng Điều Khiển Gỡ Lỗi" description="Hiển thị console log trong game để gỡ lỗi và theo dõi trạng thái.">

@@ -140,6 +140,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     topP: 0.95,
     enableThinking: true,
     thinkingBudget: 250,
+    apiKeys: [],
     enableDeveloperConsole: false,
 };
 

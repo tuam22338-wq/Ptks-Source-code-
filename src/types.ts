@@ -87,6 +87,7 @@ export interface GameSettings {
     topP: number;
     enableThinking: boolean;
     thinkingBudget: number;
+    apiKeys: string[];
     enableDeveloperConsole: boolean;
 }
 

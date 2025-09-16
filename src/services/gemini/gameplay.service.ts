@@ -92,6 +92,7 @@ export const summarizeStory = async (storyLog: StoryEntry[]): Promise<string> =>
 export const generateGameEvent = async (gameState: GameState): Promise<{ type: string, narrative: string, data?: any }> => {
     const prompt = "Tạo một sự kiện ngẫu nhiên nhỏ cho người chơi.";
     const response = await generateWithRetry({
+        model: 'gemini-2.5-flash', // Generic model for simple tasks
         contents: prompt,
         config: {
             responseMimeType: "application/json",
@@ -111,6 +112,7 @@ export const generateGameEvent = async (gameState: GameState): Promise<{ type: s
 export const generateDynamicLocation = async (gameState: GameState): Promise<Location> => {
     const prompt = "Tạo một địa điểm mới độc đáo gần vị trí hiện tại của người chơi.";
     const response = await generateWithRetry({
+        model: 'gemini-2.5-flash',
         contents: prompt,
         // In a real scenario, a schema matching the Location type would be here.
     });
@@ -134,7 +136,7 @@ export const analyzeActionForTechnique = async (gameState: GameState, text: stri
 
 export const generateBreakthroughNarrative = async (gameState: GameState, realm: RealmConfig, stage: RealmStage, isSuccess: boolean): Promise<string> => {
     const prompt = `Viết một đoạn văn tường thuật cảnh người chơi ${isSuccess ? 'đột phá thành công' : 'đột phá thất bại'} cảnh giới ${realm.name} - ${stage.name}.`;
-    const response = await generateWithRetry({ contents: prompt });
+    const response = await generateWithRetry({ model: 'gemini-2.5-flash', contents: prompt });
     return response.text;
 };
 
@@ -179,7 +181,9 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealmN
     
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema.`;
 
+    const settings = await db.getSettings();
     const response = await generateWithRetry({
+        model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
         config: {
             responseMimeType: "application/json",
@@ -202,13 +206,13 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealmN
 
 export const generateWorldEvent = async (gameState: GameState): Promise<{ narrative: string, worldStateChanges?: any }> => {
     const prompt = "Tạo một sự kiện thế giới lớn ảnh hưởng đến các phe phái hoặc địa điểm.";
-    const response = await generateWithRetry({ contents: prompt });
+    const response = await generateWithRetry({ model: 'gemini-2.5-flash', contents: prompt });
     return { narrative: response.text };
 };
 
 export const generateCombatNarrative = async (gameState: GameState, actionDescription: string): Promise<string> => {
     const prompt = `Bối cảnh: Một trận chiến đang diễn ra. Hành động: ${actionDescription}. Hãy viết một đoạn văn tường thuật hành động này một cách sống động và phù hợp với bối cảnh tiên hiệp.`;
-    const response = await generateWithRetry({ contents: prompt });
+    const response = await generateWithRetry({ model: 'gemini-2.5-flash', contents: prompt });
     return response.text;
 };
 

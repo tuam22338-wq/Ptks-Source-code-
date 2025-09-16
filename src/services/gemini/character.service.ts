@@ -28,7 +28,9 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
     `;
     
+    const settings = await db.getSettings();
     const response = await generateWithRetry({
+        model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
         config: {
             responseMimeType: "application/json",

@@ -1,76 +1,121 @@
-// Since we're no longer using the SDK on the client, these types are for reference.
-// The actual JSON response from the proxy should match these shapes.
-export declare type GenerateContentResponse = any;
-export declare type GenerateImagesResponse = any;
+import { GoogleGenAI, type GenerateContentResponse } from "@google/genai";
 
-const PROXY_URL = '/api/gemini-proxy';
-
-async function postToProxy(type: string, params: any, isStream = false) {
-    const response = await fetch(PROXY_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type, params, isStream }),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown proxy error' }));
-        throw new Error(errorData.error || `Proxy request failed with status ${response.status}`);
-    }
-    
-    return response;
+// This type is for the image generation response, as it's not directly exported.
+export interface GenerateImagesResponse {
+    generatedImages: {
+        image: {
+            imageBytes?: string;
+        };
+    }[];
 }
 
-export async function* generateWithRetryStream(generationRequest: any): AsyncIterable<any> {
-    const response = await postToProxy('generateContentStream', generationRequest, true);
-    
-    if (!response.body) {
-        throw new Error("Streaming response has no body");
-    }
+class ApiKeyManager {
+    private keys: string[] = [];
+    private instances: GoogleGenAI[] = [];
+    private currentIndex = 0;
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
-    let buffer = '';
+    updateKeys(newKeys: string[]) {
+        const sortedNew = [...newKeys].sort().join(',');
+        const sortedOld = [...this.keys].sort().join(',');
 
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            break;
+        if (sortedNew === sortedOld) {
+            return; // No change
         }
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        
-        buffer = lines.pop() || '';
-        
-        for (const line of lines) {
-            if (line.trim()) {
-                try {
-                    yield JSON.parse(line);
-                } catch (e) {
-                    console.error("Failed to parse stream chunk:", line, e);
+        console.log(`Updating API keys for Gemini service. Found ${newKeys.length} keys.`);
+        this.keys = newKeys;
+        this.instances = this.keys
+            .filter(key => key && key.trim().length > 0)
+            .map(key => new GoogleGenAI({ apiKey: key }));
+        this.currentIndex = 0;
+    }
+
+    // FIX: Changed from private to public to allow access from executeApiCall
+    public getInstance(): GoogleGenAI | null {
+        if (this.instances.length === 0) {
+            return null;
+        }
+        return this.instances[this.currentIndex];
+    }
+    
+    public rotateKey() {
+        if (this.instances.length > 0) {
+            const oldIndex = this.currentIndex;
+            this.currentIndex = (this.currentIndex + 1) % this.instances.length;
+            console.log(`Rotated from API key index ${oldIndex} to ${this.currentIndex}.`);
+        }
+    }
+
+    get totalKeys(): number {
+        return this.instances.length;
+    }
+
+    get a_currentIndex(): number {
+        return this.currentIndex;
+    }
+}
+
+export const apiKeyManager = new ApiKeyManager();
+
+const getFallbackInstance = (): GoogleGenAI | null => {
+    if (process.env.API_KEY) {
+        console.warn("Using fallback process.env.API_KEY. Please configure keys in settings for rotation.");
+        return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    }
+    return null;
+};
+
+const executeApiCall = async <T>(apiFunction: (instance: GoogleGenAI) => Promise<T>): Promise<T> => {
+    if (apiKeyManager.totalKeys === 0) {
+        const fallback = getFallbackInstance();
+        if (fallback) {
+            try {
+                return await apiFunction(fallback);
+            } catch (e) {
+                 console.error("Fallback API key failed.", e);
+                 throw new Error("API Key mặc định không hợp lệ hoặc đã hết hạn ngạch.");
+            }
+        }
+        throw new Error("Không có API Key nào được cấu hình. Vui lòng thêm một key trong Cài đặt.");
+    }
+
+    const initialIndex = apiKeyManager.a_currentIndex;
+    let attempts = 0;
+
+    while (attempts < apiKeyManager.totalKeys) {
+        const instance = apiKeyManager.getInstance();
+        try {
+            const result = await apiFunction(instance!);
+            return result;
+        } catch (error: any) {
+            console.warn(`API call failed with key index ${apiKeyManager.a_currentIndex}. Error:`, error.message);
+            // Check for quota-related errors
+            if (error.toString().includes('429') || error.message?.includes('quota')) {
+                attempts++;
+                apiKeyManager.rotateKey();
+                if (apiKeyManager.a_currentIndex === initialIndex) {
+                    // We've cycled through all keys and they all failed.
+                    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota). Vui lòng thử lại sau hoặc thêm key mới.");
                 }
+            } else {
+                // Not a quota error, rethrow it immediately.
+                throw error;
             }
         }
     }
-
-    if (buffer.trim()) {
-        try {
-            yield JSON.parse(buffer);
-        } catch(e) {
-            console.error("Failed to parse final stream chunk:", buffer, e);
-        }
-    }
-}
-
-export const generateWithRetry = async (generationRequest: any): Promise<GenerateContentResponse> => {
-    const response = await postToProxy('generateContent', generationRequest);
-    return response.json();
+    // This part is reached if all keys failed with quota errors.
+    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota) sau khi thử lại.");
 };
 
-export const generateImagesWithRetry = async (generationRequest: any): Promise<GenerateImagesResponse> => {
-    const response = await postToProxy('generateImages', generationRequest);
-    return response.json();
+export const generateWithRetry = (generationRequest: any): Promise<GenerateContentResponse> => {
+    return executeApiCall(instance => instance.models.generateContent(generationRequest));
+};
+
+export const generateWithRetryStream = (generationRequest: any): Promise<AsyncIterable<GenerateContentResponse>> => {
+    return executeApiCall(instance => instance.models.generateContentStream(generationRequest));
+};
+
+export const generateImagesWithRetry = (generationRequest: any): Promise<GenerateImagesResponse> => {
+    const apiCall = (instance: GoogleGenAI) => instance.models.generateImages(generationRequest) as unknown as Promise<GenerateImagesResponse>;
+    return executeApiCall(apiCall);
 };
