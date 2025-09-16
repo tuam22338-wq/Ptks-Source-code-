@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import { type SaveSlot, REALM_SYSTEM, CURRENT_GAME_VERSION } from '../../models';
+import type { SaveSlot } from '../../types';
+import { REALM_SYSTEM, CURRENT_GAME_VERSION } from '../../constants';
 import { FaArrowLeft, FaTrash, FaTools } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
 

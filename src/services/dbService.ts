@@ -1,16 +1,16 @@
 import Dexie, { type Table } from 'dexie';
-import { 
-    type GameState, 
-    type GameSettings, 
-    type ModInfo, 
-    type FullMod, 
-    type SaveSlot, 
-    type AttributeGroup, 
-    type NPC, 
-    type Sect, 
-    type Location,
-    REALM_SYSTEM
-} from '../models';
+import { REALM_SYSTEM } from '../constants';
+import type { 
+    GameState, 
+    GameSettings, 
+    ModInfo, 
+    FullMod, 
+    SaveSlot, 
+    AttributeGroup, 
+    NPC, 
+    Sect, 
+    Location
+} from '../types';
 
 export interface DbSaveSlot {
   id: number;
