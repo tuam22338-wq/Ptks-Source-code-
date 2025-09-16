@@ -15,15 +15,15 @@ class ApiKeyManager {
     private currentIndex = 0;
 
     updateKeys(newKeys: string[]) {
-        const sortedNew = [...newKeys].sort().join(',');
+        const sortedNew = [...(newKeys || [])].sort().join(',');
         const sortedOld = [...this.keys].sort().join(',');
 
         if (sortedNew === sortedOld) {
             return; // No change
         }
 
-        console.log(`Updating API keys for Gemini service. Found ${newKeys.length} keys.`);
-        this.keys = newKeys;
+        console.log(`Updating API keys for Gemini service. Found ${newKeys?.length || 0} keys.`);
+        this.keys = newKeys || [];
         this.instances = this.keys
             .filter(key => key && key.trim().length > 0)
             .map(key => new GoogleGenAI({ apiKey: key }));
@@ -56,26 +56,9 @@ class ApiKeyManager {
 
 export const apiKeyManager = new ApiKeyManager();
 
-const getFallbackInstance = (): GoogleGenAI | null => {
-    if (process.env.API_KEY) {
-        console.warn("Using fallback process.env.API_KEY. Please configure keys in settings for rotation.");
-        return new GoogleGenAI({ apiKey: process.env.API_KEY });
-    }
-    return null;
-};
-
 const executeApiCall = async <T>(apiFunction: (instance: GoogleGenAI) => Promise<T>): Promise<T> => {
     if (apiKeyManager.totalKeys === 0) {
-        const fallback = getFallbackInstance();
-        if (fallback) {
-            try {
-                return await apiFunction(fallback);
-            } catch (e) {
-                 console.error("Fallback API key failed.", e);
-                 throw new Error("API Key mặc định không hợp lệ hoặc đã hết hạn ngạch.");
-            }
-        }
-        throw new Error("Không có API Key nào được cấu hình. Vui lòng thêm một key trong Cài đặt.");
+        throw new Error("Không có API Key nào được cấu hình. Vui lòng thêm một key trong Cài đặt > AI & Models.");
     }
 
     const initialIndex = apiKeyManager.a_currentIndex;

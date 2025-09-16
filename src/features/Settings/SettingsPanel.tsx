@@ -255,7 +255,9 @@ const SettingsPanel: React.FC = () => {
                                             <button onClick={() => handleRemoveApiKey(key)} className="p-2 text-gray-500 hover:text-red-400 transition-colors" title="Xóa Key"><FaTrash/></button>
                                         </div>
                                     ))) : (
-                                        <p className="text-gray-500 italic">Chưa có API key nào được thêm.</p>
+                                        <div className="p-3 text-center bg-red-900/30 border border-red-600/50 rounded-lg text-red-300">
+                                            Chưa có API key nào được thêm. Game sẽ không hoạt động nếu không có key.
+                                        </div>
                                     )}
                                 </div>
                             </SettingsRow>
