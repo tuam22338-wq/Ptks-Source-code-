@@ -9,18 +9,18 @@
 
 /* --- Themed UI Elements --- */
 .themed-panel {
-  background-color: var(--panel-bg-color) !important;
+  background-color: var(--panel-bg-color);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--panel-border-color) !important;
+  border: 1px solid var(--panel-border-color);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .themed-modal {
-  background-color: var(--panel-bg-color) !important;
+  background-color: var(--panel-bg-color);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--primary-accent-color) !important;
+  border: 1px solid var(--primary-accent-color);
   box-shadow: 0 0 30px 0 var(--primary-glow-color);
 }
 
@@ -36,27 +36,31 @@
   transform: scale(1.05);
 }
 
-body.theme-celestial-light .font-title {
-  text-shadow: 0 1px 1px rgba(0,0,0,0.1), 0 0 10px var(--primary-glow-color);
-}
-
-body.theme-celestial-light input, 
-body.theme-celestial-light select, 
-body.theme-celestial-light textarea {
-    background-color: rgba(229, 231, 235, 0.5);
-    border-color: var(--border-color);
-    color: var(--text-color);
-}
-body.theme-celestial-light input::placeholder,
-body.theme-celestial-light textarea::placeholder {
-    color: var(--text-muted-color);
-}
-
 input, select, textarea {
   --tw-ring-color: var(--input-focus-ring-color) !important;
 }
 input:focus, select:focus, textarea:focus {
   border-color: var(--input-focus-ring-color) !important;
+}
+
+:root {
+  /* Component-specific variables */
+  --bg-subtle: rgba(12, 10, 9, 0.8); /* For sidebars, action bars */
+  --bg-interactive: rgba(28, 25, 23, 0.7); /* For buttons, inputs */
+  --bg-interactive-hover: rgba(55, 48, 42, 0.7);
+  --border-subtle: rgba(107, 114, 128, 0.4); /* For internal borders */
+  --player-bubble-bg-color: rgb(55 65 81 / 0.8);
+  --npc-bubble-bg-color: rgb(31 41 55 / 0.6);
+}
+
+body.theme-celestial-light {
+  /* Component-specific overrides for light theme */
+  --bg-subtle: rgba(238, 232, 213, 0.6); /* base2 with opacity */
+  --bg-interactive: rgba(7, 54, 66, 0.05); /* base02 with opacity */
+  --bg-interactive-hover: rgba(7, 54, 66, 0.1);
+  --border-subtle: rgba(7, 54, 66, 0.2);
+  --player-bubble-bg-color: rgba(42, 161, 152, 0.15); /* cyan */
+  --npc-bubble-bg-color: rgba(38, 139, 210, 0.1); /* blue */
 }
 
 /* Custom scrollbar for dark themes */
@@ -77,17 +81,6 @@ input:focus, select:focus, textarea:focus {
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--primary-accent-color);
-}
-
-/* Scrollbar for light theme */
-body.theme-celestial-light::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-}
-body.theme-celestial-light::-webkit-scrollbar-thumb {
-  background-color: #bdc3c7;
-}
-body.theme-celestial-light::-webkit-scrollbar-thumb:hover {
-  background-color: #95a5a6;
 }
 
 /* Layout mode overrides */

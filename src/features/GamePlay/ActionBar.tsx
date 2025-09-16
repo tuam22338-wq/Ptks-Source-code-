@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { FaPaperPlane, FaComment, FaBolt, FaLightbulb, FaSync } from 'react-icons/fa';
-import { GiSprout } from 'react-icons/gi';
 import type { Location, GameState } from '../../../types';
 import { generateActionSuggestions } from '../../../services/geminiService';
 
@@ -76,7 +75,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, current
                                     onClick={() => handleContextualAction(action.label)}
                                     disabled={disabled}
                                     title={action.description}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-600/70 disabled:opacity-50 transition-colors"
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-700/50 disabled:opacity-50 transition-colors"
                                 >
                                     {Icon && <Icon />}
                                     {action.label}
@@ -87,11 +86,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, current
                 </div>
             )}
             
-            <div className="flex items-center justify-center gap-2 text-sm text-cyan-400 mb-2" title="Nồng độ linh khí ảnh hưởng đến hiệu quả tu luyện">
-                <GiSprout />
-                <span>Nồng độ Linh khí: {currentLocation.qiConcentration}</span>
-            </div>
-
             {(suggestions.length > 0 || isLoadingSuggestions) && (
                 <div className="flex flex-wrap gap-2 mb-2 items-center justify-center min-h-[38px]">
                     {isLoadingSuggestions && <FaSync className="animate-spin text-amber-300" />}
@@ -100,7 +94,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, current
                             key={i}
                             onClick={() => handleSuggestionClick(s)}
                             disabled={disabled}
-                            className="px-3 py-1.5 bg-gray-700/50 text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-600/70 disabled:opacity-50 transition-colors animate-fade-in"
+                            className="px-3 py-1.5 bg-gray-700/50 text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-700/50 disabled:opacity-50 transition-colors animate-fade-in"
                             style={{animationDuration: '300ms'}}
                         >
                             {s}

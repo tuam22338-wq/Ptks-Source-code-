@@ -129,23 +129,23 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, setGam
                        <button
                            key={index}
                            onClick={() => handleChoice(choice)}
-                           className="w-full text-left p-3 bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 rounded-md transition-colors"
+                           className="w-full text-left p-3 bg-gray-800/60 hover:bg-gray-700/50 border border-gray-700 rounded-md transition-colors"
                        >
                            <p className="font-semibold text-gray-200">{choice.text}</p>
                        </button>
                    ))}
                    {currentNode.type === 'narrative' && currentNode.nextNodeId && (
-                        <button onClick={() => handleContinue(currentNode.nextNodeId!)} className="w-full p-3 bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 rounded-md transition-colors font-semibold text-gray-200">
+                        <button onClick={() => handleContinue(currentNode.nextNodeId!)} className="w-full p-3 bg-gray-800/60 hover:bg-gray-700/50 border border-gray-700 rounded-md transition-colors font-semibold text-gray-200">
                             Tiếp tục...
                         </button>
                    )}
                    {currentNode.type === 'check' && (
-                        <button onClick={handleCheck} className="w-full p-3 bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 rounded-md transition-colors font-semibold text-gray-200">
+                        <button onClick={handleCheck} className="w-full p-3 bg-gray-800/60 hover:bg-gray-700/50 border border-gray-700 rounded-md transition-colors font-semibold text-gray-200">
                             Thử thách
                         </button>
                    )}
                    {currentNode.type === 'end' && (
-                       <button onClick={handleFinish} className="w-full p-3 bg-gray-800/60 hover:bg-gray-700/80 border border-gray-700 rounded-md transition-colors font-semibold text-gray-200">
+                       <button onClick={handleFinish} className="w-full p-3 bg-gray-800/60 hover:bg-gray-700/50 border border-gray-700 rounded-md transition-colors font-semibold text-gray-200">
                            Kết thúc
                        </button>
                    )}

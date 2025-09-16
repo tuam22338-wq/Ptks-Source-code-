@@ -1,5 +1,4 @@
 import React, { memo } from 'react';
-import { GiSeaDragon } from 'react-icons/gi';
 import { FaDatabase } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -22,13 +21,10 @@ const MainMenu: React.FC = () => {
   return (
     <div className="min-h-[calc(var(--vh,1vh)*100)] w-full flex flex-col items-center justify-center animate-fade-in-menu">
         <div className="relative text-center animate-menu-item" style={{ animationDelay: '100ms' }}>
-            <GiSeaDragon className="absolute -top-12 -left-20 text-9xl text-[var(--primary-accent-color)]/30 opacity-70 transform -scale-x-100" />
-            <GiSeaDragon className="absolute -bottom-12 -right-20 text-9xl text-[var(--primary-accent-color)]/30 opacity-70" />
             
             <h1 
-                className="text-6xl sm:text-7xl font-bold font-title bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-amber-400 to-red-400"
+                className="text-6xl sm:text-7xl font-bold font-title bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-[var(--primary-accent-color)] to-amber-500"
                 style={{
-                    WebkitTextStroke: '1px rgba(0,0,0,0.2)',
                     textShadow: `
                         0px 0px 15px var(--primary-glow-color),
                         0px 2px 2px rgba(0,0,0,0.4)
@@ -61,7 +57,7 @@ const MainMenu: React.FC = () => {
                 </div>
                 <strong className="font-mono">{storageUsage.usageString}</strong>
             </div>
-            <div className="w-full bg-black/30 rounded-full h-1.5 border border-gray-700">
+            <div className="w-full bg-[var(--bg-interactive)] rounded-full h-1.5 border border-[var(--border-subtle)]">
                 <div 
                     className={`h-1 rounded-full transition-all duration-500 ${storageUsage.percentage > 85 ? 'bg-gradient-to-r from-amber-500 to-red-600' : 'bg-gradient-to-r from-teal-500 to-amber-500'}`}
                     style={{ width: `${storageUsage.percentage}%` }}

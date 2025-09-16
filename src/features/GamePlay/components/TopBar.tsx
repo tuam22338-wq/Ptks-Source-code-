@@ -14,18 +14,18 @@ interface TopBarProps {
 const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }) => {
     const { toggleSidebar } = useGameUIContext();
     return (
-        <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-3 bg-black/40 backdrop-blur-sm border-b border-gray-700/50">
+        <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-3 bg-[var(--bg-subtle)] backdrop-blur-sm border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-2">
                 <button 
                     onClick={onBack} 
-                    className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+                    className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors"
                     title="Quay Lại Menu"
                 >
                     <FaArrowLeft className="w-5 h-5" />
                 </button>
                 <button 
                     onClick={onSave} 
-                    className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+                    className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors"
                     title="Lưu Game"
                 >
                     <FaSave className="w-5 h-5" />
@@ -40,7 +40,7 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }
                 {/* This button is automatically hidden on desktop via CSS in index.html */}
                 <button 
                     onClick={toggleSidebar} 
-                    className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors top-bar-sidebar-toggle"
+                    className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors top-bar-sidebar-toggle"
                     title="Mở/Đóng Bảng Điều Khiển"
                 >
                     <FaBars className="w-5 h-5" />

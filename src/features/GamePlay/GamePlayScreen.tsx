@@ -344,7 +344,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
     const neighbors = useMemo(() => discoveredLocations.filter(l => currentLocation.neighbors.includes(l.id)), [discoveredLocations, currentLocation]);
 
     return (
-        <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col bg-black/30">
+        <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col">
             <NotificationArea notifications={notifications} onDismiss={dismissNotification} />
             <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
             <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} />
@@ -354,14 +354,14 @@ const GamePlayScreenContent: React.FC = memo(() => {
             <TopBar onBack={quitGame} onSave={saveGame} gameDate={gameState.gameDate} majorEvents={gameState.majorEvents} />
             
             <div className="gameplay-main-content">
-                {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop" onClick={toggleSidebar}></div>}
+                {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop bg-[var(--bg-color)]/60" onClick={toggleSidebar}></div>}
 
-                <main className="gameplay-story-panel w-full flex flex-col bg-black/40 min-h-0">
+                <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0">
                     <StoryLog story={gameState.storyLog} inventoryItems={playerCharacter.inventory.items} techniques={allPlayerTechniques} />
                     {isAiResponding && (
                         <div className="flex-shrink-0 p-2 flex items-center justify-center gap-2">
                            <LoadingSpinner size="sm" />
-                           <p className="text-sm text-gray-400 italic">Thiên Đạo đang suy diễn...</p>
+                           <p className="text-sm text-[var(--text-muted-color)] italic">Thiên Đạo đang suy diễn...</p>
                         </div>
                     )}
                     
@@ -382,7 +382,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 </main>
 
                 <div className={`gameplay-sidebar-wrapper ${isSidebarOpen ? 'is-open' : ''}`}>
-                    <div className="w-full h-full bg-black/50 backdrop-blur-md border-l border-gray-700/60">
+                    <div className="w-full h-full bg-[var(--bg-subtle)] backdrop-blur-md border-l border-[var(--border-subtle)]">
                         <Sidebar 
                            playerCharacter={playerCharacter}
                            setPlayerCharacter={(updater) => setGameState(gs => gs ? { ...gs, playerCharacter: updater(gs.playerCharacter) } : null)}
