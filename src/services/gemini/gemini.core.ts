@@ -1,28 +1,76 @@
-import { GoogleGenAI, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
+// Since we're no longer using the SDK on the client, these types are for reference.
+// The actual JSON response from the proxy should match these shapes.
+export declare type GenerateContentResponse = any;
+export declare type GenerateImagesResponse = any;
 
-// Per Gemini guidelines, the API key is passed as a named parameter from process.env.
-// The proxy and user-provided key logic are removed.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const PROXY_URL = '/api/gemini-proxy';
 
-// The reloadSettings function is removed as it's no longer needed.
+async function postToProxy(type: string, params: any, isStream = false) {
+    const response = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, params, isStream }),
+    });
 
-// Helper to handle API call errors - no longer needed as we're not using fetch for a proxy.
-// The SDK will throw its own errors.
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown proxy error' }));
+        throw new Error(errorData.error || `Proxy request failed with status ${response.status}`);
+    }
+    
+    return response;
+}
 
 export async function* generateWithRetryStream(generationRequest: any): AsyncIterable<any> {
-    // Directly use the initialized AI client.
-    const streamResponse = await ai.models.generateContentStream(generationRequest);
-    for await (const chunk of streamResponse) {
-        yield chunk;
+    const response = await postToProxy('generateContentStream', generationRequest, true);
+    
+    if (!response.body) {
+        throw new Error("Streaming response has no body");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    let buffer = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+            break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+            if (line.trim()) {
+                try {
+                    yield JSON.parse(line);
+                } catch (e) {
+                    console.error("Failed to parse stream chunk:", line, e);
+                }
+            }
+        }
+    }
+
+    if (buffer.trim()) {
+        try {
+            yield JSON.parse(buffer);
+        } catch(e) {
+            console.error("Failed to parse final stream chunk:", buffer, e);
+        }
     }
 }
 
 export const generateWithRetry = async (generationRequest: any): Promise<GenerateContentResponse> => {
-    // Directly use the initialized AI client.
-    return ai.models.generateContent(generationRequest);
+    const response = await postToProxy('generateContent', generationRequest);
+    return response.json();
 };
 
 export const generateImagesWithRetry = async (generationRequest: any): Promise<GenerateImagesResponse> => {
-    // Directly use the initialized AI client.
-    return ai.models.generateImages(generationRequest);
+    const response = await postToProxy('generateImages', generationRequest);
+    return response.json();
 };
