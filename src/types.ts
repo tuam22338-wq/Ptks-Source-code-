@@ -205,6 +205,7 @@ export interface RealmConfig {
     name: string;
     stages: RealmStage[];
     hasTribulation?: boolean;
+    tribulationDescription?: string;
     description?: string;
 }
 
@@ -864,6 +865,7 @@ export interface GameState {
     eventIllustrations?: { eventId: string; imageUrl: string; narrative: string }[];
     storySummary?: string;
     gameMode?: 'classic' | 'transmigrator';
+    shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
 }
 
 // --- Gameplay Event Types ---

@@ -27,7 +27,8 @@ export const REALM_SYSTEM: RealmConfig[] = [
     { 
         id: 'truc_co', name: 'Trúc Cơ Kỳ', 
         description: 'Xây dựng nền tảng (Đạo Cơ) cho con đường tu luyện. Linh lực chuyển hóa thành chân nguyên, sức mạnh tăng vọt, tuổi thọ đạt 200 năm.',
-        hasTribulation: true, 
+        hasTribulation: true,
+        tribulationDescription: 'Đây là Thiên Kiếp đầu tiên trên con đường tu tiên, sấm sét sẽ gột rửa phàm thể, xây dựng đạo cơ. Vượt qua thì thoát thai hoán cốt, thất bại thì thân tử đạo tiêu.',
         stages: [
             { id: 'tc_so_ky', name: 'Sơ Kỳ', qiRequired: 150000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ hình thành, thần thức có thể xuất ra ngoài dò xét.' },
             { id: 'tc_trung_ky', name: 'Trung Kỳ', qiRequired: 400000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ vững chắc, có thể bắt đầu ngự vật phi hành.' },
@@ -49,6 +50,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
         id: 'nguyen_anh', name: 'Nguyên Anh Kỳ',
         description: 'Phá vỡ Kim Đan, thai nghén ra "Nguyên Anh". Nguyên Anh có thể xuất khiếu, ngao du thái hư. Tuổi thọ đạt 1000 năm.',
         hasTribulation: true,
+        tribulationDescription: 'Phá đan thành anh là nghịch thiên chi举, sẽ phải đối mặt với Tâm Ma Kiếp. Vô số ảo ảnh, dục vọng từ sâu trong tâm thức sẽ trỗi dậy, chỉ có đạo tâm kiên định mới có thể vượt qua.',
         stages: [
             { id: 'na_so_ky', name: 'Sơ Kỳ', qiRequired: 80000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh được sinh ra, có thể đoạt xá trùng sinh.' },
             { id: 'na_trung_ky', name: 'Trung Kỳ', qiRequired: 200000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh lớn mạnh, có thể thi triển các thần thông mạnh mẽ.'},

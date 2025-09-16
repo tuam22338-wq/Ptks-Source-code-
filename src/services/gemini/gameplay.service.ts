@@ -140,7 +140,7 @@ export const generateBreakthroughNarrative = async (gameState: GameState, realm:
     return response.text;
 };
 
-export const generateInnerDemonTrial = async (gameState: GameState, targetRealmName: string, targetStageName: string): Promise<InnerDemonTrial> => {
+export const generateInnerDemonTrial = async (gameState: GameState, targetRealm: RealmConfig, targetStageName: string): Promise<InnerDemonTrial> => {
     const { playerCharacter, storySummary } = gameState;
     const chinhDao = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Chính Đạo')?.value || 0;
     const maDao = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Ma Đạo')?.value || 0;
@@ -171,10 +171,11 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealmN
     - Tính cách: ${playerCharacter.identity.personality}
     - Thiên hướng: Chính Đạo (${chinhDao}), Ma Đạo (${maDao})
     - Tóm tắt hành trình: ${storySummary || "Chưa có gì đáng kể."}
-    - Đang đột phá lên: ${targetRealmName} - ${targetStageName}
+    - Đang đột phá lên: ${targetRealm.name} - ${targetStageName}
+    - **Bản chất của kiếp nạn:** ${targetRealm.tribulationDescription || 'Một thử thách đối với đạo tâm của tu sĩ.'}
 
     **Nhiệm vụ:**
-    1.  **Tạo lời thách thức:** Viết một lời cám dỗ hoặc chất vấn sắc bén, đánh vào điểm yếu, tham vọng hoặc những hành động trong quá khứ của tu sĩ.
+    1.  **Tạo lời thách thức:** Viết một lời cám dỗ hoặc chất vấn sắc bén, đánh vào điểm yếu, tham vọng hoặc những hành động trong quá khứ của tu sĩ, phù hợp với bản chất của kiếp nạn.
     2.  **Tạo 3 lựa chọn:**
         - Một lựa chọn thể hiện Đạo Tâm kiên định, vượt qua cám dỗ (isCorrect: true).
         - Hai lựa chọn còn lại thể hiện sự dao động, tham lam, hoặc sợ hãi (isCorrect: false).

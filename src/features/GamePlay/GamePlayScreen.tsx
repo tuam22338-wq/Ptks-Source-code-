@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo, useCallback, useRef } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -253,9 +253,9 @@ const GamePlayScreenContent: React.FC = memo(() => {
          addStoryEntry({ type: 'system', content: `Bắt đầu đột phá...` });
 
          try {
-            const targetRealmName = nextRealm ? nextRealm.name : currentRealm.name;
+            const targetRealmForTrial = nextRealm || currentRealm;
             const targetStageName = nextRealm ? nextRealm.stages[0].name : nextStage.name;
-            const trial = await generateInnerDemonTrial(gameState, targetRealmName, targetStageName);
+            const trial = await generateInnerDemonTrial(gameState, targetRealmForTrial, targetStageName);
             openInnerDemonTrial(trial);
          } catch(error) {
              console.error("Failed to generate inner demon trial:", error);

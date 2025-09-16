@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect } from 'react';
-import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen } from 'react-icons/fa';
+import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import UpdateModal from './UpdateModal';
@@ -13,6 +13,7 @@ const menuItems = [
     { label: "Thời Thế", icon: FaBookOpen, view: 'thoiThe' as const, delay: 950 },
     { label: "Cài Đặt", icon: FaCog, view: 'settings' as const, delay: 1100 },
     { label: "Thông Tin", icon: FaInfoCircle, view: 'info' as const, delay: 1250 },
+    { label: "Discord", icon: FaDiscord, href: 'https://discord.gg/5FEcnPwM', delay: 1400 },
 ];
 
 const MainMenu: React.FC = () => {
@@ -59,7 +60,7 @@ const MainMenu: React.FC = () => {
                 {menuItems.map(item => (
                     <button 
                         key={item.label}
-                        onClick={() => handleNavigate(item.view)}
+                        onClick={() => 'href' in item ? window.open(item.href, '_blank') : handleNavigate(item.view)}
                         className="main-menu-item-new"
                         style={{ animationDelay: `${item.delay}ms` }}
                     >
@@ -70,7 +71,7 @@ const MainMenu: React.FC = () => {
             </div>
         </div>
 
-        <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1400ms' }}>
+        <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1550ms' }}>
             <div className="flex items-center justify-between gap-2 text-[var(--text-muted-color)] mb-1">
                 <div className="flex items-center gap-1">
                     <FaDatabase />
