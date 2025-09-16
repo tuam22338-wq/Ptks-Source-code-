@@ -68,6 +68,7 @@ export interface GameSettings {
     actionAnalysisModel: AIModel;
     gameMasterModel: AIModel;
     npcSimulationModel: AIModel;
+    dataParsingModel: AIModel;
     imageGenerationModel: ImageModel;
     ragSummaryModel: AIModel;
     ragSourceIdModel: AIModel;
@@ -490,7 +491,7 @@ export interface ActiveEffect {
     source: string; // e.g., 'status_lightly_injured', 'technique_poison_cloud'
     description: string;
     bonuses: StatBonus[];
-    duration: number; // in turns
+    duration: number; // in turns, -1 for permanent until condition is met
     isBuff: boolean;
     dot?: { // Damage over time
         damage: number;
@@ -759,6 +760,15 @@ export interface SystemInfo {
 }
 // --- End Transmigrator System Types ---
 
+// --- NEW Player Vitals ---
+export interface PlayerVitals {
+    hunger: number;
+    maxHunger: number;
+    thirst: number;
+    maxThirst: number;
+    temperature: number;
+}
+
 export interface PlayerCharacter {
     identity: CharacterIdentity;
     attributes: AttributeGroup[];
@@ -768,6 +778,7 @@ export interface PlayerCharacter {
     cultivation: CultivationState;
     currentLocationId: string;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
+    vitals: PlayerVitals;
     
     // New Technique System
     mainCultivationTechnique: MainCultivationTechnique | null;

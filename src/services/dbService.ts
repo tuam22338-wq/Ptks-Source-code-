@@ -218,6 +218,16 @@ export const setActiveWorldId = async (worldId: string): Promise<void> => {
     await db.misc.put({ key: 'activeWorldId', value: worldId });
 };
 
+// --- Update Version Service ---
+export const getLastDismissedUpdate = async (): Promise<string | null> => {
+    const record = await db.misc.get('lastDismissedUpdate');
+    return record?.value || null;
+};
+
+export const setLastDismissedUpdate = async (version: string): Promise<void> => {
+    await db.misc.put({ key: 'lastDismissedUpdate', value: version });
+};
+
 // Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
 export const deleteDb = (): Promise<void> => {
     return (db as Dexie).delete();

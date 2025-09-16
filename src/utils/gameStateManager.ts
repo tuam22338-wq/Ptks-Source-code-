@@ -1,6 +1,6 @@
 import { FaQuestionCircle } from 'react-icons/fa';
 import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, FACTIONS, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID, CURRENCY_ITEMS } from "../constants";
-import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot } from "../types";
+import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 import {
   GiCauldron,
@@ -30,6 +30,17 @@ export const migrateGameState = (savedGame: any): GameState => {
             bonuses: [],
         };
         delete dataToProcess.playerCharacter.talents;
+    }
+    
+    if (dataToProcess.playerCharacter && !dataToProcess.playerCharacter.vitals) {
+        console.log("Migrating save to include Vitals system...");
+        dataToProcess.playerCharacter.vitals = {
+            hunger: 100,
+            maxHunger: 100,
+            thirst: 100,
+            maxThirst: 100,
+            temperature: 37,
+        };
     }
 
 
@@ -224,7 +235,7 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
         npcDensity: NpcDensity,
         difficulty: DifficultyLevel,
         gameMode: 'classic' | 'transmigrator',
@@ -299,6 +310,12 @@ export const createNewGameState = async (
         spiritualQi: 0,
         hasConqueredInnerDemon: false,
     };
+    
+    const initialVitals: PlayerVitals = {
+        hunger: 100, maxHunger: 100,
+        thirst: 100, maxThirst: 100,
+        temperature: 37,
+    };
 
     const updatedAttributes = characterData.attributes.map(group => {
         if (group.title === 'Chỉ số Sinh Tồn') {
@@ -341,6 +358,7 @@ export const createNewGameState = async (
         cultivation: initialCultivation,
         currentLocationId: startingLocation.id,
         equipment: {},
+        vitals: initialVitals,
         mainCultivationTechnique: null,
         auxiliaryTechniques: [],
         techniquePoints: 0,
@@ -369,7 +387,7 @@ export const createNewGameState = async (
 
     const [familyResult, generatedNpcs] = await Promise.all([
         familyPromise,
-        generateDynamicNpcs(npcDensity)
+        generateDynamicNpcs(npcDensity, initialNpcsFromData.map(n => n.identity.name)),
     ]);
     
     const { npcs: familyNpcs, relationships: familyRelationships } = familyResult;

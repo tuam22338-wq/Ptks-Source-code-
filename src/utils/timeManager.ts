@@ -9,7 +9,12 @@ export const advanceGameTime = (
     apCost: number
 ): { newState: GameState; newDay: boolean } => {
     let newDay = false;
-    let { gameDate } = currentState;
+    let { gameDate, playerCharacter } = currentState;
+    let { vitals } = playerCharacter;
+
+    // Vitals decay
+    vitals.hunger = Math.max(0, vitals.hunger - apCost * 2); // 2 hunger per AP
+    vitals.thirst = Math.max(0, vitals.thirst - apCost * 3); // 3 thirst per AP
 
     let newActionPoints = gameDate.actionPoints - apCost;
 
@@ -46,7 +51,6 @@ export const advanceGameTime = (
         const nextShichenIndex = (currentShichenIndex + shichensToAdvance) % SHICHEN_LIST.length;
         const newShichen = SHICHEN_LIST[nextShichenIndex].name;
 
-        // FIX: The assignment to gameDate was incomplete. This fixes the type error on line 49.
         gameDate = {
             ...gameDate,
             actionPoints: newActionPoints,
@@ -55,10 +59,10 @@ export const advanceGameTime = (
         };
     }
 
-    // FIX: The function must return a value as declared. This fixes the error on line 10.
     const newState: GameState = {
         ...currentState,
         gameDate,
+        playerCharacter: { ...playerCharacter, vitals }
     };
 
     return { newState, newDay };

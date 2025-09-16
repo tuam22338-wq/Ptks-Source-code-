@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, FC, PropsWithChildren } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot } from '../types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
@@ -36,7 +36,7 @@ interface AppContextType {
     handleDeleteGame: (slotId: number) => Promise<void>;
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
     handleGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
       npcDensity: NpcDensity,
       difficulty: DifficultyLevel,
       gameMode: 'classic' | 'transmigrator',
@@ -250,8 +250,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         document.documentElement.style.fontSize = `${settings.zoomLevel}%`;
         document.documentElement.style.setProperty('--text-color', settings.textColor || '#d1d5db');
         THEME_OPTIONS.forEach(themeOption => document.body.classList.remove(themeOption.value));
-        // FIX: The comparison `settings.theme !== 'theme-amber'` caused a type error because 'theme-amber' is not a valid theme.
-        // The check was likely a remnant from a previous implementation and is no longer needed.
         if (settings.theme) {
             document.body.classList.add(settings.theme);
         }
@@ -360,7 +358,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, []);
 
     const handleGameStart = useCallback(async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
       npcDensity: NpcDensity,
       difficulty: DifficultyLevel,
       gameMode: 'classic' | 'transmigrator'

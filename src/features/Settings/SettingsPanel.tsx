@@ -72,7 +72,7 @@ const SettingsPanel: React.FC = () => {
                     keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'aiResponseWordCount', 'zoomLevel', 'textColor'];
                     break;
                 case 'AI & Models':
-                    keysToReset = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK', 'apiKeys'];
+                    keysToReset = ['mainTaskModel', 'quickSupportModel', 'dataParsingModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK', 'apiKeys'];
                     break;
                 case 'An Toàn':
                     keysToReset = ['masterSafetySwitch', 'safetyLevels'];
@@ -265,6 +265,11 @@ const SettingsPanel: React.FC = () => {
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
+                           <SettingsRow label="Model Phân tích Dữ liệu (AI Trung gian)" description="Model dùng để phân tích nhanh kết quả từ AI kể chuyện, trích xuất vật phẩm, nhiệm vụ, etc.">
+                                <select value={settings.dataParsingModel} onChange={(e) => handleSettingChange('dataParsingModel', e.target.value as AIModel)} className="themed-select">
+                                    {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
+                                </select>
+                           </SettingsRow>
                            <SettingsRow label="Model Hỗ trợ Nhanh" description="Dùng cho các tác vụ nhỏ, phân tích nhanh (vd: phân tích hành động).">
                                 <select value={settings.quickSupportModel} onChange={(e) => handleSettingChange('quickSupportModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
@@ -278,6 +283,26 @@ const SettingsPanel: React.FC = () => {
                            <SettingsRow label="Model Tạo Ảnh" description="Model dùng để tạo ảnh đại diện và ảnh nền.">
                                 <select value={settings.imageGenerationModel} onChange={(e) => handleSettingChange('imageGenerationModel', e.target.value as ImageModel)} className="themed-select">
                                     {IMAGE_AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
+                                </select>
+                           </SettingsRow>
+                            <SettingsRow label="Model Phân tích Vật phẩm" description="Chuyên dùng để phân tích mô tả và tạo ra chỉ số, thuộc tính cho vật phẩm.">
+                                <select value={settings.itemAnalysisModel} onChange={(e) => handleSettingChange('itemAnalysisModel', e.target.value as AIModel)} className="themed-select">
+                                    {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
+                                </select>
+                           </SettingsRow>
+                            <SettingsRow label="Model Phân tích Hành động" description="Phân tích hành động của người chơi và NPC để quyết định kết quả (vd: chiến đấu).">
+                                <select value={settings.actionAnalysisModel} onChange={(e) => handleSettingChange('actionAnalysisModel', e.target.value as AIModel)} className="themed-select">
+                                    {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
+                                </select>
+                           </SettingsRow>
+                            <SettingsRow label="Model Chế tạo Vật phẩm" description="Sử dụng khi người chơi chế tạo vật phẩm, quyết định sự thành công và phẩm chất.">
+                                <select value={settings.itemCraftingModel} onChange={(e) => handleSettingChange('itemCraftingModel', e.target.value as AIModel)} className="themed-select">
+                                    {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
+                                </select>
+                           </SettingsRow>
+                            <SettingsRow label="Model Hệ thống Âm thanh" description="Dùng để tạo ra các mô tả âm thanh và nhạc nền khi hệ thống âm thanh AI được bật.">
+                                <select value={settings.soundSystemModel} onChange={(e) => handleSettingChange('soundSystemModel', e.target.value as AIModel)} className="themed-select">
+                                    {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
                         </SettingsSection>

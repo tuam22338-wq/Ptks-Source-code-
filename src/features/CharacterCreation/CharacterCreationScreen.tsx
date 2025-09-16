@@ -195,6 +195,13 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           attributes: initialAttributes,
           spiritualRoot: determinedRoot,
           danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
+          vitals: {
+              hunger: 100,
+              maxHunger: 100,
+              thirst: 100,
+              maxThirst: 100,
+              temperature: 37,
+          },
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
           activeQuests: [],

@@ -88,7 +88,7 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                             onChange={(e) => setName(e.target.value)}
                             onBlur={handleBlur}
                             placeholder="Nhập tên nhân vật"
-                            className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-amber-300 font-bold text-base font-title focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+                            className="w-full bg-[var(--bg-interactive)] border border-[var(--border-subtle)] rounded-md px-3 py-1.5 text-[var(--primary-accent-color)] font-bold text-base font-title focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-all"
                         />
                     </div>
                     <div>
@@ -100,8 +100,8 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                                     onClick={() => onIdentityChange({ gender })}
                                     className={`px-3 py-1.5 text-sm rounded-md border transition-all duration-200 w-full ${
                                         identity.gender === gender 
-                                        ? 'bg-teal-500/20 border-teal-400 text-white' 
-                                        : 'bg-gray-800/50 border-gray-600 text-gray-300 hover:bg-gray-700/50'
+                                        ? 'bg-[color:var(--secondary-accent-color)]/20 border-[var(--secondary-accent-color)] text-white' 
+                                        : 'bg-[var(--bg-interactive)] border-[var(--border-subtle)] text-[var(--text-muted-color)] hover:bg-[var(--bg-interactive-hover)]'
                                     }`}
                                 >
                                     {gender}
@@ -119,7 +119,7 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                         onBlur={handleBlur}
                         placeholder="VD: Đệ tử ngoại môn của một sơn phái bí ẩn..."
                         rows={2}
-                        className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+                        className="w-full bg-[var(--bg-interactive)] border border-[var(--border-subtle)] rounded-md px-3 py-1.5 text-[var(--text-color)] text-sm focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-all"
                     />
                 </div>
                  <div>
@@ -131,12 +131,12 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                         onBlur={handleBlur}
                         placeholder="VD: Thiếu nữ áo trắng, dung mạo thanh lệ, đôi mắt trong như nước hồ thu..."
                         rows={2}
-                        className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-1.5 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+                        className="w-full bg-[var(--bg-interactive)] border border-[var(--border-subtle)] rounded-md px-3 py-1.5 text-[var(--text-color)] text-sm focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-all"
                     />
                 </div>
                  <div>
                     <p className="text-xs text-gray-400 mb-1">Tính Cách</p>
-                    <div className="flex justify-start items-center gap-1 bg-gray-900/60 p-1 rounded-full border border-gray-700 max-w-full overflow-x-auto">
+                    <div className="flex justify-start items-center gap-1 bg-[var(--bg-interactive)] p-1 rounded-full border border-[var(--border-subtle)] max-w-full overflow-x-auto">
                         {PERSONALITY_TRAITS.map(trait => (
                             <button
                                 key={trait.name}
@@ -144,8 +144,8 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                                 title={trait.description}
                                 className={`flex-shrink-0 text-[11px] px-2 py-0.5 rounded-full transition-all duration-200 ${
                                     identity.personality === trait.name 
-                                    ? 'bg-amber-400/80 text-black font-bold'
-                                    : 'text-gray-300 hover:bg-gray-700/50'
+                                    ? 'bg-[var(--primary-accent-color)]/80 text-black font-bold'
+                                    : 'text-[var(--text-muted-color)] hover:bg-[var(--bg-interactive-hover)]'
                                 }`}
                             >
                                 {trait.name}

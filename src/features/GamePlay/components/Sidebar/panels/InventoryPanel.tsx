@@ -105,18 +105,18 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPla
 
     const handleEquip = (itemToEquip: InventoryItem) => {
         setPlayerCharacter(pc => {
-            let newPc = { ...pc };
+            let pcWithBonusesApplied = pc;
             const slot = itemToEquip.slot;
             if (!slot) return pc;
     
-            let newInventoryItems = [...newPc.inventory.items];
-            let newEquipment = { ...newPc.equipment };
+            let newInventoryItems = [...pc.inventory.items];
+            let newEquipment = { ...pc.equipment };
     
             const currentItemInSlot = newEquipment[slot];
             if (currentItemInSlot) {
                 newInventoryItems.push({ ...currentItemInSlot, isEquipped: false });
                 if (currentItemInSlot.bonuses) {
-                    newPc = applyBonuses(newPc, currentItemInSlot.bonuses, 'subtract');
+                    pcWithBonusesApplied = applyBonuses(pcWithBonusesApplied, currentItemInSlot.bonuses, 'subtract');
                 }
             }
             
@@ -124,33 +124,37 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPla
             
             newEquipment[slot] = { ...itemToEquip, isEquipped: true };
             if (itemToEquip.bonuses) {
-                newPc = applyBonuses(newPc, itemToEquip.bonuses, 'add');
+                pcWithBonusesApplied = applyBonuses(pcWithBonusesApplied, itemToEquip.bonuses, 'add');
             }
     
-            newPc.inventory.items = newInventoryItems;
-            newPc.equipment = newEquipment;
-            return newPc;
+            return {
+                ...pcWithBonusesApplied,
+                inventory: { ...pc.inventory, items: newInventoryItems },
+                equipment: newEquipment
+            };
         });
     };
     
     const handleUnequip = (slot: EquipmentSlot) => {
         setPlayerCharacter(pc => {
-            let newPc = { ...pc };
-            const itemToUnequip = newPc.equipment[slot];
+            let pcWithBonusesApplied = pc;
+            const itemToUnequip = pc.equipment[slot];
             if (!itemToUnequip) return pc;
     
             if (itemToUnequip.bonuses) {
-                newPc = applyBonuses(newPc, itemToUnequip.bonuses, 'subtract');
+                pcWithBonusesApplied = applyBonuses(pcWithBonusesApplied, itemToUnequip.bonuses, 'subtract');
             }
     
-            const newInventoryItems = [...newPc.inventory.items, { ...itemToUnequip, isEquipped: false }];
+            const newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false }];
             
-            const newEquipment = { ...newPc.equipment };
+            const newEquipment = { ...pc.equipment };
             newEquipment[slot] = null;
             
-            newPc.inventory.items = newInventoryItems;
-            newPc.equipment = newEquipment;
-            return newPc;
+            return {
+                ...pcWithBonusesApplied,
+                inventory: { ...pc.inventory, items: newInventoryItems },
+                equipment: newEquipment
+            };
         });
     };
 
@@ -255,14 +259,15 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPla
                         const slotInfo = EQUIPMENT_SLOTS[slot];
                         const item = playerCharacter.equipment[slot];
                         return (
-                            <div key={slot} className="flex items-center gap-3 bg-black/20 p-2 rounded-lg border border-gray-700/60">
+                            // FIX: Changed the onClick to call `handleUnequip` directly if an item exists, and changed the button to a <p> tag. This resolves the likely cause of the "Cannot find name 'onUnequip'" error by using the correctly scoped function `handleUnequip`.
+                            <div key={slot} onClick={() => item && handleUnequip(slot)} title={item ? 'Nhấn để tháo' : ''} className={`flex items-center gap-3 bg-black/20 p-2 rounded-lg border border-gray-700/60 ${item ? 'cursor-pointer hover:border-amber-400/50' : ''}`}>
                                 <div className="w-14 h-14 bg-black/30 border-2 border-gray-600 rounded-md flex items-center justify-center text-3xl flex-shrink-0">
                                     {item ? item.icon : <span className="text-gray-600 text-lg">{slotInfo.label.charAt(0)}</span>}
                                 </div>
                                 <div className="flex-grow">
                                     <p className="text-sm text-gray-500">{slotInfo.label}</p>
                                     {item ? (
-                                        <button onClick={() => setSelectedItem(item)} className="font-bold text-lg font-title text-amber-300 hover:underline">{item.name}</button>
+                                        <p className="font-bold text-lg font-title text-amber-300">{item.name}</p>
                                     ) : (
                                         <p className="text-gray-400 italic">-- Trống --</p>
                                     )}

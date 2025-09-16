@@ -1,7 +1,10 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
+import UpdateModal from './UpdateModal';
+import * as db from '../../services/dbService';
+import { CURRENT_GAME_VERSION } from '../../constants';
 
 const menuItems = [
     { label: "Hành Trình Mới", icon: GiScrollUnfurled, view: 'saveSlots' as const, delay: 500 },
@@ -14,8 +17,30 @@ const menuItems = [
 
 const MainMenu: React.FC = () => {
   const { handleNavigate, storageUsage } = useAppContext();
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+  useEffect(() => {
+    const checkVersion = async () => {
+      const lastDismissedVersion = await db.getLastDismissedUpdate();
+      if (lastDismissedVersion !== CURRENT_GAME_VERSION) {
+        setIsUpdateModalOpen(true);
+      }
+    };
+    checkVersion();
+  }, []);
+  
+  const handleCloseUpdateModal = () => {
+    setIsUpdateModalOpen(false);
+  };
+
+  const handleDismissUpdatePermanently = () => {
+    db.setLastDismissedUpdate(CURRENT_GAME_VERSION);
+    setIsUpdateModalOpen(false);
+  };
+
   return (
     <div className="min-h-[calc(var(--vh,1vh)*100)] w-full flex items-center justify-center overflow-hidden">
+        {isUpdateModalOpen && <UpdateModal onClose={handleCloseUpdateModal} onDismissPermanently={handleDismissUpdatePermanently} />}
         <div className="relative z-10 w-full max-w-7xl px-4 flex flex-col items-center justify-center space-y-8 md:space-y-12 animate-fade-in-menu">
             <div className="text-center p-8 relative animate-menu-item" style={{ animationDelay: '100ms' }}>
                 <GiCircleClaws className="title-seal text-red-800/70 text-5xl sm:text-6xl absolute top-0 right-0 transform rotate-12 opacity-90 -translate-y-1/4 translate-x-1/4" />

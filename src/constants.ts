@@ -23,7 +23,7 @@ export * from './data/realmSystem';
 
 
 export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
-export const CURRENT_GAME_VERSION = "1.0.2";
+export const CURRENT_GAME_VERSION = "1.0.3";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
@@ -111,6 +111,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     actionAnalysisModel: 'gemini-2.5-flash',
     gameMasterModel: 'gemini-2.5-flash',
     npcSimulationModel: 'gemini-2.5-flash',
+    dataParsingModel: 'gemini-2.5-flash',
     imageGenerationModel: 'imagen-4.0-generate-001',
     ragSummaryModel: 'gemini-2.5-flash',
     ragSourceIdModel: 'gemini-2.5-flash',

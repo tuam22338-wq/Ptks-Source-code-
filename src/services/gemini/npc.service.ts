@@ -6,8 +6,10 @@ import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { FaQuestionCircle } from "react-icons/fa";
 
-export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]> => {
-    const count = NPC_DENSITY_LEVELS.find(d => d.id === npcDensity)?.count ?? 15;
+export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, existingNames: string[] = []): Promise<NPC[]> => {
+    const count = typeof countOrDensity === 'number' ? countOrDensity : NPC_DENSITY_LEVELS.find(d => d.id === countOrDensity)?.count ?? 15;
+    if (count <= 0) return [];
+    
     const availableLocations = WORLD_MAP.map(l => l.id);
     const availableRealms = REALM_SYSTEM.map(r => r.name);
     const elements: Element[] = ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ', 'Vô'];
@@ -74,6 +76,7 @@ export const generateDynamicNpcs = async (npcDensity: NpcDensity): Promise<NPC[]
     const prompt = `Tạo ra ${count} NPC (Non-Player Characters) độc đáo cho thế giới game tu tiên Tam Thiên Thế Giới.
     Các NPC này có thể là tu sĩ, yêu ma, dân thường, hoặc các sinh vật kỳ dị.
     Mỗi NPC cần có thông tin đầy đủ theo schema. Hãy sáng tạo và làm cho thế giới trở nên sống động.
+    **QUAN TRỌNG:** KHÔNG tạo ra các NPC có tên trong danh sách sau đây: ${existingNames.join(', ')}.
     
     **Yêu cầu chi tiết:**
     1.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu mới.
