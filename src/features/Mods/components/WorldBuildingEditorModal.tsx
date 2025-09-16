@@ -38,20 +38,8 @@ const WorldContentEditorModal: React.FC<WorldContentEditorModalProps> = ({ isOpe
                     tags: [],
                 });
             } else if (contentType === 'worldData') {
-                const initialData = contentToEdit || {
-                    id: Date.now().toString(),
-                    name: '',
-                    description: '',
-                    startingYear: 1,
-                    eraName: 'Kỷ Nguyên Mới',
-                    majorEvents: [],
-                    initialLocations: [],
-                    initialNpcs: [],
-                    factions: [],
-                    tags: [],
-                };
-                // FIX: Safely handle contentToEdit which could be ModLocation, ensuring we only access ModWorldData properties.
-                const worldData = 'majorEvents' in initialData ? (initialData as ModWorldData) : {
+                const initialData = contentToEdit as ModWorldData | null; // Cast for type safety
+                const worldData = initialData || {
                     id: Date.now().toString(),
                     name: '',
                     description: '',
@@ -65,10 +53,10 @@ const WorldContentEditorModal: React.FC<WorldContentEditorModalProps> = ({ isOpe
                 };
                 const stringifiedData = {
                     ...worldData,
-                    majorEvents: JSON.stringify(worldData.majorEvents, null, 2),
-                    initialLocations: JSON.stringify(worldData.initialLocations, null, 2),
-                    initialNpcs: JSON.stringify(worldData.initialNpcs, null, 2),
-                    factions: JSON.stringify(worldData.factions, null, 2),
+                    majorEvents: JSON.stringify(worldData.majorEvents || [], null, 2),
+                    initialLocations: JSON.stringify(worldData.initialLocations || [], null, 2),
+                    initialNpcs: JSON.stringify(worldData.initialNpcs || [], null, 2),
+                    factions: JSON.stringify(worldData.factions || [], null, 2),
                 };
                 setContent(stringifiedData);
             }

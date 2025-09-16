@@ -730,7 +730,6 @@ export interface ActiveQuest {
     source: string; // e.g., 'event:tru_vuong_de_tho' or 'npc:npc_khuong_tu_nha' or 'system'
     objectives: QuestObjective[];
     rewards: QuestReward;
-    // FIX: Add optional timeLimit and onFailure properties to ActiveQuest
     timeLimit?: number; // in game days
     onFailure?: EventOutcome[];
 }

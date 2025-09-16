@@ -38,12 +38,14 @@ export const calculateDamage = (
 
     // Elemental interaction
     let multiplier = 1.0;
-    if (ELEMENTAL_CHART[attackerElement]?.strongAgainst.includes(targetElement)) {
-        multiplier = 1.5;
-        narrative = 'Hệ ngũ hành tương khắc, uy lực tăng mạnh! ';
-    } else if (ELEMENTAL_CHART[attackerElement]?.weakAgainst.includes(targetElement)) {
-        multiplier = 0.75;
-        narrative = 'Hệ ngũ hành bị khắc chế, uy lực giảm bớt. ';
+    if (attackerElement !== 'Vô' && targetElement !== 'Vô') {
+        if (ELEMENTAL_CHART[attackerElement]?.strongAgainst.includes(targetElement)) {
+            multiplier = 1.5;
+            narrative = 'Hệ ngũ hành tương khắc, uy lực tăng mạnh! ';
+        } else if (ELEMENTAL_CHART[attackerElement]?.weakAgainst.includes(targetElement)) {
+            multiplier = 0.75;
+            narrative = 'Hệ ngũ hành bị khắc chế, uy lực giảm bớt. ';
+        }
     }
     
     let finalDamage = Math.floor(baseDamage * multiplier);

@@ -26,7 +26,6 @@ const SystemPanel: React.FC<SystemPanelProps> = ({ gameState, setGameState, show
             const questData = await generateSystemQuest(gameState);
             setGameState(gs => {
                 if (!gs) return null;
-                // FIX: Explicitly construct the ActiveQuest object to satisfy the type, as questData is partial.
                 const newQuest: ActiveQuest = {
                     id: `quest_system_${Date.now()}`,
                     type: 'SYSTEM',

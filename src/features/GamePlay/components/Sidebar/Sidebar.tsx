@@ -37,7 +37,6 @@ interface SidebarProps {
     showNotification: (message: string) => void;
     activeMods: FullMod[];
     gameState: GameState;
-    // FIX: Add setGameState to props to be passed down to child components like SystemPanel.
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
 }
 type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | 'aiMemory' | 'genealogy' | 'quests' | 'system' | string;

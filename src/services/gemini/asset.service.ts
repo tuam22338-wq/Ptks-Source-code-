@@ -23,7 +23,6 @@ export const generateCharacterAvatar = async (identity: CharacterIdentity): Prom
         },
     });
 
-    // Fix: Add check for optional imageBytes property.
     const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
     if (!base64ImageBytes) {
         throw new Error('Tạo ảnh thất bại: không nhận được dữ liệu ảnh từ API.');
@@ -45,7 +44,6 @@ export const generateBackgroundImage = async (prompt: string): Promise<string> =
         },
     });
 
-    // Fix: Add check for optional imageBytes property.
     const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
     if (!base64ImageBytes) {
         throw new Error('Tạo ảnh nền thất bại: không nhận được dữ liệu ảnh từ API.');
@@ -67,7 +65,6 @@ export const generateEventIllustration = async (prompt: string): Promise<string>
         },
     });
 
-    // Fix: Add check for optional imageBytes property.
     const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
     if (!base64ImageBytes) {
         throw new Error('Tạo ảnh minh họa thất bại: không nhận được dữ liệu ảnh từ API.');

@@ -35,7 +35,7 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
     - **NPC:** ${npc.identity.name} (Ngũ hành: ${npc.element || 'Vô'})
     - **Sinh Mệnh NPC:** ${npc.attributes.flatMap(g=>g.attributes).find(a=>a.name === 'Sinh Mệnh')?.value}
     - **Công pháp có thể dùng:** ${availableTechniques.map(t => `${t.name} (ID: ${t.id}, Ngũ hành: ${t.element || 'Vô'})`).join(', ') || 'Không có'}
-    - **Đối thủ:** ${playerCharacter.identity.name} (Ngũ hành: Vô)
+    - **Đối thủ:** ${playerCharacter.identity.name} (Ngũ hành: ${playerCharacter.element || 'Vô'})
     - **Sinh Mệnh đối thủ:** ${playerCharacter.attributes.flatMap(g=>g.attributes).find(a=>a.name === 'Sinh Mệnh')?.value}
     - **Tương khắc Ngũ Hành:** Kim > Mộc > Thổ > Thủy > Hỏa > Kim.
 

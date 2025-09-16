@@ -100,7 +100,6 @@ export const migrateGameState = (savedGame: any): GameState => {
          if (!dataToProcess.playerCharacter.element) {
             dataToProcess.playerCharacter.element = 'Vô';
          }
-         // FIX: Removed incorrect migration logic that deleted properties still in use.
     }
     if(dataToProcess.worldState) {
         dataToProcess.worldState.rumors = dataToProcess.worldState.rumors ?? [];

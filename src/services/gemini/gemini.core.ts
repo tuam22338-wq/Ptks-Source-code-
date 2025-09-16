@@ -30,7 +30,6 @@ class ApiKeyManager {
         this.currentIndex = 0;
     }
 
-    // FIX: Changed from private to public to allow access from executeApiCall
     public getInstance(): GoogleGenAI | null {
         if (this.instances.length === 0) {
             return null;
