@@ -60,10 +60,10 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }
 
                 switch (entry.type) {
                     case 'narrative':
-                        return <p key={entry.id} style={animationStyle} className="text-gray-300 italic text-justify my-4 leading-relaxed animate-fade-in whitespace-pre-wrap">{contentWithHighlight}</p>;
+                        return <p key={entry.id} style={animationStyle} className="text-[var(--text-muted-color)] italic text-justify my-4 leading-relaxed animate-fade-in whitespace-pre-wrap">{contentWithHighlight}</p>;
                     
                     case 'system':
-                        return <p key={entry.id} style={animationStyle} className="text-center text-xs text-gray-500 tracking-widest my-4 uppercase animate-fade-in">{contentWithHighlight}</p>;
+                        return <p key={entry.id} style={animationStyle} className="text-center text-xs text-[var(--text-muted-color)]/70 tracking-widest my-4 uppercase animate-fade-in">{contentWithHighlight}</p>;
                     
                     case 'system-notification':
                         return (
@@ -76,7 +76,7 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }
                     case 'player-dialogue':
                         return (
                             <div key={entry.id} style={animationStyle} className="flex justify-end ml-10 sm:ml-20 animate-fade-in">
-                                <div className="bg-gray-700/80 p-3 rounded-xl rounded-br-none">
+                                <div className="bg-[var(--player-bubble-bg-color)] p-3 rounded-xl rounded-br-none">
                                     <p className={`text-lg leading-relaxed ${entry.type === 'player-action' ? 'text-lime-300 italic' : 'text-cyan-200'}`}>
                                         {contentWithHighlight}
                                     </p>
@@ -90,7 +90,7 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }
                     default:
                         return (
                             <div key={entry.id} style={animationStyle} className="flex justify-start mr-10 sm:mr-20 animate-fade-in">
-                                <div className="bg-gray-800/60 p-3 rounded-xl rounded-bl-none">
+                                <div className="bg-[var(--npc-bubble-bg-color)] p-3 rounded-xl rounded-bl-none">
                                     <p className="text-amber-200 text-lg leading-relaxed">{contentWithHighlight}</p>
                                 </div>
                             </div>

@@ -200,7 +200,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                             const item = playerCharacter.equipment[slot];
                             const Icon = EQUIPMENT_SLOT_ICONS[slot];
                             return (
-                                <div key={slot} onClick={() => item && handleUnequip(slot)} title={item ? 'Nhấn để tháo' : ''} className="flex items-center gap-3 bg-black/20 p-2 rounded-lg border border-gray-700/60 h-1/6 cursor-pointer hover:border-amber-400/50">
+                                <div key={slot} onClick={() => item && handleUnequip(slot)} title={item ? 'Nhấn để tháo' : ''} className="flex items-center gap-3 bg-[var(--bg-interactive)] p-2 rounded-lg border border-[var(--border-subtle)] h-1/6 cursor-pointer hover:border-amber-400/50">
                                     <div className="w-14 h-full bg-black/30 border border-gray-600 rounded-md flex items-center justify-center text-3xl flex-shrink-0">
                                         {item ? <span className="text-4xl">{item.icon}</span> : <Icon className="text-gray-600" />}
                                     </div>
@@ -216,10 +216,10 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                             );
                         })}
                     </div>
-                    <div className="w-2/3 flex flex-col bg-black/20 p-3 rounded-lg border border-gray-700/60">
+                    <div className="w-2/3 flex flex-col bg-[var(--bg-subtle)] p-3 rounded-lg border border-[var(--border-subtle)]">
                         <div className="grid grid-cols-8 gap-2 flex-grow overflow-y-auto pr-2">
                             {playerCharacter.inventory.items.map(item => (
-                                <div key={item.id} onClick={() => setSelectedItem(item)} className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors ${selectedItem?.id === item.id ? 'bg-amber-500/30 border-amber-400' : 'bg-black/30 border-gray-600 hover:border-amber-400/70'}`}>
+                                <div key={item.id} onClick={() => setSelectedItem(item)} className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors ${selectedItem?.id === item.id ? 'bg-amber-500/30 border-amber-400' : 'bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-amber-400/70'}`}>
                                     <span className="text-4xl select-none" role="img">{item.icon || '📜'}</span>
                                     {item.quantity > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
                                 </div>
@@ -227,7 +227,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                         </div>
                          <div className="flex-shrink-0 mt-3">
                              {selectedItem ? (
-                                 <div className="bg-black/30 p-3 rounded-md border border-gray-600 h-32 flex flex-col justify-between animate-fade-in" style={{animationDuration: '200ms'}}>
+                                 <div className="bg-[var(--bg-interactive)] p-3 rounded-md border border-[var(--border-subtle)] h-32 flex flex-col justify-between animate-fade-in" style={{animationDuration: '200ms'}}>
                                      <div>
                                         <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[selectedItem.quality].color}`}>{selectedItem.name}</h4>
                                         <p className="text-xs text-gray-400 italic truncate">{selectedItem.description}</p>
@@ -245,7 +245,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     </div>
                 </div>
                  <div className="p-2 border-t border-gray-700/60">
-                     <div className="w-full bg-black/30 p-2 rounded-lg border border-gray-700/60 space-y-1">
+                     <div className="w-full bg-[var(--bg-interactive)] p-2 rounded-lg border border-[var(--border-subtle)] space-y-1">
                          <div className="flex justify-between items-baseline text-xs">
                              <div className="flex items-center gap-1 text-gray-300"><GiWeight /> <span>Tải trọng</span></div>
                              <span className="font-mono">{currentWeight.toFixed(1)} / {playerCharacter.inventory.weightCapacity.toFixed(1)}</span>
