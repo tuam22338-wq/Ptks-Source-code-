@@ -1,17 +1,20 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useRef } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, RagEmbeddingModel } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle, FaMusic, FaVolumeUp } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
 
-type SettingsTab = 'interface' | 'ai_models' | 'safety' | 'gameplay' | 'advanced';
+type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'safety' | 'gameplay' | 'advanced';
 
-const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = memo(({ title, children }) => (
+const SettingsSection: React.FC<{ title: string; onReset?: () => void; children: React.ReactNode }> = memo(({ title, onReset, children }) => (
   <section className="settings-section">
-    <h3 className="settings-section-title">{title}</h3>
+    <div className="flex justify-between items-baseline">
+        <h3 className="settings-section-title">{title}</h3>
+        {onReset && <button onClick={onReset} className="text-xs text-gray-500 hover:text-red-400 transition-colors">Đặt lại</button>}
+    </div>
     <div className="space-y-6">{children}</div>
   </section>
 ));
@@ -49,6 +52,21 @@ const SettingsPanel: React.FC = () => {
     const [isGeneratingBg, setIsGeneratingBg] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [newApiKey, setNewApiKey] = useState('');
+    const musicInputRef = useRef<HTMLInputElement>(null);
+    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+    useEffect(() => {
+        const loadVoices = () => {
+            const availableVoices = window.speechSynthesis.getVoices();
+            setVoices(availableVoices);
+        };
+        // Voices may load asynchronously.
+        window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+        loadVoices(); // Initial attempt
+        return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+    }, []);
+
+    const vietnameseVoices = voices.filter(v => v.lang.startsWith('vi'));
     
     const handleGenerateBg = async () => {
         if (!bgPrompt) return;
@@ -63,13 +81,37 @@ const SettingsPanel: React.FC = () => {
             setIsGeneratingBg(false);
         }
     };
+
+    const handleMusicFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 20 * 1024 * 1024) { // 20MB limit
+            alert("Tệp nhạc quá lớn. Vui lòng chọn tệp nhỏ hơn 20MB.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const url = e.target?.result as string;
+            handleSettingChange('backgroundMusicUrl', url);
+            handleSettingChange('backgroundMusicName', file.name);
+        };
+        reader.onerror = () => alert('Không thể đọc tệp tin.');
+        reader.readAsDataURL(file);
+        
+        event.target.value = '';
+    };
     
-    const handleResetToDefault = async (section: string) => {
+    const handleResetToDefault = (section: string) => {
         if (window.confirm(`Bạn có chắc muốn đặt lại tất cả cài đặt trong mục "${section}" về mặc định không?`)) {
             let keysToReset: (keyof GameSettings)[] = [];
             switch (section) {
                 case 'Giao Diện':
                     keysToReset = ['layoutMode', 'fontFamily', 'theme', 'backgroundImage', 'itemsPerPage', 'aiResponseWordCount', 'zoomLevel', 'textColor'];
+                    break;
+                case 'Âm Thanh & Lời Nói':
+                    keysToReset = ['backgroundMusicUrl', 'backgroundMusicName', 'backgroundMusicVolume', 'enableTTS', 'ttsVoiceURI', 'ttsRate', 'ttsPitch', 'ttsVolume'];
                     break;
                 case 'AI & Models':
                     keysToReset = ['mainTaskModel', 'quickSupportModel', 'dataParsingModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'imageGenerationModel', 'enableThinking', 'thinkingBudget', 'temperature', 'topP', 'topK', 'apiKeys'];
@@ -146,6 +188,7 @@ const SettingsPanel: React.FC = () => {
             
             <nav className="settings-tab-nav">
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
+                <TabButton tabId="sound" activeTab={activeTab} onClick={setActiveTab} icon={FaMusic} label="Âm Thanh" />
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI & Models" />
                 <TabButton tabId="safety" activeTab={activeTab} onClick={setActiveTab} icon={FaShieldAlt} label="An Toàn" />
                 <TabButton tabId="gameplay" activeTab={activeTab} onClick={setActiveTab} icon={FaGamepad} label="Lối Chơi" />
@@ -155,7 +198,7 @@ const SettingsPanel: React.FC = () => {
             <div className="settings-content">
                 {activeTab === 'interface' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <SettingsSection title="Giao Diện Chung">
+                        <SettingsSection title="Giao Diện Chung" onReset={() => handleResetToDefault('Giao Diện')}>
                             <SettingsRow label="Bố Cục" description="Ép bố cục cho máy tính hoặc di động, hoặc để tự động phát hiện.">
                                 <div className="themed-button-group">
                                     {LAYOUT_MODES.map(mode => (
@@ -203,9 +246,8 @@ const SettingsPanel: React.FC = () => {
                                     <FaExpand /> {isFullScreen ? "Thoát Toàn màn hình" : "Vào Toàn màn hình"}
                                 </button>
                             </SettingsRow>
-                            <button onClick={() => handleResetToDefault('Giao Diện')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt Giao Diện</button>
                         </SettingsSection>
-
+                        
                         <SettingsSection title="Ảnh Nền">
                             <SettingsRow label="Tạo Ảnh Nền Bằng AI" description="Mô tả ảnh nền bạn muốn, AI sẽ tạo ra nó. (Yêu cầu API Key có model tạo ảnh)">
                                 <div className="flex gap-2">
@@ -223,9 +265,88 @@ const SettingsPanel: React.FC = () => {
                         </SettingsSection>
                     </div>
                 )}
+                {activeTab === 'sound' && (
+                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
+                        <SettingsSection title="Text-to-Speech (Chuyển văn bản thành giọng nói)" onReset={() => handleResetToDefault('Âm Thanh & Lời Nói')}>
+                             <SettingsRow label="Bật Giọng Đọc" description="Tự động đọc các đoạn tường thuật và hội thoại trong game.">
+                                <input type="checkbox" checked={settings.enableTTS} onChange={e => handleSettingChange('enableTTS', e.target.checked)} className="themed-checkbox" />
+                            </SettingsRow>
+                             <SettingsRow label="Giọng Đọc (Tiếng Việt)" description="Chọn giọng đọc. Danh sách này phụ thuộc vào trình duyệt và hệ điều hành của bạn.">
+                                <select value={settings.ttsVoiceURI} onChange={(e) => handleSettingChange('ttsVoiceURI', e.target.value)} className="themed-select" disabled={!settings.enableTTS}>
+                                    <option value="">Mặc định của trình duyệt</option>
+                                    {vietnameseVoices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} ({voice.lang})</option>)}
+                                </select>
+                                {vietnameseVoices.length === 0 && <p className="text-xs text-yellow-400 mt-1">Không tìm thấy giọng đọc tiếng Việt nào trên hệ thống của bạn.</p>}
+                            </SettingsRow>
+                             <SettingsRow label="Âm Lượng Giọng Đọc" description="Điều chỉnh âm lượng của giọng đọc.">
+                                <div className="flex items-center gap-4">
+                                    <input type="range" min="0" max="1" step="0.1" value={settings.ttsVolume} onChange={e => handleSettingChange('ttsVolume', parseFloat(e.target.value))} className="themed-slider" disabled={!settings.enableTTS}/>
+                                    <span className="themed-slider-value">{Math.round(settings.ttsVolume * 100)}%</span>
+                                </div>
+                            </SettingsRow>
+                             <SettingsRow label="Tốc Độ Đọc" description="Điều chỉnh tốc độ nói nhanh hay chậm.">
+                                <div className="flex items-center gap-4">
+                                    <input type="range" min="0.5" max="2" step="0.1" value={settings.ttsRate} onChange={e => handleSettingChange('ttsRate', parseFloat(e.target.value))} className="themed-slider" disabled={!settings.enableTTS}/>
+                                    <span className="themed-slider-value">{settings.ttsRate.toFixed(1)}x</span>
+                                </div>
+                            </SettingsRow>
+                            <SettingsRow label="Cao Độ Giọng" description="Điều chỉnh tông giọng cao hay thấp.">
+                                <div className="flex items-center gap-4">
+                                    <input type="range" min="0.5" max="2" step="0.1" value={settings.ttsPitch} onChange={e => handleSettingChange('ttsPitch', parseFloat(e.target.value))} className="themed-slider" disabled={!settings.enableTTS}/>
+                                    <span className="themed-slider-value">{settings.ttsPitch.toFixed(1)}</span>
+                                </div>
+                            </SettingsRow>
+                        </SettingsSection>
+                        <SettingsSection title="Nhạc Nền Mặc Định (Cá nhân)">
+                            <input
+                                type="file"
+                                accept="audio/*"
+                                ref={musicInputRef}
+                                onChange={handleMusicFileChange}
+                                className="hidden"
+                            />
+                            <SettingsRow label="Tệp Nhạc Mặc Định" description="Chọn một tệp nhạc từ máy tính để đặt làm nhạc nền mặc định cho các lần chơi của bạn. Nhạc sẽ được lưu và tự động phát mỗi khi bạn vào game. (Tối đa 20MB)">
+                                <div className="flex flex-col gap-2">
+                                    <button onClick={() => musicInputRef.current?.click()} className="settings-button flex items-center gap-2">
+                                        <FaMusic /> Chọn Tệp Nhạc
+                                    </button>
+                                    {settings.backgroundMusicName && (
+                                        <div className="flex justify-between items-center p-2 bg-black/20 rounded-md text-sm">
+                                            <span className="text-gray-300 truncate">{settings.backgroundMusicName}</span>
+                                            <button
+                                                onClick={() => {
+                                                    handleSettingChange('backgroundMusicUrl', '');
+                                                    handleSettingChange('backgroundMusicName', '');
+                                                }}
+                                                className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                                                title="Xóa Nhạc"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </SettingsRow>
+                            <SettingsRow label="Âm Lượng Nhạc Nền" description="Điều chỉnh âm lượng của nhạc nền mặc định.">
+                                <div className="flex items-center gap-4">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.01"
+                                        value={settings.backgroundMusicVolume}
+                                        onChange={e => handleSettingChange('backgroundMusicVolume', parseFloat(e.target.value))}
+                                        className="themed-slider"
+                                    />
+                                    <span className="themed-slider-value">{Math.round(settings.backgroundMusicVolume * 100)}%</span>
+                                </div>
+                            </SettingsRow>
+                        </SettingsSection>
+                    </div>
+                )}
                  {activeTab === 'ai_models' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <SettingsSection title="Quản lý API Key">
+                        <SettingsSection title="Quản lý API Key" onReset={() => handleResetToDefault('AI & Models')}>
                             <div className="p-4 bg-yellow-900/20 border-l-4 border-yellow-500 rounded-r-lg text-yellow-200">
                                 <div className="flex items-center gap-2 font-bold"><FaExclamationTriangle /> Ghi Chú Quan Trọng</div>
                                 <p className="text-sm mt-1">
@@ -331,13 +452,12 @@ const SettingsPanel: React.FC = () => {
                                     <span className="themed-slider-value">{settings.topP.toFixed(2)}</span>
                                 </div>
                             </SettingsRow>
-                            <button onClick={() => handleResetToDefault('AI & Models')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt AI & Models</button>
                         </SettingsSection>
                     </div>
                 )}
                  {activeTab === 'safety' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <SettingsSection title="Cài Đặt An Toàn">
+                        <SettingsSection title="Cài Đặt An Toàn" onReset={() => handleResetToDefault('An Toàn')}>
                              <SettingsRow label="Tắt Toàn Bộ Lọc An Toàn" description="CẢNH BÁO: Điều này có thể tạo ra nội dung không mong muốn. Chỉ bật khi bạn hiểu rõ rủi ro.">
                                 <input type="checkbox" checked={settings.masterSafetySwitch} onChange={e => handleSettingChange('masterSafetySwitch', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
@@ -353,13 +473,12 @@ const SettingsPanel: React.FC = () => {
                                     </select>
                                 </SettingsRow>
                             ))}
-                            <button onClick={() => handleResetToDefault('An Toàn')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt An Toàn</button>
                         </SettingsSection>
                     </div>
                 )}
                  {activeTab === 'gameplay' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <SettingsSection title="Lối Chơi">
+                        <SettingsSection title="Lối Chơi" onReset={() => handleResetToDefault('Lối Chơi')}>
                             <SettingsRow label="Tốc Độ Game" description="Điều chỉnh tốc độ trôi qua của thời gian trong game.">
                                  <select value={settings.gameSpeed} onChange={(e) => handleSettingChange('gameSpeed', e.target.value as GameSpeed)} className="themed-select">
                                     {GAME_SPEEDS.map(speed => <option key={speed.value} value={speed.value}>{speed.label}</option>)}
@@ -376,13 +495,12 @@ const SettingsPanel: React.FC = () => {
                             <SettingsRow label="Chế độ Hiệu Năng" description="Tắt một số hiệu ứng hình ảnh để tăng hiệu năng trên các thiết bị yếu.">
                                 <input type="checkbox" checked={settings.enablePerformanceMode} onChange={e => handleSettingChange('enablePerformanceMode', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
-                             <button onClick={() => handleResetToDefault('Lối Chơi')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt Lối Chơi</button>
                         </SettingsSection>
                     </div>
                 )}
                 {activeTab === 'advanced' && (
                     <div className="animate-fade-in" style={{ animationDuration: '300ms' }}>
-                        <SettingsSection title="Quản lý Lịch sử Chat">
+                        <SettingsSection title="Quản lý Lịch sử Chat" onReset={() => handleResetToDefault('Nâng Cao')}>
                             <SettingsRow label="Giới hạn Token Lịch sử" description="Số token tối đa giữ lại trong lịch sử chat để gửi cho AI.">
                                 <input type="number" step="256" value={settings.historyTokenLimit} onChange={e => handleSettingChange('historyTokenLimit', parseInt(e.target.value) || 8192)} className="themed-input" />
                             </SettingsRow>
@@ -391,50 +509,45 @@ const SettingsPanel: React.FC = () => {
                             </SettingsRow>
                         </SettingsSection>
                         <SettingsSection title="Hệ thống RAG (Truy xuất Tăng cường - Thử nghiệm)">
-                            <SettingsRow label="Model Tóm tắt RAG" description="Model dùng để tóm tắt các nguồn tài liệu được truy xuất.">
+                            <SettingsRow label="Model Tóm tắt RAG" description="Model dùng để tóm tắt các nguồn dữ liệu cho RAG.">
                                 <select value={settings.ragSummaryModel} onChange={(e) => handleSettingChange('ragSummaryModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
-                            </SettingsRow>
-                            <SettingsRow label="Model Embedding RAG" description="Model dùng để tạo vector cho các tài liệu và truy vấn.">
+                           </SettingsRow>
+                           <SettingsRow label="Model Nhận dạng Nguồn RAG" description="Model dùng để xác định nguồn thông tin liên quan nhất.">
+                                <select value={settings.ragSourceIdModel} onChange={(e) => handleSettingChange('ragSourceIdModel', e.target.value as AIModel)} className="themed-select">
+                                    {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
+                                </select>
+                           </SettingsRow>
+                           <SettingsRow label="Model Embedding RAG" description="Model dùng để tạo vector embedding cho dữ liệu.">
                                 <select value={settings.ragEmbeddingModel} onChange={(e) => handleSettingChange('ragEmbeddingModel', e.target.value as RagEmbeddingModel)} className="themed-select">
                                     {RAG_EMBEDDING_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
-                            </SettingsRow>
-                             <SettingsRow label="Tần suất Tóm tắt Tự động" description="Số lượt tương tác trước khi AI tự động tóm tắt lịch sử (dùng cho RAG).">
-                                <input type="number" value={settings.autoSummaryFrequency} onChange={e => handleSettingChange('autoSummaryFrequency', parseInt(e.target.value) || 5)} className="themed-input" />
-                            </SettingsRow>
-                            <SettingsRow label="RAG Top-K" description="Số lượng tài liệu liên quan nhất được truy xuất để cung cấp cho AI.">
-                                <input type="number" value={settings.ragTopK} onChange={e => handleSettingChange('ragTopK', parseInt(e.target.value) || 5)} className="themed-input" />
-                            </SettingsRow>
-                             <button onClick={() => handleResetToDefault('Nâng Cao')} className="text-sm text-gray-400 hover:text-red-400 transition-colors">Đặt lại cài đặt Nâng Cao</button>
+                           </SettingsRow>
+                           <SettingsRow label="Tần suất Tự động Tóm tắt" description="Tự động tóm tắt cốt truyện sau mỗi X lượt hành động để làm mới bộ nhớ dài hạn của AI.">
+                               <input type="number" min="1" max="50" value={settings.autoSummaryFrequency} onChange={e => handleSettingChange('autoSummaryFrequency', parseInt(e.target.value))} className="themed-input"/>
+                           </SettingsRow>
+                           <SettingsRow label="RAG Top K" description="Số lượng nguồn dữ liệu liên quan nhất sẽ được truy xuất để cung cấp cho AI.">
+                               <input type="number" min="1" max="10" value={settings.ragTopK} onChange={e => handleSettingChange('ragTopK', parseInt(e.target.value))} className="themed-input"/>
+                           </SettingsRow>
                         </SettingsSection>
-                        <SettingsSection title="Dữ Liệu Game & Gỡ Lỗi">
-                            <SettingsRow label="Bảng Điều Khiển Gỡ Lỗi" description="Hiển thị console log trong game để gỡ lỗi và theo dõi trạng thái.">
-                                <input 
-                                    type="checkbox" 
-                                    checked={settings.enableDeveloperConsole} 
-                                    onChange={e => handleSettingChange('enableDeveloperConsole', e.target.checked)} 
-                                    className="themed-checkbox" 
-                                />
+
+                         <SettingsSection title="Công cụ Nhà phát triển">
+                            <SettingsRow label="Bảng điều khiển Nhà phát triển" description="Hiển thị console trong game để theo dõi log và các thông tin gỡ lỗi.">
+                                <input type="checkbox" checked={settings.enableDeveloperConsole} onChange={e => handleSettingChange('enableDeveloperConsole', e.target.checked)} className="themed-checkbox" />
                             </SettingsRow>
-                             <SettingsRow label="Xóa Toàn Bộ Dữ Liệu" description="CẢNH BÁO: Hành động này sẽ xóa tất cả các ô lưu, cài đặt và mod đã cài. Không thể hoàn tác.">
-                                <button
-                                    onClick={async () => {
-                                        if (window.confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ DỮ LIỆU GAME KHÔNG? HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC.")) {
-                                            try {
-                                                await db.deleteDb();
-                                                alert("Đã xóa toàn bộ dữ liệu. Trang sẽ được tải lại.");
-                                                window.location.reload();
-                                            } catch (error) {
-                                                alert("Không thể xóa cơ sở dữ liệu. Vui lòng thử xóa thủ công trong cài đặt trình duyệt.");
-                                                console.error("Failed to delete database:", error);
-                                            }
-                                        }
-                                    }}
-                                    className="settings-button-danger flex items-center gap-2"
-                                >
-                                    <FaTrash /> Xóa Dữ Liệu
+                        </SettingsSection>
+                         <SettingsSection title="Dữ Liệu Trò Chơi">
+                            <SettingsRow label="Xóa Toàn Bộ Dữ Liệu" description="CẢNH BÁO: Hành động này sẽ xóa tất cả các ô lưu, cài đặt và mod đã lưu trữ trên trình duyệt của bạn. KHÔNG THỂ HOÀN TÁC.">
+                                <button onClick={() => {
+                                    if(window.confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ DỮ LIỆU? DỮ LIỆU SẼ BỊ MẤT VĨNH VIỄN!")) {
+                                        db.deleteDb().then(() => {
+                                            alert("Đã xóa toàn bộ dữ liệu. Trang sẽ được tải lại.");
+                                            window.location.reload();
+                                        });
+                                    }
+                                }} className="settings-button-danger flex items-center gap-2">
+                                    <FaExclamationTriangle /> Xóa Toàn Bộ
                                 </button>
                             </SettingsRow>
                         </SettingsSection>
@@ -443,8 +556,8 @@ const SettingsPanel: React.FC = () => {
             </div>
 
             <div className="settings-footer">
-                <button onClick={() => handleNavigate('mainMenu')} className="settings-button">Hủy</button>
-                <button onClick={handleSettingsSave} className="settings-button-primary">Lưu Cài Đặt</button>
+                <button onClick={() => handleNavigate('mainMenu')} className="px-6 py-2 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">Hủy</button>
+                <button onClick={handleSettingsSave} className="px-8 py-2 themed-button-primary font-bold rounded-lg">Lưu Cài Đặt</button>
             </div>
         </div>
     );

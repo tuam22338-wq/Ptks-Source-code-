@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, createContext, useContext, FC, PropsWithChildren } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
@@ -43,6 +43,8 @@ interface AppContextType {
     }) => Promise<void>;
     handleSetActiveWorldId: (worldId: string) => Promise<void>;
     quitGame: () => void;
+    speak: (text: string, force?: boolean) => void;
+    cancelSpeech: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -69,6 +71,43 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
     const [storageUsage, setStorageUsage] = useState({ usageString: '0 B / 0 B', percentage: 0 });
     const [activeWorldId, _setActiveWorldId] = useState<string>('phong_than_dien_nghia');
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+    useEffect(() => {
+        const handleVoicesChanged = () => {
+            setVoices(window.speechSynthesis.getVoices());
+        };
+        window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+        handleVoicesChanged(); // Initial call
+        return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+    }, []);
+
+    const speak = useCallback((text: string, force = false) => {
+        if ((!settings.enableTTS && !force) || !text) return;
+        
+        window.speechSynthesis.cancel();
+    
+        const utterance = new SpeechSynthesisUtterance(text);
+        const selectedVoice = voices.find(v => v.voiceURI === settings.ttsVoiceURI);
+        
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        } else {
+            const vietnameseVoice = voices.find(v => v.lang === 'vi-VN');
+            if (vietnameseVoice) utterance.voice = vietnameseVoice;
+        }
+    
+        utterance.rate = settings.ttsRate;
+        utterance.pitch = settings.ttsPitch;
+        utterance.volume = settings.ttsVolume;
+        
+        window.speechSynthesis.speak(utterance);
+    }, [settings.enableTTS, settings.ttsVoiceURI, settings.ttsRate, settings.ttsPitch, settings.ttsVolume, voices]);
+
+    const cancelSpeech = useCallback(() => {
+        window.speechSynthesis.cancel();
+    }, []);
 
     const updateStorageUsage = useCallback(async () => {
         if (navigator.storage && navigator.storage.estimate) {
@@ -244,6 +283,35 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             return () => clearTimeout(debounceSave);
         }
     }, [gameState, view, currentSlotId, updateStorageUsage]);
+    
+    useEffect(() => {
+        if (!audioRef.current) {
+            audioRef.current = new Audio();
+            audioRef.current.loop = true;
+        }
+
+        const audio = audioRef.current;
+        let playPromise: Promise<void> | undefined;
+
+        if (settings.backgroundMusicUrl && audio.src !== settings.backgroundMusicUrl) {
+            audio.src = settings.backgroundMusicUrl;
+            playPromise = audio.play();
+        } else if (!settings.backgroundMusicUrl) {
+            audio.pause();
+            audio.src = '';
+        }
+
+        if (audio.volume !== settings.backgroundMusicVolume) {
+            audio.volume = settings.backgroundMusicVolume;
+        }
+
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.warn("Lỗi tự động phát nhạc:", error);
+                // Autoplay was prevented. Music will likely play once the user interacts with the page.
+            });
+        }
+    }, [settings.backgroundMusicUrl, settings.backgroundMusicVolume]);
 
     useEffect(() => {
         document.body.style.fontFamily = settings.fontFamily;
@@ -352,10 +420,11 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, []);
     
     const quitGame = useCallback(() => {
+        cancelSpeech();
         setGameState(null);
         setCurrentSlotId(null);
         setView('mainMenu');
-    }, []);
+    }, [cancelSpeech]);
 
     const handleGameStart = useCallback(async (gameStartData: {
       characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
@@ -407,6 +476,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         currentSlotId, settings, storageUsage, activeWorldId, setGameState, handleNavigate,
         handleSettingChange, handleSettingsSave, handleSlotSelection, handleSaveGame,
         handleDeleteGame, handleVerifyAndRepairSlot, handleGameStart, handleSetActiveWorldId, quitGame,
+        speak, cancelSpeech
     };
 
     return (

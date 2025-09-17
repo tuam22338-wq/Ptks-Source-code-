@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
@@ -23,7 +23,7 @@ import { simulateWorldTurn, simulateFactionTurn } from '../../services/worldSimu
 import * as questManager from '../../utils/questManager';
 
 const GamePlayScreenContent: React.FC = memo(() => {
-    const { gameState, setGameState, handleSaveGame, quitGame, settings } = useAppContext();
+    const { gameState, setGameState, handleSaveGame, quitGame, settings, speak, cancelSpeech } = useAppContext();
     const { 
         isSidebarOpen, toggleSidebar, notifications, dismissNotification, availablePaths,
         openCultivationPathModal, closeCultivationPathModal, showNotification,
@@ -36,6 +36,21 @@ const GamePlayScreenContent: React.FC = memo(() => {
     const [activeActionTab, setActiveActionTab] = useState<'say' | 'act'>('act');
     
     const abortControllerRef = useRef<AbortController | null>(null);
+    const prevIsAiResponding = useRef(isAiResponding);
+
+    useEffect(() => {
+        prevIsAiResponding.current = isAiResponding;
+    }, [isAiResponding]);
+
+    useEffect(() => {
+        if (prevIsAiResponding.current && !isAiResponding && settings.enableTTS && gameState) {
+            const lastEntry = gameState.storyLog[gameState.storyLog.length - 1];
+            if (lastEntry && ['narrative', 'dialogue', 'action-result', 'system-notification', 'combat'].includes(lastEntry.type)) {
+                const cleanText = lastEntry.content.replace(/\[.*?\]/g, ''); 
+                speak(cleanText);
+            }
+        }
+    }, [isAiResponding, settings.enableTTS, gameState, speak]);
 
     const saveGame = useCallback(async () => {
         if (!gameState) return;
@@ -59,6 +74,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
     
     const handleActionSubmit = useCallback(async (text: string, type: 'say' | 'act' = 'act', apCost: number = 1) => {
         if (isAiResponding || !gameState) return;
+        
+        cancelSpeech();
     
         if (text.trim().toLowerCase() === 'mở túi đồ') {
             openInventoryModal();
@@ -272,7 +289,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 }
             }
         }
-    }, [isAiResponding, addStoryEntry, gameState, setGameState, settings.autoSummaryFrequency, openInventoryModal, showNotification]);
+    }, [isAiResponding, addStoryEntry, gameState, setGameState, settings.autoSummaryFrequency, openInventoryModal, showNotification, cancelSpeech]);
 
     const handleContextualAction = useCallback((actionId: string, actionLabel: string) => {
         // A simple implementation that treats contextual actions as regular text actions.
@@ -418,7 +435,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop bg-[var(--bg-color)]/60" onClick={toggleSidebar}></div>}
 
                 <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0">
-                    <StoryLog story={gameState.storyLog} inventoryItems={playerCharacter.inventory.items} techniques={allPlayerTechniques} />
+                    <StoryLog story={gameState.storyLog} inventoryItems={playerCharacter.inventory.items} techniques={allPlayerTechniques} onSpeak={speak} />
                     {isAiResponding && (
                         <div className="flex-shrink-0 p-2 flex items-center justify-center gap-2">
                            <LoadingSpinner size="sm" />

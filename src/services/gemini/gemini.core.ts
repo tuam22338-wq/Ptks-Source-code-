@@ -56,6 +56,9 @@ class ApiKeyManager {
 
 export const apiKeyManager = new ApiKeyManager();
 
+const MAX_503_RETRIES = 3;
+const INITIAL_503_DELAY_MS = 1000;
+
 const executeApiCall = async <T>(apiFunction: (instance: GoogleGenAI) => Promise<T>): Promise<T> => {
     if (apiKeyManager.totalKeys === 0) {
         throw new Error("Không có API Key nào được cấu hình. Vui lòng thêm một key trong Cài đặt > AI & Models.");
@@ -66,27 +69,51 @@ const executeApiCall = async <T>(apiFunction: (instance: GoogleGenAI) => Promise
 
     while (attempts < apiKeyManager.totalKeys) {
         const instance = apiKeyManager.getInstance();
+        if (!instance) {
+            throw new Error("Không thể khởi tạo AI instance. Vui lòng kiểm tra API keys.");
+        }
+        
         try {
-            const result = await apiFunction(instance!);
+            const result = await apiFunction(instance);
             return result;
         } catch (error: any) {
             console.warn(`API call failed with key index ${apiKeyManager.a_currentIndex}. Error:`, error.message);
-            // Check for quota-related errors
-            if (error.toString().includes('429') || error.message?.includes('quota')) {
+
+            // Specific handling for 503 with exponential backoff retries on the SAME key
+            if (error.toString().includes('503')) {
+                let delay = INITIAL_503_DELAY_MS;
+                for (let i = 0; i < MAX_503_RETRIES; i++) {
+                    console.log(`Service unavailable (503). Retrying in ${delay}ms... (Attempt ${i + 1}/${MAX_503_RETRIES})`);
+                    await new Promise(res => setTimeout(res, delay + Math.random() * 500)); // Add jitter
+                    try {
+                        const result = await apiFunction(instance);
+                        console.log(`Successfully recovered from 503 error on attempt ${i + 1}.`);
+                        return result; // Success on retry
+                    } catch (retryError: any) {
+                        if (!retryError.toString().includes('503')) {
+                            console.error("A non-503 error occurred during retry, aborting retries for this key.", retryError);
+                            throw retryError; // Let the outer logic handle it (e.g., rethrow immediately)
+                        }
+                        delay *= 2; // Exponential backoff
+                    }
+                }
+                console.error(`All ${MAX_503_RETRIES} retries for 503 failed on key index ${apiKeyManager.a_currentIndex}. Trying next key...`);
+            }
+
+            // Handle quota errors (429) OR fall through from failed 503 retries
+            if (error.toString().includes('429') || error.message?.includes('quota') || error.toString().includes('503')) {
                 attempts++;
                 apiKeyManager.rotateKey();
                 if (apiKeyManager.a_currentIndex === initialIndex) {
-                    // We've cycled through all keys and they all failed.
-                    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota). Vui lòng thử lại sau hoặc thêm key mới.");
+                    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota) hoặc dịch vụ không khả dụng. Vui lòng thử lại sau hoặc thêm key mới.");
                 }
             } else {
-                // Not a quota error, rethrow it immediately.
-                throw error;
+                throw error; // Not a recognized transient error, rethrow it immediately.
             }
         }
     }
-    // This part is reached if all keys failed with quota errors.
-    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota) sau khi thử lại.");
+    
+    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota) hoặc dịch vụ không khả dụng sau khi thử lại.");
 };
 
 export const generateWithRetry = (generationRequest: any): Promise<GenerateContentResponse> => {

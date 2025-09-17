@@ -1,5 +1,3 @@
-
-
 import React, { memo, useMemo, useState } from 'react';
 import type { PlayerCharacter, CultivationTechnique, SkillTreeNode } from '../../../../../types';
 import { PHAP_BAO_RANKS, REALM_SYSTEM } from '../../../../../constants';

@@ -1,10 +1,12 @@
 import React, { useRef, useEffect, memo } from 'react';
 import type { StoryEntry, InventoryItem, CultivationTechnique } from '../../types';
+import { FaVolumeUp } from 'react-icons/fa';
 
 interface StoryLogProps {
     story: StoryEntry[];
     inventoryItems: InventoryItem[];
     techniques: CultivationTechnique[];
+    onSpeak: (text: string) => void;
 }
 
 const highlightText = (text: string, items: InventoryItem[], techniques: CultivationTechnique[]): React.ReactNode => {
@@ -45,42 +47,55 @@ const highlightText = (text: string, items: InventoryItem[], techniques: Cultiva
 };
 
 
-const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }) => {
+const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques, onSpeak }) => {
     const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [story]);
 
+    const handleSpeak = (content: string) => {
+        const cleanText = content.replace(/\[.*?\]/g, '');
+        onSpeak(cleanText);
+    };
+
     return (
         <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
             {story.map((entry) => {
                 const animationStyle = { animationDuration: '600ms' };
                 const contentWithHighlight = highlightText(entry.content, inventoryItems, techniques);
+                const isSpeakable = ['narrative', 'dialogue', 'action-result', 'system-notification', 'player-dialogue', 'combat'].includes(entry.type);
 
                 switch (entry.type) {
                     case 'narrative':
-                        return <p key={entry.id} style={animationStyle} className="text-[var(--text-muted-color)] italic text-justify my-4 leading-relaxed animate-fade-in whitespace-pre-wrap">{contentWithHighlight}</p>;
+                        return (
+                            <div key={entry.id} className="group relative animate-fade-in my-4" style={animationStyle}>
+                                <p className="text-[var(--text-muted-color)] italic text-justify leading-relaxed whitespace-pre-wrap">{contentWithHighlight}</p>
+                                {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -left-10 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
+                            </div>
+                        );
                     
                     case 'system':
                         return <p key={entry.id} style={animationStyle} className="text-center text-xs text-[var(--text-muted-color)]/70 tracking-widest my-4 uppercase animate-fade-in">{contentWithHighlight}</p>;
                     
                     case 'system-notification':
                         return (
-                            <div key={entry.id} style={animationStyle} className="my-4 p-3 bg-blue-900/20 border-l-4 border-blue-400 rounded-r-lg animate-fade-in">
+                             <div key={entry.id} className="group relative my-4 p-3 bg-blue-900/20 border-l-4 border-blue-400 rounded-r-lg animate-fade-in" style={animationStyle}>
                                 <p className="font-mono text-blue-300 whitespace-pre-wrap">{contentWithHighlight}</p>
+                                {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
                         );
 
                     case 'player-action':
                     case 'player-dialogue':
                         return (
-                            <div key={entry.id} style={animationStyle} className="flex justify-end ml-10 sm:ml-20 animate-fade-in">
+                            <div key={entry.id} style={animationStyle} className="group relative flex justify-end ml-10 sm:ml-20 animate-fade-in">
                                 <div className="bg-[var(--player-bubble-bg-color)] p-3 rounded-xl rounded-br-none">
                                     <p className={`text-lg leading-relaxed ${entry.type === 'player-action' ? 'text-lime-300 italic' : 'text-cyan-200'}`}>
                                         {contentWithHighlight}
                                     </p>
                                 </div>
+                                 {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -left-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
                         );
                     
@@ -89,10 +104,11 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques }
                     case 'combat':
                     default:
                         return (
-                            <div key={entry.id} style={animationStyle} className="flex justify-start mr-10 sm:mr-20 animate-fade-in">
+                            <div key={entry.id} style={animationStyle} className="group relative flex justify-start mr-10 sm:mr-20 animate-fade-in">
                                 <div className="bg-[var(--npc-bubble-bg-color)] p-3 rounded-xl rounded-bl-none">
                                     <p className="text-amber-200 text-lg leading-relaxed">{contentWithHighlight}</p>
                                 </div>
+                                {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
                         );
                 }

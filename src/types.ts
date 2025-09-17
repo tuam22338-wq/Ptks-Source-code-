@@ -90,6 +90,14 @@ export interface GameSettings {
     thinkingBudget: number;
     apiKeys: string[];
     enableDeveloperConsole: boolean;
+    backgroundMusicUrl: string;
+    backgroundMusicName: string;
+    backgroundMusicVolume: number;
+    enableTTS: boolean;
+    ttsVoiceURI: string;
+    ttsRate: number;
+    ttsPitch: number;
+    ttsVolume: number;
 }
 
 // --- Character Creation & Stats Types ---
@@ -182,6 +190,7 @@ export interface ModItem {
     icon?: string;
     bonuses: StatBonus[];
     tags: string[];
+    vitalEffects?: { vital: 'hunger' | 'thirst', value: number }[];
 }
 
 export interface ModTalent {
@@ -598,6 +607,7 @@ export interface InventoryItem {
     isEquipped?: boolean;
     slot?: EquipmentSlot;
     recipeId?: string;
+    vitalEffects?: { vital: 'hunger' | 'thirst', value: number }[];
 }
 
 export interface Inventory {

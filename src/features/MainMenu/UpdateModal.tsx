@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaTimes, FaBell } from 'react-icons/fa';
+import { CURRENT_GAME_VERSION } from '../../constants';
 
 interface UpdateModalProps {
     onClose: () => void;
@@ -12,12 +13,12 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
             <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-lg m-4 p-6 flex flex-col relative">
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
-                    <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản 1.0.4</h2>
+                    <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>
                 </div>
 
                 <div className="text-gray-300 space-y-3 my-4 max-h-[50vh] overflow-y-auto pr-2">
                     <p>Chào mừng quý đạo hữu quay trở lại!</p>
-                    <p>Phiên bản 1.0.4 - "Vật Lộn Sinh Tồn" đã được cập nhật với các thay đổi lớn sau:</p>
+                    <p>Phiên bản {CURRENT_GAME_VERSION} - "Vật Lộn Sinh Tồn" đã được cập nhật với các thay đổi lớn sau:</p>
                     <ul className="list-disc list-inside space-y-2 pl-4">
                         <li>
                             <strong className="text-amber-300">Hệ Thống Sinh Tồn (Vitals):</strong> 

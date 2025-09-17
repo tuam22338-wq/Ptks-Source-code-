@@ -1,4 +1,4 @@
-import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem, EventOutcome } from '../types';
+import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem, EventOutcome, PlayerNpcRelationship } from '../types';
 import { generateMainQuestFromEvent, generateSideQuestFromNpc } from '../services/geminiService';
 
 interface QuestUpdateResult {
@@ -18,7 +18,7 @@ const applyOutcomes = (currentState: GameState, outcomes: EventOutcome[]): GameS
     return newState;
 };
 
-const addQuest = (currentState: GameState, questData: Partial<ActiveQuest>, type: 'MAIN' | 'SIDE', source: string): GameState => {
+const addQuest = (currentState: GameState, questData: Partial<ActiveQuest>, type: 'MAIN' | 'SIDE' | 'SYSTEM', source: string): GameState => {
     const newQuest: ActiveQuest = {
         id: `quest_${source}_${Date.now()}`,
         title: questData.title || 'Nhiệm vụ không tên',

@@ -48,7 +48,7 @@ export class MyDatabase extends Dexie {
       modLibrary: 'modInfo.id',
       modContent: 'id',
       modDrafts: 'id',
-misc: 'key',
+      misc: 'key',
     });
   }
 }

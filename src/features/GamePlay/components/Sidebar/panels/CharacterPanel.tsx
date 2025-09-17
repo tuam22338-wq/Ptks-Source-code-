@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from 'react';
 import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup } from '../../../../../types';
 import { CHARACTER_STATUS_CONFIG, CULTIVATION_PATHS, SPIRITUAL_ROOT_CONFIG, SPIRITUAL_ROOT_QUALITY_CONFIG } from '../../../../../constants';
 import { FaBolt, FaRoute, FaChevronDown, FaShieldAlt } from 'react-icons/fa';
-import { GiPentacle } from 'react-icons/gi';
+import { GiPentacle, GiStomach, GiWaterDrop, GiThermometerScale } from 'react-icons/gi';
 
 interface CharacterPanelProps {
     character: PlayerCharacter;
@@ -88,7 +88,7 @@ const AttributeGrid: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects } = character;
+    const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, vitals } = character;
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
 
     const toggleGroup = (title: string) => {
@@ -146,6 +146,18 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                  <ProgressBar current={sinhMenh.value} max={sinhMenh.maxValue} label="Sinh Mệnh" color="bg-red-500" icon={sinhMenh.icon} />
                  <ProgressBar current={linhLuc.value} max={linhLuc.maxValue} label="Linh Lực" color="bg-blue-500" icon={linhLuc.icon} />
             </div>
+
+            {/* Vitals */}
+            {vitals && (
+                <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 space-y-3">
+                    <ProgressBar current={vitals.hunger} max={vitals.maxHunger} label="No Bụng" color="bg-yellow-600" icon={GiStomach} />
+                    <ProgressBar current={vitals.thirst} max={vitals.maxThirst} label="Nước Uống" color="bg-sky-500" icon={GiWaterDrop} />
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-300">
+                        <GiThermometerScale className="w-4 h-4" />
+                        <span>Nhiệt Độ: <span className="font-bold">{vitals.temperature.toFixed(1)}°C</span></span>
+                    </div>
+                </div>
+            )}
 
             {/* Cultivation */}
             <div>

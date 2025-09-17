@@ -5,7 +5,8 @@ import {
   GiRunningShoe, GiScrollQuill, GiSparklingSabre, GiStairsGoal, GiStoneTower, GiYinYang,
   GiSpinalCoil, GiMuscularTorso, GiSoulVessel, GiBoltSpellCast, GiHeartTower, GiScales,
   GiMountainCave, GiDoubleDragon, GiTalk, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle,
-  GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire, GiGroundbreaker
+  GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire, GiGroundbreaker,
+  GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace
 } from 'react-icons/gi';
 import { FaSun, FaMoon, FaShieldAlt } from 'react-icons/fa';
 
@@ -101,7 +102,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     fontFamily: "'Noto Serif', serif",
     theme: 'theme-bamboo-forest',
     backgroundImage: '',
-    zoomLevel: 50,
+    zoomLevel: 100,
     textColor: '#d1d5db',
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
@@ -138,6 +139,14 @@ export const DEFAULT_SETTINGS: GameSettings = {
     thinkingBudget: 250,
     apiKeys: [],
     enableDeveloperConsole: false,
+    backgroundMusicUrl: '',
+    backgroundMusicName: '',
+    backgroundMusicVolume: 0.5,
+    enableTTS: false,
+    ttsVoiceURI: '',
+    ttsRate: 1,
+    ttsPitch: 1,
+    ttsVolume: 1,
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [
@@ -306,6 +315,14 @@ export const EQUIPMENT_SLOTS: Record<EquipmentSlot, { label: string }> = {
     'Phụ Kiện 2': { label: 'Phụ Kiện 2' },
 };
 
+export const EQUIPMENT_SLOT_ICONS: Record<EquipmentSlot, React.ElementType> = {
+    'Vũ Khí': GiBroadsword,
+    'Thượng Y': GiChestArmor,
+    'Hạ Y': GiLegArmor,
+    'Giày': GiBoots,
+    'Phụ Kiện 1': GiRing,
+    'Phụ Kiện 2': GiNecklace,
+};
 
 export const SHICHEN_LIST: { name: string; icon: string }[] = [
     { name: 'Tý', icon: '🐭' }, { name: 'Sửu', icon: '🐮' }, { name: 'Dần', icon: '🐯' }, { name: 'Mão', icon: '🐰' },
