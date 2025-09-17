@@ -30,27 +30,37 @@ class ApiKeyManager {
         this.currentIndex = 0;
     }
 
-    public getInstance(): GoogleGenAI | null {
+    /**
+     * Gets the next available API instance in a concurrent-safe, round-robin fashion.
+     * It immediately rotates the index for the next call.
+     * @returns The instance and its index in the pool.
+     */
+    public getNextInstanceAndRotate(): { instance: GoogleGenAI | null, index: number } {
         if (this.instances.length === 0) {
-            return null;
+            return { instance: null, index: -1 };
         }
-        return this.instances[this.currentIndex];
+        // This is a critical section, but in JS single-threaded event loop, it's atomic enough.
+        const index = this.currentIndex;
+        const instance = this.instances[index];
+        this.currentIndex = (this.currentIndex + 1) % this.instances.length;
+        // End critical section
+        return { instance, index };
     }
-    
-    public rotateKey() {
-        if (this.instances.length > 0) {
-            const oldIndex = this.currentIndex;
-            this.currentIndex = (this.currentIndex + 1) % this.instances.length;
-            console.log(`Rotated from API key index ${oldIndex} to ${this.currentIndex}.`);
+
+    /**
+     * Gets a specific instance by its index. Used for retrying on different keys.
+     * @param index The index of the instance to retrieve.
+     * @returns The GoogleGenAI instance or null if the index is out of bounds.
+     */
+    public getInstanceByIndex(index: number): GoogleGenAI | null {
+        if (index >= 0 && index < this.instances.length) {
+            return this.instances[index];
         }
+        return null;
     }
 
     get totalKeys(): number {
         return this.instances.length;
-    }
-
-    get a_currentIndex(): number {
-        return this.currentIndex;
     }
 }
 
@@ -64,56 +74,57 @@ const executeApiCall = async <T>(apiFunction: (instance: GoogleGenAI) => Promise
         throw new Error("Không có API Key nào được cấu hình. Vui lòng thêm một key trong Cài đặt > AI & Models.");
     }
 
-    const initialIndex = apiKeyManager.a_currentIndex;
-    let attempts = 0;
+    // Get an initial key to try. Each concurrent call to executeApiCall will get a different key.
+    const { index: initialIndex } = apiKeyManager.getNextInstanceAndRotate();
 
-    while (attempts < apiKeyManager.totalKeys) {
-        const instance = apiKeyManager.getInstance();
-        if (!instance) {
-            throw new Error("Không thể khởi tạo AI instance. Vui lòng kiểm tra API keys.");
-        }
+    if (initialIndex === -1) {
+        throw new Error("Không thể khởi tạo AI instance. Vui lòng kiểm tra API keys.");
+    }
+
+    // Loop through all available keys, starting from the one we were assigned.
+    for (let attempt = 0; attempt < apiKeyManager.totalKeys; attempt++) {
+        const currentIndex = (initialIndex + attempt) % apiKeyManager.totalKeys;
+        const currentInstance = apiKeyManager.getInstanceByIndex(currentIndex);
         
+        if (!currentInstance) {
+            continue; // Should not happen with the check above, but for safety.
+        }
+
         try {
-            const result = await apiFunction(instance);
-            return result;
-        } catch (error: any) {
-            console.warn(`API call failed with key index ${apiKeyManager.a_currentIndex}. Error:`, error.message);
-
-            // Specific handling for 503 with exponential backoff retries on the SAME key
-            if (error.toString().includes('503')) {
-                let delay = INITIAL_503_DELAY_MS;
-                for (let i = 0; i < MAX_503_RETRIES; i++) {
-                    console.log(`Service unavailable (503). Retrying in ${delay}ms... (Attempt ${i + 1}/${MAX_503_RETRIES})`);
-                    await new Promise(res => setTimeout(res, delay + Math.random() * 500)); // Add jitter
-                    try {
-                        const result = await apiFunction(instance);
-                        console.log(`Successfully recovered from 503 error on attempt ${i + 1}.`);
-                        return result; // Success on retry
-                    } catch (retryError: any) {
-                        if (!retryError.toString().includes('503')) {
-                            console.error("A non-503 error occurred during retry, aborting retries for this key.", retryError);
-                            throw retryError; // Let the outer logic handle it (e.g., rethrow immediately)
-                        }
-                        delay *= 2; // Exponential backoff
+            // First retry layer: Handle transient 503 errors on the *same key* with exponential backoff.
+            let delay = INITIAL_503_DELAY_MS;
+            for (let retry503 = 0; retry503 < MAX_503_RETRIES; retry503++) {
+                try {
+                    const result = await apiFunction(currentInstance);
+                    // SUCCESS! The request is complete.
+                    return result;
+                } catch (error: any) {
+                    if (error.toString().includes('503') && retry503 < MAX_503_RETRIES - 1) {
+                        const jitterDelay = delay + Math.random() * 500;
+                        console.log(`Service unavailable (503) on key index ${currentIndex}. Retrying in ${Math.round(jitterDelay)}ms... (Attempt ${retry503 + 1}/${MAX_503_RETRIES})`);
+                        await new Promise(res => setTimeout(res, jitterDelay));
+                        delay *= 2;
+                        continue; // Continue inner loop to retry on the same key
                     }
+                    // Not a 503 error, or the last 503 retry failed. Throw to be caught by the outer catch block.
+                    throw error;
                 }
-                console.error(`All ${MAX_503_RETRIES} retries for 503 failed on key index ${apiKeyManager.a_currentIndex}. Trying next key...`);
             }
-
-            // Handle quota errors (429) OR fall through from failed 503 retries
+        } catch (error: any) {
+             // Second retry layer: Handle quota errors (429) or persistent 503s by trying the *next key*.
+            console.warn(`API call failed with key index ${currentIndex}. Error:`, error.message);
             if (error.toString().includes('429') || error.message?.includes('quota') || error.toString().includes('503')) {
-                attempts++;
-                apiKeyManager.rotateKey();
-                if (apiKeyManager.a_currentIndex === initialIndex) {
-                    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota) hoặc dịch vụ không khả dụng. Vui lòng thử lại sau hoặc thêm key mới.");
-                }
+                // The outer loop will now proceed to the next key on the next iteration.
+                continue;
             } else {
-                throw error; // Not a recognized transient error, rethrow it immediately.
+                // This is a different, non-retriable error (e.g., 400 Bad Request, 401 Unauthorized).
+                // Throw it immediately to stop the process.
+                throw error;
             }
         }
     }
     
-    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota) hoặc dịch vụ không khả dụng sau khi thử lại.");
+    throw new Error("Tất cả các API key đều đã hết hạn ngạch (quota) hoặc dịch vụ không khả dụng sau khi thử lại trên toàn bộ key.");
 };
 
 export const generateWithRetry = (generationRequest: any): Promise<GenerateContentResponse> => {
