@@ -44,7 +44,7 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
 
     return (
         <div className={`group relative h-64 rounded-lg border-2
-                        transition-all duration-300 ease-in-out
+                        transition-all duration-300 ease-in-out transform hover:-translate-y-1
                         focus:outline-none focus:ring-2 focus:ring-offset-2 ring-offset-[var(--bg-color)]
                         ${isNew ? 'bg-black/20 border-[var(--border-subtle)] hover:border-amber-400 hover:bg-amber-500/10 focus:ring-amber-400' 
                                 : `bg-amber-900/10 border-amber-600/50 hover:border-amber-500 hover:bg-amber-800/20 focus:ring-[var(--primary-accent-color)] ${outdatedClass}`}`}

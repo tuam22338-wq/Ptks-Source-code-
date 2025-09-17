@@ -1,4 +1,4 @@
-import type { GameState, Rumor, NPC, DynamicWorldEvent } from '../types';
+import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency } from '../types';
 import { generateWithRetry } from './geminiService';
 import * as db from './dbService';
 import { Type } from '@google/genai';
@@ -8,7 +8,7 @@ import { generateFactionEvent } from './gemini/gameplay.service';
 export const simulateWorldTurn = async (
     gameState: GameState
 ): Promise<{ newState: GameState; rumors: Rumor[] }> => {
-    let { activeNpcs, playerCharacter, worldState, majorEvents, gameDate } = gameState;
+    let { activeNpcs, playerCharacter, worldState, majorEvents, gameDate, playerStall } = gameState;
     const { dynamicEvents } = worldState;
     const newRumors: Rumor[] = [];
 
@@ -24,9 +24,50 @@ export const simulateWorldTurn = async (
         .map(e => `- ${e.title} (Ảnh hưởng: ${e.affectedFactions.join(', ')} tại ${e.affectedLocationIds.join(', ')})`)
         .join('\n');
 
+    // Make a mutable copy of gameState for this turn's simulation
+    let currentTurnState = { ...gameState };
 
     for (const npc of npcsToSimulate) {
         try {
+            // NPC buying from player stall logic
+            if (playerStall && npc.locationId === playerStall.locationId && Math.random() < 0.15) {
+                const availableItems = playerStall.items.filter(item => item.stock === 'infinite' || item.stock > 0);
+                if (availableItems.length > 0) {
+                    const itemToBuy = availableItems[Math.floor(Math.random() * availableItems.length)];
+                    const price = itemToBuy.price;
+                    const npcCurrency = npc.currencies[price.currencyName] || 0;
+
+                    if (npcCurrency >= price.amount) {
+                        // Update player stall
+                        const newStallItems = playerStall.items.map(item => {
+                            if (item.name === itemToBuy.name && typeof item.stock === 'number') {
+                                return { ...item, stock: item.stock - 1 };
+                            }
+                            return item;
+                        }).filter(item => item.stock !== 0);
+
+                        const newEarnings: Partial<Currency> = { ...playerStall.earnings };
+                        newEarnings[price.currencyName] = (newEarnings[price.currencyName] || 0) + price.amount;
+                        
+                        currentTurnState.playerStall = { ...playerStall, items: newStallItems, earnings: newEarnings };
+
+                        // Update NPC currency
+                        npc.currencies[price.currencyName] = npcCurrency - price.amount;
+                        
+                        // Create rumor
+                        const rumor: Rumor = {
+                            id: `rumor-${Date.now()}-${Math.random()}`,
+                            locationId: playerStall.locationId,
+                            text: `Có người thấy ${npc.identity.name} đã mua [${itemToBuy.name}] từ sạp hàng của ${playerCharacter.identity.name}.`
+                        };
+                        newRumors.push(rumor);
+                        // Skip other actions for this NPC this turn
+                        continue;
+                    }
+                }
+            }
+
+
             const currentLocation = WORLD_MAP.find(l => l.id === npc.locationId);
             const neighborLocations = (currentLocation?.neighbors || [])
                 .map(id => WORLD_MAP.find(l => l.id === id))
@@ -51,8 +92,13 @@ export const simulateWorldTurn = async (
 - **Bối cảnh thế giới:** Năm ${gameDate.year}, ${majorEvents.find(e => e.year <= gameDate.year)?.title || 'Thế giới đang yên bình'}.
 - **Sự kiện đang diễn ra:**
 ${activeEventsInfo || "Không có sự kiện đặc biệt nào."}
+- **Thông tin về Người Chơi (Kẻ Thay Đổi Vận Mệnh):**
+  - Tên: ${playerCharacter.identity.name}
+  - Vị trí gần đây: ${WORLD_MAP.find(l => l.id === playerCharacter.currentLocationId)?.name || 'Không rõ'}
+  - Danh vọng với phe phái của NPC (${npc.faction || 'Tán tu'}): ${playerCharacter.reputation.find(r => r.factionName === npc.faction)?.status || 'Trung Lập'}.
+  - Tin đồn về người chơi: ${playerCharacter.danhVong.status}.
 
-Nhiệm vụ: Dựa trên TOÀN BỘ thông tin trên (đặc biệt là các sự kiện đang diễn ra), hãy quyết định một hành động hợp lý cho NPC này. Nếu phe phái hoặc vị trí của họ bị ảnh hưởng bởi một sự kiện, họ nên có phản ứng phù hợp (ví dụ: chạy trốn, tham gia, điều tra). Trả về JSON theo schema.`;
+Nhiệm vụ: Dựa trên TOÀN BỘ thông tin trên (đặc biệt là các sự kiện đang diễn ra và danh tiếng của người chơi), hãy quyết định một hành động hợp lý cho NPC này. Nếu phe phái hoặc vị trí của họ bị ảnh hưởng bởi một sự kiện, họ nên có phản ứng phù hợp (ví dụ: chạy trốn, tham gia, điều tra). Họ cũng có thể phản ứng với danh tiếng của người chơi. Trả về JSON theo schema.`;
 
             const settings = await db.getSettings();
             const response = await generateWithRetry({
@@ -100,13 +146,13 @@ Nhiệm vụ: Dựa trên TOÀN BỘ thông tin trên (đặc biệt là các s�
     });
 
     const newWorldState = {
-        ...gameState.worldState,
-        rumors: [...gameState.worldState.rumors, ...newRumors.filter(nr => !gameState.worldState.rumors.some(r => r.text === nr.text))],
+        ...currentTurnState.worldState,
+        rumors: [...currentTurnState.worldState.rumors, ...newRumors.filter(nr => !currentTurnState.worldState.rumors.some(r => r.text === nr.text))],
     };
 
     return {
         newState: {
-            ...gameState,
+            ...currentTurnState,
             activeNpcs: finalNpcs,
             worldState: newWorldState,
         },

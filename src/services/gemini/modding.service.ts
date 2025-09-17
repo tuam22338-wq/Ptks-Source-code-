@@ -39,8 +39,11 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
             type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] },
             quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] },
             weight: { type: Type.NUMBER },
+            value: { type: Type.NUMBER, description: "Giá trị cơ bản của vật phẩm bằng Bạc. Hữu ích cho việc bán." },
+            slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'], description: "Vị trí trang bị nếu vật phẩm là Vũ Khí hoặc Phòng Cụ." },
             bonuses: { type: Type.ARRAY, items: statBonusSchema },
             tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            icon: { type: Type.STRING, description: "Một emoji phù hợp với vật phẩm, ví dụ '⚔️' cho kiếm, '💊' cho đan dược."}
         },
         required: ['contentType', 'name', 'description', 'type', 'quality', 'weight']
     };
@@ -256,7 +259,8 @@ ${JSON.stringify(modContext, null, 2)}
 
 **Hướng dẫn và Ví dụ:**
 - **Tạo Vật Phẩm (item):** 'Tạo một thanh phi kiếm tên Lưu Tinh, phẩm chất Tiên Phẩm, tăng 20 Thân Pháp.'
-  - Các tham số chính: name, description, type, quality, weight, bonuses (thuộc tính & giá trị), tags.
+  - Các tham số chính: name, description, type, quality, weight, bonuses (thuộc tính & giá trị), tags, slot (nếu là trang bị), value (giá trị), icon (emoji).
+  - **Hãy sáng tạo icon và mô tả thật chi tiết, độc đáo!**
 - **Tạo Tiên Tư (talent):** 'Tạo một tiên tư Thánh Giai tên Bất Diệt Thánh Thể, tăng 500 Căn Cốt và 1000 Sinh Mệnh.'
   - Các tham số chính: name, description, rank, bonuses, tags.
 - **Tạo NPC:** 'Tạo một NPC là trưởng lão tà phái tên Hắc Ma Lão Tổ, ở địa điểm Hắc Long Đàm, trạng thái đang luyện công.'

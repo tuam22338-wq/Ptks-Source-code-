@@ -259,7 +259,6 @@ const InventoryPanel: React.FC<InventoryPanelProps> = ({ playerCharacter, setPla
                         const slotInfo = EQUIPMENT_SLOTS[slot];
                         const item = playerCharacter.equipment[slot];
                         return (
-                            // FIX: Changed the onClick to call `handleUnequip` directly if an item exists, and changed the button to a <p> tag. This resolves the likely cause of the "Cannot find name 'onUnequip'" error by using the correctly scoped function `handleUnequip`.
                             <div key={slot} onClick={() => item && handleUnequip(slot)} title={item ? 'Nhấn để tháo' : ''} className={`flex items-center gap-3 bg-black/20 p-2 rounded-lg border border-gray-700/60 ${item ? 'cursor-pointer hover:border-amber-400/50' : ''}`}>
                                 <div className="w-14 h-14 bg-black/30 border-2 border-gray-600 rounded-md flex items-center justify-center text-3xl flex-shrink-0">
                                     {item ? item.icon : <span className="text-gray-600 text-lg">{slotInfo.label.charAt(0)}</span>}

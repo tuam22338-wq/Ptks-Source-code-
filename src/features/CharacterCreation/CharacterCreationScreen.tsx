@@ -195,17 +195,11 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           attributes: initialAttributes,
           spiritualRoot: determinedRoot,
           danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
-          vitals: {
-              hunger: 100,
-              maxHunger: 100,
-              thirst: 100,
-              maxThirst: 100,
-              temperature: 37,
-          },
+          // FIX: Added missing properties 'healthStatus' and 'activeEffects' to match the expected type for a new character.
+          // FIX: The 'healthStatus' property was being inferred as a generic 'string', which is not assignable to the more specific 'CharacterStatus' type.
+          // By adding 'as const', TypeScript infers the type as the literal 'HEALTHY', which is a valid CharacterStatus.
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
-          activeQuests: [],
-          completedQuestIds: [],
       };
 
       await handleGameStart({ characterData, npcDensity, difficulty, gameMode });

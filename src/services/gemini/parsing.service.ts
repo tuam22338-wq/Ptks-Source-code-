@@ -70,7 +70,7 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
     - NPCs in the world the player has NOT met yet: ${unencounteredNpcNames.join(', ') || 'None'}
 
     **Instructions:**
-    1.  **Extract NEW Items:** Identify any physical items (swords, pills, herbs, etc.) the player explicitly OBTAINS, RECEIVES, or FINDS in the narrative. Do NOT list items they already have.
+    1.  **Extract NEW Items:** Identify any physical items (swords, pills, herbs, etc.) the player explicitly OBTAINS, RECEIVES, or FINDS in the narrative. Do NOT list items they already have. For each item, create a suitable emoji icon.
     2.  **Extract NEW Techniques:** Identify any cultivation techniques or skills the player explicitly LEARNS or OBTAINS. Do NOT list techniques they already know.
     3.  **Identify NEW NPC Encounters:** Look for names of NPCs from the "NOT met yet" list who are mentioned as interacting with or being seen by the player for the first time.
 

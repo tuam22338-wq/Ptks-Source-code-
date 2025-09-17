@@ -13,7 +13,7 @@ import CultivationPathModal from './components/CultivationPathModal';
 import CustomStoryPlayer from './components/CustomStoryPlayer';
 import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
-import { generateStoryContinuationStream, summarizeStory, generateInnerDemonTrial, generateWeeklyRumor, generateRandomTechnique } from '../../services/geminiService';
+import { generateStoryContinuationStream, summarizeStory, generateInnerDemonTrial, generateWeeklyRumor, generateRandomTechnique, parseNarrativeForGameData } from '../../services/geminiService';
 import { REALM_SYSTEM, CULTIVATION_PATHS } from '../../constants';
 import InventoryModal from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
@@ -197,6 +197,61 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     return { ...prev, storyLog: newLog };
                 });
             }
+
+            // After stream is complete, parse the full response for game data changes
+            if (fullResponse && !abortControllerRef.current.signal.aborted) {
+                (async () => {
+                    let stateForParsing: GameState | null = null;
+                    setGameState(gs => {
+                        stateForParsing = gs;
+                        return gs;
+                    });
+                    await new Promise(resolve => setTimeout(resolve, 0)); // Wait a tick
+
+                    if (stateForParsing) {
+                        try {
+                            const { newItems, newTechniques, newNpcEncounterIds } = await parseNarrativeForGameData(fullResponse, stateForParsing);
+
+                            if (newItems.length > 0 || newTechniques.length > 0 || newNpcEncounterIds.length > 0) {
+                                setGameState(prevState => {
+                                    if (!prevState) return null;
+                                    const pc = { ...prevState.playerCharacter };
+                                    
+                                    const updatedItems = [...pc.inventory.items];
+                                    newItems.forEach(newItem => {
+                                        const existing = updatedItems.find(i => i.name === newItem.name);
+                                        if (existing) {
+                                            existing.quantity += newItem.quantity;
+                                        } else {
+                                            updatedItems.push(newItem);
+                                        }
+                                        showNotification(`Nhận được: ${newItem.name} x${newItem.quantity}`);
+                                    });
+
+                                    const updatedTechniques = [...pc.auxiliaryTechniques, ...newTechniques];
+                                    newTechniques.forEach(tech => {
+                                        showNotification(`Lĩnh ngộ: ${tech.name}`);
+                                    });
+
+                                    const updatedEncounters = [...new Set([...prevState.encounteredNpcIds, ...newNpcEncounterIds])];
+                                    
+                                    return {
+                                        ...prevState,
+                                        playerCharacter: {
+                                            ...pc,
+                                            inventory: { ...pc.inventory, items: updatedItems },
+                                            auxiliaryTechniques: updatedTechniques,
+                                        },
+                                        encounteredNpcIds: updatedEncounters
+                                    };
+                                });
+                            }
+                        } catch (parseError) {
+                            console.error("Lỗi khi phân tích phản hồi của AI:", parseError);
+                        }
+                    }
+                })();
+            }
         } catch (error: any) {
             console.error("AI story generation failed:", error);
             const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${error.message}`;
@@ -218,6 +273,12 @@ const GamePlayScreenContent: React.FC = memo(() => {
             }
         }
     }, [isAiResponding, addStoryEntry, gameState, setGameState, settings.autoSummaryFrequency, openInventoryModal, showNotification]);
+
+    const handleContextualAction = useCallback((actionId: string, actionLabel: string) => {
+        // A simple implementation that treats contextual actions as regular text actions.
+        // This can be expanded later with specific logic for each actionId.
+        handleActionSubmit(`Thực hiện hành động đặc biệt: ${actionLabel}`, 'act');
+    }, [handleActionSubmit]);
 
     const handleTravel = useCallback(async (destinationId: string) => {
         if (!gameState || isAiResponding) return;
@@ -372,6 +433,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     {!combatState && !activeEvent && !activeStory && (
                         <ActionBar 
                             onActionSubmit={handleActionSubmit} 
+                            onContextualAction={handleContextualAction}
                             disabled={isAiResponding}
                             currentLocation={currentLocation}
                             activeTab={activeActionTab}

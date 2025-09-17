@@ -516,33 +516,35 @@ body.force-desktop .top-bar-sidebar-toggle {
   background-repeat: repeat-x;
   background-position: center bottom;
   animation: parallax-move linear infinite;
+  mix-blend-mode: soft-light;
 }
 .ink-layer-1 {
   background-image: linear-gradient(to top, rgba(23, 22, 22, 0) 0%, rgba(30, 28, 28, 0.8) 20%, #1e1c1c 40%);
   z-index: 4;
   animation-duration: 120s;
-  opacity: 0.8;
+  opacity: 1;
+  mix-blend-mode: normal;
 }
 .ink-layer-2 {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%232a2a2a' d='M0 400 L0 250 Q 100 220, 200 250 T 400 240 T 600 260 T 800 250 L800 400 Z' /%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%236b21a8' d='M0 400 L0 250 Q 100 220, 200 250 T 400 240 T 600 260 T 800 250 L800 400 Z' /%3E%3C/svg%3E");
   background-size: auto 50%;
   z-index: 3;
   animation-duration: 90s;
-  opacity: 0.2;
+  opacity: 0.15;
 }
 .ink-layer-3 {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%23383838' d='M0 400 L0 300 Q 80 250, 160 300 T 320 280 T 480 310 T 640 290 T 800 300 L800 400 Z' /%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%230d9488' d='M0 400 L0 300 Q 80 250, 160 300 T 320 280 T 480 310 T 640 290 T 800 300 L800 400 Z' /%3E%3C/svg%3E");
   background-size: auto 60%;
   z-index: 2;
   animation-duration: 60s;
-  opacity: 0.35;
+  opacity: 0.25;
 }
 .ink-layer-4 {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%231a1a1a' d='M0 400 L0 350 Q 120 300, 240 350 T 480 330 T 720 360 L800 350 L800 400 Z' /%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%23f59e0b' d='M0 400 L0 350 Q 120 300, 240 350 T 480 330 T 720 360 L800 350 L800 400 Z' /%3E%3C/svg%3E");
   background-size: auto 45%;
   z-index: 1;
   animation-duration: 40s;
-  opacity: 0.5;
+  opacity: 0.2;
 }
 
 @keyframes parallax-move {
@@ -983,6 +985,95 @@ body.force-desktop .top-bar-sidebar-toggle {
   cursor: not-allowed;
 }
 
+.writing-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 1rem 0;
+}
+
+/* --- Weather Effects --- */
+.weather-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+.weather-overlay.active {
+  opacity: 1;
+}
+
+.rain-effect {
+  background-image: linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px);
+  background-size: 2px 20px;
+  animation: rain-fall 0.5s linear infinite;
+}
+
+@keyframes rain-fall {
+  from { background-position: 0% 0%; }
+  to { background-position: 0% 100%; }
+}
+
+.snow-effect {
+  background-image: 
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><circle cx="5" cy="5" r="1" fill="white"/></svg>'),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="2" fill="white"/></svg>'),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><circle cx="15" cy="15" r="1.5" fill="white"/></svg>');
+  animation: snow-fall 20s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes snow-fall {
+  0% { background-position: 0px 0px, 0px 0px, 0px 0px; }
+  100% { background-position: 500px 1000px, 400px 400px, 300px 300px; }
+}
+
+/* --- Animated Progress Bars --- */
+.animated-progress-bar {
+    position: relative;
+    background-size: 200% 200%;
+    animation: gradient-flow 3s ease infinite;
+}
+.animated-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+    );
+    z-index: 1;
+    background-size: 30px 30px;
+    animation: shimmer 2s infinite linear;
+    opacity: 0.5;
+    border-radius: 9999px;
+}
+
+@keyframes gradient-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes shimmer {
+    from { background-position: 0 0; }
+    to { background-position: 60px 0; }
+}
+
 /* Generated Tailwind CSS */
 *,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}
 :after,:before{--tw-content:""}
@@ -1107,7 +1198,7 @@ template{display:none}
 .flex-shrink-0{flex-shrink:0}
 .transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}
 .-translate-x-1\/2{--tw-translate-x:-50%}
-.-translate-y-1{--tw-translate-y:-.25rem}
+.-translate-y-1:hover{--tw-translate-y:-.25rem}
 .-translate-y-1\/2{--tw-translate-y:-50%}
 .-translate-y-2{--tw-translate-y:-.5rem}
 .-translate-y-1\/4{--tw-translate-y:-.25rem}

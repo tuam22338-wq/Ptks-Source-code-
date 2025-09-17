@@ -4,10 +4,60 @@ import { NARRATIVE_STYLES, REALM_SYSTEM, FACTIONS, PHAP_BAO_RANKS } from "../../
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 
+const createFullGameStateContext = (gameState: GameState): string => {
+  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog } = gameState;
+  const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
+  const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
+
+  // Simplify complex objects for the prompt
+  const equipmentSummary = Object.entries(playerCharacter.equipment)
+    .filter(([, item]) => item)
+    .map(([slot, item]) => `${slot}: ${item!.name}`)
+    .join(', ');
+  
+  const questSummary = playerCharacter.activeQuests.length > 0
+    ? playerCharacter.activeQuests.map(q => `- ${q.title}: ${q.objectives.find(o => !o.isCompleted)?.description || 'Sắp hoàn thành'}`).join('\n')
+    : 'Không có nhiệm vụ nào.';
+  
+  const reputationSummary = playerCharacter.reputation.map(r => `${r.factionName}: ${r.status} (${r.value})`).join('; ');
+  
+  const keyAttributes = playerCharacter.attributes
+    .flatMap(g => g.attributes)
+    .filter(a => ['Lực Lượng', 'Thân Pháp', 'Ngộ Tính', 'Cơ Duyên', 'Căn Cốt', 'Sinh Mệnh', 'Linh Lực'].includes(a.name))
+    .map(a => `${a.name}: ${a.value}`)
+    .join(', ');
+
+  const context = `
+### TOÀN BỘ BỐI CẢNH GAME ###
+Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
+
+**1. Nhân Vật Chính: ${playerCharacter.identity.name}**
+- **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}. Công pháp chính: ${playerCharacter.mainCultivationTechnique?.name || 'Chưa có'}.
+- **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: ${playerCharacter.identity.personality}.
+- **Trang Bị:** ${equipmentSummary || 'Không có'}.
+- **Chỉ Số Chính:** ${keyAttributes}.
+- **Danh Vọng & Quan Hệ:** Danh vọng ${playerCharacter.danhVong.status}. Các phe phái: ${reputationSummary}.
+
+**2. Thế Giới Hiện Tại**
+- **Thời Gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, giờ ${gameDate.shichen}.
+- **Địa Điểm:** ${currentLocation?.name} - ${currentLocation?.description}.
+- **NPCs Tại Đây:** ${npcsHere.length > 0 ? npcsHere.map(n => `${n.identity.name} (${n.status})`).join(', ') : 'Không có ai.'}
+- **Sự Kiện Thế Giới Đang Diễn Ra:** ${worldState.dynamicEvents?.map(e => e.title).join(', ') || 'Bình yên.'}
+
+**3. Nhiệm Vụ & Cốt Truyện**
+- **Nhiệm Vụ Đang Làm:**
+${questSummary}
+- **Tóm Tắt Cốt Truyện (Ký ức dài hạn):**
+${storySummary || 'Hành trình vừa bắt đầu.'}
+- **Nhật Ký Gần Đây (Ký ức ngắn hạn):**
+${storyLog.slice(-3).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}
+#############################
+  `;
+  return context;
+};
+
 export async function* generateStoryContinuationStream(gameState: GameState, userInput: string, inputType: 'say' | 'act'): AsyncIterable<string> {
-    const { playerCharacter, gameDate, storyLog, discoveredLocations, activeNpcs, storySummary, difficulty } = gameState;
-    const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
-    const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
+    const { playerCharacter, difficulty } = gameState;
     
     const settings = await db.getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
@@ -20,36 +70,19 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
 - ${difficultyText}
 - **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
-- **Bảo vệ Tam Quan nhân vật:** Bạn phải duy trì "Tam Quan" (quan điểm về thế giới, giá trị, nhân sinh) của nhân vật. Nhân vật có tính cách đã được định hình (${playerCharacter.identity.personality}) và sẽ không thực hiện các hành động phi logic, tự sát, hoặc vi phạm bản chất cốt lõi của họ mà không có lý do chính đáng. Nếu người chơi yêu cầu một hành động như vậy (ví dụ: "đột nhiên cởi hết quần áo giữa nơi công cộng", "vô cớ sỉ nhục một vị trưởng lão"), bạn phải kể lại sự đấu tranh nội tâm của nhân vật hoặc sự từ chối thẳng thừng, giải thích lý do từ góc nhìn của họ. Đừng mù quáng thực hiện hành động phi logic.
+- **TOÀN QUYỀN TRUY CẬP:** Bạn được cung cấp TOÀN BỘ bối cảnh game, bao gồm trạng thái nhân vật, nhiệm vụ, thế giới, và lịch sử. **HÃY SỬ DỤNG TRIỆT ĐỂ** thông tin này để đảm bảo mọi chi tiết trong lời kể của bạn đều nhất quán, logic và có chiều sâu. Ví dụ: nếu người chơi có danh vọng cao với một phe, NPC phe đó nên đối xử tốt hơn; nếu có một sự kiện thế giới đang diễn ra, câu chuyện nên phản ánh điều đó.
+- **Bảo vệ Tam Quan nhân vật:** Duy trì "Tam Quan" (quan điểm về thế giới, giá trị, nhân sinh) của nhân vật (${playerCharacter.identity.personality}). Không thực hiện các hành động phi logic, tự sát, hoặc vi phạm bản chất của họ. Hãy tường thuật sự đấu tranh nội tâm nếu người chơi yêu cầu hành động vô lý.
 - Chỉ kể tiếp câu chuyện, không đưa ra lời khuyên hay bình luận ngoài vai trò người kể chuyện.
-- **QUAN TRỌNG:** Hành động của người chơi không phải lúc nào cũng thành công. Dựa vào độ khó của hành động, bối cảnh, và chỉ số của nhân vật, hãy quyết định kết quả một cách hợp lý. Có thể có thành công, thất bại, hoặc thành công một phần với hậu quả không mong muốn.
-- Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.
-- Đừng lặp lại những thông tin đã có trong ngữ cảnh.`;
-
-    const historyContext = storySummary
-      ? `**Lịch sử tóm tắt:**\n${storySummary}\n\n**Sự kiện gần đây nhất:**\n${storyLog.slice(-3).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}`
-      : `**Lịch sử gần đây (5 mục cuối):**\n${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}`;
+- **Hành động không phải lúc nào cũng thành công:** Dựa vào độ khó, bối cảnh, và chỉ số của nhân vật, hãy quyết định kết quả một cách hợp lý. Có thể có thành công, thất bại, hoặc thành công một phần với hậu quả không mong muốn.
+- Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.`;
     
-    const keyAttributes = playerCharacter.attributes
-        .flatMap(g => g.attributes)
-        .filter(a => ['Lực Lượng', 'Thân Pháp', 'Ngộ Tính', 'Cơ Duyên', 'Căn Cốt'].includes(a.name))
-        .map(a => `${a.name}: ${a.value}`)
-        .join(', ');
-
-    const contextSummary = [
-        `**Nhân vật:** Tên: ${playerCharacter.identity.name}. Xuất thân: ${playerCharacter.identity.origin}. Tính cách: ${playerCharacter.identity.personality}. Danh vọng: ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value} điểm).`,
-        `**Chỉ số chính:** ${keyAttributes}.`,
-        `**Bối cảnh:** Hiện tại là giờ ${gameDate.shichen}, ngày ${gameDate.day} mùa ${gameDate.season} năm ${gameDate.era} ${gameDate.year}.`,
-        `**Vị trí:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.`,
-        npcsHere.length > 0 ? `**Nhân vật khác tại đây:** ${npcsHere.map(n => `${n.identity.name} (${n.status})`).join(', ')}.` : "Không có ai khác ở đây.",
-        historyContext
-    ].join('\n');
+    const fullContext = createFullGameStateContext(gameState);
     
     const userAction = inputType === 'say'
         ? `${playerCharacter.identity.name} nói: "${userInput}"`
         : `${playerCharacter.identity.name} quyết định: "${userInput}"`;
 
-    const fullPrompt = `${contextSummary}\n\n${userAction}\n\n**Người kể chuyện:**`;
+    const fullPrompt = `${fullContext}\n\n**Hành động của người chơi:**\n${userAction}\n\n**Người kể chuyện:**`;
 
     const stream = await generateWithRetryStream({
         model: settings?.mainTaskModel || 'gemini-2.5-flash',

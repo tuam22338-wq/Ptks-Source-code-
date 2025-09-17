@@ -10,11 +10,6 @@ interface ShopModalProps {
     shopId: string;
 }
 
-const BUY_PRICE_INCREASE = 1.05;
-const SELL_PRICE_DECREASE = 0.95;
-const MAX_MULTIPLIER = 3.0;
-const MIN_MULTIPLIER = 0.2;
-
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
     const { gameState, setGameState } = useAppContext();
     const { showNotification, closeShopModal } = useGameUIContext();
@@ -24,16 +19,13 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
 
     if (!isOpen || !shop || !gameState) return null;
     
-    const { playerCharacter, shopStates } = gameState;
-    const currentShopState = shopStates?.[shopId]?.itemPriceMultipliers || {};
+    const { playerCharacter } = gameState;
 
     const handleBuyItem = (item: ShopItem) => {
         const { price, name } = item;
         const playerCurrency = playerCharacter.currencies[price.currencyName] || 0;
-        const multiplier = currentShopState[name] || 1.0;
-        const finalPrice = Math.ceil(price.amount * multiplier);
 
-        if (playerCurrency < finalPrice) {
+        if (playerCurrency < price.amount) {
             showNotification(`Không đủ ${price.currencyName}!`);
             return;
         }
@@ -41,7 +33,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
         setGameState(prev => {
             if (!prev) return null;
             const pc = { ...prev.playerCharacter };
-            const newCurrencies = { ...pc.currencies, [price.currencyName]: playerCurrency - finalPrice };
+            const newCurrencies = { ...pc.currencies, [price.currencyName]: playerCurrency - price.amount };
             const newInventoryItems = [...pc.inventory.items];
             const existingItem = newInventoryItems.find(i => i.name === name);
             if (existingItem) {
@@ -51,22 +43,14 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
                 const newItem: InventoryItem = { ...baseItem, id: `item-${Date.now()}-${Math.random()}`, quantity: 1, isEquipped: false };
                 newInventoryItems.push(newItem);
             }
-
-            // Update price multiplier
-            const newShopStates = JSON.parse(JSON.stringify(prev.shopStates || {}));
-            if (!newShopStates[shopId]) newShopStates[shopId] = { itemPriceMultipliers: {} };
-            const newMultiplier = Math.min(MAX_MULTIPLIER, multiplier * BUY_PRICE_INCREASE);
-            newShopStates[shopId].itemPriceMultipliers[name] = newMultiplier;
-            
-            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } }, shopStates: newShopStates };
+            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
         });
 
         showNotification(`Đã mua [${name}]`);
     };
     
     const handleSellItem = (item: InventoryItem) => {
-        const multiplier = currentShopState[item.name] || 1.0;
-        const sellPrice = Math.floor(((item.value || 10) / 2) * multiplier);
+        const sellPrice = Math.floor((item.value || 10) / 2);
         const currencyName = 'Bạc';
 
         setGameState(prev => {
@@ -80,14 +64,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
             } else {
                 newInventoryItems = newInventoryItems.filter(i => i.id !== item.id);
             }
-
-            // Update price multiplier
-            const newShopStates = JSON.parse(JSON.stringify(prev.shopStates || {}));
-            if (!newShopStates[shopId]) newShopStates[shopId] = { itemPriceMultipliers: {} };
-            const newMultiplier = Math.max(MIN_MULTIPLIER, multiplier * SELL_PRICE_DECREASE);
-            newShopStates[shopId].itemPriceMultipliers[item.name] = newMultiplier;
-
-            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } }, shopStates: newShopStates };
+            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
         });
 
         showNotification(`Đã bán [${item.name}] với giá ${sellPrice} ${currencyName}`);
@@ -129,44 +106,34 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
                 <div className="flex-grow p-4 overflow-y-auto">
                     {activeTab === 'buy' && (
                         <div className="space-y-3">
-                            {shop.inventory.map((item, index) => {
-                                const multiplier = currentShopState[item.name] || 1.0;
-                                const finalPrice = Math.ceil(item.price.amount * multiplier);
-                                return (
+                            {shop.inventory.map((item, index) => (
                                 <div key={index} className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
                                     <div>
                                         <h4 className={`font-bold font-title ${ITEM_QUALITY_STYLES[item.quality].color}`}>{item.name}</h4>
                                         <p className="text-xs text-gray-400">{item.description}</p>
                                     </div>
                                     <div className="text-right flex-shrink-0 ml-4">
-                                        <p className={`font-semibold text-amber-300 ${multiplier > 1.05 ? 'text-red-400' : multiplier < 0.95 ? 'text-green-400' : ''}`}>
-                                            {finalPrice.toLocaleString()} {item.price.currencyName}
-                                        </p>
+                                        <p className="font-semibold text-amber-300">{item.price.amount.toLocaleString()} {item.price.currencyName}</p>
                                         <button onClick={() => handleBuyItem(item)} className="mt-1 px-4 py-1 bg-teal-700/80 text-white text-sm font-bold rounded-lg hover:bg-teal-600/80">Mua</button>
                                     </div>
                                 </div>
-                                )
-                            })}
+                            ))}
                         </div>
                     )}
                     {activeTab === 'sell' && (
                          <div className="space-y-3">
-                            {sellableItems.length > 0 ? sellableItems.map((item) => {
-                                const multiplier = currentShopState[item.name] || 1.0;
-                                const sellPrice = Math.floor(((item.value || 10) / 2) * multiplier);
-                                return (
+                            {sellableItems.length > 0 ? sellableItems.map((item) => (
                                 <div key={item.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
                                     <div>
                                         <h4 className={`font-bold font-title ${ITEM_QUALITY_STYLES[item.quality].color}`}>{item.name} <span className="text-xs text-gray-500">x{item.quantity}</span></h4>
                                         <p className="text-xs text-gray-400">{item.description}</p>
                                     </div>
                                     <div className="text-right flex-shrink-0 ml-4">
-                                        <p className={`font-semibold text-yellow-300 ${multiplier > 1.05 ? 'text-red-400' : multiplier < 0.95 ? 'text-green-400' : ''}`}>Giá: {sellPrice.toLocaleString()} Bạc</p>
+                                        <p className="font-semibold text-yellow-300">Giá: {Math.floor((item.value || 10) / 2).toLocaleString()} Bạc</p>
                                         <button onClick={() => handleSellItem(item)} className="mt-1 px-4 py-1 bg-yellow-700/80 text-white text-sm font-bold rounded-lg hover:bg-yellow-600/80">Bán</button>
                                     </div>
                                 </div>
-                                )
-                            }) : <p className="text-center text-gray-500">Không có vật phẩm nào để bán.</p>}
+                            )) : <p className="text-center text-gray-500">Không có vật phẩm nào để bán.</p>}
                         </div>
                     )}
                 </div>

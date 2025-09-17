@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { NPC, NpcDensity, AttributeGroup, InventoryItem, GameState, Rumor, Element } from '../../types';
+import type { NPC, NpcDensity, AttributeGroup, InventoryItem, GameState, Rumor, Element, Currency } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -141,20 +141,19 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
         updateAttr('Chính Đạo', stats.ChinhDao || 0);
         updateAttr('Ma Đạo', stats.MaDao || 0);
 
-
-        const currencyItems: InventoryItem[] = [];
+        const npcCurrencies: Partial<Currency> = {};
         if (currency?.linhThachHaPham > 0) {
-            const currencyItem = CURRENCY_ITEMS.find(c => c.name === 'Linh thạch hạ phẩm');
-            if (currencyItem) {
-                currencyItems.push({ ...currencyItem, quantity: currency.linhThachHaPham });
-            }
+            npcCurrencies['Linh thạch hạ phẩm'] = currency.linhThachHaPham;
+        } else if (targetRealm.id !== 'pham_nhan') {
+            npcCurrencies['Linh thạch hạ phẩm'] = Math.floor(Math.random() * 20);
         }
+
         if (currency?.bac > 0) {
-            const currencyItem = CURRENCY_ITEMS.find(c => c.name === 'Bạc');
-            if (currencyItem) {
-                currencyItems.push({ ...currencyItem, quantity: currency.bac });
-            }
+            npcCurrencies['Bạc'] = currency.bac;
+        } else {
+            npcCurrencies['Bạc'] = 10 + Math.floor(Math.random() * 100);
         }
+
 
         return {
             ...stats,
@@ -172,7 +171,8 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
             attributes: baseAttributes,
             cultivation,
             techniques: [],
-            inventory: { items: currencyItems, weightCapacity: 15 },
+            currencies: npcCurrencies,
+            inventory: { items: [], weightCapacity: 15 },
             equipment: {},
             healthStatus: 'HEALTHY' as const,
             activeEffects: [],

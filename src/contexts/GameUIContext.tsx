@@ -13,6 +13,7 @@ interface GameUIContextState {
     availablePaths: CultivationPath[];
     activeShopId: string | null;
     isInventoryOpen: boolean;
+    isStallModalOpen: boolean;
     activeInnerDemonTrial: InnerDemonTrial | null;
 }
 
@@ -24,6 +25,8 @@ interface GameUIContextActions {
     closeShopModal: () => void;
     openInventoryModal: () => void;
     closeInventoryModal: () => void;
+    openStallModal: () => void;
+    closeStallModal: () => void;
     openCultivationPathModal: (paths: CultivationPath[]) => void;
     closeCultivationPathModal: () => void;
     openInnerDemonTrial: (trial: InnerDemonTrial) => void;
@@ -42,6 +45,7 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const [availablePaths, setAvailablePaths] = useState<CultivationPath[]>([]);
     const [activeShopId, setActiveShopId] = useState<string | null>(null);
     const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+    const [isStallModalOpen, setIsStallModalOpen] = useState(false);
     const [activeInnerDemonTrial, setActiveInnerDemonTrial] = useState<InnerDemonTrial | null>(null);
 
     const toggleSidebar = useCallback(() => setIsSidebarOpen(prev => !prev), []);
@@ -63,6 +67,9 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     
     const openInventoryModal = useCallback(() => setIsInventoryOpen(true), []);
     const closeInventoryModal = useCallback(() => setIsInventoryOpen(false), []);
+    
+    const openStallModal = useCallback(() => setIsStallModalOpen(true), []);
+    const closeStallModal = useCallback(() => setIsStallModalOpen(false), []);
 
     const openCultivationPathModal = useCallback((paths: CultivationPath[]) => setAvailablePaths(paths), []);
     const closeCultivationPathModal = useCallback(() => setAvailablePaths([]), []);
@@ -77,6 +84,7 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         availablePaths,
         activeShopId,
         isInventoryOpen,
+        isStallModalOpen,
         activeInnerDemonTrial,
         toggleSidebar,
         showNotification,
@@ -85,6 +93,8 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         closeShopModal,
         openInventoryModal,
         closeInventoryModal,
+        openStallModal,
+        closeStallModal,
         openCultivationPathModal,
         closeCultivationPathModal,
         openInnerDemonTrial,

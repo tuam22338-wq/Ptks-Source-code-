@@ -8,6 +8,7 @@ type ActionType = 'say' | 'act';
 
 interface ActionBarProps {
     onActionSubmit: (text: string, type: ActionType) => void;
+    onContextualAction: (actionId: string, actionLabel: string) => void;
     disabled: boolean;
     currentLocation: Location;
     activeTab: ActionType;
@@ -15,7 +16,7 @@ interface ActionBarProps {
     gameState: GameState;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, currentLocation, activeTab, setActiveTab, gameState }) => {
+const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState }) => {
     const [inputText, setInputText] = useState('');
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
@@ -25,13 +26,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, current
         if (inputText.trim() && !disabled) {
             onActionSubmit(inputText, activeTab);
             setInputText('');
-            setSuggestions([]);
-        }
-    };
-    
-    const handleContextualAction = (label: string) => {
-        if (!disabled) {
-            onActionSubmit(label, 'act');
             setSuggestions([]);
         }
     };
@@ -73,7 +67,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ onActionSubmit, disabled, current
                             return (
                                 <button
                                     key={action.id}
-                                    onClick={() => handleContextualAction(action.label)}
+                                    onClick={() => onContextualAction(action.id, action.label)}
                                     disabled={disabled}
                                     title={action.description}
                                     className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-interactive)] text-[var(--text-color)] text-sm font-semibold rounded-lg hover:bg-[var(--bg-interactive-hover)] disabled:opacity-50 transition-colors"

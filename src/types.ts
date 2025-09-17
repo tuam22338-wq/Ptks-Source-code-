@@ -179,6 +179,7 @@ export interface ModItem {
     weight: number;
     value?: number;
     slot?: EquipmentSlot;
+    icon?: string;
     bonuses: StatBonus[];
     tags: string[];
 }
@@ -567,6 +568,7 @@ export interface NPC {
     cultivation: CultivationState;
     techniques: CultivationTechnique[];
     inventory: Inventory;
+    currencies: Partial<Currency>;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     faction?: string;
     isHostile?: boolean;
@@ -866,6 +868,7 @@ export interface GameState {
     storySummary?: string;
     gameMode?: 'classic' | 'transmigrator';
     shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
+    playerStall: PlayerStall | null;
 }
 
 // --- Gameplay Event Types ---
@@ -893,6 +896,13 @@ export interface ShopItem extends Omit<InventoryItem, 'id' | 'quantity'> {
         amount: number;
     };
     stock: number | 'infinite';
+}
+
+export interface PlayerStall {
+    locationId: string;
+    name: string;
+    items: ShopItem[];
+    earnings: Partial<Currency>;
 }
 
 export interface Shop {

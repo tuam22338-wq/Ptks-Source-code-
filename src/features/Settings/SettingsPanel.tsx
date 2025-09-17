@@ -295,7 +295,7 @@ const SettingsPanel: React.FC = () => {
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>
                            </SettingsRow>
-                            <SettingsRow label="Model Chế tạo Vật phẩm" description="Sử dụng khi người chơi chế tạo vật phẩm, quyết định sự thành công và phẩm chất.">
+                            <SettingsRow label="Model Tạo Vật Phẩm/Công Pháp" description="Model chuyên dụng để tạo ra chi tiết cho các vật phẩm và công pháp mới xuất hiện trong câu chuyện. Được sử dụng bởi AI trung gian để làm phong phú thế giới.">
                                 <select value={settings.itemCraftingModel} onChange={(e) => handleSettingChange('itemCraftingModel', e.target.value as AIModel)} className="themed-select">
                                     {AI_MODELS.map(model => <option key={model.value} value={model.value}>{model.label}</option>)}
                                 </select>

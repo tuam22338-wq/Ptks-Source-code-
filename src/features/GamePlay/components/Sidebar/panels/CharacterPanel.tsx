@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useState } from 'react';
-import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup, InventoryItem } from '../../../../../types';
-import { CHARACTER_STATUS_CONFIG, CULTIVATION_PATHS, SPIRITUAL_ROOT_QUALITY_CONFIG } from '../../../../../constants';
-import { FaBolt, FaCoins, FaGem, FaRoute, FaUsers, FaChevronDown, FaShieldAlt } from 'react-icons/fa';
+import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup } from '../../../../../types';
+import { CHARACTER_STATUS_CONFIG, CULTIVATION_PATHS, SPIRITUAL_ROOT_CONFIG, SPIRITUAL_ROOT_QUALITY_CONFIG } from '../../../../../constants';
+import { FaBolt, FaRoute, FaChevronDown, FaShieldAlt } from 'react-icons/fa';
 import { GiPentacle } from 'react-icons/gi';
 
 interface CharacterPanelProps {
@@ -28,7 +28,7 @@ const ProgressBar: React.FC<{
                 <span className="text-xs font-mono">{`${Math.floor(current)}/${max}`}</span>
             </div>
             <div className="w-full bg-black/30 rounded-full h-2.5 border border-gray-700">
-                <div className={`${color} h-2 rounded-full transition-all duration-300`} style={{ width: `${percentage}%` }}></div>
+                <div className={`${color} h-2 rounded-full transition-all duration-300 animated-progress-bar`} style={{ width: `${percentage}%` }}></div>
             </div>
         </div>
     );
@@ -88,7 +88,7 @@ const AttributeGrid: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, inventory } = character;
+    const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects } = character;
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
 
     const toggleGroup = (title: string) => {
@@ -176,9 +176,24 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                     <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
                         <GiPentacle /> Linh Căn
                     </h3>
-                     <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60" title={spiritualRoot.description}>
-                        <h4 className={`font-bold font-title ${SPIRITUAL_ROOT_QUALITY_CONFIG[spiritualRoot.quality].color} ${SPIRITUAL_ROOT_QUALITY_CONFIG[spiritualRoot.quality].glow || ''}`}>{spiritualRoot.name}</h4>
-                        <p className="text-xs text-gray-400">{spiritualRoot.description}</p>
+                     <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
+                        <h4 className={`font-bold font-title text-center ${SPIRITUAL_ROOT_QUALITY_CONFIG[spiritualRoot.quality].color} ${SPIRITUAL_ROOT_QUALITY_CONFIG[spiritualRoot.quality].glow || ''}`}>{spiritualRoot.name}</h4>
+                        <p className="text-xs text-gray-400 text-center">{spiritualRoot.description}</p>
+                         <div className="mt-3 pt-3 border-t border-gray-700/50 grid grid-cols-1 gap-2">
+                            {spiritualRoot.elements.map(element => {
+                                const config = SPIRITUAL_ROOT_CONFIG[element.type];
+                                return (
+                                    <div key={element.type}>
+                                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                                            <config.icon/> {config.name} <span>({element.purity}%)</span>
+                                        </div>
+                                        <div className="w-full bg-gray-700/50 rounded-full h-1 mt-1">
+                                            <div className="bg-amber-400 h-1 rounded-full" style={{width: `${element.purity}%`}}></div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
             )}

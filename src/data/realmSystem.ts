@@ -68,6 +68,47 @@ export const REALM_SYSTEM: RealmConfig[] = [
             { id: 'ht_vien_man', name: 'Viên Mãn', qiRequired: 3E10, bonuses: [{ attribute: 'Tuổi Thọ', value: 1000 }, { attribute: 'Thân Pháp', value: 20 }, { attribute: 'Lực Lượng', value: 20 }], description: 'Lĩnh vực viên mãn, có thể phi thăng.'},
         ]
     },
+    { 
+        id: 'luyen_hu', name: 'Luyện Hư Kỳ',
+        description: 'Dung hợp bản thân với hư không, lĩnh ngộ pháp tắc không gian ở tầng sâu hơn. Thần du thái hư, tuổi thọ tăng lên 5000 năm.',
+        stages: [
+            { id: 'lh_so_ky', name: 'Sơ Kỳ', qiRequired: 1E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Nguyên thần có thể dung nhập vào hư không, cảm nhận pháp tắc.' },
+            { id: 'lh_trung_ky', name: 'Trung Kỳ', qiRequired: 3E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Thao túng không gian sơ bộ, có thể xé rách không gian để di chuyển.' },
+            { id: 'lh_hau_ky', name: 'Hậu Kỳ', qiRequired: 6E11, bonuses: [{ attribute: 'Thần Thức', value: 120 }, { attribute: 'Thân Pháp', value: 100 }], description: 'Hư không pháp tắc dần đại thành.' },
+            { id: 'lh_vien_man', name: 'Viên Mãn', qiRequired: 9E11, bonuses: [{ attribute: 'Tuổi Thọ', value: 3000 }, { attribute: 'Thần Thức', value: 50 }], description: 'Hoàn toàn nắm giữ hư không, chuẩn bị Hợp Thể.' },
+        ]
+    },
+    { 
+        id: 'hop_the', name: 'Hợp Thể Kỳ',
+        description: 'Nhục thân và pháp tắc dung hợp, trở thành một thể thống nhất. Mỗi hành động đều mang theo uy lực của đại đạo, tuổi thọ đạt 1 vạn năm.',
+        stages: [
+            { id: 'hthe_so_ky', name: 'Sơ Kỳ', qiRequired: 2E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Nhục thân bắt đầu dung hợp pháp tắc, trở nên cực kỳ cứng rắn.' },
+            { id: 'hthe_trung_ky', name: 'Trung Kỳ', qiRequired: 4E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Pháp tùy thân động, uy lực vô song.' },
+            { id: 'hthe_hau_ky', name: 'Hậu Kỳ', qiRequired: 7E12, bonuses: [{ attribute: 'Căn Cốt', value: 250 }, { attribute: 'Lực Lượng', value: 250 }], description: 'Dung hợp gần như hoàn hảo.' },
+            { id: 'hthe_vien_man', name: 'Viên Mãn', qiRequired: 1E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 5000 }, { attribute: 'Bền Bỉ', value: 100 }], description: 'Chuẩn bị bước vào Đại Thừa, tìm kiếm con đường của riêng mình.' },
+        ]
+    },
+    { 
+        id: 'dai_thua', name: 'Đại Thừa Kỳ',
+        description: 'Đã ở đỉnh cao của phàm nhân tu tiên, lĩnh ngộ viên mãn pháp tắc, chuẩn bị nghênh đón thiên kiếp phi thăng. Tuổi thọ đạt 5 vạn năm.',
+        stages: [
+            { id: 'dt_so_ky', name: 'Sơ Kỳ', qiRequired: 2E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Lĩnh ngộ đại đạo, pháp lực thông thiên.' },
+            { id: 'dt_trung_ky', name: 'Trung Kỳ', qiRequired: 4E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Sức mạnh đạt đến giới hạn của thế giới này.' },
+            { id: 'dt_hau_ky', name: 'Hậu Kỳ', qiRequired: 6E13, bonuses: [{ attribute: 'Ngộ Tính', value: 250 }, { attribute: 'Đạo Tâm', value: 200 }], description: 'Cảm nhận được thiên kiếp sắp tới.' },
+            { id: 'dt_vien_man', name: 'Viên Mãn', qiRequired: 8E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 40000 }, { attribute: 'Cơ Duyên', value: 50 }], description: 'Đạo tâm viên mãn, sẵn sàng đối mặt thiên kiếp.' },
+        ]
+    },
+    { 
+        id: 'do_kiep', name: 'Độ Kiếp Kỳ',
+        description: 'Giai đoạn đối mặt với thiên kiếp để phi thăng thành tiên. Cửu tử nhất sinh, thành công thì thành tiên, thất bại thì hồn phi phách tán.',
+        hasTribulation: true,
+        tribulationDescription: 'Cửu Cửu Trọng Kiếp, thiên lôi sẽ hủy diệt tất cả những ai dám nghịch thiên. Vượt qua 81 đạo lôi kiếp, gột rửa phàm trần, mới có thể鑄就仙體.',
+        stages: [
+            { id: 'dk_1', name: 'Chuẩn Bị', qiRequired: 9E13, bonuses: [{ attribute: 'Sinh Mệnh', value: 5000 }, { attribute: 'Bền Bỉ', value: 300 }], description: 'Tích lũy sức mạnh, chuẩn bị đối mặt với thiên kiếp.' },
+            { id: 'dk_2', name: 'Ứng Kiếp', qiRequired: 9.5E13, bonuses: [{ attribute: 'Nguyên Thần Kháng', value: 300 }, { attribute: 'Căn Cốt', value: 300 }], description: 'Thiên kiếp giáng xuống, dùng toàn lực chống đỡ.' },
+            { id: 'dk_3', name: 'Viên Mãn', qiRequired: 9.9E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 50000 }], description: 'Vượt qua thiên kiếp, thân thể lột xác, chuẩn bị phi thăng Tiên Giới.' },
+        ]
+    },
     {
         id: 'nhan_tien', name: 'Nhân Tiên',
         description: 'Thoát khỏi vòng luân hồi, thân thể hóa thành tiên躯, không còn bị sinh lão bệnh tử trói buộc. Tuổi thọ vĩnh cửu.',

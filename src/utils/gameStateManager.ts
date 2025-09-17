@@ -226,6 +226,8 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
         },
         techniques: [],
         inventory: { items: [], weightCapacity: 10 },
+        // FIX: Added missing 'currencies' property.
+        currencies: {},
         equipment: {},
         healthStatus: 'HEALTHY',
         activeEffects: [],
@@ -347,7 +349,7 @@ export const createNewGameState = async (
     };
     
     const initialSystemInfo: SystemInfo | undefined = isTransmigratorMode
-        ? { unlockedFeatures: ['status', 'quests'] }
+        ? { unlockedFeatures: ['status', 'quests', 'store'] }
         : undefined;
 
     let playerCharacter: PlayerCharacter = {
@@ -462,5 +464,7 @@ export const createNewGameState = async (
         difficulty: difficulty,
         gameMode: isTransmigratorMode ? 'transmigrator' : 'classic',
         shopStates: {},
+        // FIX: Added missing 'playerStall' property.
+        playerStall: null,
     };
 };

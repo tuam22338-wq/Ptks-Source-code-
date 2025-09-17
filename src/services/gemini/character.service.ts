@@ -113,6 +113,8 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
             cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
             techniques: [],
             inventory: { items: [], weightCapacity: 10 },
+            // FIX: Added missing 'currencies' property.
+            currencies: { 'Bạc': 10 + Math.floor(Math.random() * 50) },
             equipment: {},
             healthStatus: 'HEALTHY',
             activeEffects: [],
