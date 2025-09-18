@@ -68,6 +68,7 @@ export const generateMainQuestFromEvent = async (event: MajorEvent, gameState: G
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -75,7 +76,7 @@ export const generateMainQuestFromEvent = async (event: MajorEvent, gameState: G
             responseMimeType: "application/json",
             responseSchema: questSchema,
         }
-    });
+    }, specificApiKey);
 
     return JSON.parse(response.text);
 };
@@ -102,6 +103,7 @@ export const generateSideQuestFromNpc = async (npc: NPC, relationship: PlayerNpc
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -109,7 +111,7 @@ export const generateSideQuestFromNpc = async (npc: NPC, relationship: PlayerNpc
             responseMimeType: "application/json",
             responseSchema: questSchema,
         }
-    });
+    }, specificApiKey);
 
     return JSON.parse(response.text);
 };
@@ -132,6 +134,7 @@ export const generateSystemQuest = async (gameState: GameState): Promise<Partial
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -139,7 +142,7 @@ export const generateSystemQuest = async (gameState: GameState): Promise<Partial
             responseMimeType: "application/json",
             responseSchema: questSchema,
         }
-    });
+    }, specificApiKey);
 
     return JSON.parse(response.text);
 };

@@ -1,7 +1,9 @@
+
 import React, { useMemo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
-import SettingsPanel from './features/Settings/SettingsPanel';
+// FIX: Module '"file:///src/features/Settings/SettingsPanel"' has no default export. Using named import.
+import { SettingsPanel } from './features/Settings/SettingsPanel';
 import { CharacterCreationScreen } from './features/CharacterCreation/CharacterCreationScreen';
 import SaveSlotScreen from './features/MainMenu/SaveSlotScreen';
 import MainMenu from './features/MainMenu/MainMenu';

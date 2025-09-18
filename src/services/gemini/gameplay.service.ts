@@ -84,13 +84,14 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 
     const fullPrompt = `${fullContext}\n\n**Hành động của người chơi:**\n${userAction}\n\n**Người kể chuyện:**`;
 
+    const specificApiKey = settings?.modelApiKeyAssignments?.mainTaskModel;
     const stream = await generateWithRetryStream({
         model: settings?.mainTaskModel || 'gemini-2.5-flash',
         contents: fullPrompt,
         config: {
             systemInstruction: systemInstruction,
         }
-    });
+    }, specificApiKey);
 
     for await (const chunk of stream) {
         yield (chunk.text ?? '').replace(/\[thinking...\]/gi, '');
@@ -114,10 +115,11 @@ export const summarizeStory = async (storyLog: StoryEntry[]): Promise<string> =>
     
     Bản tóm tắt:`;
 
+    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
     const response = await generateWithRetry({
         model: settings?.quickSupportModel || 'gemini-2.5-flash',
         contents: prompt,
-    });
+    }, specificApiKey);
 
     return response.text.trim();
 };
@@ -216,6 +218,7 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealm:
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -223,7 +226,7 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealm:
             responseMimeType: "application/json",
             responseSchema: trialSchema
         }
-    });
+    }, specificApiKey);
     
     const parsed = JSON.parse(response.text);
     // Ensure there's exactly one correct answer
@@ -288,6 +291,7 @@ export const generateActionSuggestions = async (gameState: GameState): Promise<s
     
     Hãy đưa ra 3-4 gợi ý phù hợp nhất. Trả về một đối tượng JSON duy nhất theo schema.`;
 
+    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
     const response = await generateWithRetry({
         model: settings?.quickSupportModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -295,7 +299,7 @@ export const generateActionSuggestions = async (gameState: GameState): Promise<s
             responseMimeType: "application/json",
             responseSchema: suggestionsSchema,
         }
-    });
+    }, specificApiKey);
 
     const result = JSON.parse(response.text);
     return result.suggestions || [];
@@ -325,10 +329,11 @@ export const generateWeeklyRumor = async (gameState: GameState): Promise<string>
     Chỉ trả về đoạn văn tin tức, không thêm bất kỳ lời dẫn nào.`;
     
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
     const response = await generateWithRetry({
         model: settings?.quickSupportModel || 'gemini-2.5-flash',
         contents: prompt,
-    });
+    }, specificApiKey);
     
     return response.text.trim();
 };
@@ -383,6 +388,7 @@ export const generateRandomTechnique = async (gameState: GameState): Promise<Cul
     - Chỉ trả về một đối tượng JSON duy nhất theo schema.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -390,7 +396,7 @@ export const generateRandomTechnique = async (gameState: GameState): Promise<Cul
             responseMimeType: "application/json",
             responseSchema: techniqueSchema,
         }
-    });
+    }, specificApiKey);
 
     const techniqueData = JSON.parse(response.text);
     
@@ -442,6 +448,7 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -449,7 +456,7 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
             responseMimeType: "application/json",
             responseSchema: eventSchema,
         }
-    });
+    }, specificApiKey);
 
     return JSON.parse(response.text) as Omit<DynamicWorldEvent, 'id' | 'turnStart'>;
 };

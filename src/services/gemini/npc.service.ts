@@ -86,6 +86,7 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
     5.  **Tài Sản:** Gán cho họ một lượng tiền tệ phù hợp.`;
     
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
     const response = await generateWithRetry({
         model: settings?.npcSimulationModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -93,7 +94,7 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
             responseMimeType: "application/json",
             responseSchema,
         }
-    });
+    }, specificApiKey);
 
     const npcsData = JSON.parse(response.text);
     
@@ -208,11 +209,12 @@ export const simulateNpcAction = async (npc: NPC, gameState: GameState): Promise
     Nhiệm vụ: Dựa trên thông tin trên, hãy quyết định một hành động hợp lý cho NPC này trong ngày hôm nay. Họ có thể ở lại hoặc di chuyển đến một địa điểm lân cận. Sau đó, tạo ra một tin đồn liên quan (nếu có).`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
     const response = await generateWithRetry({
         model: settings?.npcSimulationModel || 'gemini-2.5-flash',
         contents: prompt,
         config: { responseMimeType: "application/json", responseSchema },
-    });
+    }, specificApiKey);
 
     const data = JSON.parse(response.text);
     

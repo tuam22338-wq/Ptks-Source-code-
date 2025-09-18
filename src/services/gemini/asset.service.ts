@@ -13,6 +13,7 @@ export const generateCharacterAvatar = async (identity: CharacterIdentity): Prom
     `;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.imageGenerationModel;
     const response = await generateImagesWithRetry({
         model: settings?.imageGenerationModel || 'imagen-4.0-generate-001',
         prompt: prompt,
@@ -21,7 +22,7 @@ export const generateCharacterAvatar = async (identity: CharacterIdentity): Prom
             outputMimeType: 'image/jpeg',
             aspectRatio: '1:1',
         },
-    });
+    }, specificApiKey);
 
     const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
     if (!base64ImageBytes) {
@@ -34,6 +35,7 @@ export const generateBackgroundImage = async (prompt: string): Promise<string> =
     const fullPrompt = `${prompt}, beautiful fantasy landscape, digital painting, epic, cinematic lighting, wide angle, suitable for a game background.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.imageGenerationModel;
     const response = await generateImagesWithRetry({
         model: settings?.imageGenerationModel || 'imagen-4.0-generate-001',
         prompt: fullPrompt,
@@ -42,7 +44,7 @@ export const generateBackgroundImage = async (prompt: string): Promise<string> =
             outputMimeType: 'image/jpeg',
             aspectRatio: '16:9',
         },
-    });
+    }, specificApiKey);
 
     const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
     if (!base64ImageBytes) {
@@ -55,6 +57,7 @@ export const generateEventIllustration = async (prompt: string): Promise<string>
     const fullPrompt = `Epic moment, fantasy art painting, Chinese ink wash painting style (Shuǐmòhuà), cinematic lighting, detailed, beautiful. ${prompt}`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.imageGenerationModel;
     const response = await generateImagesWithRetry({
         model: settings?.imageGenerationModel || 'imagen-4.0-generate-001',
         prompt: fullPrompt,
@@ -63,7 +66,7 @@ export const generateEventIllustration = async (prompt: string): Promise<string>
             outputMimeType: 'image/jpeg',
             aspectRatio: '16:9',
         },
-    });
+    }, specificApiKey);
 
     const base64ImageBytes = response.generatedImages?.[0]?.image?.imageBytes;
     if (!base64ImageBytes) {

@@ -24,7 +24,7 @@ export * from './data/realmSystem';
 
 
 export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
-export const CURRENT_GAME_VERSION = "1.0.4";
+export const CURRENT_GAME_VERSION = "1.0.5";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
@@ -102,7 +102,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     fontFamily: "'Noto Serif', serif",
     theme: 'theme-bamboo-forest',
     backgroundImage: '',
-    zoomLevel: 100,
+    zoomLevel: 50,
     textColor: '#d1d5db',
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
@@ -138,6 +138,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     enableThinking: true,
     thinkingBudget: 250,
     apiKeys: [],
+    modelApiKeyAssignments: {},
     enableDeveloperConsole: false,
     backgroundMusicUrl: '',
     backgroundMusicName: '',

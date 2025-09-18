@@ -29,6 +29,7 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
     `;
     
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -36,7 +37,7 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
             responseMimeType: "application/json",
             responseSchema: identitySchema,
         }
-    });
+    }, specificApiKey);
 
     const json = JSON.parse(response.text);
     return json as Omit<CharacterIdentity, 'gender' | 'age'>;
@@ -80,6 +81,7 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
     `;
     
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
     const response = await generateWithRetry({
         model: settings?.npcSimulationModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -87,7 +89,7 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
             responseMimeType: "application/json",
             responseSchema: familySchema,
         }
-    });
+    }, specificApiKey);
 
     const data = JSON.parse(response.text);
     const generatedNpcs: NPC[] = [];
@@ -179,10 +181,11 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     
     Hãy viết một đoạn văn độc đáo và phù hợp với nhân vật. Chỉ trả về đoạn văn tường thuật, không thêm bất kỳ lời dẫn hay bình luận nào khác.`;
 
+    const specificApiKey = settings?.modelApiKeyAssignments?.mainTaskModel;
     const response = await generateWithRetry({
         model: settings?.mainTaskModel || 'gemini-2.5-flash',
         contents: prompt,
-    });
+    }, specificApiKey);
 
     return response.text.trim();
 };

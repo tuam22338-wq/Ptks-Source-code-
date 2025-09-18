@@ -49,7 +49,7 @@ const MainMenu: React.FC = () => {
                     Tam Thiên<br/>Thế Giới
                 </h1>
                 <h2 
-                    className="text-2xl sm:text-3xl mt-4 tracking-widest font-semibold font-title text-[var(--text-muted-color)] animate-menu-item"
+                    className="text-2xl sm:text-3xl mt-4 tracking-widest font-semibold font-title text-text-muted animate-menu-item"
                     style={{ animationDelay: '300ms' }}
                 >
                     Khởi Nguyên
@@ -72,7 +72,7 @@ const MainMenu: React.FC = () => {
         </div>
 
         <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1550ms' }}>
-            <div className="flex items-center justify-between gap-2 text-[var(--text-muted-color)] mb-1">
+            <div className="flex items-center justify-between gap-2 text-text-muted mb-1">
                 <div className="flex items-center gap-1">
                     <FaDatabase />
                     <span>Dung lượng lưu trữ:</span>

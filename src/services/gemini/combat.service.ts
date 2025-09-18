@@ -48,6 +48,7 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
     Hãy trả về một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.actionAnalysisModel;
     const response = await generateWithRetry({
         model: settings?.actionAnalysisModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -55,7 +56,7 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
             responseMimeType: "application/json",
             responseSchema,
         }
-    });
+    }, specificApiKey);
 
     return JSON.parse(response.text) as CombatActionDecision;
 };

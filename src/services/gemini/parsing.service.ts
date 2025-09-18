@@ -77,6 +77,7 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
     Return a JSON object with three keys: "items", "techniques", and "npcEncounters". If nothing new is found for a category, return an empty array for it. Be very strict about what counts as "obtaining" or "learning". Only extract items if the text clearly states the player now possesses them.`;
     
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
     const response = await generateWithRetry({
         model: settings?.dataParsingModel || 'gemini-2.5-flash',
         contents: prompt,
@@ -84,7 +85,7 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
             responseMimeType: "application/json",
             responseSchema: extractionSchema
         }
-    });
+    }, specificApiKey);
 
     const result = JSON.parse(response.text);
 

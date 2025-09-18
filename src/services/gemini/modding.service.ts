@@ -280,6 +280,7 @@ Hãy sáng tạo và đảm bảo nội dung phù hợp với bối cảnh tiên
     `;
 
     const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
         contents: fullPrompt,
@@ -287,7 +288,7 @@ Hãy sáng tạo và đảm bảo nội dung phù hợp với bối cảnh tiên
             responseMimeType: "application/json",
             responseSchema: finalSchema,
         }
-    });
+    }, specificApiKey);
 
     try {
         const json = JSON.parse(response.text.trim());

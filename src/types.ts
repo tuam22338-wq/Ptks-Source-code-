@@ -51,6 +51,11 @@ export interface SafetySettings {
     dangerousContent: SafetyLevel;
 }
 
+export type AssignableModel = 
+    | 'mainTaskModel' | 'quickSupportModel' | 'itemAnalysisModel' | 'itemCraftingModel' 
+    | 'soundSystemModel' | 'actionAnalysisModel' | 'gameMasterModel' | 'npcSimulationModel' 
+    | 'dataParsingModel' | 'imageGenerationModel' | 'ragSummaryModel' | 'ragSourceIdModel';
+
 export interface GameSettings {
     layoutMode: LayoutMode;
     gameSpeed: GameSpeed;
@@ -89,6 +94,7 @@ export interface GameSettings {
     enableThinking: boolean;
     thinkingBudget: number;
     apiKeys: string[];
+    modelApiKeyAssignments: Partial<Record<AssignableModel, string>>;
     enableDeveloperConsole: boolean;
     backgroundMusicUrl: string;
     backgroundMusicName: string;
