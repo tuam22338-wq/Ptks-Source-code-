@@ -651,6 +651,7 @@ export interface CultivationTechnique {
     element?: Element;
     requirements?: StatBonus[];
     tags?: string[];
+    bonuses?: StatBonus[];
 }
 
 

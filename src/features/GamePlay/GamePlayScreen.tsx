@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -374,7 +374,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 });
             }
 
-            // After stream is complete, parse the full response for game data changes
             if (fullResponse && !abortControllerRef.current.signal.aborted) {
                 (async () => {
                     let stateForParsing: GameState | null = null;
@@ -382,16 +381,16 @@ const GamePlayScreenContent: React.FC = memo(() => {
                         stateForParsing = gs;
                         return gs;
                     });
-                    await new Promise(resolve => setTimeout(resolve, 0)); // Wait a tick
+                    await new Promise(resolve => setTimeout(resolve, 0));
 
                     if (stateForParsing) {
                         try {
-                            const { newItems, newTechniques, newNpcEncounterIds } = await parseNarrativeForGameData(fullResponse, stateForParsing);
+                            const { newItems, newTechniques, newNpcEncounterIds, statChanges, newEffects } = await parseNarrativeForGameData(fullResponse, stateForParsing);
 
-                            if (newItems.length > 0 || newTechniques.length > 0 || newNpcEncounterIds.length > 0) {
+                            if (newItems.length > 0 || newTechniques.length > 0 || newNpcEncounterIds.length > 0 || (statChanges && statChanges.length > 0) || (newEffects && newEffects.length > 0)) {
                                 setGameState(prevState => {
                                     if (!prevState) return null;
-                                    const pc = { ...prevState.playerCharacter };
+                                    let pc = { ...prevState.playerCharacter };
                                     
                                     const updatedItems = [...pc.inventory.items];
                                     newItems.forEach(newItem => {
@@ -403,23 +402,63 @@ const GamePlayScreenContent: React.FC = memo(() => {
                                         }
                                         showNotification(`Nhận được: ${newItem.name} x${newItem.quantity}`);
                                     });
+                                    pc.inventory = { ...pc.inventory, items: updatedItems };
 
-                                    const updatedTechniques = [...pc.auxiliaryTechniques, ...newTechniques];
+                                    let updatedTechniques = [...pc.auxiliaryTechniques];
+                                    let effectsFromTechniques: ActiveEffect[] = [];
                                     newTechniques.forEach(tech => {
-                                        showNotification(`Lĩnh ngộ: ${tech.name}`);
+                                        if (!updatedTechniques.some(t => t.name === tech.name)) {
+                                            updatedTechniques.push(tech);
+                                            showNotification(`Lĩnh ngộ: ${tech.name}`);
+                                            if (tech.bonuses && tech.bonuses.length > 0) {
+                                                effectsFromTechniques.push({
+                                                    id: `tech-passive-${tech.id}`,
+                                                    name: `${tech.name} (Bị Động)`,
+                                                    source: `technique:${tech.id}`,
+                                                    description: `Hiệu quả bị động từ công pháp ${tech.name}.`,
+                                                    bonuses: tech.bonuses,
+                                                    duration: -1,
+                                                    isBuff: true,
+                                                });
+                                            }
+                                        }
                                     });
+                                    pc.auxiliaryTechniques = updatedTechniques;
 
                                     const updatedEncounters = [...new Set([...prevState.encounteredNpcIds, ...newNpcEncounterIds])];
                                     
-                                    return {
-                                        ...prevState,
-                                        playerCharacter: {
-                                            ...pc,
-                                            inventory: { ...pc.inventory, items: updatedItems },
-                                            auxiliaryTechniques: updatedTechniques,
-                                        },
-                                        encounteredNpcIds: updatedEncounters
-                                    };
+                                    if (statChanges && statChanges.length > 0) {
+                                        const newAttributes = pc.attributes.map(group => ({
+                                            ...group,
+                                            attributes: group.attributes.map(attr => {
+                                                const changeInfo = statChanges.find(sc => sc.attribute === attr.name);
+                                                if (changeInfo && typeof attr.value === 'number') {
+                                                    let newValue = attr.value + changeInfo.change;
+                                                    if (attr.maxValue) {
+                                                        newValue = Math.max(0, Math.min(newValue, attr.maxValue));
+                                                    } else {
+                                                        newValue = Math.max(0, newValue);
+                                                    }
+                                                    showNotification(`${attr.name}: ${changeInfo.change > 0 ? '+' : ''}${changeInfo.change}`);
+                                                    return { ...attr, value: newValue };
+                                                }
+                                                return attr;
+                                            })
+                                        }));
+                                        pc.attributes = newAttributes;
+                                    }
+                                    
+                                    const allNewEffects = [
+                                        ...(newEffects || []).map(effect => ({ ...effect, id: `effect-${Date.now()}-${Math.random()}` })),
+                                        ...effectsFromTechniques
+                                    ];
+
+                                    if (allNewEffects.length > 0) {
+                                        pc.activeEffects = [...pc.activeEffects, ...allNewEffects];
+                                        allNewEffects.forEach(eff => showNotification(`Bạn nhận được hiệu ứng: ${eff.name}`));
+                                    }
+                                    
+                                    return { ...prevState, playerCharacter: pc, encounteredNpcIds: updatedEncounters };
                                 });
                             }
                         } catch (parseError) {
@@ -451,8 +490,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
     }, [isAiResponding, addStoryEntry, gameState, setGameState, settings.autoSummaryFrequency, openInventoryModal, showNotification, cancelSpeech]);
 
     const handleContextualAction = useCallback((actionId: string, actionLabel: string) => {
-        // A simple implementation that treats contextual actions as regular text actions.
-        // This can be expanded later with specific logic for each actionId.
         handleActionSubmit(`Thực hiện hành động đặc biệt: ${actionLabel}`, 'act');
     }, [handleActionSubmit]);
 

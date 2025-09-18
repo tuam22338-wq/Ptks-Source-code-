@@ -13,105 +13,120 @@ import {
 import { FaSun, FaMoon } from 'react-icons/fa';
 
 export const migrateGameState = (savedGame: any): GameState => {
-    let dataToProcess = { ...savedGame };
+    if (!savedGame || typeof savedGame !== 'object') {
+        throw new Error("Invalid save data provided to migration function.");
+    }
+    let dataToProcess = JSON.parse(JSON.stringify(savedGame)); // Deep copy to prevent mutation issues
 
-    if (!dataToProcess.difficulty) {
-        dataToProcess.difficulty = 'medium';
-    }
-    
-    // Add spiritualRoot migration if old save detected
-    if (dataToProcess.playerCharacter && dataToProcess.playerCharacter.talents && !dataToProcess.playerCharacter.spiritualRoot) {
-        console.log("Migrating save from Talents to Spiritual Root system...");
-        dataToProcess.playerCharacter.spiritualRoot = {
-            elements: [{ type: 'Vô', purity: 100 }],
-            quality: 'Phàm Căn',
-            name: 'Phàm Nhân (Chưa kiểm tra)',
-            description: 'Linh căn của người thường, chưa được kiểm tra.',
-            bonuses: [],
-        };
-        delete dataToProcess.playerCharacter.talents;
-    }
-    
-    if (dataToProcess.playerCharacter && !dataToProcess.playerCharacter.vitals) {
-        console.log("Migrating save to include Vitals system...");
-        dataToProcess.playerCharacter.vitals = {
-            hunger: 100,
-            maxHunger: 100,
-            thirst: 100,
-            maxThirst: 100,
-            temperature: 37,
-        };
+    // --- Versioned Migration Cascade ---
+    let version = dataToProcess.version || "1.0.0";
+
+    // Migrate from 1.0.0 to 1.0.1 (Example: Add vitals system)
+    if (version < "1.0.1") {
+        console.log(`Migrating save from v${version} to v1.0.1...`);
+        if (dataToProcess.playerCharacter && !dataToProcess.playerCharacter.vitals) {
+            dataToProcess.playerCharacter.vitals = {
+                hunger: 100,
+                maxHunger: 100,
+                thirst: 100,
+                maxThirst: 100,
+                temperature: 37,
+            };
+        }
+        version = "1.0.1";
     }
 
-
-    if (dataToProcess.version !== CURRENT_GAME_VERSION) {
-        let version = dataToProcess.version || "1.0.0";
-
-        if (version === "1.0.0") {
-            console.log("Migrating save from v1.0.0 to v1.1.0...");
-            
-            dataToProcess.activeMods = dataToProcess.activeMods ?? [];
-            dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
-            dataToProcess.majorEvents = dataToProcess.majorEvents ?? MAJOR_EVENTS;
-            dataToProcess.encounteredNpcIds = dataToProcess.encounteredNpcIds ?? [];
-            dataToProcess.activeStory = dataToProcess.activeStory ?? null;
-            dataToProcess.storySummary = dataToProcess.storySummary ?? '';
-
-            if (dataToProcess.playerCharacter) {
-                // Other migrations
-                dataToProcess.playerCharacter.relationships = dataToProcess.playerCharacter.relationships ?? [];
-                dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
-                dataToProcess.playerCharacter.chosenPathIds = dataToProcess.playerCharacter.chosenPathIds ?? [];
-                dataToProcess.playerCharacter.knownRecipeIds = dataToProcess.playerCharacter.knownRecipeIds ?? [];
-                dataToProcess.playerCharacter.sect = dataToProcess.playerCharacter.sect ?? null;
-                dataToProcess.playerCharacter.caveAbode = dataToProcess.playerCharacter.caveAbode ?? {};
-                dataToProcess.playerCharacter.techniqueCooldowns = dataToProcess.playerCharacter.techniqueCooldowns ?? {};
-                dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
-                dataToProcess.playerCharacter.danhVong = dataToProcess.playerCharacter.danhVong ?? { value: 0, status: 'Vô Danh Tiểu Tốt' };
-                
-                // Quest system migration
-                dataToProcess.playerCharacter.activeQuests = dataToProcess.playerCharacter.activeQuests ?? [];
-                dataToProcess.playerCharacter.completedQuestIds = dataToProcess.playerCharacter.completedQuestIds ?? [];
-                delete dataToProcess.playerCharacter.activeMissions;
+    // Migrate from 1.0.1 to 1.0.2 (Example: Add Spiritual Root and remove Talents)
+    if (version < "1.0.2") {
+        console.log(`Migrating save from v${version} to v1.0.2...`);
+        if (dataToProcess.playerCharacter) {
+             if (dataToProcess.playerCharacter.talents && !dataToProcess.playerCharacter.spiritualRoot) {
+                dataToProcess.playerCharacter.spiritualRoot = {
+                    elements: [{ type: 'Vô', purity: 100 }],
+                    quality: 'Phàm Căn',
+                    name: 'Phàm Nhân (Cần kiểm tra lại)',
+                    description: 'Linh căn được di trú từ hệ thống cũ.',
+                    bonuses: [],
+                };
+                delete dataToProcess.playerCharacter.talents;
             }
-            
-            dataToProcess.version = "1.1.0";
-            version = "1.1.0";
         }
-    
-        if (version !== CURRENT_GAME_VERSION) {
-            throw new Error(`Migration failed. Could not migrate from ${savedGame.version || 'unversioned'} to ${CURRENT_GAME_VERSION}.`);
-        }
+        version = "1.0.2";
     }
     
-    // This migration can be removed in future versions, but is kept for saves that might have missed the 1.1.0 technique system update
-    if (dataToProcess.playerCharacter && dataToProcess.playerCharacter.techniques) {
-        console.log("Applying late technique system migration...");
-        const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
-        const newTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
-        
-        if(newTechnique) {
-            newTechnique.skillTreeNodes['root'].isUnlocked = true;
+    // Migrate from 1.0.2 to 1.0.3 (Example: Add Main Cultivation Technique system)
+    if (version < "1.0.3") {
+        console.log(`Migrating save from v${version} to v1.0.3...`);
+        if (dataToProcess.playerCharacter && dataToProcess.playerCharacter.techniques) {
+             const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
+             const newTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
+             if(newTechnique) {
+                newTechnique.skillTreeNodes['root'].isUnlocked = true;
+             }
+             dataToProcess.playerCharacter.mainCultivationTechnique = newTechnique;
+             dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
+             delete dataToProcess.playerCharacter.techniques;
+             dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
         }
+        version = "1.0.3";
+    }
 
-        dataToProcess.playerCharacter.mainCultivationTechnique = newTechnique;
-        dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
-        delete dataToProcess.playerCharacter.techniques;
-        dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
+    // Migrate from 1.0.3 to 1.0.4 (Example: Add quest, reputation, and other systems)
+    if (version < "1.0.4") {
+        console.log(`Migrating save from v${version} to v1.0.4...`);
+        dataToProcess.activeMods = dataToProcess.activeMods ?? [];
+        dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
+        dataToProcess.majorEvents = dataToProcess.majorEvents ?? MAJOR_EVENTS;
+        dataToProcess.encounteredNpcIds = dataToProcess.encounteredNpcIds ?? [];
+        dataToProcess.activeStory = dataToProcess.activeStory ?? null;
+        dataToProcess.storySummary = dataToProcess.storySummary ?? '';
+
+        if (dataToProcess.playerCharacter) {
+            dataToProcess.playerCharacter.relationships = dataToProcess.playerCharacter.relationships ?? [];
+            dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
+            dataToProcess.playerCharacter.chosenPathIds = dataToProcess.playerCharacter.chosenPathIds ?? [];
+            dataToProcess.playerCharacter.knownRecipeIds = dataToProcess.playerCharacter.knownRecipeIds ?? [];
+            dataToProcess.playerCharacter.sect = dataToProcess.playerCharacter.sect ?? null;
+            dataToProcess.playerCharacter.caveAbode = dataToProcess.playerCharacter.caveAbode ?? {};
+            dataToProcess.playerCharacter.techniqueCooldowns = dataToProcess.playerCharacter.techniqueCooldowns ?? {};
+            dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
+            dataToProcess.playerCharacter.danhVong = dataToProcess.playerCharacter.danhVong ?? { value: 0, status: 'Vô Danh Tiểu Tốt' };
+            dataToProcess.playerCharacter.activeQuests = dataToProcess.playerCharacter.activeQuests ?? [];
+            dataToProcess.playerCharacter.completedQuestIds = dataToProcess.playerCharacter.completedQuestIds ?? [];
+            delete dataToProcess.playerCharacter.activeMissions;
+        }
+        version = "1.0.4";
+    }
+    
+    // Migrate to 1.0.5 (current version)
+    if (version < "1.0.5") {
+        console.log(`Migrating save from v${version} to v1.0.5...`);
+        dataToProcess.playerSect = dataToProcess.playerSect ?? null;
+        if (dataToProcess.playerCharacter && !dataToProcess.playerCharacter.systemInfo) {
+            if (dataToProcess.gameMode === 'transmigrator') {
+                dataToProcess.playerCharacter.systemInfo = { unlockedFeatures: ['status', 'quests', 'store'] };
+            }
+        }
+        version = "1.0.5";
     }
 
 
+    // --- Post-migration Default Values & Finalization ---
+    dataToProcess.difficulty = dataToProcess.difficulty ?? 'medium';
     dataToProcess.worldSects = dataToProcess.worldSects ?? [];
     dataToProcess.eventIllustrations = dataToProcess.eventIllustrations ?? [];
     dataToProcess.dialogueChoices = dataToProcess.dialogueChoices ?? null;
     dataToProcess.shopStates = dataToProcess.shopStates ?? {};
-    dataToProcess.playerSect = dataToProcess.playerSect ?? null; // Add playerSect migration
+    dataToProcess.storySummary = dataToProcess.storySummary ?? '';
+    dataToProcess.gameMode = dataToProcess.gameMode ?? 'classic';
 
     if (dataToProcess.playerCharacter) {
          dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
          dataToProcess.playerCharacter.activeQuests = dataToProcess.playerCharacter.activeQuests ?? [];
          dataToProcess.playerCharacter.completedQuestIds = dataToProcess.playerCharacter.completedQuestIds ?? [];
-         if (!dataToProcess.playerCharacter.element) {
+         if (!dataToProcess.playerCharacter.element && dataToProcess.playerCharacter.spiritualRoot) {
+            dataToProcess.playerCharacter.element = dataToProcess.playerCharacter.spiritualRoot.elements[0]?.type || 'Vô';
+         } else if (!dataToProcess.playerCharacter.element) {
             dataToProcess.playerCharacter.element = 'Vô';
          }
     }
@@ -121,16 +136,14 @@ export const migrateGameState = (savedGame: any): GameState => {
     } else {
         dataToProcess.worldState = { rumors: [], dynamicEvents: [] };
     }
-    dataToProcess.storySummary = dataToProcess.storySummary ?? '';
 
-    // Re-hydrate data that was stripped for saving
-    if (!dataToProcess.realmSystem) {
-        dataToProcess.realmSystem = REALM_SYSTEM; // TODO: Reconstruct from mods if necessary
-    }
-    if (!dataToProcess.activeMods) {
-        dataToProcess.activeMods = []; // TODO: Reconstruct from DB on load
-    }
+    // Stamp the migrated save with the current game version to prevent re-migration.
+    dataToProcess.version = CURRENT_GAME_VERSION;
 
+
+    // --- Re-hydration ---
+    dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
+    dataToProcess.activeMods = dataToProcess.activeMods ?? [];
 
     const allAttributesConfig = new Map<string, any>();
     ATTRIBUTES_CONFIG.forEach(group => {
@@ -139,10 +152,10 @@ export const migrateGameState = (savedGame: any): GameState => {
         });
     });
 
-    const rehydrateAttributes = (groups: AttributeGroup[]): AttributeGroup[] => {
-        return groups.map((group: AttributeGroup) => ({
+    const rehydrateAttributes = (groups: any[]): AttributeGroup[] => {
+        return groups.map((group: any) => ({
             ...group,
-            attributes: group.attributes.map((attr: Attribute) => {
+            attributes: group.attributes.map((attr: any) => {
                 const config = allAttributesConfig.get(attr.name);
                 return {
                     ...attr,
@@ -178,25 +191,24 @@ export const migrateGameState = (savedGame: any): GameState => {
         });
     }
     
-    // Use a function to get contextual actions since WORLD_MAP is not exhaustive with mods
     const CONTEXTUAL_ACTION_ICONS: Record<string, any> = { talk_villagers: GiTalk, rest_inn: GiBed, gather_herbs: GiHerbsBundle, mine_ore: GiStoneBlock, closed_door_cultivation: GiMountainCave, alchemy: GiCauldron };
     const getContextualAction = (actionId: string, label: string, description: string) => ({ id: actionId, label, description, icon: CONTEXTUAL_ACTION_ICONS[actionId] || FaQuestionCircle });
 
     if (dataToProcess.discoveredLocations) {
         dataToProcess.discoveredLocations = dataToProcess.discoveredLocations.map((loc: Location) => {
-            if (!loc.contextualActions) {
-                 const config = WORLD_MAP.find(l => l.id === loc.id);
-                 if (config && config.contextualActions) {
-                     return { ...loc, contextualActions: config.contextualActions };
-                 }
-                 return loc;
+            const config = WORLD_MAP.find(l => l.id === loc.id);
+            if (config && config.contextualActions && (!loc.contextualActions || loc.contextualActions.some(a => !a.hasOwnProperty('icon')))) {
+                 return { ...loc, contextualActions: config.contextualActions };
             }
-            return {
-                ...loc,
-                contextualActions: loc.contextualActions.map((action: any) => 
-                     getContextualAction(action.id, action.label, action.description)
-                )
-            };
+            if (loc.contextualActions && loc.contextualActions.some(a => !a.hasOwnProperty('icon'))) {
+                 return {
+                    ...loc,
+                    contextualActions: loc.contextualActions.map((action: any) => 
+                         getContextualAction(action.id, action.label, action.description)
+                    )
+                };
+            }
+            return loc;
         });
     }
 

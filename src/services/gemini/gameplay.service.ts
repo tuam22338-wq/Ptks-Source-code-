@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent } from '../../types';
-import { NARRATIVE_STYLES, REALM_SYSTEM, FACTIONS, PHAP_BAO_RANKS } from "../../constants";
+import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus } from '../../types';
+import { NARRATIVE_STYLES, REALM_SYSTEM, FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 
@@ -375,6 +375,18 @@ export const generateRandomTechnique = async (gameState: GameState): Promise<Cul
                     },
                     required: ['type', 'details']
                 }
+            },
+            bonuses: {
+                type: Type.ARRAY,
+                description: "A list of passive stat bonuses this technique provides. Only for passive types like 'Tâm Pháp' or 'Luyện Thể'. For active skills, this should be empty.",
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                        value: { type: Type.NUMBER }
+                    },
+                    required: ['attribute', 'value']
+                }
             }
         },
         required: ['name', 'description', 'type', 'rank', 'cost', 'cooldown', 'icon', 'effects'],
@@ -390,6 +402,7 @@ export const generateRandomTechnique = async (gameState: GameState): Promise<Cul
     **Nhiệm vụ:**
     - Tạo ra một công pháp có tên, mô tả, loại, cấp bậc, tiêu hao, hồi chiêu, và hiệu ứng thú vị.
     - Cấp bậc (rank) của công pháp nên tương xứng với cảnh giới của người chơi. Ví dụ, người chơi ở Luyện Khí Kỳ thì chỉ nên ngộ ra công pháp Phàm Giai hoặc Tiểu Giai.
+    - **Nếu công pháp là loại bị động (như 'Tâm Pháp', 'Luyện Thể'), hãy thêm vào một vài chỉ số thưởng (bonuses) hợp lý. Các công pháp chủ động (active) không nên có 'bonuses'.**
     - Chỉ trả về một đối tượng JSON duy nhất theo schema.`;
 
     const settings = await db.getSettings();
@@ -410,6 +423,7 @@ export const generateRandomTechnique = async (gameState: GameState): Promise<Cul
         id: `random-tech-${Date.now()}`,
         level: 1,
         maxLevel: 10,
+        bonuses: techniqueData.bonuses || [],
     } as CultivationTechnique;
 };
 
