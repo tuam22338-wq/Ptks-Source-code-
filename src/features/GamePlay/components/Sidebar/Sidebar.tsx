@@ -14,7 +14,9 @@ import AiMemoryPanel from './panels/AiMemoryPanel';
 import GenealogyPanel from './panels/GenealogyPanel';
 import QuestPanel from './panels/QuestPanel';
 import SystemPanel from './panels/SystemPanel';
+import PlayerSectPanel from './panels/PlayerSectPanel';
 import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaProjectDiagram, FaBrain, FaSitemap, FaUsers, FaMountain, FaFlask, FaTasks, FaDesktop } from 'react-icons/fa';
+import { GiCastle } from 'react-icons/gi';
 import { useGameUIContext } from '../../../../contexts/GameUIContext';
 import { SHOPS } from '../../../../constants';
 
@@ -39,7 +41,7 @@ interface SidebarProps {
     gameState: GameState;
     setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
 }
-type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | 'aiMemory' | 'genealogy' | 'quests' | 'system' | string;
+type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | 'aiMemory' | 'genealogy' | 'quests' | 'system' | 'playerSect' | string;
 
 const ICON_MAP: { [key: string]: React.ElementType } = {
     FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram
@@ -63,6 +65,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         {id: 'system', label: 'Hệ Thống', icon: FaDesktop, condition: gameState.gameMode === 'transmigrator' },
         {id: 'quests', label: 'Nhiệm Vụ', icon: FaTasks, condition: true },
         {id: 'techniques', label: 'Công Pháp', icon: FaScroll, condition: true },
+        {id: 'playerSect', label: 'Tông Môn', icon: GiCastle, condition: true },
         {id: 'genealogy', label: 'Thân Hữu', icon: FaSitemap, condition: true },
         {id: 'world', label: 'Thế Giới', icon: FaGlobe, condition: true },
         {id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, condition: true },
@@ -117,6 +120,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {activeTab === 'system' && <SystemPanel gameState={gameState} setGameState={setGameState} showNotification={showNotification} />}
                 {activeTab === 'quests' && <QuestPanel quests={playerCharacter.activeQuests} />}
                 {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
+                {activeTab === 'playerSect' && <PlayerSectPanel gameState={gameState} setGameState={setGameState} showNotification={showNotification} />}
                 {activeTab === 'genealogy' && <GenealogyPanel playerCharacter={playerCharacter} allNpcs={allNpcs} onNpcSelect={handleNpcInteraction} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} onTravel={onTravel} onExplore={onExplore} onNpcSelect={handleNpcInteraction} />}
                 {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} allNpcs={allNpcs} />}

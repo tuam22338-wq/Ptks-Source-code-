@@ -23,13 +23,14 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
                 {npc.identity.familyName && <p><strong className="text-gray-400">Gia tộc:</strong> <span className="text-gray-300 font-semibold">{npc.identity.familyName}</span></p>}
                 {npc.faction && <p><strong className="text-gray-400">Phe phái:</strong> <span className="text-gray-300 font-semibold">{npc.faction}</span></p>}
                 <p><strong className="text-gray-400">Trạng thái:</strong> <em className="text-gray-300">"{npc.status}"</em></p>
+                {npc.mucTieu && <p><strong className="text-gray-400">Mục tiêu:</strong> <span className="text-purple-300 italic">"{npc.mucTieu}"</span></p>}
                 <p><strong className="text-gray-400">Ngoại hình:</strong> <span className="text-gray-300">{npc.identity.appearance}</span></p>
                 <p><strong className="text-gray-400">Xuất thân:</strong> <span className="text-gray-300">{npc.identity.origin}</span></p>
                 <p><strong className="text-gray-400">Tính cách:</strong> <span className="text-gray-300">{npc.identity.personality}</span></p>
                 
                 {npc.relationships && npc.relationships.length > 0 && (
                     <div>
-                        <h4 className="font-semibold text-gray-300 mb-2">Mối quan hệ:</h4>
+                        <h4 className="font-semibold text-gray-300 mb-2 border-t border-gray-700/50 pt-3">Mối quan hệ:</h4>
                         <div className="space-y-2">
                             {npc.relationships.map((rel, index) => {
                                 const targetNpc = allNpcs.find(n => n.id === rel.targetNpcId);
@@ -48,7 +49,7 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
                 )}
 
                 <div>
-                    <h4 className="font-semibold text-gray-300 mb-2">Tiên Tư:</h4>
+                    <h4 className="font-semibold text-gray-300 mb-2 border-t border-gray-700/50 pt-3">Tiên Tư:</h4>
                     <div className="space-y-2">
                         {npc.talents.length > 0 ? npc.talents.map(talent => {
                             const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
@@ -89,14 +90,22 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ playerCharacter, allNpcs, encount
     const combinedNpcs = useMemo(() => {
         const npcMap = new Map<string, NPC>();
         allNpcs.forEach(npc => npcMap.set(npc.id, npc));
-        NPC_LIST.forEach(npc => npcMap.set(npc.id, npc));
+        NPC_LIST.forEach(npc => {
+            if (!npcMap.has(npc.id)) {
+                npcMap.set(npc.id, npc);
+            }
+        });
         return Array.from(npcMap.values()).sort((a, b) => a.identity.name.localeCompare(b.identity.name));
     }, [allNpcs]);
     
     const combinedLocations = useMemo(() => {
         const locationMap = new Map<string, Location>();
         discoveredLocations.forEach(loc => locationMap.set(loc.id, loc));
-        WORLD_MAP.forEach(loc => locationMap.set(loc.id, loc));
+        WORLD_MAP.forEach(loc => {
+             if (!locationMap.has(loc.id)) {
+                locationMap.set(loc.id, loc);
+            }
+        });
         return Array.from(locationMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     }, [discoveredLocations]);
 

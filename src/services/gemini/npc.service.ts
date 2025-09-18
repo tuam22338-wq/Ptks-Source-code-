@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { NPC, NpcDensity, AttributeGroup, InventoryItem, GameState, Rumor, Element, Currency } from '../../types';
+import type { NPC, NpcDensity, AttributeGroup, InventoryItem, GameState, Rumor, Element, Currency, Relationship } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -182,31 +182,50 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
     });
 };
 
-export const simulateNpcAction = async (npc: NPC, gameState: GameState): Promise<{ updatedNpc: NPC, rumor: Rumor | null }> => {
-    const currentLocation = WORLD_MAP.find(l => l.id === npc.locationId);
-    const neighborLocations = (currentLocation?.neighbors || [])
-        .map(id => WORLD_MAP.find(l => l.id === id))
-        .filter(Boolean) as { id: string, name: string }[];
-
+export const generateRelationshipUpdate = async (
+    npc1: NPC,
+    npc2: NPC,
+    currentRelationship: Relationship,
+    gameState: GameState
+): Promise<{ newRelationshipDescription: string; rumorText: string | null }> => {
+    
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            action: { type: Type.STRING, description: "Hành động ngắn gọn mà NPC thực hiện. Ví dụ: 'Đi đến quán trà nghe ngóng tin tức', 'Bế quan luyện một môn thần thông mới'." },
-            newLocationId: { type: Type.STRING, description: `ID của địa điểm mới. Nếu NPC di chuyển, chọn một ID từ danh sách hàng xóm. Nếu không, trả về ID hiện tại ('${npc.locationId}').`, enum: [npc.locationId, ...neighborLocations.map(l => l.id)] },
-            rumorText: { type: Type.STRING, description: "Một tin đồn có thể được tạo ra từ hành động này. Nếu không có tin đồn, trả về một chuỗi rỗng." },
+            newRelationshipDescription: { type: Type.STRING, description: `Một mô tả mới cho mối quan hệ giữa ${npc1.identity.name} và ${npc2.identity.name}. Mô tả này nên phản ánh sự thay đổi (hoặc không thay đổi) trong mối quan hệ của họ.` },
+            rumorText: { type: Type.STRING, description: "Một tin đồn có thể được tạo ra từ sự tương tác này. Tin đồn phải ngắn gọn và thú vị. Nếu không có tin đồn, trả về một chuỗi rỗng." },
         },
-        required: ['action', 'newLocationId', 'rumorText'],
+        required: ['newRelationshipDescription', 'rumorText'],
     };
 
-    const prompt = `Bạn là AI mô phỏng hành vi cho một NPC trong game tu tiên.
-    - **NPC:** ${npc.identity.name}
-    - **Tính cách:** ${npc.identity.personality}
-    - **Trạng thái hiện tại:** ${npc.status}
-    - **Vị trí hiện tại:** ${currentLocation?.name} (ID: ${npc.locationId})
-    - **Các địa điểm lân cận:** ${neighborLocations.map(l => `${l.name} (ID: ${l.id})`).join(', ') || 'Không có'}
-    - **Bối cảnh thế giới:** Năm ${gameState.gameDate.year}, ${gameState.majorEvents.find(e => e.year <= gameState.gameDate.year)?.title || 'Thế giới đang yên bình'}.
+    const prompt = `Bạn là AI mô phỏng sự phát triển mối quan hệ giữa các NPC trong game tu tiên.
+    Dựa trên thông tin được cung cấp, hãy quyết định xem mối quan hệ giữa hai NPC sau có thay đổi hay không và tạo ra một tin đồn liên quan (nếu có).
 
-    Nhiệm vụ: Dựa trên thông tin trên, hãy quyết định một hành động hợp lý cho NPC này trong ngày hôm nay. Họ có thể ở lại hoặc di chuyển đến một địa điểm lân cận. Sau đó, tạo ra một tin đồn liên quan (nếu có).`;
+    **NPC 1:**
+    - Tên: ${npc1.identity.name}
+    - Tính cách: ${npc1.identity.personality}
+    - Mục tiêu: ${npc1.mucTieu || 'Không có'}
+
+    **NPC 2:**
+    - Tên: ${npc2.identity.name}
+    - Tính cách: ${npc2.identity.personality}
+    - Mục tiêu: ${npc2.mucTieu || 'Không có'}
+
+    **Mối quan hệ hiện tại (${npc1.identity.name} -> ${npc2.identity.name}):**
+    - Loại: ${currentRelationship.type}
+    - Mô tả: ${currentRelationship.description}
+
+    **Bối cảnh thế giới:**
+    - Năm: ${gameState.gameDate.year}, Đại kiếp Phong Thần đang diễn ra.
+    - Sự kiện gần đây: ${gameState.storyLog.slice(-5).map(e => e.content).join('; ')}
+    - Danh tiếng của người chơi: ${gameState.playerCharacter.danhVong.status}
+
+    **Nhiệm vụ:**
+    1.  **Phân tích:** Dựa trên tính cách, mục tiêu của hai NPC và bối cảnh thế giới, hãy suy nghĩ xem mối quan hệ của họ sẽ phát triển như thế nào. Ví dụ: hai người cùng phe có thể trở nên thân thiết hơn sau một chiến thắng, hai kẻ đối địch có thể mâu thuẫn sâu sắc hơn.
+    2.  **Cập nhật mô tả:** Viết lại mô tả cho mối quan hệ của họ để phản ánh sự phát triển này. Kể cả khi không có thay đổi lớn, hãy làm mới câu chữ một chút.
+    3.  **Tạo tin đồn (Tùy chọn):** Nếu tương tác của họ đủ đáng chú ý, hãy tạo ra một câu tin đồn mà người chơi có thể nghe được. Ví dụ: "Nghe nói Khương Tử Nha và Thân Công Báo lại tranh cãi kịch liệt về thiên số tại bờ sông Vị."
+
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
@@ -216,21 +235,5 @@ export const simulateNpcAction = async (npc: NPC, gameState: GameState): Promise
         config: { responseMimeType: "application/json", responseSchema },
     }, specificApiKey);
 
-    const data = JSON.parse(response.text);
-    
-    const updatedNpc: NPC = {
-        ...npc,
-        status: data.action,
-        locationId: data.newLocationId,
-    };
-
-    const rumor: Rumor | null = data.rumorText 
-        ? {
-            id: `rumor-${Date.now()}-${Math.random()}`,
-            locationId: updatedNpc.locationId, // Rumor is heard where the NPC ends up
-            text: data.rumorText,
-          }
-        : null;
-
-    return { updatedNpc, rumor };
+    return JSON.parse(response.text);
 };

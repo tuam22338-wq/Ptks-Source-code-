@@ -105,6 +105,8 @@ export const migrateGameState = (savedGame: any): GameState => {
     dataToProcess.eventIllustrations = dataToProcess.eventIllustrations ?? [];
     dataToProcess.dialogueChoices = dataToProcess.dialogueChoices ?? null;
     dataToProcess.shopStates = dataToProcess.shopStates ?? {};
+    dataToProcess.playerSect = dataToProcess.playerSect ?? null; // Add playerSect migration
+
     if (dataToProcess.playerCharacter) {
          dataToProcess.playerCharacter.inventoryActionLog = dataToProcess.playerCharacter.inventoryActionLog ?? [];
          dataToProcess.playerCharacter.activeQuests = dataToProcess.playerCharacter.activeQuests ?? [];
@@ -464,7 +466,7 @@ export const createNewGameState = async (
         difficulty: difficulty,
         gameMode: isTransmigratorMode ? 'transmigrator' : 'classic',
         shopStates: {},
-        // FIX: Added missing 'playerStall' property.
         playerStall: null,
+        playerSect: null,
     };
 };

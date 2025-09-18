@@ -289,28 +289,36 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
         }
-
         const audio = audioRef.current;
-        let playPromise: Promise<void> | undefined;
+        
+        const interactionHandler = () => {
+            if (audio.paused && settings.backgroundMusicUrl) {
+                audio.play().catch(e => console.error("Could not play audio after interaction.", e));
+            }
+        };
 
-        if (settings.backgroundMusicUrl && audio.src !== settings.backgroundMusicUrl) {
-            audio.src = settings.backgroundMusicUrl;
-            playPromise = audio.play();
-        } else if (!settings.backgroundMusicUrl) {
+        audio.volume = settings.backgroundMusicVolume;
+
+        if (settings.backgroundMusicUrl) {
+            if (audio.src !== settings.backgroundMusicUrl) {
+                audio.src = settings.backgroundMusicUrl;
+            }
+
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn("Autoplay was prevented. Adding one-time interaction listener.", error);
+                    document.body.addEventListener('click', interactionHandler, { once: true });
+                });
+            }
+        } else {
             audio.pause();
             audio.src = '';
         }
 
-        if (audio.volume !== settings.backgroundMusicVolume) {
-            audio.volume = settings.backgroundMusicVolume;
-        }
-
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.warn("Lỗi tự động phát nhạc:", error);
-                // Autoplay was prevented. Music will likely play once the user interacts with the page.
-            });
-        }
+        return () => {
+            document.body.removeEventListener('click', interactionHandler);
+        };
     }, [settings.backgroundMusicUrl, settings.backgroundMusicVolume]);
 
     useEffect(() => {

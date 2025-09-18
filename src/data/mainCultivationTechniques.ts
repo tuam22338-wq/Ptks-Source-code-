@@ -1,12 +1,12 @@
 import type { MainCultivationTechnique } from '../types';
 
-// This is a database of 50 main cultivation techniques.
-// Each technique has a full skill tree from Luyện Khí to Độ Kiếp.
+// This is a database of main cultivation techniques.
 export const MAIN_CULTIVATION_TECHNIQUES_DATABASE: MainCultivationTechnique[] = [
   {
     "id": "main_tech_van_vat_quy_nguyen",
     "name": "Vạn Vật Quy Nguyên Quyết",
-    "description": "Một công pháp cổ xưa, tập trung vào việc hấp thụ linh khí từ vạn vật để củng cố bản thân, nền tảng vững chắc, hậu kỳ vô tận.",
+    "description": "Một công pháp cổ xưa, tập trung vào việc hấp thụ linh khí từ vạn vật để củng cố bản thân, nền tảng vững chắc, hậu kỳ vô tận. Bất kỳ ai cũng có thể tu luyện.",
+    "compatibleElements": ['Vô'],
     "skillTreeNodes": {
       "root": {
         "id": "root",
@@ -431,5 +431,98 @@ export const MAIN_CULTIVATION_TECHNIQUES_DATABASE: MainCultivationTechnique[] = 
         ]
       }
     }
-  }
+  },
+  {
+    "id": "main_tech_kim_diem_kiem_quyet",
+    "name": "Kim Diễm Kiếm Quyết",
+    "description": "Công pháp song tu Kim-Hỏa hiếm có. Lấy Kim hệ linh lực rèn luyện kiếm khí sắc bén, lấy Hỏa hệ linh lực tôi luyện thành kim diễm, vừa có sức phá hủy của lửa, vừa có sự sắc bén của kim loại.",
+    "compatibleElements": ["Kim", "Hỏa"],
+    "skillTreeNodes": {
+        "root": {
+            "id": "root",
+            "name": "Kim Hỏa Đồng Tu",
+            "description": "Nền tảng của Kim Diễm Kiếm Quyết, giúp cân bằng và dung hợp hai loại linh lực Kim và Hỏa.",
+            "icon": "☯️",
+            "realmRequirement": "luyen_khi",
+            "cost": 0,
+            "isUnlocked": false,
+            "type": "core_enhancement",
+            "childrenIds": ["lk_kim_khi", "lk_hoa_diem"],
+            "position": { "x": 50, "y": 5 },
+            "bonuses": [
+                { "attribute": "Lực Lượng", "value": 5 },
+                { "attribute": "Linh Lực Sát Thương", "value": 5 }
+            ]
+        },
+        "lk_kim_khi": {
+            "id": "lk_kim_khi",
+            "name": "Luyện Kim Khí",
+            "description": "Gia tăng sự sắc bén và độ cứng của kiếm khí.",
+            "icon": "🗡️",
+            "realmRequirement": "luyen_khi",
+            "cost": 1,
+            "isUnlocked": false,
+            "type": "passive_bonus",
+            "childrenIds": ["lk_kim_diem_trảm"],
+            "position": { "x": 30, "y": 15 },
+            "bonuses": [
+                { "attribute": "Lực Lượng", "value": 10 }
+            ]
+        },
+        "lk_hoa_diem": {
+            "id": "lk_hoa_diem",
+            "name": "Luyện Hỏa Diễm",
+            "description": "Tăng cường sức nóng và khả năng thiêu đốt của hỏa diễm.",
+            "icon": "🔥",
+            "realmRequirement": "luyen_khi",
+            "cost": 1,
+            "isUnlocked": false,
+            "type": "passive_bonus",
+            "childrenIds": ["lk_kim_diem_trảm"],
+            "position": { "x": 70, "y": 15 },
+            "bonuses": [
+                { "attribute": "Linh Lực Sát Thương", "value": 10 }
+            ]
+        },
+        "lk_kim_diem_trảm": {
+            "id": "lk_kim_diem_trảm",
+            "name": "Kim Diễm Trảm",
+            "description": "Ngưng tụ Kim Hỏa linh lực thành một nhát kiếm rực lửa, vừa sắc bén vừa nóng bỏng.",
+            "icon": "☄️",
+            "realmRequirement": "luyen_khi",
+            "cost": 2,
+            "isUnlocked": false,
+            "type": "active_skill",
+            "childrenIds": ["tc_core"],
+            "position": { "x": 50, "y": 25 },
+            "activeSkill": {
+                "name": "Kim Diễm Trảm",
+                "description": "Gây sát thương hỗn hợp vật lý và pháp thuật, có tỉ lệ gây hiệu ứng Thiêu Đốt.",
+                "type": "Kiếm Quyết",
+                "cost": { "type": "Linh Lực", "value": 30 },
+                "cooldown": 4,
+                "effects": [],
+                "rank": "Tiểu Giai",
+                "icon": "☄️",
+                "element": "Hỗn Độn"
+            }
+        },
+        "tc_core": {
+            "id": "tc_core",
+            "name": "Kiếm Cốt Hỏa Hồn",
+            "description": "Sau khi Trúc Cơ, kiếm khí và hỏa diễm dung nhập vào xương cốt và linh hồn, tăng cường toàn diện.",
+            "icon": "✨",
+            "realmRequirement": "truc_co",
+            "cost": 1,
+            "isUnlocked": false,
+            "type": "core_enhancement",
+            "childrenIds": [],
+            "position": { "x": 50, "y": 35 },
+            "bonuses": [
+                { "attribute": "Căn Cốt", "value": 20 },
+                { "attribute": "Nguyên Thần", "value": 20 }
+            ]
+        }
+    }
+}
 ]

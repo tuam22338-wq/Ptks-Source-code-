@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { AiGeneratedModData, ModContentObject, CommunityMod } from '../../types';
+import type { AiGeneratedModData, ModContentObject, CommunityMod, Element } from '../../types';
 import { ALL_ATTRIBUTES, TALENT_RANK_NAMES, WORLD_MAP, PHAP_BAO_RANKS, COMMUNITY_MODS_URL } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -42,23 +42,22 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
             value: { type: Type.NUMBER, description: "Giá trị cơ bản của vật phẩm bằng Bạc. Hữu ích cho việc bán." },
             slot: { type: Type.STRING, enum: ['Vũ Khí', 'Thượng Y', 'Hạ Y', 'Giày', 'Phụ Kiện 1', 'Phụ Kiện 2'], description: "Vị trí trang bị nếu vật phẩm là Vũ Khí hoặc Phòng Cụ." },
             bonuses: { type: Type.ARRAY, items: statBonusSchema },
+            vitalEffects: {
+                type: Type.ARRAY,
+                description: "Hiệu ứng lên chỉ số sinh tồn như đói và khát. Ví dụ: [{'vital': 'hunger', 'value': 20}]",
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        vital: { type: Type.STRING, enum: ['hunger', 'thirst'] },
+                        value: { type: Type.NUMBER }
+                    },
+                    required: ['vital', 'value']
+                }
+            },
             tags: { type: Type.ARRAY, items: { type: Type.STRING } },
             icon: { type: Type.STRING, description: "Một emoji phù hợp với vật phẩm, ví dụ '⚔️' cho kiếm, '💊' cho đan dược."}
         },
         required: ['contentType', 'name', 'description', 'type', 'quality', 'weight']
-    };
-
-    const modTalentSchema = {
-        type: Type.OBJECT,
-        properties: {
-            contentType: { type: Type.STRING, enum: ['talent'] },
-            name: { type: Type.STRING },
-            description: { type: Type.STRING },
-            rank: { type: Type.STRING, enum: TALENT_RANK_NAMES },
-            bonuses: { type: Type.ARRAY, items: statBonusSchema },
-            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-        },
-        required: ['contentType', 'name', 'description', 'rank']
     };
 
     const modCharacterSchema = {
@@ -123,17 +122,20 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
         required: ['contentType', 'name', 'status', 'description', 'origin', 'personality', 'locationId']
     };
     
-    const modTechniqueSchema = {
+    const modAuxiliaryTechniqueSchema = {
         type: Type.OBJECT,
         properties: {
-            contentType: { type: Type.STRING, enum: ['technique'] },
+            contentType: { type: Type.STRING, enum: ['auxiliaryTechnique'] },
             name: { type: Type.STRING },
             description: { type: Type.STRING },
-            type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ'] },
+            type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] },
             cost: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'] }, value: { type: Type.NUMBER } }, required: ['type', 'value'] },
             cooldown: { type: Type.NUMBER },
             rank: { type: Type.STRING, enum: Object.keys(PHAP_BAO_RANKS) as any },
             icon: { type: Type.STRING, description: "Một emoji biểu tượng" },
+            element: { type: Type.STRING, enum: ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ', 'Vô'] as Element[] },
+            level: { type: Type.NUMBER, description: "Cấp độ ban đầu của công pháp." },
+            maxLevel: { type: Type.NUMBER, description: "Cấp độ tối đa của công pháp." },
             effects: { type: Type.ARRAY, items: {
                 type: Type.OBJECT,
                 properties: {
@@ -202,8 +204,8 @@ export const generateModContentFromPrompt = async (prompt: string, modContext: a
     };
 
     const allSchemas = [
-        modItemSchema, modTalentSchema, modCharacterSchema, modSectSchema, modWorldBuildingSchema,
-        modNpcSchema, modTechniqueSchema, modEventSchema, modRecipeSchema, modCustomPanelSchema
+        modItemSchema, modCharacterSchema, modSectSchema, modWorldBuildingSchema,
+        modNpcSchema, modAuxiliaryTechniqueSchema, modEventSchema, modRecipeSchema, modCustomPanelSchema
     ];
 
     const finalSchema = {
@@ -258,18 +260,17 @@ Nhiệm vụ của bạn là tạo ra nội dung mới cho một bản mod dựa
 ${JSON.stringify(modContext, null, 2)}
 
 **Hướng dẫn và Ví dụ:**
-- **Tạo Vật Phẩm (item):** 'Tạo một thanh phi kiếm tên Lưu Tinh, phẩm chất Tiên Phẩm, tăng 20 Thân Pháp.'
-  - Các tham số chính: name, description, type, quality, weight, bonuses (thuộc tính & giá trị), tags, slot (nếu là trang bị), value (giá trị), icon (emoji).
+- **Tạo Vật Phẩm (item):** 'Tạo một thanh phi kiếm tên Lưu Tinh, phẩm chất Tiên Phẩm, tăng 20 Thân Pháp.' hoặc 'Tạo một viên No Phúc Đan, giúp no bụng +50.'
+  - Các tham số chính: name, description, type, quality, weight, bonuses (thuộc tính & giá trị), vitalEffects (hiệu ứng sinh tồn), tags, slot (nếu là trang bị), value (giá trị), icon (emoji).
   - **Hãy sáng tạo icon và mô tả thật chi tiết, độc đáo!**
-- **Tạo Tiên Tư (talent):** 'Tạo một tiên tư Thánh Giai tên Bất Diệt Thánh Thể, tăng 500 Căn Cốt và 1000 Sinh Mệnh.'
-  - Các tham số chính: name, description, rank, bonuses, tags.
 - **Tạo NPC:** 'Tạo một NPC là trưởng lão tà phái tên Hắc Ma Lão Tổ, ở địa điểm Hắc Long Đàm, trạng thái đang luyện công.'
   - Các tham số chính: name, status, description (ngoại hình), origin, personality, locationId, tags.
-- **Tạo Công Pháp Phụ (auxiliaryTechnique):** 'Tạo một thần thông tên là Hỏa Long Thuật, cấp Địa Giai, tiêu hao 100 linh lực, gây sát thương hỏa.'
-  - Các tham số chính: name, description, type, cost, cooldown, rank, icon, requirements, effects, tags.
+- **Tạo Công Pháp Phụ (auxiliaryTechnique):** 'Tạo một thần thông Hỏa hệ tên là Hỏa Long Thuật, cấp Địa Giai, tiêu hao 100 linh lực, gây sát thương hỏa.'
+  - Các tham số chính: name, description, type, cost, cooldown, rank, icon, element (ngũ hành), requirements, effects, tags.
 - **Tạo Tông Môn (sect):** 'Tạo một tông môn tên là Thanh Vân Môn, ở Thanh Loan Sơn, là chính phái chuyên tu luyện kiếm đạo.'
   - Các tham số chính: name, description, location, members, tags.
 - **Tạo nhiều đối tượng:** 'Tạo 5 loại linh dược khác nhau phẩm chất Linh Phẩm.'
+- **LƯU Ý:** Hệ thống 'Tiên Tư (talent)' đã bị loại bỏ. Đừng tạo ra nội dung này.
 
 **Yêu cầu của người dùng:**
 "${prompt}"
@@ -302,7 +303,7 @@ Hãy sáng tạo và đảm bảo nội dung phù hợp với bối cảnh tiên
                         c.data = {}; 
                     }
                 }
-                if (c.contentType === 'technique' && c.effects) {
+                if (c.contentType === 'auxiliaryTechnique' && c.effects) {
                     c.effects.forEach((effect: any) => {
                         if (typeof effect.details === 'string') {
                             try { effect.details = JSON.parse(effect.details); } catch (e) { 

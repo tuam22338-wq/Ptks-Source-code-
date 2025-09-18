@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useState } from 'react';
 import type { PlayerCharacter, CultivationTechnique, SkillTreeNode } from '../../../../../types';
-import { PHAP_BAO_RANKS, REALM_SYSTEM } from '../../../../../constants';
+import { PHAP_BAO_RANKS, REALM_SYSTEM, SPIRITUAL_ROOT_CONFIG } from '../../../../../constants';
 import { FaLock } from 'react-icons/fa';
 import { GiPointyHat } from 'react-icons/gi';
 import SkillTreeView from './SkillTreeView';
@@ -105,9 +105,25 @@ const TechniquesPanel: React.FC<TechniquesPanelProps> = ({ character, setPlayerC
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
             {mainCultivationTechnique && (
                  <div>
-                    <h3 className="text-lg text-amber-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
-                        {mainCultivationTechnique.name} (Chủ Đạo)
-                    </h3>
+                    <div className="text-center border-b border-gray-700 pb-2 mb-3">
+                        <h3 className="text-lg text-amber-300 font-title font-semibold">
+                            {mainCultivationTechnique.name} (Chủ Đạo)
+                        </h3>
+                        <div className="flex justify-center items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-400">Yêu cầu:</span>
+                             {mainCultivationTechnique.compatibleElements.map(element => {
+                                const config = SPIRITUAL_ROOT_CONFIG[element];
+                                if (!config) return null;
+                                return (
+                                    <div key={element} title={config.name} className="flex items-center gap-1 px-2 py-0.5 bg-black/20 rounded-full border border-gray-600">
+                                        <config.icon className="w-3 h-3 text-gray-300" />
+                                        <span className="text-xs font-semibold text-gray-300">{config.name}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                      <div className="text-center mb-4 p-2 bg-black/20 rounded-lg border border-gray-700/60">
                         <p className="flex items-center justify-center gap-2 text-lg font-bold text-purple-300">
                             <GiPointyHat /> {techniquePoints} <span className="text-sm font-normal text-gray-400">Điểm Tiềm Năng</span>

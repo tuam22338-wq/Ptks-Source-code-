@@ -331,6 +331,12 @@ export const SettingsPanel: React.FC = () => {
                                 ))}
                             </div>
                         </SettingsRow>
+                        <SettingsRow label="Độ dài phản hồi AI" description="Điều chỉnh độ dài mong muốn cho mỗi phản hồi của AI kể chuyện (tính bằng từ).">
+                            <div className="flex items-center gap-4">
+                               <input type="range" min="100" max="4000" step="50" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                               <span className="themed-slider-value w-24 text-right">{settings.aiResponseWordCount} từ</span>
+                            </div>
+                        </SettingsRow>
                     </SettingsSection>
                 )}
                  {activeTab === 'advanced' && (

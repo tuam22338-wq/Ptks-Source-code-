@@ -321,6 +321,8 @@ export interface ModMainCultivationTechnique {
     name: string;
     description: string;
     skillTreeNodes: ModSkillTreeNode[];
+    compatibleElements: Element[];
+    minPurity?: number;
 }
 // --- END UPDATED TECHNIQUE MODDING TYPES ---
 
@@ -675,6 +677,8 @@ export interface MainCultivationTechnique {
     name: string;
     description: string;
     skillTreeNodes: Record<string, SkillTreeNode>; // Keyed by node ID
+    compatibleElements: Element[];
+    minPurity?: number;
 }
 // --- End New System ---
 
@@ -861,6 +865,33 @@ export interface CombatState {
 }
 
 
+// --- Player-managed Sect Types ---
+export interface SectBuilding {
+  id: 'main_hall' | 'disciple_quarters' | 'treasury' | 'alchemy_room' | 'spirit_field';
+  name: string;
+  level: number;
+  description: string;
+}
+
+export interface PlayerSectMember extends NPC {
+  sectRank: string;
+  contribution: number;
+}
+
+export interface PlayerSect {
+  id: string;
+  name: string;
+  description: string;
+  locationId: string;
+  reputation: number;
+  members: PlayerSectMember[];
+  ranks: SectRank[];
+  treasury: Partial<Currency>;
+  buildings: SectBuilding[];
+}
+// --- End Player-managed Sect Types ---
+
+
 export interface GameState {
     version?: string;
     difficulty?: DifficultyLevel;
@@ -885,6 +916,7 @@ export interface GameState {
     gameMode?: 'classic' | 'transmigrator';
     shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
     playerStall: PlayerStall | null;
+    playerSect: PlayerSect | null;
 }
 
 // --- Gameplay Event Types ---

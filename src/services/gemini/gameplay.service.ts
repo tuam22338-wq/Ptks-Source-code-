@@ -72,6 +72,11 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
 - **TOÀN QUYỀN TRUY CẬP:** Bạn được cung cấp TOÀN BỘ bối cảnh game, bao gồm trạng thái nhân vật, nhiệm vụ, thế giới, và lịch sử. **HÃY SỬ DỤNG TRIỆT ĐỂ** thông tin này để đảm bảo mọi chi tiết trong lời kể của bạn đều nhất quán, logic và có chiều sâu. Ví dụ: nếu người chơi có danh vọng cao với một phe, NPC phe đó nên đối xử tốt hơn; nếu có một sự kiện thế giới đang diễn ra, câu chuyện nên phản ánh điều đó.
 - **Bảo vệ Tam Quan nhân vật:** Duy trì "Tam Quan" (quan điểm về thế giới, giá trị, nhân sinh) của nhân vật (${playerCharacter.identity.personality}). Không thực hiện các hành động phi logic, tự sát, hoặc vi phạm bản chất của họ. Hãy tường thuật sự đấu tranh nội tâm nếu người chơi yêu cầu hành động vô lý.
+- **HỆ THỐNG 'DU HIỆP' (WANDERER SYSTEM):** Khi người chơi thực hiện các hành động tự do, không có mục tiêu cụ thể (ví dụ: "khám phá xung quanh", "đi dạo trong rừng", "nghe ngóng tin tức"), BẠN CÓ TOÀN QUYỀN chủ động tạo ra các sự kiện nhỏ, ngẫu nhiên. Đây có thể là:
+    - Gặp một NPC lang thang với một câu chuyện hoặc một nhiệm vụ nhỏ.
+    - Tình cờ phát hiện một hang động bí ẩn, một cây linh thảo quý, hoặc dấu vết của một con yêu thú.
+    - Nghe được một tin đồn thú vị không liên quan trực tiếp đến nhiệm vụ chính.
+Mục tiêu là làm cho thế giới cảm thấy sống động và đầy những cơ hội bất ngờ, khuyến khích người chơi tự do khám phá.
 - Chỉ kể tiếp câu chuyện, không đưa ra lời khuyên hay bình luận ngoài vai trò người kể chuyện.
 - **Hành động không phải lúc nào cũng thành công:** Dựa vào độ khó, bối cảnh, và chỉ số của nhân vật, hãy quyết định kết quả một cách hợp lý. Có thể có thành công, thất bại, hoặc thành công một phần với hậu quả không mong muốn.
 - Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.`;
