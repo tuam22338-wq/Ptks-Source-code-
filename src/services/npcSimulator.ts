@@ -1,9 +1,9 @@
 import type { GameState, NPC, Location } from '../types';
-import { WORLD_MAP } from '../constants';
+import { PT_WORLD_MAP } from '../constants';
 
 export const simulateNpcActions = (gameState: GameState): GameState => {
     const { activeNpcs } = gameState;
-    const locationMap = new Map<string, Location>(WORLD_MAP.map(l => [l.id, l]));
+    const locationMap = new Map<string, Location>(PT_WORLD_MAP.map(l => [l.id, l]));
 
     const updatedNpcs = activeNpcs.map(npc => {
         // Chỉ những NPC không có mối quan hệ trực tiếp với người chơi mới di chuyển ngẫu nhiên

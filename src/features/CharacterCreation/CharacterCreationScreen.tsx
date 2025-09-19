@@ -7,7 +7,7 @@ import { generateCharacterIdentity } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import SpiritualRootSelection from './components/SpiritualRootSelection';
 import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, NPC_LIST, MAJOR_EVENTS, DIFFICULTY_LEVELS, SPIRITUAL_ROOT_CONFIG } from '../../constants';
+import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, PT_NPC_LIST, PT_MAJOR_EVENTS, DIFFICULTY_LEVELS, SPIRITUAL_ROOT_CONFIG } from '../../constants';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -112,7 +112,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
             {
                 id: 'canon_khuong_tu_nha',
                 source: 'canon',
-                identity: NPC_LIST.find(npc => npc.id === 'npc_khuong_tu_nha')!.identity,
+                identity: PT_NPC_LIST.find(npc => npc.id === 'npc_khuong_tu_nha')!.identity,
                 bonuses: [],
                 spiritualRoot: defaultRoot,
             }
@@ -336,7 +336,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           <FaArrowLeft className="w-5 h-5" />
         </button>
         <div className="text-center flex-grow">
-          <Timeline gameDate={gameDate} majorEvents={MAJOR_EVENTS} />
+          <Timeline gameDate={gameDate} majorEvents={PT_MAJOR_EVENTS} />
         </div>
         <div className="w-9 h-9"></div>
       </div>

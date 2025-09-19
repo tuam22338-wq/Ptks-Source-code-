@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { FaSun } from 'react-icons/fa';
-import { MAJOR_EVENTS } from '../../../../../constants';
+// FIX: constants.ts exports PT_MAJOR_EVENTS, not MAJOR_EVENTS. Aliasing to maintain usage.
+import { PT_MAJOR_EVENTS as MAJOR_EVENTS } from '../../../../../constants';
 
 const LorePanel: React.FC = () => {
   return (

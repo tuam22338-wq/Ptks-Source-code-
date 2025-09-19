@@ -2,7 +2,7 @@ import type { Location } from '../types';
 import { GiTalk, GiBed, GiHerbsBundle, GiStoneBlock, GiMountainCave, GiCauldron, GiScrollQuill } from 'react-icons/gi';
 import { FaStore } from 'react-icons/fa';
 
-export const WORLD_MAP: Location[] = [
+export const PT_WORLD_MAP: Location[] = [
     { id: 'thanh_ha_tran', name: 'Thanh Hà Trấn', description: 'Một trấn nhỏ yên bình nằm bên cạnh con sông lớn, là nơi giao thương của các thôn làng lân cận.', type: 'Thôn Làng', neighbors: ['rung_co_thu', 'song_vi_thuy'], coordinates: { x: 5, y: 5 }, qiConcentration: 5, contextualActions: [{ id: 'talk_villagers', label: 'Nghe ngóng tin đồn', description: 'Trò chuyện với dân làng để thu thập thông tin.', icon: GiTalk }, { id: 'rest_inn', label: 'Nghỉ tại quán trọ', description: 'Nghỉ ngơi để hồi phục thể lực.', icon: GiBed }, { id: 'setup_stall', label: 'Mở Sạp Hàng', description: 'Bày sạp hàng để bán vật phẩm của bạn.', icon: FaStore }] },
     { id: 'rung_co_thu', name: 'Rừng Cổ Thụ', description: 'Một khu rừng rậm rạp với những cây cổ thụ cao chọc trời, là nơi trú ngụ của nhiều yêu thú cấp thấp.', type: 'Hoang Dã', neighbors: ['thanh_ha_tran', 'hac_long_dam', 'thanh_loan_son', 'rung_me_vu'], isExplorable: true, coordinates: { x: 4, y: 6 }, qiConcentration: 15, 
         resources: [
@@ -67,4 +67,17 @@ export const WORLD_MAP: Location[] = [
     { id: 'thuong_lang_thao_nguyen', name: 'Thảo nguyên Thương Lang', description: 'Thảo nguyên rộng lớn ở phương bắc, là nơi sinh sống của các bộ tộc du mục và bầy sói yêu.', type: 'Hoang Dã', neighbors: ['sung_thanh', 'bac_hai'], coordinates: { x: 17, y: -2 }, qiConcentration: 10 },
     { id: 'vo_tan_sa_mac', name: 'Sa mạc Vô Tận', description: 'Biển cát mênh mông, thời tiết khắc nghiệt, ẩn giấu nhiều di tích của các vương triều cổ đại.', type: 'Hoang Dã', neighbors: ['tay_ky'], coordinates: { x: 4, y: 0 }, qiConcentration: 5 },
     { id: 'thien_ha', name: 'Thiên Hà', description: 'Con sông chảy trên chín tầng trời, ngăn cách Thiên Đình và nhân gian, nước sông có sức mạnh cuốn trôi tiên thể.', type: 'Hoang Dã', neighbors: ['oa_hoang_cung'], coordinates: { x: 20, y: -2 }, qiConcentration: 50 },
+];
+
+export const JTTW_WORLD_MAP: Location[] = [
+    { id: 'jttw_truong_an', name: 'Trường An', description: 'Kinh đô sầm uất của Đại Đường, nơi bắt đầu cuộc hành trình thỉnh kinh.', type: 'Thành Thị', neighbors: ['jttw_ngu_hanh_son'], coordinates: { x: 50, y: 80 }, qiConcentration: 5 },
+    { id: 'jttw_ngu_hanh_son', name: 'Ngũ Hành Sơn', description: 'Ngọn núi nơi Tôn Ngộ Không bị giam giữ 500 năm.', type: 'Sơn Mạch', neighbors: ['jttw_truong_an', 'jttw_cao_lao_trang'], coordinates: { x: 40, y: 70 }, qiConcentration: 20 },
+    { id: 'jttw_hoa_qua_son', name: 'Hoa Quả Sơn', description: 'Tiên sơn phúc địa ở Đông Thắng Thần Châu, là động phủ của Tề Thiên Đại Thánh Tôn Ngộ Không.', type: 'Sơn Mạch', neighbors: ['jttw_dong_hai_long_cung'], coordinates: { x: 80, y: 50 }, qiConcentration: 60 },
+    { id: 'jttw_dong_hai_long_cung', name: 'Đông Hải Long Cung', description: 'Cung điện của Đông Hải Long Vương, nơi Ngộ Không lấy được Định Hải Thần Châm.', type: 'Thánh Địa', neighbors: ['jttw_hoa_qua_son'], coordinates: { x: 90, y: 60 }, qiConcentration: 40 },
+    { id: 'jttw_cao_lao_trang', name: 'Cao Lão Trang', description: 'Nơi Trư Bát Giới làm rể và sau đó bị thu phục.', type: 'Thôn Làng', neighbors: ['jttw_ngu_hanh_son', 'jttw_luu_sa_ha'], coordinates: { x: 30, y: 60 }, qiConcentration: 4 },
+    { id: 'jttw_luu_sa_ha', name: 'Lưu Sa Hà', description: 'Con sông rộng lớn, nước chảy xiết, là nơi ở của Sa Ngộ Tĩnh.', type: 'Hoang Dã', neighbors: ['jttw_cao_lao_trang', 'jttw_tay_luong_nu_quoc'], coordinates: { x: 20, y: 50 }, qiConcentration: 15 },
+    { id: 'jttw_tay_luong_nu_quoc', name: 'Tây Lương Nữ Quốc', description: 'Một vương quốc chỉ toàn phụ nữ, là một kiếp nạn của Đường Tăng.', type: 'Thành Thị', neighbors: ['jttw_luu_sa_ha', 'jttw_hoa_diem_son'], coordinates: { x: 10, y: 40 }, qiConcentration: 6 },
+    { id: 'jttw_hoa_diem_son', name: 'Hỏa Diệm Sơn', description: 'Ngọn núi lửa cháy ngùn ngụt quanh năm, phải mượn quạt Ba Tiêu mới có thể đi qua.', type: 'Sơn Mạch', neighbors: ['jttw_tay_luong_nu_quoc', 'jttw_linh_son'], coordinates: { x: 5, y: 30 }, qiConcentration: 25 },
+    { id: 'jttw_linh_son', name: 'Linh Sơn', description: 'Nơi Phật Tổ Như Lai ngự trị, đích đến cuối cùng của cuộc hành trình.', type: 'Thánh Địa', neighbors: ['jttw_hoa_diem_son'], coordinates: { x: 0, y: 20 }, qiConcentration: 150 },
+    { id: 'jttw_thien_cung', name: 'Thiên Cung', description: 'Cung điện của Ngọc Hoàng, nơi cai quản tam giới.', type: 'Thánh Địa', neighbors: [], coordinates: { x: 50, y: 0 }, qiConcentration: 100 },
 ];

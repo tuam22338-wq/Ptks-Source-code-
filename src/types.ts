@@ -348,7 +348,7 @@ export type ModNpc = {
     tags: string[];
 };
 
-export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'location' | 'worldData' | 'npc' | 'auxiliaryTechnique' | 'mainCultivationTechnique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem';
+export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'location' | 'worldData' | 'npc' | 'auxiliaryTechnique' | 'mainCultivationTechnique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem' | 'customDataPack';
 
 export type EventTriggerType = 'ON_ENTER_LOCATION' | 'ON_TALK_TO_NPC' | 'ON_GAME_DATE';
 export interface EventTrigger {
@@ -419,6 +419,13 @@ export interface ModCustomPanel {
     tags?: string[];
 }
 
+export interface ModCustomDataPack {
+    id: string;
+    name: string;
+    data: string; // Storing as string to preserve formatting and handle potential JSON errors gracefully in UI
+    tags?: string[];
+}
+
 export interface ModContent {
     items?: Omit<ModItem, 'id'>[];
     talents?: Omit<ModTalent, 'id'>[];
@@ -437,6 +444,7 @@ export interface ModContent {
     declarations?: ModDeclaration;
     storySystems?: Omit<StorySystem, 'id'>[];
     customPanels?: Omit<ModCustomPanel, 'id'>[];
+    customDataPacks?: (Omit<ModCustomDataPack, 'id' | 'data'> & { data: Record<string, any> })[];
 }
 
 export interface FullMod {
@@ -463,7 +471,8 @@ export type ModContentObject =
     | (Omit<ModMainCultivationTechnique, 'id'> & { contentType: 'mainCultivationTechnique' })
     | (Omit<ModEvent, 'id'> & { contentType: 'event' })
     | (Omit<AlchemyRecipe, 'id'> & { contentType: 'recipe' })
-    | (Omit<ModCustomPanel, 'id'> & { contentType: 'customPanel' });
+    | (Omit<ModCustomPanel, 'id'> & { contentType: 'customPanel' })
+    | (Omit<ModCustomDataPack, 'id'> & { contentType: 'customDataPack' });
 
 export interface AiGeneratedModData {
     content?: ModContentObject[];
@@ -498,7 +507,8 @@ export type AddedContentUnion =
     (ModMainCultivationTechnique & { contentType: 'mainCultivationTechnique' }) |
     (ModEvent & { contentType: 'event' }) |
     (AlchemyRecipe & { contentType: 'recipe' }) |
-    (ModCustomPanel & { contentType: 'customPanel' });
+    (ModCustomPanel & { contentType: 'customPanel' }) |
+    (ModCustomDataPack & { contentType: 'customDataPack' });
 
 
 // --- Gameplay Types ---

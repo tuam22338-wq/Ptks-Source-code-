@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
-import { MAJOR_EVENTS } from '../../constants';
+import { PT_MAJOR_EVENTS } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
 
 const ThoiTheScreen: React.FC = () => {
@@ -20,7 +20,7 @@ const ThoiTheScreen: React.FC = () => {
       <p className="text-center mb-10" style={{color: 'var(--text-muted-color)'}}>Thế giới đang trong cơn biến động. Thiên mệnh đã định, nhưng lựa chọn là của bạn. Hãy xem xét các sự kiện lớn đang diễn ra để quyết định con đường của mình.</p>
 
       <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-8">
-        {MAJOR_EVENTS.map((event, index) => (
+        {PT_MAJOR_EVENTS.map((event, index) => (
           <div key={index} className="bg-black/20 p-5 rounded-xl border-y-2 border-amber-800/50 flex flex-col animate-fade-in" style={{animationDelay: `${index * 50}ms`}}>
             <div className="pb-3 mb-4 text-center">
                 <p className="text-lg font-bold text-amber-400 font-title tracking-wider">

@@ -1,6 +1,6 @@
 import type { Faction } from '../types';
 
-export const FACTIONS: Faction[] = [
+export const PT_FACTIONS: Faction[] = [
   {
     name: "Nhà Thương",
     description: "Triều đại đang suy tàn dưới sự trị vì của Trụ Vương, chìm trong xa hoa và bạo ngược, là trung tâm của sự hỗn loạn sắp tới.",
@@ -17,4 +17,23 @@ export const FACTIONS: Faction[] = [
     imageUrl: "https://images.unsplash.com/photo-1596779350257-259654823FF8?q=80&w=2670&auto=format-fit-crop",
   },
 ];
-export const FACTION_NAMES = FACTIONS.map(f => f.name);
+export const PT_FACTION_NAMES = PT_FACTIONS.map(f => f.name);
+
+export const JTTW_FACTIONS: Faction[] = [
+  {
+    name: "Thiên Đình",
+    description: "Cung đình của Ngọc Hoàng Đại Đế, cai quản tam giới, duy trì trật tự của trời đất.",
+    imageUrl: "...",
+  },
+  {
+    name: "Phật Môn",
+    description: "Thế lực của Phật Tổ Như Lai ở Tây Thiên, chủ trương phổ độ chúng sinh, lấy từ bi làm gốc.",
+    imageUrl: "...",
+  },
+  {
+    name: "Yêu Giới",
+    description: "Tập hợp các yêu ma, quỷ quái chiếm núi xưng vương, không tuân theo luật lệ của Thiên Đình.",
+    imageUrl: "...",
+  },
+];
+export const JTTW_FACTION_NAMES = JTTW_FACTIONS.map(f => f.name);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaSave, FaPlus, FaTrash } from 'react-icons/fa';
 import type { ModNpc, NpcRelationshipInput } from '../../../types';
 import TagEditor from '../../../components/TagEditor';
-import { WORLD_MAP, FACTION_NAMES } from '../../../constants';
+import { PT_WORLD_MAP, PT_FACTION_NAMES } from '../../../constants';
 
 interface NpcEditorProps {
     onSave: (npc: ModNpc) => void;
@@ -64,14 +64,14 @@ const NpcEditor: React.FC<NpcEditorProps> = ({ onSave, npcToEdit, suggestions })
                     </FieldWrapper>
                     <FieldWrapper label="Vị Trí Ban Đầu">
                        <select value={npc.locationId} onChange={e => handleChange('locationId', e.target.value)} className="themed-select">
-                           {WORLD_MAP.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
+                           {PT_WORLD_MAP.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
                        </select>
                     </FieldWrapper>
                 </div>
                 <FieldWrapper label="Phe Phái">
                    <select value={npc.faction || ''} onChange={e => handleChange('faction', e.target.value || undefined)} className="themed-select">
                        <option value="">Không có</option>
-                       {FACTION_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
+                       {PT_FACTION_NAMES.map(name => <option key={name} value={name}>{name}</option>)}
                    </select>
                 </FieldWrapper>
                 <FieldWrapper label="Trạng Thái Hiện Tại">

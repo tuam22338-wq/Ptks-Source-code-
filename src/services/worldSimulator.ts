@@ -2,7 +2,8 @@ import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship }
 import { generateWithRetry } from './geminiService';
 import * as db from './dbService';
 import { Type } from '@google/genai';
-import { WORLD_MAP } from '../constants';
+// FIX: Aliasing PT_WORLD_MAP to WORLD_MAP as constants.ts does not export a generic WORLD_MAP.
+import { PT_WORLD_MAP as WORLD_MAP } from '../constants';
 import { generateFactionEvent } from './gemini/gameplay.service';
 import { generateRelationshipUpdate } from './gemini/npc.service';
 

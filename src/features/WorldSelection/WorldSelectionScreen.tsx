@@ -2,14 +2,18 @@ import React, { useState, useEffect, memo } from 'react';
 import { FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 import type { FullMod, ModWorldData } from '../../types';
 import * as db from '../../services/dbService';
-import { DEFAULT_WORLD_ID, MAJOR_EVENTS } from '../../constants';
+import { DEFAULT_WORLDS_INFO } from '../../constants';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAppContext } from '../../contexts/AppContext';
 
-interface WorldInfo extends ModWorldData {
+interface WorldInfo {
+    id: string;
+    name: string;
+    description: string;
     source: 'default' | 'mod';
     author?: string;
 }
+
 
 const WorldCard: React.FC<{ world: WorldInfo; isActive: boolean; onSelect: () => void; }> = memo(({ world, isActive, onSelect }) => {
     return (
@@ -44,19 +48,7 @@ const WorldSelectionScreen: React.FC = () => {
     useEffect(() => {
         const loadWorlds = async () => {
             setIsLoading(true);
-            const defaultWorld: WorldInfo = {
-                id: DEFAULT_WORLD_ID,
-                name: 'Phong Thần Diễn Nghĩa',
-                description: 'Thế giới nguyên bản của Tam Thiên Thế Giới, dựa trên bối cảnh Phong Thần Diễn Nghĩa với các sự kiện và nhân vật quen thuộc.',
-                source: 'default',
-                author: 'Nhà phát triển',
-                majorEvents: MAJOR_EVENTS,
-                initialNpcs: [], // not needed for display
-                initialLocations: [], // not needed for display
-                factions: [], // not needed for display
-                startingYear: 1,
-                eraName: 'Tiên Phong Thần',
-            };
+            const defaultWorlds: WorldInfo[] = Object.values(DEFAULT_WORLDS_INFO);
 
             const modWorlds: WorldInfo[] = [];
             try {
@@ -78,7 +70,7 @@ const WorldSelectionScreen: React.FC = () => {
                 console.error("Failed to load modded worlds:", error);
             }
 
-            setWorlds([defaultWorld, ...modWorlds]);
+            setWorlds([...defaultWorlds, ...modWorlds]);
             setIsLoading(false);
         };
         loadWorlds();

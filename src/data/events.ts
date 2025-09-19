@@ -1,6 +1,6 @@
 import type { MajorEvent } from '../types';
 
-export const MAJOR_EVENTS: MajorEvent[] = [
+export const PT_MAJOR_EVENTS: MajorEvent[] = [
   {
     year: 1,
     title: "Trụ Vương Đề Thơ Cung Nữ Oa",
@@ -104,5 +104,40 @@ export const MAJOR_EVENTS: MajorEvent[] = [
     involvedParties: "Khương Tử Nha, các linh hồn trên Phong Thần Bảng",
     summary: "Sau khi đại cục đã định, Khương Tử Nha vâng lệnh Nguyên Thủy Thiên Tôn, lên Phong Thần Đài, dùng Đả Thần Tiên và Phong Thần Bảng để sắc phong 365 vị chính thần, định lại trật tự Tam Giới.",
     consequences: "Đại kiếp Phong Thần kết thúc. Các tiên nhân có tên trên bảng được phong làm thần, chịu sự quản lý của Thiên Đình. Thiên Đình từ đó có đủ nhân lực, trật tự Tam Giới được thiết lập lại. Những người không có tên trên bảng tiếp tục con đường tu tiên của mình."
+  }
+];
+
+export const JTTW_MAJOR_EVENTS: MajorEvent[] = [
+  {
+    year: 1,
+    title: "Tôn Ngộ Không Đại Náo Thiên Cung",
+    location: "Thiên Cung",
+    involvedParties: "Tôn Ngộ Không, Thiên Đình",
+    summary: "Tôn Ngộ Không bất mãn vì chức vị Bật Mã Ôn, đã đại náo Thiên Cung, đánh bại mười vạn thiên binh thiên tướng.",
+    consequences: "Bị Phật Tổ Như Lai trấn áp dưới núi Ngũ Hành Sơn 500 năm, chờ đợi người thỉnh kinh đến giải cứu."
+  },
+  {
+    year: 627,
+    title: "Đường Tăng Bắt Đầu Thỉnh Kinh",
+    location: "Trường An",
+    involvedParties: "Đường Tam Tạng, Đường Thái Tông, Quan Âm Bồ Tát",
+    summary: "Đường Tam Tạng vâng lệnh vua Đường, bắt đầu cuộc hành trình sang Tây Thiên (Linh Sơn) để thỉnh chân kinh, phổ độ chúng sinh.",
+    consequences: "Mở đầu cho 81 kiếp nạn, lần lượt thu phục Tôn Ngộ Không, Trư Bát Giới, Sa Ngộ Tĩnh làm đồ đệ."
+  },
+  {
+    year: 628,
+    title: "Thu Phục Yêu Quái",
+    location: "Trên đường đi Tây Thiên",
+    involvedParties: "Bốn thầy trò Đường Tăng, các loại yêu quái",
+    summary: "Trên đường đi, bốn thầy trò đã gặp và thu phục vô số yêu quái như Bạch Cốt Tinh, Hồng Hài Nhi, Ngưu Ma Vương...",
+    consequences: "Vượt qua thử thách, đạo tâm của bốn thầy trò ngày càng kiên định, pháp lực của các đồ đệ cũng ngày càng cao cường."
+  },
+  {
+    year: 641,
+    title: "Đến Tây Thiên, Thỉnh Được Chân Kinh",
+    location: "Linh Sơn",
+    involvedParties: "Bốn thầy trò Đường Tăng, Phật Tổ Như Lai",
+    summary: "Sau khi vượt qua 81 kiếp nạn, bốn thầy trò cuối cùng cũng đến được Linh Sơn, gặp Phật Tổ và nhận được chân kinh.",
+    consequences: "Hoàn thành sứ mệnh, cả bốn người đều được phong chức vị, tu thành chính quả. Chân kinh được mang về Đại Đường, khai sáng cho chúng sinh."
   }
 ];

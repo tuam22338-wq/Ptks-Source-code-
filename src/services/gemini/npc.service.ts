@@ -1,7 +1,7 @@
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { NPC, NpcDensity, AttributeGroup, InventoryItem, GameState, Rumor, Element, Currency, Relationship } from '../../types';
-import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../../constants";
+import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { FaQuestionCircle } from "react-icons/fa";
@@ -10,7 +10,7 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
     const count = typeof countOrDensity === 'number' ? countOrDensity : NPC_DENSITY_LEVELS.find(d => d.id === countOrDensity)?.count ?? 15;
     if (count <= 0) return [];
     
-    const availableLocations = WORLD_MAP.map(l => l.id);
+    const availableLocations = PT_WORLD_MAP.map(l => l.id);
     const availableRealms = REALM_SYSTEM.map(r => r.name);
     const elements: Element[] = ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ', 'Vô'];
 

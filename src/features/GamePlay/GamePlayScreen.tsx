@@ -617,10 +617,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
-    const { playerCharacter, discoveredLocations, activeNpcs, worldState, combatState, activeStory } = gameState;
+    const { playerCharacter, combatState, activeStory, discoveredLocations } = gameState;
     const currentLocation = useMemo(() => discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!, [discoveredLocations, playerCharacter.currentLocationId]);
-    const npcsAtLocation = useMemo(() => activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId), [activeNpcs, playerCharacter.currentLocationId]);
-    const neighbors = useMemo(() => discoveredLocations.filter(l => currentLocation.neighbors.includes(l.id)), [discoveredLocations, currentLocation]);
 
     return (
         <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col">
@@ -645,7 +643,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     )}
                     
                     <CombatScreen />
-                    {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={playerCharacter.attributes.flatMap(g => g.attributes)} />}
+                    {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes.flatMap(g => g.attributes)} />}
                     {activeStory && <CustomStoryPlayer gameState={gameState} setGameState={setGameState} />}
 
                     {!combatState && !activeEvent && !activeStory && (
@@ -663,26 +661,14 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
                 <div className={`gameplay-sidebar-wrapper ${isSidebarOpen ? 'is-open' : ''}`}>
                     <div className="w-full h-full bg-[var(--bg-subtle)] backdrop-blur-md border-l border-[var(--border-subtle)]">
-                        <Sidebar 
-                           playerCharacter={playerCharacter}
-                           setPlayerCharacter={(updater) => setGameState(gs => gs ? { ...gs, playerCharacter: updater(gs.playerCharacter) } : null)}
+                        <Sidebar
+                           gameState={gameState}
+                           setGameState={setGameState}
                            onBreakthrough={handleBreakthrough}
-                           currentLocation={currentLocation}
-                           npcsAtLocation={npcsAtLocation}
-                           neighbors={neighbors}
-                           rumors={worldState.rumors}
                            onTravel={handleTravel}
                            onExplore={() => { /* TODO */ }}
                            onNpcDialogue={handleNpcDialogue}
-                           allNpcs={activeNpcs}
-                           encounteredNpcIds={gameState.encounteredNpcIds}
-                           discoveredLocations={discoveredLocations}
-                           realmSystem={gameState.realmSystem || REALM_SYSTEM}
                            showNotification={showNotification}
-                           activeMods={gameState.activeMods}
-                           storyLog={gameState.storyLog}
-                           gameState={gameState}
-                           setGameState={setGameState}
                         />
                     </div>
                 </div>

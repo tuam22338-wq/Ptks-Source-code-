@@ -10,11 +10,7 @@ import {
 } from 'react-icons/gi';
 import { FaSun, FaMoon, FaShieldAlt } from 'react-icons/fa';
 
-// Re-export data from the new data directory
-export * from './data/factions';
-export * from './data/locations';
-export * from './data/npcs';
-export * from './data/events';
+// Re-export non-world-specific data
 export * from './data/sects';
 export * from './data/shops';
 export * from './data/recipes';
@@ -22,9 +18,22 @@ export * from './data/cultivationPaths';
 export * from './data/mainCultivationTechniques';
 export * from './data/realmSystem';
 
+// Explicitly import and re-export world-specific data for clarity
+import { PT_FACTIONS, PT_FACTION_NAMES, JTTW_FACTIONS, JTTW_FACTION_NAMES } from './data/factions';
+import { PT_WORLD_MAP, JTTW_WORLD_MAP } from './data/locations';
+import { PT_NPC_LIST, JTTW_NPC_LIST } from './data/npcs';
+import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS } from './data/events';
+
+export {
+    PT_FACTIONS, PT_FACTION_NAMES, JTTW_FACTIONS, JTTW_FACTION_NAMES,
+    PT_WORLD_MAP, JTTW_WORLD_MAP,
+    PT_NPC_LIST, JTTW_NPC_LIST,
+    PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS
+};
+
 
 export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
-export const CURRENT_GAME_VERSION = "1.0.5";
+export const CURRENT_GAME_VERSION = "1.0.6-preview";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
@@ -355,3 +364,22 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
     { id: 'medium', name: 'Vừa Phải', description: 'Cân bằng, thế giới sống động.', count: 20 },
     { id: 'high', name: 'Đông Đúc', description: 'Nhiều NPC, thế giới hỗn loạn.', count: 200 },
 ];
+
+export const DEFAULT_WORLDS_INFO = {
+    phong_than_dien_nghia: {
+        id: 'phong_than_dien_nghia',
+        name: 'Phong Thần Diễn Nghĩa',
+        description: 'Thế giới nguyên bản của Tam Thiên Thế Giới, dựa trên bối cảnh Phong Thần Diễn Nghĩa với các sự kiện và nhân vật quen thuộc.',
+        author: 'Nhà phát triển',
+        majorEvents: PT_MAJOR_EVENTS,
+        source: 'default' as const,
+    },
+    tay_du_ky: {
+        id: 'tay_du_ky',
+        name: 'Tây Du Ký',
+        description: 'Hành trình đến Tây Thiên thỉnh kinh của bốn thầy trò Đường Tăng, vượt qua 81 kiếp nạn, đối đầu với vô số yêu ma quỷ quái.',
+        author: 'Nhà phát triển',
+        majorEvents: JTTW_MAJOR_EVENTS,
+        source: 'default' as const,
+    }
+};

@@ -3,8 +3,9 @@ import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, Story
 import CharacterPanel from './panels/CharacterPanel';
 import GuidePanel from './panels/GuidePanel';
 import WorldPanel from './panels/WorldPanel';
+// FIX: Using named import for WikiPanel as it's re-exported as a named module.
+import { WikiPanel } from './panels/WikiPanel';
 import TechniquesPanel from './panels/TechniquesPanel';
-import WikiPanel from './panels/WikiPanel';
 import RealmPanel from './panels/RealmPanel';
 import LorePanel from './panels/LorePanel';
 import CustomContentPanel from './panels/CustomContentPanel';
@@ -18,28 +19,16 @@ import PlayerSectPanel from './panels/PlayerSectPanel';
 import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaProjectDiagram, FaBrain, FaSitemap, FaUsers, FaMountain, FaFlask, FaTasks, FaDesktop } from 'react-icons/fa';
 import { GiCastle } from 'react-icons/gi';
 import { useGameUIContext } from '../../../../contexts/GameUIContext';
-import { SHOPS } from '../../../../constants';
+import { SHOPS, REALM_SYSTEM } from '../../../../constants';
 
 interface SidebarProps {
-    playerCharacter: PlayerCharacter;
-    setPlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
+    gameState: GameState;
+    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
     onBreakthrough: () => void;
-    currentLocation: Location;
-    npcsAtLocation: NPC[];
-    neighbors: Location[];
-    rumors: Rumor[];
-    storyLog: StoryEntry[];
     onTravel: (destinationId: string) => void;
     onExplore: () => void;
     onNpcDialogue: (npc: NPC) => void;
-    allNpcs: NPC[];
-    encounteredNpcIds: string[];
-    discoveredLocations: Location[];
-    realmSystem: RealmConfig[];
     showNotification: (message: string) => void;
-    activeMods: FullMod[];
-    gameState: GameState;
-    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
 }
 type SidebarTab = 'guide' | 'character' | 'world' | 'techniques' | 'wiki' | 'realms' | 'lore' | 'map' | 'storyGraph' | 'aiMemory' | 'genealogy' | 'quests' | 'system' | 'playerSect' | string;
 
@@ -48,9 +37,44 @@ const ICON_MAP: { [key: string]: React.ElementType } = {
 };
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { playerCharacter, setPlayerCharacter, onBreakthrough, currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcDialogue, allNpcs, encounteredNpcIds, discoveredLocations, realmSystem, showNotification, activeMods, storyLog, gameState, setGameState } = props;
+    const { gameState, setGameState, onBreakthrough, onTravel, onExplore, onNpcDialogue, showNotification } = props;
     const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     const { openShopModal } = useGameUIContext();
+    
+    // Derive all necessary data from the single gameState prop to ensure synchronization
+    const { 
+        playerCharacter, 
+        discoveredLocations, 
+        activeNpcs, 
+        worldState, 
+        storyLog,
+        encounteredNpcIds,
+        realmSystem: realmSystemFromState,
+        activeMods
+    } = gameState;
+    
+    const allNpcs = activeNpcs;
+    const realmSystem = realmSystemFromState || REALM_SYSTEM;
+    const rumors = worldState.rumors;
+
+    const currentLocation = useMemo(() => 
+        discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!, 
+        [discoveredLocations, playerCharacter.currentLocationId]
+    );
+    
+    const npcsAtLocation = useMemo(() => 
+        allNpcs.filter(n => n.locationId === playerCharacter.currentLocationId), 
+        [allNpcs, playerCharacter.currentLocationId]
+    );
+
+    const neighbors = useMemo(() => 
+        discoveredLocations.filter(l => currentLocation.neighbors.includes(l.id)), 
+        [discoveredLocations, currentLocation]
+    );
+
+    const setPlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
+        setGameState(gs => gs ? { ...gs, playerCharacter: updater(gs.playerCharacter) } : null);
+    }, [setGameState]);
     
     const handleNpcInteraction = useCallback((npc: NPC) => {
         if (npc.shopId && SHOPS.some(s => s.id === npc.shopId)) {

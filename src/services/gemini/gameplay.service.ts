@@ -1,6 +1,7 @@
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus } from '../../types';
-import { NARRATIVE_STYLES, REALM_SYSTEM, FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES } from "../../constants";
+// FIX: Aliasing PT_FACTIONS to FACTIONS as constants.ts does not export a generic FACTIONS.
+import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS as FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 

@@ -1,5 +1,10 @@
 import { FaQuestionCircle } from 'react-icons/fa';
-import { ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, FACTIONS, REALM_SYSTEM, SECTS, WORLD_MAP, MAIN_CULTIVATION_TECHNIQUES_DATABASE, MAJOR_EVENTS, NPC_LIST, DEFAULT_WORLD_ID, CURRENCY_ITEMS } from "../constants";
+import {
+    ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, REALM_SYSTEM, SECTS,
+    MAIN_CULTIVATION_TECHNIQUES_DATABASE, DEFAULT_WORLD_ID, CURRENCY_ITEMS,
+    PT_FACTIONS, PT_WORLD_MAP, PT_NPC_LIST, PT_MAJOR_EVENTS,
+    JTTW_FACTIONS, JTTW_WORLD_MAP, JTTW_NPC_LIST, JTTW_MAJOR_EVENTS
+} from "../constants";
 import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 import {
@@ -76,14 +81,14 @@ export const migrateGameState = (savedGame: any): GameState => {
         console.log(`Migrating save from v${version} to v1.0.4...`);
         dataToProcess.activeMods = dataToProcess.activeMods ?? [];
         dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
-        dataToProcess.majorEvents = dataToProcess.majorEvents ?? MAJOR_EVENTS;
+        dataToProcess.majorEvents = dataToProcess.majorEvents ?? PT_MAJOR_EVENTS;
         dataToProcess.encounteredNpcIds = dataToProcess.encounteredNpcIds ?? [];
         dataToProcess.activeStory = dataToProcess.activeStory ?? null;
         dataToProcess.storySummary = dataToProcess.storySummary ?? '';
 
         if (dataToProcess.playerCharacter) {
             dataToProcess.playerCharacter.relationships = dataToProcess.playerCharacter.relationships ?? [];
-            dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
+            dataToProcess.playerCharacter.reputation = dataToProcess.playerCharacter.reputation ?? PT_FACTIONS.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' }));
             dataToProcess.playerCharacter.chosenPathIds = dataToProcess.playerCharacter.chosenPathIds ?? [];
             dataToProcess.playerCharacter.knownRecipeIds = dataToProcess.playerCharacter.knownRecipeIds ?? [];
             dataToProcess.playerCharacter.sect = dataToProcess.playerCharacter.sect ?? null;
@@ -196,7 +201,7 @@ export const migrateGameState = (savedGame: any): GameState => {
 
     if (dataToProcess.discoveredLocations) {
         dataToProcess.discoveredLocations = dataToProcess.discoveredLocations.map((loc: Location) => {
-            const config = WORLD_MAP.find(l => l.id === loc.id);
+            const config = PT_WORLD_MAP.find(l => l.id === loc.id);
             if (config && config.contextualActions && (!loc.contextualActions || loc.contextualActions.some(a => !a.hasOwnProperty('icon')))) {
                  return { ...loc, contextualActions: config.contextualActions };
             }
@@ -265,8 +270,11 @@ export const createNewGameState = async (
     const isTransmigratorMode = gameMode === 'transmigrator';
 
     // --- World Data Overhaul ---
+    const isTayDuKy = activeWorldId === 'tay_du_ky';
+    const isDefaultFrameworkWorld = activeWorldId === DEFAULT_WORLD_ID || isTayDuKy;
+
     let worldData: ModWorldData | null = null;
-    if (activeWorldId !== DEFAULT_WORLD_ID) {
+    if (!isDefaultFrameworkWorld) {
         for (const mod of activeMods) {
             const foundWorld = mod.content.worldData?.find(wd => wd.name === activeWorldId);
             if (foundWorld) {
@@ -280,18 +288,13 @@ export const createNewGameState = async (
         }
     }
 
-    const worldMapToUse: Location[] = worldData 
-        ? worldData.initialLocations.map(l => ({
-            ...l,
-            id: l.id || l.name,
-            contextualActions: [],
-        } as Location))
-        : WORLD_MAP;
-    const initialNpcsFromData = worldData ? worldData.initialNpcs.map(n => convertModNpcToNpc(n, REALM_SYSTEM)) : NPC_LIST;
-    const majorEventsToUse = worldData ? worldData.majorEvents : MAJOR_EVENTS;
-    const factionsToUse = worldData ? worldData.factions : FACTIONS;
-    const startingYear = worldData ? worldData.startingYear : 1;
-    const eraName = worldData ? worldData.eraName : 'Tiên Phong Thần';
+    const worldMapToUse = worldData ? worldData.initialLocations.map(l => ({ ...l, id: l.id || l.name, contextualActions: [], } as Location)) : (isTayDuKy ? JTTW_WORLD_MAP : PT_WORLD_MAP);
+    const initialNpcsFromData = worldData ? worldData.initialNpcs.map(n => convertModNpcToNpc(n, REALM_SYSTEM)) : (isTayDuKy ? JTTW_NPC_LIST : PT_NPC_LIST);
+    const majorEventsToUse = worldData ? worldData.majorEvents : (isTayDuKy ? JTTW_MAJOR_EVENTS : PT_MAJOR_EVENTS);
+    const factionsToUse = worldData ? worldData.factions : (isTayDuKy ? JTTW_FACTIONS : PT_FACTIONS);
+    const startingYear = worldData ? worldData.startingYear : (isTayDuKy ? 627 : 1);
+    const eraName = worldData ? worldData.eraName : (isTayDuKy ? 'Đại Đường' : 'Tiên Phong Thần');
+
 
     const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
     const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, memo } from 'react';
 import type { GameState, PlayerSect, Location } from '../../../../../types';
-import { REALM_SYSTEM, WORLD_MAP } from '../../../../../constants';
+import { REALM_SYSTEM, PT_WORLD_MAP } from '../../../../../constants';
 import { GiCastle, GiScrollQuill, GiCoins, GiPerson } from 'react-icons/gi';
 import { FaPlus } from 'react-icons/fa';
 
@@ -85,7 +85,7 @@ const PlayerSectPanel: React.FC<PlayerSectPanelProps> = ({ gameState, setGameSta
                     </h3>
                     <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 space-y-3">
                         <p className="text-sm text-gray-400 italic">{playerSect.description}</p>
-                         <div className="text-sm"><strong className="text-gray-300">Trụ sở:</strong> {WORLD_MAP.find(l => l.id === playerSect.locationId)?.name}</div>
+                         <div className="text-sm"><strong className="text-gray-300">Trụ sở:</strong> {PT_WORLD_MAP.find(l => l.id === playerSect.locationId)?.name}</div>
                          <div className="text-sm"><strong className="text-gray-300">Danh Vọng:</strong> {playerSect.reputation}</div>
                          <div className="text-sm"><strong className="text-gray-300">Thành viên:</strong> {playerSect.members.length + 1} (Bạn là Tông Chủ)</div>
                     </div>
