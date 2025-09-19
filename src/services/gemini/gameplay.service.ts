@@ -27,12 +27,18 @@ const createFullGameStateContext = (gameState: GameState): string => {
     .map(a => `${a.name}: ${a.value}`)
     .join(', ');
 
+  const allTechniques = [
+      playerCharacter.mainCultivationTechnique?.name,
+      ...playerCharacter.auxiliaryTechniques.map(t => t.name)
+  ].filter(Boolean).join(', ');
+
   const context = `
 ### TOÀN BỘ BỐI CẢNH GAME ###
 Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
 
 **1. Nhân Vật Chính: ${playerCharacter.identity.name}**
-- **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}. Công pháp chính: ${playerCharacter.mainCultivationTechnique?.name || 'Chưa có'}.
+- **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}.
+- **Công Pháp Đã Học:** ${allTechniques || 'Chưa có'}.
 - **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: ${playerCharacter.identity.personality}.
 - **Trang Bị:** ${equipmentSummary || 'Không có'}.
 - **Chỉ Số Chính:** ${keyAttributes}.
@@ -68,6 +74,7 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - Bối cảnh: Thế giới tiên hiệp huyền huyễn.
 - **QUAN TRỌNG NHẤT: PHẢI LUÔN LUÔN trả lời bằng TIẾNG VIỆT.**
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
+- **TUYỆT ĐỐI ƯU TIÊN HÀNH ĐỘNG CỦA NGƯỜI CHƠI:** Lời kể của bạn PHẢI là kết quả trực tiếp của hành động mà người chơi vừa thực hiện. Không được phớt lờ hay tự ý thay đổi hành động của họ.
 - ${difficultyText}
 - **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
 - **TOÀN QUYỀN TRUY CẬP:** Bạn được cung cấp TOÀN BỘ bối cảnh game, bao gồm trạng thái nhân vật, nhiệm vụ, thế giới, và lịch sử. **HÃY SỬ DỤNG TRIỆT ĐỂ** thông tin này để đảm bảo mọi chi tiết trong lời kể của bạn đều nhất quán, logic và có chiều sâu. Ví dụ: nếu người chơi có danh vọng cao với một phe, NPC phe đó nên đối xử tốt hơn; nếu có một sự kiện thế giới đang diễn ra, câu chuyện nên phản ánh điều đó.

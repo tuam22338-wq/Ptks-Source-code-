@@ -545,7 +545,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
         if (choice.isCorrect) {
             showNotification("Đạo tâm kiên định, đột phá thành công!");
-            addStoryEntry({ type: 'system', content: 'Vượt qua tâm ma, bạn đã đột phá thành công!' });
             setGameState(prev => {
                 if (!prev) return null;
                 const { playerCharacter, realmSystem } = prev;
@@ -564,6 +563,12 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     newStageId = nextRealm.stages[0].id;
                 }
 
+                const newRealm = realmSystem.find(r => r.id === newRealmId)!;
+                const newStage = newRealm.stages.find(s => s.id === newStageId)!;
+                const qiBonus = Math.floor(newStage.qiRequired * 0.1);
+
+                addStoryEntry({ type: 'system', content: `Vượt qua tâm ma, bạn đã đột phá thành công! Cảnh giới vững chắc, nhận được ${qiBonus} điểm linh khí.` });
+
                 const pathsToShow = CULTIVATION_PATHS.filter(p => p.requiredRealmId === newRealmId);
                 if (pathsToShow.length > 0) openCultivationPathModal(pathsToShow);
                 
@@ -571,7 +576,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     ...prev,
                     playerCharacter: {
                         ...playerCharacter,
-                        cultivation: { ...cultivation, currentRealmId: newRealmId, currentStageId: newStageId, spiritualQi: 0 },
+                        cultivation: { ...cultivation, currentRealmId: newRealmId, currentStageId: newStageId, spiritualQi: qiBonus },
                         techniquePoints: playerCharacter.techniquePoints + 1,
                     }
                 };

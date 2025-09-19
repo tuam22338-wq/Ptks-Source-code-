@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import type { GameDate, MajorEvent } from '../../../types';
-import { FaArrowLeft, FaSave, FaBars } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaBars, FaExpand } from 'react-icons/fa';
 import Timeline from '../../../components/Timeline';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 
@@ -13,6 +13,26 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }) => {
     const { toggleSidebar } = useGameUIContext();
+    const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+
+    const handleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`Lỗi khi bật chế độ toàn màn hình: ${err.message} (${err.name})`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    };
+
+    useEffect(() => {
+        const onFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+    }, []);
+
     return (
         <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-3 bg-[var(--bg-subtle)] backdrop-blur-sm border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-2">
@@ -30,6 +50,15 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }
                 >
                     <FaSave className="w-5 h-5" />
                 </button>
+                {!isFullscreen && (
+                    <button 
+                        onClick={handleFullscreen} 
+                        className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors"
+                        title="Toàn Màn Hình"
+                    >
+                        <FaExpand className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             <div className="flex-grow flex justify-center">
