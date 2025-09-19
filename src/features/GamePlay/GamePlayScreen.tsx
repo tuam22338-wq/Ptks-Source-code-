@@ -309,7 +309,32 @@ const GamePlayScreenContent: React.FC = memo(() => {
         let tempState = gameState;
         
         const { newState: stateAfterTime, newDay } = advanceGameTime(tempState, apCost);
-        tempState = stateAfterTime;
+        
+        // Process Damage Over Time effects from vitals
+        let stateAfterDOT = { ...stateAfterTime };
+        const dotEffects = stateAfterDOT.playerCharacter.activeEffects.filter(e => e.dot);
+        if (dotEffects.length > 0) {
+            let pc = { ...stateAfterDOT.playerCharacter };
+            let totalDamage = 0;
+            dotEffects.forEach(effect => {
+                if (effect.dot?.type === 'Sinh Mệnh') {
+                    totalDamage += effect.dot.damage;
+                }
+            });
+
+            if (totalDamage > 0) {
+                const attributesCopy = pc.attributes.map(g => ({ ...g, attributes: g.attributes.map(a => ({...a})) }));
+                const sinhMenhAttr = attributesCopy.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
+                if (sinhMenhAttr && typeof sinhMenhAttr.value === 'number') {
+                    sinhMenhAttr.value = Math.max(0, sinhMenhAttr.value - totalDamage);
+                    pc = { ...pc, attributes: attributesCopy };
+                    addStoryEntry({ type: 'system-notification', content: `[${dotEffects.map(e=>e.name).join(', ')}]: Bạn mất ${totalDamage} Sinh Mệnh.` });
+                }
+            }
+            stateAfterDOT = { ...stateAfterDOT, playerCharacter: pc };
+        }
+        tempState = stateAfterDOT;
+
 
         if (newDay) {
             addStoryEntry({ type: 'system', content: `Một ngày mới đã bắt đầu: ${tempState.gameDate.season}, ngày ${tempState.gameDate.day}` });

@@ -1,5 +1,6 @@
 import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem, EventOutcome, PlayerNpcRelationship } from '../types';
 import { generateMainQuestFromEvent, generateSideQuestFromNpc } from '../services/geminiService';
+import { FACTION_REPUTATION_TIERS } from '../constants';
 
 interface QuestUpdateResult {
     newState: GameState;
@@ -161,8 +162,47 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
         completedQuests.forEach(quest => {
             notifications.push(`Nhiệm vụ hoàn thành: ${quest.title}`);
             const { rewards } = quest;
-            if (rewards.spiritualQi) pc.cultivation.spiritualQi += rewards.spiritualQi;
-            if (rewards.danhVong) pc.danhVong.value += rewards.danhVong;
+
+            // Apply rewards
+            if (rewards.spiritualQi) {
+                pc.cultivation.spiritualQi += rewards.spiritualQi;
+                notifications.push(`Bạn nhận được [${rewards.spiritualQi.toLocaleString()} Linh khí]`);
+            }
+            if (rewards.danhVong) {
+                pc.danhVong.value += rewards.danhVong;
+                // TODO: Update danhVong status based on new value
+                notifications.push(`Bạn nhận được [${rewards.danhVong} Danh vọng]`);
+            }
+            
+            // Additive currency rewards
+            let newCurrencies = { ...pc.currencies };
+            if (rewards.currencies) {
+                for (const [currency, amount] of Object.entries(rewards.currencies)) {
+                    if (amount) {
+                        newCurrencies[currency] = (newCurrencies[currency] || 0) + amount;
+                        notifications.push(`Bạn nhận được [${amount.toLocaleString()} ${currency}]`);
+                    }
+                }
+            }
+            pc.currencies = newCurrencies;
+
+            // Faction Reputation rewards
+            if (rewards.reputation) {
+                let newReputation = [...pc.reputation];
+                rewards.reputation.forEach(repChange => {
+                    const repIndex = newReputation.findIndex(r => r.factionName === repChange.factionName);
+                    if (repIndex !== -1) {
+                        const currentRep = newReputation[repIndex];
+                        const newValue = currentRep.value + repChange.change;
+                        const newStatus = FACTION_REPUTATION_TIERS.slice().reverse().find(t => newValue >= t.threshold)?.status || 'Kẻ Địch';
+                        newReputation[repIndex] = { ...currentRep, value: newValue, status: newStatus };
+                        notifications.push(`Danh vọng với ${repChange.factionName} ${repChange.change > 0 ? 'tăng' : 'giảm'} ${Math.abs(repChange.change)}.`);
+                    }
+                });
+                pc.reputation = newReputation;
+            }
+
+            // Item rewards
             if (rewards.items) {
                 let newItems = [...pc.inventory.items];
                 rewards.items.forEach(rewardItem => {
@@ -170,26 +210,38 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
                     if (existingItem) {
                         existingItem.quantity += rewardItem.quantity;
                     } else {
-                        // Create a placeholder item since we don't have a full item database here.
                         newItems.push({
                             id: `reward-${rewardItem.name.replace(/\s+/g, '_')}-${Date.now()}`,
-                            name: rewardItem.name,
-                            quantity: rewardItem.quantity,
-                            description: 'Vật phẩm nhận được từ nhiệm vụ.',
-                            type: 'Tạp Vật',
-                            quality: 'Phàm Phẩm',
-                            weight: 0.1,
-                            icon: '🎁',
+                            name: rewardItem.name, quantity: rewardItem.quantity,
+                            description: 'Vật phẩm nhận được từ nhiệm vụ.', type: 'Tạp Vật',
+                            quality: 'Phàm Phẩm', weight: 0.1, icon: '🎁',
                         } as InventoryItem);
                     }
                     notifications.push(`Bạn nhận được [${rewardItem.name} x${rewardItem.quantity}]`);
                 });
                 pc.inventory = { ...pc.inventory, items: newItems };
             }
+
+            // Consume gathered items
+            let itemsToConsume = [...pc.inventory.items];
+            quest.objectives.forEach(obj => {
+                if (obj.type === 'GATHER' && obj.isCompleted) {
+                    const itemIndex = itemsToConsume.findIndex(i => i.name === obj.target);
+                    if (itemIndex !== -1) {
+                        const newQuantity = itemsToConsume[itemIndex].quantity - obj.required;
+                        if (newQuantity > 0) {
+                            itemsToConsume[itemIndex] = { ...itemsToConsume[itemIndex], quantity: newQuantity };
+                        } else {
+                            itemsToConsume.splice(itemIndex, 1);
+                        }
+                    }
+                }
+            });
+            pc.inventory = { ...pc.inventory, items: itemsToConsume };
         });
         
         pc.activeQuests = remainingQuests;
-        pc.completedQuestIds = [...pc.completedQuestIds, ...completedQuests.map(q => q.id)];
+        pc.completedQuestIds = [...pc.completedQuestIds, ...completedQuests.map(q => q.source)];
         
         newState = { ...newState, playerCharacter: pc };
     }
@@ -225,7 +277,7 @@ export const checkFailedQuests = (currentState: GameState): QuestUpdateResult =>
             playerCharacter: {
                 ...newState.playerCharacter,
                 activeQuests: remainingQuests,
-                completedQuestIds: [...newState.playerCharacter.completedQuestIds, ...failedQuests.map(q => q.id)] // Also add to completed to prevent re-triggering
+                completedQuestIds: [...newState.playerCharacter.completedQuestIds, ...failedQuests.map(q => q.source)] // Also add to completed to prevent re-triggering
             }
         };
     }

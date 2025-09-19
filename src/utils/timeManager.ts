@@ -1,8 +1,14 @@
-import type { GameState } from '../types';
+import type { GameState, ActiveEffect } from '../types';
 import { SHICHEN_LIST, TIMEOFDAY_DETAILS } from '../constants';
 
 const DAYS_PER_SEASON = 30;
 const SEASONS: ['Xuân', 'Hạ', 'Thu', 'Đông'] = ['Xuân', 'Hạ', 'Thu', 'Đông'];
+
+const STARVATION_DEBUFF: Omit<ActiveEffect, 'id'> = { name: 'Đói Lả', source: 'vitals', description: 'Cơ thể suy nhược vì đói, các chỉ số bị giảm.', duration: -1, isBuff: false, bonuses: [{ attribute: 'Lực Lượng', value: -5 }, { attribute: 'Bền Bỉ', value: -5 }] };
+const SEVERE_STARVATION_DEBUFF: Omit<ActiveEffect, 'id'> = { name: 'Chết Đói', source: 'vitals', description: 'Sắp chết đói, sinh mệnh lực đang từ từ trôi đi.', duration: -1, isBuff: false, bonuses: [{ attribute: 'Lực Lượng', value: -10 }, { attribute: 'Bền Bỉ', value: -10 }], dot: { damage: 5, type: 'Sinh Mệnh' } };
+const DEHYDRATION_DEBUFF: Omit<ActiveEffect, 'id'> = { name: 'Khát Khô', source: 'vitals', description: 'Thiếu nước trầm trọng, tinh thần và thể chất đều suy giảm.', duration: -1, isBuff: false, bonuses: [{ attribute: 'Thân Pháp', value: -5 }, { attribute: 'Nguyên Thần', value: -5 }] };
+const SEVERE_DEHYDRATION_DEBUFF: Omit<ActiveEffect, 'id'> = { name: 'Chết Khát', source: 'vitals', description: 'Mất nước nghiêm trọng, sinh mệnh đang khô héo.', duration: -1, isBuff: false, bonuses: [{ attribute: 'Thân Pháp', value: -10 }, { attribute: 'Nguyên Thần', value: -10 }], dot: { damage: 5, type: 'Sinh Mệnh' } };
+
 
 export const advanceGameTime = (
     currentState: GameState, 
@@ -15,6 +21,36 @@ export const advanceGameTime = (
     // Vitals decay
     vitals.hunger = Math.max(0, vitals.hunger - apCost * 2); // 2 hunger per AP
     vitals.thirst = Math.max(0, vitals.thirst - apCost * 3); // 3 thirst per AP
+
+    // Apply/remove debuffs based on vitals
+    let newActiveEffects = [...playerCharacter.activeEffects];
+
+    const manageEffect = (effects: ActiveEffect[], condition: boolean, effectToAdd: Omit<ActiveEffect, 'id'>): ActiveEffect[] => {
+        const hasEffect = effects.some(e => e.name === effectToAdd.name);
+        if (condition && !hasEffect) {
+            return [...effects, { ...effectToAdd, id: `effect_${effectToAdd.name.replace(/\s+/g, '_')}` }];
+        }
+        if (!condition && hasEffect) {
+            return effects.filter(e => e.name !== effectToAdd.name);
+        }
+        return effects;
+    };
+
+    // Manage Hunger Debuffs
+    newActiveEffects = manageEffect(newActiveEffects, vitals.hunger <= 20 && vitals.hunger > 0, STARVATION_DEBUFF);
+    newActiveEffects = manageEffect(newActiveEffects, vitals.hunger <= 0, SEVERE_STARVATION_DEBUFF);
+    if (newActiveEffects.some(e => e.name === SEVERE_STARVATION_DEBUFF.name)) {
+        newActiveEffects = newActiveEffects.filter(e => e.name !== STARVATION_DEBUFF.name);
+    }
+
+    // Manage Thirst Debuffs
+    newActiveEffects = manageEffect(newActiveEffects, vitals.thirst <= 20 && vitals.thirst > 0, DEHYDRATION_DEBUFF);
+    newActiveEffects = manageEffect(newActiveEffects, vitals.thirst <= 0, SEVERE_DEHYDRATION_DEBUFF);
+    if (newActiveEffects.some(e => e.name === SEVERE_DEHYDRATION_DEBUFF.name)) {
+        newActiveEffects = newActiveEffects.filter(e => e.name !== DEHYDRATION_DEBUFF.name);
+    }
+
+    playerCharacter = { ...playerCharacter, vitals, activeEffects: newActiveEffects };
 
     let newActionPoints = gameDate.actionPoints - apCost;
 
@@ -62,7 +98,7 @@ export const advanceGameTime = (
     const newState: GameState = {
         ...currentState,
         gameDate,
-        playerCharacter: { ...playerCharacter, vitals }
+        playerCharacter
     };
 
     return { newState, newDay };

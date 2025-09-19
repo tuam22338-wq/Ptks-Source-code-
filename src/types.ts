@@ -755,6 +755,7 @@ export interface QuestReward {
     currencies?: Partial<Currency>;
     items?: { name: string; quantity: number }[];
     danhVong?: number;
+    reputation?: { factionName: string; change: number; }[];
 }
 
 export interface ActiveQuest {

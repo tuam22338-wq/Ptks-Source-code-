@@ -33,6 +33,12 @@ const createFullGameStateContext = (gameState: GameState): string => {
       ...playerCharacter.auxiliaryTechniques.map(t => t.name)
   ].filter(Boolean).join(', ');
 
+  const activeEffectsSummary = playerCharacter.activeEffects.length > 0
+    ? `Hiệu ứng: ${playerCharacter.activeEffects.map(e => e.name).join(', ')}.`
+    : 'Không có hiệu ứng đặc biệt.';
+
+  const vitalsSummary = `Tình trạng Sinh Tồn: No ${playerCharacter.vitals.hunger}/${playerCharacter.vitals.maxHunger}, Khát ${playerCharacter.vitals.thirst}/${playerCharacter.vitals.maxThirst}. ${activeEffectsSummary}`;
+
   const context = `
 ### TOÀN BỘ BỐI CẢNH GAME ###
 Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
@@ -43,6 +49,7 @@ const createFullGameStateContext = (gameState: GameState): string => {
 - **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: ${playerCharacter.identity.personality}.
 - **Trang Bị:** ${equipmentSummary || 'Không có'}.
 - **Chỉ Số Chính:** ${keyAttributes}.
+- **${vitalsSummary}**
 - **Danh Vọng & Quan Hệ:** Danh vọng ${playerCharacter.danhVong.status}. Các phe phái: ${reputationSummary}.
 
 **2. Thế Giới Hiện Tại**
