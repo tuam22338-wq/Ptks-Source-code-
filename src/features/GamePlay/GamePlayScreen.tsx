@@ -1,7 +1,8 @@
 
 
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -526,24 +527,47 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             const updatedEncounters = [...new Set([...stateWithParsedData.encounteredNpcIds, ...newNpcEncounterIds])];
                             
                             if (statChanges && statChanges.length > 0) {
-                                const newAttributes = pc.attributes.map(group => ({
-                                    ...group,
-                                    attributes: group.attributes.map(attr => {
-                                        const changeInfo = statChanges.find(sc => sc.attribute === attr.name);
-                                        if (changeInfo && typeof attr.value === 'number') {
-                                            let newValue = attr.value + changeInfo.change;
-                                            if (attr.maxValue) {
-                                                newValue = Math.max(0, Math.min(newValue, attr.maxValue));
-                                            } else {
-                                                newValue = Math.max(0, newValue);
+                                const attributeChanges = statChanges.filter(sc => !['spiritualQi', 'hunger', 'thirst', 'temperature'].includes(sc.attribute));
+                                const cultivationChanges = statChanges.filter(sc => sc.attribute === 'spiritualQi');
+                                const vitalsChanges = statChanges.filter(sc => ['hunger', 'thirst', 'temperature'].includes(sc.attribute));
+
+                                if (cultivationChanges.length > 0) {
+                                    const totalQiChange = cultivationChanges.reduce((sum, c) => sum + c.change, 0);
+                                    pc.cultivation.spiritualQi = Math.max(0, pc.cultivation.spiritualQi + totalQiChange);
+                                    showNotification(`Linh Khí: ${totalQiChange > 0 ? '+' : ''}${totalQiChange}`);
+                                }
+
+                                if (vitalsChanges.length > 0) {
+                                    vitalsChanges.forEach(change => {
+                                        const vitalKey = change.attribute as keyof PlayerVitals;
+                                        const maxVitalKey = `max${vitalKey.charAt(0).toUpperCase() + vitalKey.slice(1)}` as keyof PlayerVitals;
+                                        const maxVal = (pc.vitals[maxVitalKey] as number) || 100;
+                                        (pc.vitals[vitalKey] as number) = Math.max(0, Math.min(maxVal, (pc.vitals[vitalKey] as number) + change.change));
+                                        const label = vitalKey === 'hunger' ? 'No Bụng' : vitalKey === 'thirst' ? 'Nước Uống' : 'Nhiệt Độ';
+                                        showNotification(`${label}: ${change.change > 0 ? '+' : ''}${change.change}`);
+                                    });
+                                }
+
+                                if (attributeChanges.length > 0) {
+                                    const newAttributes = pc.attributes.map(group => ({
+                                        ...group,
+                                        attributes: group.attributes.map(attr => {
+                                            const changeInfo = attributeChanges.find(sc => sc.attribute === attr.name);
+                                            if (changeInfo && typeof attr.value === 'number') {
+                                                let newValue = attr.value + changeInfo.change;
+                                                if (attr.maxValue) {
+                                                    newValue = Math.max(0, Math.min(newValue, attr.maxValue));
+                                                } else {
+                                                    newValue = Math.max(0, newValue);
+                                                }
+                                                showNotification(`${attr.name}: ${changeInfo.change > 0 ? '+' : ''}${changeInfo.change}`);
+                                                return { ...attr, value: newValue };
                                             }
-                                            showNotification(`${attr.name}: ${changeInfo.change > 0 ? '+' : ''}${changeInfo.change}`);
-                                            return { ...attr, value: newValue };
-                                        }
-                                        return attr;
-                                    })
-                                }));
-                                pc.attributes = newAttributes;
+                                            return attr;
+                                        })
+                                    }));
+                                    pc.attributes = newAttributes;
+                                }
                             }
                             
                             const allNewEffects = [

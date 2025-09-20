@@ -33,7 +33,7 @@ export {
 
 
 export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
-export const CURRENT_GAME_VERSION = "1.0.6-preview";
+export const CURRENT_GAME_VERSION = "1.0.7";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
@@ -272,6 +272,8 @@ export const ATTRIBUTES_CONFIG: AttributeGroup[] = [
   },
 ];
 export const ALL_ATTRIBUTES = ATTRIBUTES_CONFIG.flatMap(g => g.attributes.map(a => a.name));
+
+export const ALL_PARSABLE_STATS = [...ALL_ATTRIBUTES, 'spiritualQi', 'hunger', 'thirst', 'temperature'];
 
 
 export const INNATE_TALENT_PROBABILITY: { rank: InnateTalentRank, weight: number }[] = [

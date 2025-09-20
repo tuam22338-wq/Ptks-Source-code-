@@ -115,11 +115,18 @@ export const migrateGameState = (savedGame: any): GameState => {
         version = "1.0.5";
     }
     
-    // Migrate to 1.0.6 (current version)
+    // Migrate to 1.0.6
     if (version < "1.0.6") {
         console.log(`Migrating save from v${version} to v1.0.6...`);
         // No structural changes, just version bump
         version = "1.0.6";
+    }
+
+    // Migrate to 1.0.7 (current version)
+    if (version < "1.0.7") {
+        console.log(`Migrating save from v${version} to v1.0.7...`);
+        // No structural changes, just version bump
+        version = "1.0.7";
     }
 
 

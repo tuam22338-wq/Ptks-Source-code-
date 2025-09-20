@@ -7,26 +7,55 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Ma+Shan+Zheng&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'text': '#f0ead6',
-              'text-muted': '#a39f8e',
-              'primary-accent': '#f59e0b',
-              'primary-accent-text': '#1f2937',
-              'secondary-accent': '#0d9488',
-            },
-            fontFamily: {
-              title: ['ZCOOL XiaoWei', 'serif'],
-              calligraphy: ['Ma Shan Zheng', 'cursive'],
-              sans: ['Noto Serif', 'serif'],
-            }
-          }
-        }
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #1c1c1c;
+        color: #f0ead6;
+        font-family: 'Noto Serif', serif;
       }
-    </script>
+      #launch-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        padding: 2rem;
+      }
+      #launch-container h1 {
+        font-family: 'Ma Shan Zheng', cursive;
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: #f59e0b;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        margin-bottom: 2rem;
+      }
+      #startButton {
+        padding: 1rem 2.5rem;
+        font-family: 'ZCOOL XiaoWei', serif;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #1f2937;
+        background-color: #f59e0b;
+        border: 2px solid #b45309;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      #startButton:hover {
+        background-color: #facc15;
+        transform: scale(1.05);
+      }
+      #root {
+        display: none; /* Hide root until app is launched */
+        height: 100%;
+        width: 100%;
+      }
+    </style>
     <script src="https://cdn.tailwindcss.com"></script>
     
   <script type="importmap">
@@ -44,6 +73,10 @@
 </script>
 </head>
   <body>
+    <div id="launch-container">
+      <h1>Tam Thiên Thế Giới: Khởi Nguyên</h1>
+      <button id="startButton">Khởi Động</button>
+    </div>
     <div id="root"></div>
     <script type="module" src="/index.js"></script>
   </body>

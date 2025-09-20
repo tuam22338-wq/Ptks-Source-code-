@@ -14,28 +14,22 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>
-                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Tây Du Ký & Tối Ưu Hóa</p>
+                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Bảo Trì Hệ Thống</p>
                 </div>
 
                 <div className="text-gray-300 space-y-3 my-4 max-h-[50vh] overflow-y-auto pr-2">
-                    <p>Chào mừng quý đạo hữu đã đến với phiên bản thử nghiệm mới nhất! Những thay đổi chính trong bản cập nhật này bao gồm:</p>
+                    <p>Chào mừng quý đạo hữu đã quay trở lại! Phiên bản này tập trung vào việc bảo trì và nâng cấp hệ thống:</p>
                     <ul className="list-disc list-inside space-y-3 pl-4">
                         <li>
-                            <strong className="text-amber-300">Thế Giới Mới: Tây Du Ký</strong>
+                            <strong className="text-amber-300">Tối ưu hóa hiệu suất</strong>
                             <p className="text-sm text-gray-400 pl-2">
-                                Bổ sung thế giới "Tây Du Ký" hoàn toàn mới. Giờ đây bạn có thể lựa chọn bắt đầu cuộc hành trình đến Tây Thiên thỉnh kinh cùng bốn thầy trò Đường Tăng, đối đầu với các thế lực Thiên Đình, Phật Môn và Yêu Giới.
+                                Cải thiện hiệu suất chung và sửa một số lỗi nhỏ để mang lại trải nghiệm mượt mà hơn.
                             </p>
                         </li>
                         <li>
-                            <strong className="text-amber-300">Cơ Sở Dữ Liệu Nhân Vật Độc Lập</strong>
+                            <strong className="text-amber-300">Nâng cấp nền tảng</strong>
                             <p className="text-sm text-gray-400 pl-2">
-                                Thế giới Tây Du Ký giờ đây có dàn nhân vật, sự kiện và địa danh riêng biệt, được mở rộng đáng kể để mang lại một trải nghiệm hoàn toàn độc lập và đúng với nguyên tác.
-                            </p>
-                        </li>
-                        <li>
-                            <strong className="text-amber-300">Đồng Bộ Hóa Dữ Liệu & Tối Ưu Hóa</strong>
-                            <p className="text-sm text-gray-400 pl-2">
-                                Cải tiến cấu trúc dữ liệu game để đảm bảo tính nhất quán và ổn định, ngăn ngừa các lỗi logic nghiêm trọng, giúp game hoạt động mượt mà hơn.
+                                Chuẩn bị và nâng cấp các thành phần cốt lõi để sẵn sàng cho các tính năng lớn sắp được ra mắt trong tương lai.
                             </p>
                         </li>
                     </ul>

@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus } from '../../types';
-import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES } from "../../constants";
+import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 
@@ -46,7 +46,7 @@ const createFullGameStateContext = (gameState: GameState): string => {
 - **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}.
 - **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || ''})
 - **Công Pháp Đã Học:** ${allTechniques || 'Chưa có'}.
-- **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: ${playerCharacter.identity.personality}.
+- **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: **${playerCharacter.identity.personality}**.
 - **Trang Bị:** ${equipmentSummary || 'Không có'}.
 - **Chỉ Số Chính:** ${keyAttributes}.
 - **${vitalsSummary}**
@@ -78,11 +78,23 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 
     const difficultyText = `Độ khó hiện tại là "${difficulty || 'Trung Bình'}". Hãy điều chỉnh mức độ thử thách và kết quả của các sự kiện cho phù hợp: độ khó cao hơn nên có nhiều tình huống nguy hiểm và kết quả bất lợi hơn; độ khó thấp hơn nên mang lại nhiều cơ hội và may mắn hơn.`;
 
+    const personalityDescription = PERSONALITY_TRAITS.find(p => p.name === playerCharacter.identity.personality)?.description || 'Không xác định.';
+
     const systemInstruction = `Bạn là một người kể chuyện (Game Master) cho một game nhập vai text-based có tên "Tam Thiên Thế Giới".
 - Bối cảnh: Thế giới tiên hiệp huyền huyễn.
 - **QUAN TRỌNG NHẤT: PHẢI LUÔN LUÔN trả lời bằng TIẾNG VIỆT.**
+
+- **LUẬT LỆ VỀ TÍNH CÁCH (TAM QUAN) - CỰC KỲ QUAN TRỌNG:**
+  1. Người chơi chỉ đưa ra **ý định** hành động. BẠN PHẢI diễn giải ý định đó thông qua lăng kính tính cách của nhân vật. Hành động cuối cùng phải **tuyệt đối phù hợp** với tính cách đã được định sẵn.
+  2. Tính cách hiện tại của nhân vật là: **${playerCharacter.identity.personality}**. (${personalityDescription})
+  3. Nếu ý định của người chơi **trái ngược hoàn toàn** với tính cách nhân vật, nhân vật phải **từ chối** thực hiện. Hãy mô tả sự từ chối đó một cách tự nhiên trong lời kể.
+  - **Ví dụ (Chính Trực):** Người chơi nhập "lén lút ăn cắp tiền". Bạn nên kể: "[${playerCharacter.identity.name}] nhíu mày, trong lòng thầm nghĩ: 'Không được, hành vi này trái với đạo nghĩa, ta không thể làm vậy.' Nghĩ rồi, [anh ta/cô ta] quyết định tìm một công việc ở quán trọ để kiếm tiền một cách quang minh chính đại."
+  - **Ví dụ (Tà Ác):** Người chơi nhập "giúp đỡ bà lão qua đường". Bạn nên kể: "[${playerCharacter.identity.name}] liếc nhìn bà lão, cười khẩy: 'Giúp bà ta thì được lợi gì? Thật lãng phí thời gian.' Nói rồi, [anh ta/cô ta] lách qua đám đông, bỏ mặc bà lão phía sau."
+  - **Ví dụ (Phi lý):** Nếu một nhân vật Chính Trực được yêu cầu "tụt quần giữa chợ", nhân vật sẽ từ chối trong kinh ngạc và phẫn nộ, thay vì mù quáng tuân theo.
+  4. TUYỆT ĐỐI không được để nhân vật hành động phi logic, phá vỡ hình tượng đã xây dựng. Bạn là người bảo vệ cho "linh hồn" của nhân vật.
+
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
-- **TUYỆT ĐỐI ƯU TIÊN HÀNH ĐỘNG CỦA NGƯỜI CHƠI:** Lời kể của bạn PHẢI là kết quả trực tiếp của hành động mà người chơi vừa thực hiện. Không được phớt lờ hay tự ý thay đổi hành động của họ.
+- **TUYỆT ĐỐI ƯU TIÊN HÀNH ĐỘNG CỦA NGƯỜI CHƠI:** Lời kể của bạn PHẢI là kết quả trực tiếp của hành động mà người chơi vừa thực hiện (sau khi đã được lọc qua tính cách). Không được phớt lờ hay tự ý thay đổi hành động của họ.
 - ${difficultyText}
 - **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
 - **TOÀN QUYỀN TRUY CẬP:** Bạn được cung cấp TOÀN BỘ bối cảnh game, bao gồm trạng thái nhân vật, nhiệm vụ, thế giới, và lịch sử. **HÃY SỬ DỤNG TRIỆT ĐỂ** thông tin này để đảm bảo mọi chi tiết trong lời kể của bạn đều nhất quán, logic và có chiều sâu. Ví dụ: nếu người chơi có danh vọng cao với một phe, NPC phe đó nên đối xử tốt hơn; nếu có một sự kiện thế giới đang diễn ra, câu chuyện nên phản ánh điều đó.
@@ -102,7 +114,7 @@ Mục tiêu là làm cho thế giới cảm thấy sống động và đầy nh�
         ? `${playerCharacter.identity.name} nói: "${userInput}"`
         : `${playerCharacter.identity.name} quyết định: "${userInput}"`;
 
-    const fullPrompt = `${fullContext}\n\n**Hành động của người chơi:**\n${userAction}\n\n**Người kể chuyện:**`;
+    const fullPrompt = `${fullContext}\n\n**Ý định của người chơi:**\n${userAction}\n\n**Người kể chuyện:**`;
 
     const specificApiKey = settings?.modelApiKeyAssignments?.mainTaskModel;
     const stream = await generateWithRetryStream({

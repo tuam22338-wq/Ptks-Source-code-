@@ -1,8 +1,8 @@
 import { Type } from "@google/genai";
-import type { GameState, InventoryItem, CultivationTechnique, ActiveQuest, ActiveEffect } from '../../types';
+import type { GameState, InventoryItem, CultivationTechnique, ActiveQuest, ActiveEffect, PlayerVitals } from '../../types';
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
-import { ALL_ATTRIBUTES } from "../../constants";
+import { ALL_PARSABLE_STATS } from "../../constants";
 
 // --- Schemas for Specialized AI Neurons ---
 
@@ -51,7 +51,7 @@ const techniqueSchema = {
                         items: {
                             type: Type.OBJECT,
                             properties: {
-                                attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                                attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS },
                                 value: { type: Type.NUMBER }
                             },
                             required: ['attribute', 'value']
@@ -80,11 +80,11 @@ const statChangeSchema = {
     properties: {
         statChanges: {
             type: Type.ARRAY,
-            description: "List of direct changes to the player's core stats (like Sinh Mệnh, Linh Lực, Tuổi Thọ, Điểm Nguồn, etc.). Use negative numbers for damage/loss.",
+            description: "List of direct changes to the player's core stats (like Sinh Mệnh, Linh Lực, Tuổi Thọ, spiritualQi, hunger, thirst, etc.). Use negative numbers for damage/loss.",
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                    attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS },
                     change: { type: Type.NUMBER }
                 },
                 required: ['attribute', 'change']
@@ -112,7 +112,7 @@ const effectSchema = {
                         items: {
                             type: Type.OBJECT,
                             properties: {
-                                attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                                attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS },
                                 value: { type: Type.NUMBER }
                             },
                             required: ['attribute', 'value']
@@ -183,7 +183,7 @@ const timeChangeSchema = {
     }
 };
 
-// --- Specialized AI Neuron Functions ---
+// --- Main Cognitive System Orchestrator ---
 
 const buildContext = (narrative: string, gameState: GameState) => {
     const existingItemNames = gameState.playerCharacter.inventory.items.map(i => i.name);
@@ -204,167 +204,73 @@ const buildContext = (narrative: string, gameState: GameState) => {
     `;
 };
 
-async function extractItems(context: string): Promise<InventoryItem[]> {
-    const prompt = `You are a data extraction AI. Analyze the narrative and extract ONLY NEW items the player obtains.
+async function parseNarrativeWithSingleCall(context: string, gameState: GameState) {
+    const masterParsingSchema = {
+        type: Type.OBJECT,
+        properties: {
+            ...itemSchema.properties,
+            ...techniqueSchema.properties,
+            ...encounterSchema.properties,
+            ...statChangeSchema.properties,
+            ...effectSchema.properties,
+            ...finalQuestSchema.properties,
+            ...timeChangeSchema.properties
+        }
+    };
+
+    const prompt = `You are a data extraction AI. Analyze the narrative and extract all relevant game state changes based on the provided context and schema.
+    Extract ONLY NEW things. Do not list items, techniques, or quests the player already has.
+    **IMPORTANT:** If the narrative describes the player taking damage or losing health, you MUST create a 'statChanges' entry for 'Sinh Mệnh' with a negative value.
     ${context}
-    Return a JSON object based on the schema. If no new items, return an empty array.`;
+    Return a JSON object based on the schema. If a category has no changes, return an empty array or null for it.`;
 
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
-    try {
-        const response = await generateWithRetry({ model: settings?.dataParsingModel || 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: itemSchema } }, specificApiKey);
-        const result = JSON.parse(response.text);
-        return (result.items || []).map((item: any) => ({ ...item, id: `item-${Date.now()}-${Math.random()}`, quantity: item.quantity || 1, quality: item.quality || 'Phàm Phẩm', weight: item.weight || 0.1, icon: item.icon || '📜' }));
-    } catch (e) {
-        console.error("Item extraction neuron failed:", e);
-        return [];
-    }
+    const response = await generateWithRetry({
+        model: settings?.dataParsingModel || 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: masterParsingSchema
+        }
+    }, specificApiKey);
+    
+    const result = JSON.parse(response.text);
+
+    const newItems = (result.items || []).map((item: any) => ({ ...item, id: `item-${Date.now()}-${Math.random()}`, quantity: item.quantity || 1, quality: item.quality || 'Phàm Phẩm', weight: item.weight || 0.1, icon: item.icon || '📜' }));
+    const newTechniques = (result.techniques || []).map((tech: any) => ({ ...tech, id: `tech-${Date.now()}-${Math.random()}`, level: 1, maxLevel: 10, effects: tech.effects || [], cost: tech.cost || { type: 'Linh Lực', value: 10 }, cooldown: tech.cooldown || 0, rank: tech.rank || 'Phàm Giai', icon: tech.icon || '📜', bonuses: tech.bonuses || [] }));
+    
+    const unencounteredNpcs = gameState.activeNpcs.filter(npc => !gameState.encounteredNpcIds.includes(npc.id));
+    const newNpcEncounterIds = (result.npcEncounters || []).map((name: string) => {
+        const npc = unencounteredNpcs.find(n => n.identity.name === name);
+        return npc ? npc.id : null;
+    }).filter((id: string | null): id is string => id !== null);
+
+    const statChanges = result.statChanges || [];
+    const newEffects = result.newEffects || [];
+    const newQuests = result.newQuests || [];
+    const timeJump = result.timeJump || null;
+
+    return {
+        newItems,
+        newTechniques,
+        newNpcEncounterIds,
+        statChanges,
+        newEffects,
+        newQuests,
+        timeJump
+    };
 }
 
-async function extractTechniques(context: string): Promise<CultivationTechnique[]> {
-    const prompt = `You are a data extraction AI. Analyze the narrative and extract ONLY NEW cultivation techniques the player learns.
-    ${context}
-    Return a JSON object based on the schema. If no new techniques, return an empty array.`;
-
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
-    try {
-        const response = await generateWithRetry({ model: settings?.dataParsingModel || 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: techniqueSchema } }, specificApiKey);
-        const result = JSON.parse(response.text);
-        return (result.techniques || []).map((tech: any) => ({ ...tech, id: `tech-${Date.now()}-${Math.random()}`, level: 1, maxLevel: 10, effects: tech.effects || [], cost: tech.cost || { type: 'Linh Lực', value: 10 }, cooldown: tech.cooldown || 0, rank: tech.rank || 'Phàm Giai', icon: tech.icon || '📜', bonuses: tech.bonuses || [] }));
-    } catch (e) {
-        console.error("Technique extraction neuron failed:", e);
-        return [];
-    }
-}
-
-async function extractNpcEncounters(context: string, gameState: GameState): Promise<string[]> {
-    const prompt = `You are a data extraction AI. Analyze the narrative and identify first-time encounters with NPCs from the provided "NOT met yet" list.
-    ${context}
-    Return a JSON object based on the schema. If no new encounters, return an empty array.`;
-
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
-    try {
-        const response = await generateWithRetry({ model: settings?.dataParsingModel || 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: encounterSchema } }, specificApiKey);
-        const result = JSON.parse(response.text);
-        const unencounteredNpcs = gameState.activeNpcs.filter(npc => !gameState.encounteredNpcIds.includes(npc.id));
-        return (result.npcEncounters || []).map((name: string) => {
-            const npc = unencounteredNpcs.find(n => n.identity.name === name);
-            return npc ? npc.id : null;
-        }).filter((id: string | null): id is string => id !== null);
-    } catch (e) {
-        console.error("Encounter extraction neuron failed:", e);
-        return [];
-    }
-}
-
-async function extractStatChanges(context: string): Promise<any[]> {
-    const prompt = `You are a data extraction AI. Analyze the narrative for explicit stat changes like damage, healing, or gaining/losing Qi. IMPORTANT: If the player gets hurt or loses health, you MUST create a 'statChanges' entry for 'Sinh Mệnh' with a negative value.
-    ${context}
-    Return a JSON object based on the schema. If no stat changes, return an empty array.`;
-
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
-    try {
-        const response = await generateWithRetry({ model: settings?.dataParsingModel || 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: statChangeSchema } }, specificApiKey);
-        const result = JSON.parse(response.text);
-        return result.statChanges || [];
-    } catch (e) {
-        console.error("Stat change extraction neuron failed:", e);
-        return [];
-    }
-}
-
-async function extractEffects(context: string): Promise<Omit<ActiveEffect, 'id'>[]> {
-    const prompt = `You are a data extraction AI. Analyze the narrative for new, lasting status effects applied to the player (e.g., poisoned, broken arm).
-    ${context}
-    Return a JSON object based on the schema. If no new effects, return an empty array.`;
-
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
-    try {
-        const response = await generateWithRetry({ model: settings?.dataParsingModel || 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: effectSchema } }, specificApiKey);
-        const result = JSON.parse(response.text);
-        return result.newEffects || [];
-    } catch (e) {
-        console.error("Effect extraction neuron failed:", e);
-        return [];
-    }
-}
-
-async function extractQuests(context: string): Promise<Partial<ActiveQuest>[]> {
-    const prompt = `You are a data extraction AI. Analyze the narrative to see if an NPC gives the player a new quest with clear objectives.
-    ${context}
-    Return a JSON object based on the schema. If no new quests, return an empty array.`;
-
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
-    try {
-        const response = await generateWithRetry({ model: settings?.dataParsingModel || 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: finalQuestSchema } }, specificApiKey);
-        const result = JSON.parse(response.text);
-        return result.newQuests || [];
-    } catch (e) {
-        console.error("Quest extraction neuron failed:", e);
-        return [];
-    }
-}
-
-async function extractTimeChange(context: string): Promise<{ years?: number; seasons?: number; days?: number } | null> {
-    const prompt = `You are a data extraction AI. Analyze the narrative for any explicit mentions of a large time jump (e.g., "7 years later", "after three months", "một tháng sau"). Convert months to days (1 month = 30 days).
-    ${context}
-    Return a JSON object based on the schema. If no significant time jump (less than a few days), return an empty object or null.`;
-
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
-    try {
-        const response = await generateWithRetry({ model: settings?.dataParsingModel || 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json", responseSchema: timeChangeSchema } }, specificApiKey);
-        const result = JSON.parse(response.text);
-        return result.timeJump || null;
-    } catch (e) {
-        console.error("Time change extraction neuron failed:", e);
-        return null;
-    }
-}
-
-// --- Main Cognitive System Orchestrator ---
 
 export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: Omit<ActiveEffect, 'id'>[], newQuests: Partial<ActiveQuest>[], timeJump: { years?: number; seasons?: number; days?: number } | null }> => {
     console.log("Activating Cognitive Nervous System to parse narrative...");
     const context = buildContext(narrative, gameState);
 
     try {
-        // Fire all specialized AI "neurons" concurrently
-        const [
-            itemsResult,
-            techniquesResult,
-            encountersResult,
-            statsResult,
-            effectsResult,
-            questsResult,
-            timeResult
-        ] = await Promise.all([
-            extractItems(context),
-            extractTechniques(context),
-            extractNpcEncounters(context, gameState),
-            extractStatChanges(context),
-            extractEffects(context),
-            extractQuests(context),
-            extractTimeChange(context)
-        ]);
-        
+        const results = await parseNarrativeWithSingleCall(context, gameState);
         console.log("Cognitive System processing complete. Aggregating results.");
-
-        // Aggregate results
-        return {
-            newItems: itemsResult,
-            newTechniques: techniquesResult,
-            newNpcEncounterIds: encountersResult,
-            statChanges: statsResult,
-            newEffects: effectsResult,
-            newQuests: questsResult,
-            timeJump: timeResult,
-        };
+        return results;
     } catch (error) {
         console.error("A critical error occurred in the Cognitive Nervous System:", error);
         // Return an empty structure to prevent crashes
