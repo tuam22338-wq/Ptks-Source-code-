@@ -103,7 +103,26 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
         });
     };
 
-    const finalAttributes = useMemo(() => calculateFinalAttributes(attributes, activeEffects), [attributes, activeEffects]);
+    const finalAttributes = useMemo(() => {
+        let attrs = calculateFinalAttributes(attributes, activeEffects);
+        if (spiritualRoot) {
+            attrs = attrs.map(group => {
+                if (group.title === 'Khí (气 - Chân Nguyên)') {
+                    return {
+                        ...group,
+                        attributes: group.attributes.map(attr => {
+                            if (attr.name === 'Linh Căn') {
+                                return { ...attr, value: spiritualRoot.name };
+                            }
+                            return attr;
+                        })
+                    };
+                }
+                return group;
+            });
+        }
+        return attrs;
+    }, [attributes, activeEffects, spiritualRoot]);
     
 
     const currentRealmData = realmSystem.find(r => r.id === cultivation.currentRealmId);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
     FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch 
@@ -199,14 +200,8 @@ const ModsScreen: React.FC = () => {
     }, [installedMods, communityMods, activeFilter, searchTerm]);
 
     const renderMainView = () => (
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+        <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in md:max-w-2xl mx-auto">
              <input type="file" accept=".json" ref={fileInputRef} onChange={handleFileSelected} className="hidden" />
-            <MenuButton 
-                icon={FaFileSignature}
-                title="Tạo Mod"
-                description="Sử dụng GameMaster AI để tạo vật phẩm, nhân vật, và hệ thống tu luyện của riêng bạn."
-                onClick={() => handleNavigate('createMod')}
-            />
              <MenuButton 
                 icon={FaUpload}
                 title="Nhập Mod"

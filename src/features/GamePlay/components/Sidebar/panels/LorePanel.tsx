@@ -1,17 +1,24 @@
+
 import React, { memo } from 'react';
 import { FaSun } from 'react-icons/fa';
-// FIX: constants.ts exports PT_MAJOR_EVENTS, not MAJOR_EVENTS. Aliasing to maintain usage.
-import { PT_MAJOR_EVENTS as MAJOR_EVENTS } from '../../../../../constants';
+import type { MajorEvent } from '../../../../../types';
 
-const LorePanel: React.FC = () => {
+interface LorePanelProps {
+  majorEvents: MajorEvent[];
+  eraName: string;
+}
+
+const LorePanel: React.FC<LorePanelProps> = ({ majorEvents, eraName }) => {
+  const title = eraName.includes('Đường') ? 'Tây Du Niên Biểu' : 'Phong Thần Niên Biểu';
+  
   return (
     <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
       <div>
         <h3 className="flex items-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
-          <FaSun className="text-yellow-300" /> Phong Thần Niên Biểu
+          <FaSun className="text-yellow-300" /> {title}
         </h3>
         <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-2">
-          {MAJOR_EVENTS.map((event) => (
+          {majorEvents.map((event) => (
             <div key={event.title} className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
                 <p className="text-xs font-bold text-amber-300">Năm {event.year}</p>
                 <h4 className="mt-1 font-bold text-gray-200 font-title">{event.title}</h4>

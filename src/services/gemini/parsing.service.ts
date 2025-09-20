@@ -1,8 +1,40 @@
 import { Type } from "@google/genai";
-import type { GameState, InventoryItem, CultivationTechnique } from '../../types';
+import type { GameState, InventoryItem, CultivationTechnique, ActiveQuest } from '../../types';
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { ALL_ATTRIBUTES } from "../../constants";
+
+const questObjectiveSchema = {
+    type: Type.OBJECT,
+    properties: {
+        type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] },
+        description: { type: Type.STRING, description: "Mô tả mục tiêu cho người chơi. Ví dụ: 'Đi đến Sông Vị Thủy', 'Thu thập 3 Linh Tâm Thảo'." },
+        target: { type: Type.STRING, description: "ID hoặc Tên của mục tiêu. Ví dụ: 'song_vi_thuy', 'Linh Tâm Thảo', 'npc_khuong_tu_nha'." },
+        required: { type: Type.NUMBER, description: "Số lượng cần thiết." },
+    },
+    required: ['type', 'description', 'target', 'required']
+};
+
+const questRewardSchema = {
+    type: Type.OBJECT,
+    properties: {
+        spiritualQi: { type: Type.NUMBER, description: "Lượng linh khí thưởng." },
+        danhVong: { type: Type.NUMBER, description: "Lượng danh vọng thưởng." },
+        items: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
+    }
+};
+
+const questSchemaForParsing = {
+    type: Type.OBJECT,
+    properties: {
+        title: { type: Type.STRING },
+        description: { type: Type.STRING },
+        source: { type: Type.STRING, description: "ID của nguồn gốc nhiệm vụ, ví dụ: 'npc_khuong_tu_nha'." },
+        objectives: { type: Type.ARRAY, items: questObjectiveSchema },
+        rewards: questRewardSchema,
+    },
+    required: ['title', 'description', 'source', 'objectives']
+};
 
 const extractionSchema = {
     type: Type.OBJECT,
@@ -95,11 +127,16 @@ const extractionSchema = {
                 },
                 required: ['name', 'description', 'duration', 'isBuff', 'bonuses']
             }
+        },
+        newQuests: {
+            type: Type.ARRAY,
+            description: "A list of new quests given to the player in the narrative.",
+            items: questSchemaForParsing
         }
     }
 };
 
-export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: any[] }> => {
+export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: any[], newQuests: Partial<ActiveQuest>[] }> => {
     const existingItemNames = gameState.playerCharacter.inventory.items.map(i => i.name);
     const existingTechniqueNames = [
         ...(gameState.playerCharacter.mainCultivationTechnique ? [gameState.playerCharacter.mainCultivationTechnique.name] : []),
@@ -107,6 +144,7 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
     ];
     const unencounteredNpcs = gameState.activeNpcs.filter(npc => !gameState.encounteredNpcIds.includes(npc.id));
     const unencounteredNpcNames = unencounteredNpcs.map(n => n.identity.name);
+    const allNpcIds = gameState.activeNpcs.map(n => n.id);
 
     const prompt = `You are a data extraction AI for a game. Analyze the following narrative text and strictly extract game data based on the provided schema.
 
@@ -119,15 +157,17 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
     - Player's existing items: ${existingItemNames.join(', ') || 'None'}
     - Player's existing techniques: ${existingTechniqueNames.join(', ') || 'None'}
     - NPCs in the world the player has NOT met yet: ${unencounteredNpcNames.join(', ') || 'None'}
+    - List of all known NPC IDs: ${allNpcIds.join(', ')}
 
     **Instructions:**
-    1.  **Extract NEW Items:** Identify physical items (swords, pills, herbs, etc.) the player EXPLICITLY obtains, receives, or finds. Do NOT list items they already have or just see.
-    2.  **Extract NEW Techniques:** Identify cultivation techniques or skills the player EXPLICITLY learns or obtains. If it's a passive technique like 'Tâm Pháp', include its passive stat bonuses.
-    3.  **Identify NEW NPC Encounters:** List names of NPCs from the "NOT met yet" list who the player interacts with or sees for the first time.
-    4.  **Extract Stat Changes:** Identify DIRECT changes to player stats. QUAN TRỌNG: Nếu người chơi bị thương, trúng độc, hoặc mất máu, BẮT BUỘC phải có một mục 'statChanges' cho 'Sinh Mệnh' với giá trị 'change' là số âm. Ví dụ: 'ngươi bị một chưởng đánh bay, hộc máu' -> [{'attribute': 'Sinh Mệnh', 'change': -25}]. Tương tự với việc hồi phục (giá trị dương).
-    5.  **Extract NEW Effects:** If the player suffers a lasting condition (e.g., gets poisoned, breaks a bone, is cursed, or receives a blessing), create a 'newEffects' entry. This should include a name, description, duration, whether it's a buff, and the specific stat bonuses/penalties. A broken arm ('Gãy Tay') should result in a debuff with a penalty to 'Lực Lượng'.
+    1.  **Extract NEW Items:** Identify physical items (swords, pills, herbs, etc.) the player EXPLICITLY obtains, receives, or finds.
+    2.  **Extract NEW Techniques:** Identify cultivation techniques the player EXPLICITLY learns or obtains.
+    3.  **Identify NEW NPC Encounters:** List names of NPCs from the "NOT met yet" list who the player interacts with for the first time.
+    4.  **Extract Stat Changes:** Identify DIRECT changes to player stats. IMPORTANT: If the player gets hurt, poisoned, or loses health, you MUST create a 'statChanges' entry for 'Sinh Mệnh' with a negative 'change' value. E.g., 'ngươi bị một chưởng đánh bay, hộc máu' -> [{'attribute': 'Sinh Mệnh', 'change': -25}]. Same for healing (positive value).
+    5.  **Extract NEW Effects:** If the player suffers a lasting condition (e.g., gets poisoned, breaks a bone), create a 'newEffects' entry with details.
+    6.  **Extract NEW Quests:** If the narrative describes an NPC giving the player a task or mission with clear objectives and potential rewards, extract it as a new quest. The 'source' should be the ID of the NPC giving the quest.
 
-    Return a JSON object with keys: "items", "techniques", "npcEncounters", "statChanges", "newEffects". If a category has no new data, return an empty array for it. Be extremely literal and only extract data that is explicitly stated as changing or being acquired in the narrative.`;
+    Return a JSON object with all keys from the schema. If a category has no new data, return an empty array for it. Be extremely literal and only extract data that is explicitly stated as changing or being acquired in the narrative.`;
     
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
@@ -176,6 +216,7 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
         newTechniques, 
         newNpcEncounterIds,
         statChanges: result.statChanges || [],
-        newEffects: result.newEffects || []
+        newEffects: result.newEffects || [],
+        newQuests: result.newQuests || [],
     };
 };

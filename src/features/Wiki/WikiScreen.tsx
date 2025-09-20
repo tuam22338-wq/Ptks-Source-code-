@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo, memo } from 'react';
 import type { NPC, Location, PlayerCharacter, PlayerNpcRelationship } from '../../types';
-import { INNATE_TALENT_RANKS, PT_NPC_LIST, PT_WORLD_MAP, CHARACTER_STATUS_CONFIG } from '../../constants';
+import { INNATE_TALENT_RANKS, PT_NPC_LIST, PT_WORLD_MAP, JTTW_NPC_LIST, JTTW_WORLD_MAP, CHARACTER_STATUS_CONFIG } from '../../constants';
 import { FaUsers, FaMapMarkedAlt, FaArrowLeft, FaEye } from 'react-icons/fa';
 
 interface WikiPanelProps {
@@ -87,27 +88,35 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ playerCharacter, allNpcs, encount
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const { relationships } = playerCharacter;
 
+    const isJttwWorld = useMemo(() => {
+        if (!discoveredLocations || discoveredLocations.length === 0) return false;
+        return discoveredLocations.some(loc => loc.id.startsWith('jttw_'));
+    }, [discoveredLocations]);
+
+    const baseNpcList = isJttwWorld ? JTTW_NPC_LIST : PT_NPC_LIST;
+    const baseLocationList = isJttwWorld ? JTTW_WORLD_MAP : PT_WORLD_MAP;
+
     const combinedNpcs = useMemo(() => {
         const npcMap = new Map<string, NPC>();
         allNpcs.forEach(npc => npcMap.set(npc.id, npc));
-        PT_NPC_LIST.forEach(npc => {
+        baseNpcList.forEach(npc => {
             if (!npcMap.has(npc.id)) {
                 npcMap.set(npc.id, npc);
             }
         });
         return Array.from(npcMap.values()).sort((a, b) => a.identity.name.localeCompare(b.identity.name));
-    }, [allNpcs]);
+    }, [allNpcs, baseNpcList]);
     
     const combinedLocations = useMemo(() => {
         const locationMap = new Map<string, Location>();
         discoveredLocations.forEach(loc => locationMap.set(loc.id, loc));
-        PT_WORLD_MAP.forEach(loc => {
+        baseLocationList.forEach(loc => {
              if (!locationMap.has(loc.id)) {
                 locationMap.set(loc.id, loc);
             }
         });
         return Array.from(locationMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-    }, [discoveredLocations]);
+    }, [discoveredLocations, baseLocationList]);
 
 
     const handleSelectNpc = (npc: NPC) => {

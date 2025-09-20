@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -181,6 +182,12 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, setGam
     );
 };
 
+const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+};
+
 const GamePlayScreenContent: React.FC = memo(() => {
     const { gameState, setGameState, handleSaveGame, quitGame, settings, speak, cancelSpeech } = useAppContext();
     const { 
@@ -193,9 +200,25 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     const [isAiResponding, setIsAiResponding] = useState(false);
     const [activeActionTab, setActiveActionTab] = useState<'say' | 'act'>('act');
+    const [aiResponseTime, setAiResponseTime] = useState(0);
     
     const abortControllerRef = useRef<AbortController | null>(null);
     const prevIsAiResponding = useRef(isAiResponding);
+
+     useEffect(() => {
+        let interval: ReturnType<typeof setInterval> | undefined;
+        if (isAiResponding) {
+            setAiResponseTime(0);
+            interval = setInterval(() => {
+                setAiResponseTime(t => t + 1);
+            }, 1000);
+        } else {
+            if (interval) clearInterval(interval);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isAiResponding]);
 
     useEffect(() => {
         prevIsAiResponding.current = isAiResponding;
@@ -371,9 +394,9 @@ const GamePlayScreenContent: React.FC = memo(() => {
             }
         }
 
-        // Process quests
-        const { newState: stateAfterQuests, notifications: questNotifications } = await questManager.processQuestUpdates(tempState, newDay);
-        tempState = stateAfterQuests;
+        // Process quests before AI response
+        const { newState: stateAfterInitialQuests, notifications: questNotifications } = await questManager.processQuestUpdates(tempState, newDay);
+        tempState = stateAfterInitialQuests;
         questNotifications.forEach(showNotification);
         setGameState(tempState);
     
@@ -400,95 +423,127 @@ const GamePlayScreenContent: React.FC = memo(() => {
             }
 
             if (fullResponse && !abortControllerRef.current.signal.aborted) {
+                
+                // Final state update after AI response
+                // This is a critical step for data synchronization
                 (async () => {
-                    let stateForParsing: GameState | null = null;
+                    // Get the most recent state after streaming updates
+                    let latestState: GameState | null = null;
                     setGameState(gs => {
-                        stateForParsing = gs;
+                        latestState = gs;
                         return gs;
                     });
-                    await new Promise(resolve => setTimeout(resolve, 0));
+                    await new Promise(resolve => setTimeout(resolve, 0)); // Allow state to update
 
-                    if (stateForParsing) {
-                        try {
-                            const { newItems, newTechniques, newNpcEncounterIds, statChanges, newEffects } = await parseNarrativeForGameData(fullResponse, stateForParsing);
+                    if (!latestState) return;
 
-                            if (newItems.length > 0 || newTechniques.length > 0 || newNpcEncounterIds.length > 0 || (statChanges && statChanges.length > 0) || (newEffects && newEffects.length > 0)) {
-                                setGameState(prevState => {
-                                    if (!prevState) return null;
-                                    let pc = { ...prevState.playerCharacter };
-                                    
-                                    const updatedItems = [...pc.inventory.items];
-                                    newItems.forEach(newItem => {
-                                        const existing = updatedItems.find(i => i.name === newItem.name);
-                                        if (existing) {
-                                            existing.quantity += newItem.quantity;
-                                        } else {
-                                            updatedItems.push(newItem);
-                                        }
-                                        showNotification(`Nhận được: ${newItem.name} x${newItem.quantity}`);
-                                    });
-                                    pc.inventory = { ...pc.inventory, items: updatedItems };
+                    try {
+                        // 1. Parse narrative for explicit game data changes
+                        const parsedData = await parseNarrativeForGameData(fullResponse, latestState);
+                        const { newItems, newTechniques, newNpcEncounterIds, statChanges, newEffects, newQuests } = parsedData;
 
-                                    let updatedTechniques = [...pc.auxiliaryTechniques];
-                                    let effectsFromTechniques: ActiveEffect[] = [];
-                                    newTechniques.forEach(tech => {
-                                        if (!updatedTechniques.some(t => t.name === tech.name)) {
-                                            updatedTechniques.push(tech);
-                                            showNotification(`Lĩnh ngộ: ${tech.name}`);
-                                            if (tech.bonuses && tech.bonuses.length > 0) {
-                                                effectsFromTechniques.push({
-                                                    id: `tech-passive-${tech.id}`,
-                                                    name: `${tech.name} (Bị Động)`,
-                                                    source: `technique:${tech.id}`,
-                                                    description: `Hiệu quả bị động từ công pháp ${tech.name}.`,
-                                                    bonuses: tech.bonuses,
-                                                    duration: -1,
-                                                    isBuff: true,
-                                                });
+                        let stateWithParsedData = { ...latestState };
+                        let pc = { ...stateWithParsedData.playerCharacter };
+
+                        // Apply parsed data to create an intermediate state
+                        if (newItems.length > 0 || newTechniques.length > 0 || newNpcEncounterIds.length > 0 || (statChanges && statChanges.length > 0) || (newEffects && newEffects.length > 0) || (newQuests && newQuests.length > 0)) {
+                             const updatedItems = [...pc.inventory.items];
+                            newItems.forEach(newItem => {
+                                const existing = updatedItems.find(i => i.name === newItem.name);
+                                if (existing) {
+                                    existing.quantity += newItem.quantity;
+                                } else {
+                                    updatedItems.push(newItem);
+                                }
+                                showNotification(`Nhận được: ${newItem.name} x${newItem.quantity}`);
+                            });
+                            pc.inventory = { ...pc.inventory, items: updatedItems };
+
+                            let updatedTechniques = [...pc.auxiliaryTechniques];
+                            let effectsFromTechniques: ActiveEffect[] = [];
+                            newTechniques.forEach(tech => {
+                                if (!updatedTechniques.some(t => t.name === tech.name)) {
+                                    updatedTechniques.push(tech);
+                                    showNotification(`Lĩnh ngộ: ${tech.name}`);
+                                    if (tech.bonuses && tech.bonuses.length > 0) {
+                                        effectsFromTechniques.push({
+                                            id: `tech-passive-${tech.id}`,
+                                            name: `${tech.name} (Bị Động)`,
+                                            source: `technique:${tech.id}`,
+                                            description: `Hiệu quả bị động từ công pháp ${tech.name}.`,
+                                            bonuses: tech.bonuses,
+                                            duration: -1,
+                                            isBuff: true,
+                                        });
+                                    }
+                                }
+                            });
+                            pc.auxiliaryTechniques = updatedTechniques;
+
+                            const updatedEncounters = [...new Set([...stateWithParsedData.encounteredNpcIds, ...newNpcEncounterIds])];
+                            
+                            if (statChanges && statChanges.length > 0) {
+                                const newAttributes = pc.attributes.map(group => ({
+                                    ...group,
+                                    attributes: group.attributes.map(attr => {
+                                        const changeInfo = statChanges.find(sc => sc.attribute === attr.name);
+                                        if (changeInfo && typeof attr.value === 'number') {
+                                            let newValue = attr.value + changeInfo.change;
+                                            if (attr.maxValue) {
+                                                newValue = Math.max(0, Math.min(newValue, attr.maxValue));
+                                            } else {
+                                                newValue = Math.max(0, newValue);
                                             }
+                                            showNotification(`${attr.name}: ${changeInfo.change > 0 ? '+' : ''}${changeInfo.change}`);
+                                            return { ...attr, value: newValue };
                                         }
-                                    });
-                                    pc.auxiliaryTechniques = updatedTechniques;
-
-                                    const updatedEncounters = [...new Set([...prevState.encounteredNpcIds, ...newNpcEncounterIds])];
-                                    
-                                    if (statChanges && statChanges.length > 0) {
-                                        const newAttributes = pc.attributes.map(group => ({
-                                            ...group,
-                                            attributes: group.attributes.map(attr => {
-                                                const changeInfo = statChanges.find(sc => sc.attribute === attr.name);
-                                                if (changeInfo && typeof attr.value === 'number') {
-                                                    let newValue = attr.value + changeInfo.change;
-                                                    if (attr.maxValue) {
-                                                        newValue = Math.max(0, Math.min(newValue, attr.maxValue));
-                                                    } else {
-                                                        newValue = Math.max(0, newValue);
-                                                    }
-                                                    showNotification(`${attr.name}: ${changeInfo.change > 0 ? '+' : ''}${changeInfo.change}`);
-                                                    return { ...attr, value: newValue };
-                                                }
-                                                return attr;
-                                            })
-                                        }));
-                                        pc.attributes = newAttributes;
-                                    }
-                                    
-                                    const allNewEffects = [
-                                        ...(newEffects || []).map(effect => ({ ...effect, id: `effect-${Date.now()}-${Math.random()}` })),
-                                        ...effectsFromTechniques
-                                    ];
-
-                                    if (allNewEffects.length > 0) {
-                                        pc.activeEffects = [...pc.activeEffects, ...allNewEffects];
-                                        allNewEffects.forEach(eff => showNotification(`Bạn nhận được hiệu ứng: ${eff.name}`));
-                                    }
-                                    
-                                    return { ...prevState, playerCharacter: pc, encounteredNpcIds: updatedEncounters };
-                                });
+                                        return attr;
+                                    })
+                                }));
+                                pc.attributes = newAttributes;
                             }
-                        } catch (parseError) {
-                            console.error("Lỗi khi phân tích phản hồi của AI:", parseError);
+                            
+                            const allNewEffects = [
+                                ...(newEffects || []).map(effect => ({ ...effect, id: `effect-${Date.now()}-${Math.random()}` })),
+                                ...effectsFromTechniques
+                            ];
+
+                            if (allNewEffects.length > 0) {
+                                pc.activeEffects = [...pc.activeEffects, ...allNewEffects];
+                                allNewEffects.forEach(eff => showNotification(`Bạn nhận được hiệu ứng: ${eff.name}`));
+                            }
+
+                             if (newQuests && newQuests.length > 0) {
+                                const currentQuests = [...pc.activeQuests];
+                                newQuests.forEach(questData => {
+                                    const newQuest: ActiveQuest = {
+                                        id: `quest_${questData.source || 'narrative'}_${Date.now()}`,
+                                        title: questData.title || 'Nhiệm vụ không tên',
+                                        description: questData.description || '',
+                                        type: 'SIDE', // Default to side quest
+                                        source: questData.source || `narrative-${Date.now()}`,
+                                        objectives: (questData.objectives || []).map(obj => ({ ...obj, current: 0, isCompleted: false })),
+                                        rewards: questData.rewards || {},
+                                    };
+                                    currentQuests.push(newQuest);
+                                    showNotification(`Nhiệm vụ mới: ${newQuest.title}`);
+                                });
+                                pc.activeQuests = currentQuests;
+                            }
+
+                            stateWithParsedData = { ...stateWithParsedData, playerCharacter: pc, encounteredNpcIds: updatedEncounters };
                         }
+
+                        // 2. Run quest processor again on the fully updated state to ensure synchronization
+                        const finalQuestCheck = await questManager.processQuestUpdates(stateWithParsedData, false); // `newDay` is false here
+                        finalQuestCheck.notifications.forEach(showNotification);
+                        
+                        // 3. Set the final, fully synchronized state
+                        setGameState(finalQuestCheck.newState);
+
+                    } catch (parseError) {
+                        console.error("Lỗi khi phân tích phản hồi của AI:", parseError);
+                         setGameState(latestState); // Revert to pre-parsing state if it fails
                     }
                 })();
             }
@@ -616,21 +671,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     const handleNpcDialogue = useCallback(async (npc: NPC) => {
         if (isAiResponding || !gameState) return;
-        
         await handleActionSubmit(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act');
-
-        setGameState((prevState) => {
-            if (!prevState) return null;
-            
-            (async () => {
-                const { newState, notifications } = await questManager.checkForNewSideQuest(prevState, npc);
-                notifications.forEach(showNotification);
-                setGameState(newState);
-            })();
-
-            return prevState;
-        });
-    }, [isAiResponding, gameState, handleActionSubmit, setGameState, showNotification]);
+    }, [isAiResponding, gameState, handleActionSubmit]);
     
     const allPlayerTechniques = useMemo(() => {
         if (!gameState) return [];
@@ -663,7 +705,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     {isAiResponding && (
                         <div className="flex-shrink-0 p-2 flex items-center justify-center gap-2">
                            <LoadingSpinner size="sm" />
-                           <p className="text-sm text-[var(--text-muted-color)] italic">Thiên Đạo đang suy diễn...</p>
+                           <p className="text-sm text-[var(--text-muted-color)] italic">Thiên Đạo đang suy diễn... <span className="font-mono">{formatTime(aiResponseTime)}</span></p>
                         </div>
                     )}
                     

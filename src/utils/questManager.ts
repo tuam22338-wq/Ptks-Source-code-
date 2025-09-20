@@ -302,8 +302,9 @@ export const processQuestUpdates = async (currentState: GameState, isNewDay: boo
         notifications1 = failResult.notifications;
     }
 
-    // 1. Check for new main quests based on game state (e.g., time)
-    const { newState: stateAfterMainQuests, notifications: mainQuestNotifications } = await checkForNewMainQuests(state1);
+    // 1. Check for new main quests is now disabled and handled by AI narrative parsing.
+    const stateAfterMainQuests = state1;
+    const mainQuestNotifications: string[] = [];
     
     // 2. Update progress on existing quests
     const { newState: stateAfterProgress, notifications: progressNotifications } = updateQuestProgress(stateAfterMainQuests);

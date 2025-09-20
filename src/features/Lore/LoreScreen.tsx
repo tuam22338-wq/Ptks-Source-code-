@@ -1,14 +1,32 @@
-import React, { memo } from 'react';
+
+import React, { memo, useMemo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
-import { PT_MAJOR_EVENTS } from '../../constants';
+import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
 
 const ThoiTheScreen: React.FC = () => {
-  const { handleNavigate } = useAppContext();
+  const { handleNavigate, activeWorldId } = useAppContext();
+
+  const { events, title, description } = useMemo(() => {
+    if (activeWorldId === 'tay_du_ky') {
+        return { 
+            events: JTTW_MAJOR_EVENTS, 
+            title: 'Tây Du Niên Biểu',
+            description: 'Hành trình đến Tây Thiên thỉnh kinh đầy gian nan của bốn thầy trò Đường Tăng, vượt qua 81 kiếp nạn, đối đầu vô số yêu ma quỷ quái.'
+        };
+    }
+    // Default to Phong Than
+    return { 
+        events: PT_MAJOR_EVENTS, 
+        title: 'Thời Thế Loạn Lạc',
+        description: 'Thế giới đang trong cơn biến động. Thiên mệnh đã định, nhưng lựa chọn là của bạn. Hãy xem xét các sự kiện lớn đang diễn ra để quyết định con đường của mình.'
+    };
+  }, [activeWorldId]);
+
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold font-title">Thời Thế Loạn Lạc</h2>
+        <h2 className="text-3xl font-bold font-title">{title}</h2>
         <button
           onClick={() => handleNavigate('mainMenu')}
           className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
@@ -17,10 +35,10 @@ const ThoiTheScreen: React.FC = () => {
           <FaArrowLeft className="w-5 h-5" />
         </button>
       </div>
-      <p className="text-center mb-10" style={{color: 'var(--text-muted-color)'}}>Thế giới đang trong cơn biến động. Thiên mệnh đã định, nhưng lựa chọn là của bạn. Hãy xem xét các sự kiện lớn đang diễn ra để quyết định con đường của mình.</p>
+      <p className="text-center mb-10" style={{color: 'var(--text-muted-color)'}}>{description}</p>
 
       <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-8">
-        {PT_MAJOR_EVENTS.map((event, index) => (
+        {events.map((event, index) => (
           <div key={index} className="bg-black/20 p-5 rounded-xl border-y-2 border-amber-800/50 flex flex-col animate-fade-in" style={{animationDelay: `${index * 50}ms`}}>
             <div className="pb-3 mb-4 text-center">
                 <p className="text-lg font-bold text-amber-400 font-title tracking-wider">

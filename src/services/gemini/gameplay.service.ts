@@ -45,6 +45,7 @@ const createFullGameStateContext = (gameState: GameState): string => {
 
 **1. Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}.
+- **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || ''})
 - **Công Pháp Đã Học:** ${allTechniques || 'Chưa có'}.
 - **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: ${playerCharacter.identity.personality}.
 - **Trang Bị:** ${equipmentSummary || 'Không có'}.

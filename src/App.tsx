@@ -8,7 +8,6 @@ import { CharacterCreationScreen } from './features/CharacterCreation/CharacterC
 import SaveSlotScreen from './features/MainMenu/SaveSlotScreen';
 import MainMenu from './features/MainMenu/MainMenu';
 import ModsScreen from './features/Mods/ModsScreen';
-import CreateModScreen from './features/Mods/CreateModScreen';
 import { GamePlayScreen } from './features/GamePlay/GamePlayScreen';
 import ThoiTheScreen from './features/Lore/LoreScreen';
 import InfoScreen from './features/Info/InfoScreen';
@@ -67,8 +66,6 @@ const AppContent: React.FC = () => {
             return <SettingsPanel />;
           case 'mods':
             return <ModsScreen />;
-          case 'createMod':
-            return <CreateModScreen />;
           case 'thoiThe':
             return <ThoiTheScreen />;
           case 'info':

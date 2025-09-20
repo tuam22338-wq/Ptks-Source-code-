@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, StoryEntry, GameState } from '../../../../types';
 import CharacterPanel from './panels/CharacterPanel';
@@ -50,7 +52,9 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         storyLog,
         encounteredNpcIds,
         realmSystem: realmSystemFromState,
-        activeMods
+        activeMods,
+        majorEvents,
+        gameDate,
     } = gameState;
     
     const allNpcs = activeNpcs;
@@ -152,7 +156,8 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {activeTab === 'aiMemory' && <AiMemoryPanel gameState={gameState} />}
                 {activeTab === 'wiki' && <WikiPanel playerCharacter={playerCharacter} allNpcs={allNpcs} encounteredNpcIds={encounteredNpcIds} discoveredLocations={discoveredLocations} />}
                 {activeTab === 'realms' && <RealmPanel playerCharacter={playerCharacter} realmSystem={realmSystem} />}
-                {activeTab === 'lore' && <LorePanel />}
+                {/* FIX: Changed gameDate.eraName to gameDate.era to match the GameDate type definition. */}
+                {activeTab === 'lore' && <LorePanel majorEvents={majorEvents} eraName={gameDate.era} />}
                 {activeModPanelConfig && <CustomContentPanel panelConfig={activeModPanelConfig} activeMods={activeMods} />}
             </div>
         </div>
