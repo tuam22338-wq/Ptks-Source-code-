@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -115,7 +115,6 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
             cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
             techniques: [],
             inventory: { items: [], weightCapacity: 10 },
-            // FIX: Added missing 'currencies' property.
             currencies: { 'Bạc': 10 + Math.floor(Math.random() * 50) },
             equipment: {},
             healthStatus: 'HEALTHY',

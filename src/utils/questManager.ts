@@ -99,6 +99,8 @@ const updateQuestProgress = (currentState: GameState): QuestUpdateResult => {
             if (obj.isCompleted) return obj;
 
             let progressMade = false;
+            let previousCurrent = obj.current;
+
             switch (obj.type) {
                 case 'TRAVEL':
                     if (playerCharacter.currentLocationId === obj.target) {
@@ -115,13 +117,17 @@ const updateQuestProgress = (currentState: GameState): QuestUpdateResult => {
                     break;
             }
             
-            if (obj.current >= obj.required) {
-                obj.isCompleted = true;
+            if (obj.current > previousCurrent) {
                 progressMade = true;
+            }
+
+            if (obj.current >= obj.required) {
+                if (!obj.isCompleted) progressMade = true; // Notify on completion
+                obj.isCompleted = true;
             }
             
             if (progressMade) {
-                 notifications.push(`Nhiệm vụ cập nhật: ${obj.description} (${obj.current}/${obj.required})`);
+                 notifications.push(`Nhiệm vụ cập nhật: ${obj.description} (${Math.min(obj.current, obj.required)}/${obj.required})`);
             }
 
             if (!obj.isCompleted) {
@@ -302,7 +308,7 @@ export const processQuestUpdates = async (currentState: GameState, isNewDay: boo
         notifications1 = failResult.notifications;
     }
 
-    // 1. Check for new main quests is now disabled and handled by AI narrative parsing.
+    // Main quest generation is now handled by the AI narrative parser to ensure context consistency.
     const stateAfterMainQuests = state1;
     const mainQuestNotifications: string[] = [];
     

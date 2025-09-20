@@ -24,7 +24,7 @@ const createFullGameStateContext = (gameState: GameState): string => {
   const keyAttributes = playerCharacter.attributes
     .flatMap(g => g.attributes)
     .filter(a => ['Lực Lượng', 'Thân Pháp', 'Ngộ Tính', 'Cơ Duyên', 'Căn Cốt', 'Sinh Mệnh', 'Linh Lực'].includes(a.name))
-    .map(a => `${a.name}: ${a.value}`)
+    .map(a => `${a.name}: ${a.value}${a.maxValue ? `/${a.maxValue}`: ''}`)
     .join(', ');
 
   const allTechniques = [
@@ -64,7 +64,7 @@ ${questSummary}
 - **Tóm Tắt Cốt Truyện (Ký ức dài hạn):**
 ${storySummary || 'Hành trình vừa bắt đầu.'}
 - **Nhật Ký Gần Đây (Ký ức ngắn hạn):**
-${storyLog.slice(-3).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}
+${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}
 #############################
   `;
   return context;
@@ -86,7 +86,7 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - ${difficultyText}
 - **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
 - **TOÀN QUYỀN TRUY CẬP:** Bạn được cung cấp TOÀN BỘ bối cảnh game, bao gồm trạng thái nhân vật, nhiệm vụ, thế giới, và lịch sử. **HÃY SỬ DỤNG TRIỆT ĐỂ** thông tin này để đảm bảo mọi chi tiết trong lời kể của bạn đều nhất quán, logic và có chiều sâu. Ví dụ: nếu người chơi có danh vọng cao với một phe, NPC phe đó nên đối xử tốt hơn; nếu có một sự kiện thế giới đang diễn ra, câu chuyện nên phản ánh điều đó.
-- **Bảo vệ Tam Quan nhân vật:** Duy trì "Tam Quan" (quan điểm về thế giới, giá trị, nhân sinh) của nhân vật (${playerCharacter.identity.personality}). Không thực hiện các hành động phi logic, tự sát, hoặc vi phạm bản chất của họ. Hãy tường thuật sự đấu tranh nội tâm nếu người chơi yêu cầu hành động vô lý.
+- **Làm cho các thay đổi trạng thái game RÕ RÀNG:** Khi có sự thay đổi (nhận vật phẩm, tăng/giảm chỉ số, học công pháp, bắt đầu nhiệm vụ), hãy mô tả nó một cách rõ ràng trong văn bản. Ví dụ: "Bạn nhặt được [Linh Tâm Thảo] x3.", "Một luồng nhiệt ấm áp chảy khắp cơ thể, Linh Khí của bạn tăng lên [50] điểm.", "NPC nói: 'Hãy giúp ta làm việc này...', và một nhiệm vụ mới xuất hiện trong sổ tay của bạn: [Tên Nhiệm Vụ Mới]". Điều này rất quan trọng để hệ thống game có thể nhận biết và cập nhật.
 - **HỆ THỐNG 'DU HIỆP' (WANDERER SYSTEM):** Khi người chơi thực hiện các hành động tự do, không có mục tiêu cụ thể (ví dụ: "khám phá xung quanh", "đi dạo trong rừng", "nghe ngóng tin tức"), BẠN CÓ TOÀN QUYỀN chủ động tạo ra các sự kiện nhỏ, ngẫu nhiên. Đây có thể là:
     - Gặp một NPC lang thang với một câu chuyện hoặc một nhiệm vụ nhỏ.
     - Tình cờ phát hiện một hang động bí ẩn, một cây linh thảo quý, hoặc dấu vết của một con yêu thú.

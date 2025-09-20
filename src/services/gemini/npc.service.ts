@@ -1,13 +1,10 @@
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-// FIX: Added NpcDensity and AttributeGroup to imports to resolve typing errors.
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, AttributeGroup } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { FaQuestionCircle } from "react-icons/fa";
-
-// FIX: Removed duplicate functions (generateCharacterIdentity, generateFamilyAndFriends, generateOpeningScene) which were already exported from character.service.ts, causing a re-export ambiguity in geminiService.ts.
 
 export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, existingNames: string[] = []): Promise<NPC[]> => {
     const count = typeof countOrDensity === 'number' ? countOrDensity : NPC_DENSITY_LEVELS.find(d => d.id === countOrDensity)?.count ?? 15;

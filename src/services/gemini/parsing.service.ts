@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { GameState, InventoryItem, CultivationTechnique, ActiveQuest } from '../../types';
+import type { GameState, InventoryItem, CultivationTechnique, ActiveQuest, ActiveEffect } from '../../types';
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { ALL_ATTRIBUTES } from "../../constants";
@@ -80,7 +80,7 @@ const statChangeSchema = {
     properties: {
         statChanges: {
             type: Type.ARRAY,
-            description: "List of direct changes to the player's core stats (like Sinh Mệnh, Linh Lực). Use negative numbers for damage/loss.",
+            description: "List of direct changes to the player's core stats (like Sinh Mệnh, Linh Lực, Tuổi Thọ, Điểm Nguồn, etc.). Use negative numbers for damage/loss.",
             items: {
                 type: Type.OBJECT,
                 properties: {
@@ -260,7 +260,7 @@ async function extractNpcEncounters(context: string, gameState: GameState): Prom
 }
 
 async function extractStatChanges(context: string): Promise<any[]> {
-    const prompt = `You are a data extraction AI. Analyze the narrative for explicit stat changes like damage or healing. IMPORTANT: If the player gets hurt or loses health, you MUST create a 'statChanges' entry for 'Sinh Mệnh' with a negative value.
+    const prompt = `You are a data extraction AI. Analyze the narrative for explicit stat changes like damage, healing, or gaining/losing Qi. IMPORTANT: If the player gets hurt or loses health, you MUST create a 'statChanges' entry for 'Sinh Mệnh' with a negative value.
     ${context}
     Return a JSON object based on the schema. If no stat changes, return an empty array.`;
 
@@ -276,7 +276,7 @@ async function extractStatChanges(context: string): Promise<any[]> {
     }
 }
 
-async function extractEffects(context: string): Promise<any[]> {
+async function extractEffects(context: string): Promise<Omit<ActiveEffect, 'id'>[]> {
     const prompt = `You are a data extraction AI. Analyze the narrative for new, lasting status effects applied to the player (e.g., poisoned, broken arm).
     ${context}
     Return a JSON object based on the schema. If no new effects, return an empty array.`;
@@ -329,7 +329,7 @@ async function extractTimeChange(context: string): Promise<{ years?: number; sea
 
 // --- Main Cognitive System Orchestrator ---
 
-export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: any[], newQuests: Partial<ActiveQuest>[], timeJump: { years?: number; seasons?: number; days?: number } | null }> => {
+export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: Omit<ActiveEffect, 'id'>[], newQuests: Partial<ActiveQuest>[], timeJump: { years?: number; seasons?: number; days?: number } | null }> => {
     console.log("Activating Cognitive Nervous System to parse narrative...");
     const context = buildContext(narrative, gameState);
 
