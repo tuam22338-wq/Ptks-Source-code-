@@ -1,4 +1,5 @@
 
+
 import React, { useMemo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -85,13 +86,6 @@ const AppContent: React.FC = () => {
 
     return (
         <div className="relative w-full min-h-[calc(var(--vh,1vh)*100)]">
-            <div className="ink-background-container">
-                <div className="ink-layer ink-layer-1"></div>
-                <div className="ink-layer ink-layer-2"></div>
-                <div className="ink-layer ink-layer-3"></div>
-                <div className="ink-layer ink-layer-4"></div>
-            </div>
-
             {gameState && <WeatherOverlay />}
 
             <div className={`relative z-10 w-full min-h-[calc(var(--vh,1vh)*100)] flex flex-col items-center justify-center transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'}`}>

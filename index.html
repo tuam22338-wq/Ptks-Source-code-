@@ -8,52 +8,92 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Ma+Shan+Zheng&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --text-color: #f0ead6;
+        --text-muted-color: #a39f8e;
+        --primary-accent-color: #f59e0b;
+        --primary-glow-color: rgba(245, 158, 11, 0.3);
+      }
       body, html {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
         background-color: #1c1c1c;
-        color: #f0ead6;
+        color: var(--text-color);
         font-family: 'Noto Serif', serif;
+        position: relative;
+        overflow: hidden;
       }
+      .font-title {
+        font-family: 'ZCOOL XiaoWei', serif;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 12px var(--primary-glow-color);
+      }
+      .text-text-muted {
+        color: var(--text-muted-color);
+      }
+
+      /* Background & Animations */
+      .ink-background-container {
+        position: absolute; inset: 0; overflow: hidden; background-color: #212020; z-index: 1;
+      }
+      .ink-layer {
+        position: absolute; inset: 0; background-repeat: repeat-x; background-position: center bottom;
+        animation: parallax-move linear infinite; mix-blend-mode: soft-light;
+      }
+      .ink-layer-1 {
+        background-image: linear-gradient(to top, rgba(23, 22, 22, 0) 0%, rgba(30, 28, 28, 0.8) 20%, #1e1c1c 40%);
+        z-index: 4; animation-duration: 120s; opacity: 1; mix-blend-mode: normal;
+      }
+      .ink-layer-2 {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%236b21a8' d='M0 400 L0 250 Q 100 220, 200 250 T 400 240 T 600 260 T 800 250 L800 400 Z' /%3E%3C/svg%3E");
+        background-size: auto 50%; z-index: 3; animation-duration: 90s; opacity: 0.15;
+      }
+      .ink-layer-3 {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%230d9488' d='M0 400 L0 300 Q 80 250, 160 300 T 320 280 T 480 310 T 640 290 T 800 300 L800 400 Z' /%3E%3C/svg%3E");
+        background-size: auto 60%; z-index: 2; animation-duration: 60s; opacity: 0.25;
+      }
+      .ink-layer-4 {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%23f59e0b' d='M0 400 L0 350 Q 120 300, 240 350 T 480 330 T 720 360 L800 350 L800 400 Z' /%3E%3C/svg%3E");
+        background-size: auto 45%; z-index: 1; animation-duration: 40s; opacity: 0.2;
+      }
+      @keyframes parallax-move { from { background-position-x: 0; } to { background-position-x: -2000px; } }
+      
+      .main-menu-title {
+        font-size: clamp(4.5rem, 18vw, 11rem); line-height: 0.9; font-weight: 700;
+        font-family: 'Ma Shan Zheng', cursive; text-shadow: 2px 4px 8px rgba(0, 0, 0, 0.5);
+        -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+      }
+      .animated-gradient-text {
+        background: linear-gradient(135deg, #f59e0b, #fde047, #a3e635, #4ade80, #2dd4bf, #38bdf8, #8b5cf6, #e11d48, #facc15, #f59e0b);
+        background-size: 500% 500%; -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent; animation: gradient-animation 25s ease infinite;
+      }
+      @keyframes gradient-animation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+      
+      @keyframes fadeInMainMenu { from { opacity: 0; } to { opacity: 1; } }
+      .animate-fade-in-menu { animation: fadeInMainMenu 1.5s ease-in forwards; }
+
+      @keyframes menu-item-appear { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-menu-item { animation: menu-item-appear 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards; }
+      
       #launch-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        text-align: center;
-        padding: 2rem;
-      }
-      #launch-container h1 {
-        font-family: 'Ma Shan Zheng', cursive;
-        font-size: 3.5rem;
-        font-weight: 700;
-        color: #f59e0b;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        margin-bottom: 2rem;
+        position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; height: 100%; text-align: center; padding: 2rem;
       }
       #startButton {
-        padding: 1rem 2.5rem;
-        font-family: 'ZCOOL XiaoWei', serif;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #1f2937;
-        background-color: #f59e0b;
-        border: 2px solid #b45309;
-        border-radius: 0.5rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
+        padding: 1.25rem 3rem; font-family: 'Ma Shan Zheng', cursive; font-size: 2.25rem;
+        line-height: 1; font-weight: bold; color: #1f2937; background-color: #f59e0b;
+        border: 2px solid #b45309; border-radius: 0.5rem; cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.3);
       }
       #startButton:hover {
-        background-color: #facc15;
-        transform: scale(1.05);
+        background-color: #facc15; transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 8px 25px rgba(250, 204, 21, 0.5), inset 0 2px 2px rgba(255, 255, 255, 0.3);
       }
       #root {
-        display: none; /* Hide root until app is launched */
-        height: 100%;
-        width: 100%;
+        display: none; height: 100%; width: 100%;
       }
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -73,9 +113,26 @@
 </script>
 </head>
   <body>
+    <div class="ink-background-container">
+      <div class="ink-layer ink-layer-1"></div>
+      <div class="ink-layer ink-layer-2"></div>
+      <div class="ink-layer ink-layer-3"></div>
+      <div class="ink-layer ink-layer-4"></div>
+    </div>
     <div id="launch-container">
-      <h1>Tam Thiên Thế Giới: Khởi Nguyên</h1>
-      <button id="startButton">Khởi Động</button>
+      <div class="w-full max-w-7xl px-4 flex flex-col items-center justify-center space-y-8 md:space-y-12 animate-fade-in-menu">
+        <div class="text-center p-8 relative animate-menu-item" style="animation-delay: 100ms;">
+          <h1 class="main-menu-title animated-gradient-text">
+            Tam Thiên<br/>Thế Giới
+          </h1>
+          <h2 class="text-2xl sm:text-3xl mt-4 tracking-widest font-semibold font-title text-text-muted animate-menu-item" style="animation-delay: 300ms;">
+            Khởi Nguyên
+          </h2>
+        </div>
+        <div class="animate-menu-item" style="animation-delay: 500ms;">
+          <button id="startButton">Khởi Động</button>
+        </div>
+      </div>
     </div>
     <div id="root"></div>
     <script type="module" src="/index.js"></script>
