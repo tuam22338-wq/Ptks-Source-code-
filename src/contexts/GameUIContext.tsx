@@ -51,7 +51,7 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const toggleSidebar = useCallback(() => setIsSidebarOpen(prev => !prev), []);
 
     const showNotification = useCallback((message: string) => {
-        const id = Date.now();
+        const id = Date.now() + Math.random();
         setNotifications(prev => [...prev.slice(-4), { id, message }]); // Keep max 5 notifications
         setTimeout(() => {
             setNotifications(prev => prev.filter(n => n.id !== id));

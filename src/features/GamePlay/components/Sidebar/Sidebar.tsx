@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, StoryEntry, GameState } from '../../../../types';
 import CharacterPanel from './panels/CharacterPanel';
@@ -18,6 +19,7 @@ import GenealogyPanel from './panels/GenealogyPanel';
 import QuestPanel from './panels/QuestPanel';
 import SystemPanel from './panels/SystemPanel';
 import PlayerSectPanel from './panels/PlayerSectPanel';
+import DeathPanel from './panels/DeathPanel';
 import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaProjectDiagram, FaBrain, FaSitemap, FaUsers, FaMountain, FaFlask, FaTasks, FaDesktop } from 'react-icons/fa';
 import { GiCastle } from 'react-icons/gi';
 import { useGameUIContext } from '../../../../contexts/GameUIContext';
@@ -56,6 +58,13 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         majorEvents,
         gameDate,
     } = gameState;
+
+    const sinhMenhAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
+    const isPlayerDead = sinhMenhAttr ? (sinhMenhAttr.value as number) <= 0 : false;
+
+    if (isPlayerDead) {
+        return <DeathPanel />;
+    }
     
     const allNpcs = activeNpcs;
     const realmSystem = realmSystemFromState || REALM_SYSTEM;

@@ -2,6 +2,12 @@
 
 
 
+
+
+
+
+
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -262,67 +268,51 @@ const GamePlayScreenContent: React.FC = memo(() => {
     
     const handleActionSubmit = useCallback(async (text: string, type: 'say' | 'act' = 'act', apCost: number = 1) => {
         if (isAiResponding || !gameState) return;
-        
+    
         cancelSpeech();
     
         if (text.trim().toLowerCase() === 'mở túi đồ') {
             openInventoryModal();
             return;
         }
-
+    
         if (type === 'act' && text.toLowerCase().includes('tham ngộ đại đạo')) {
             setIsAiResponding(true);
             addStoryEntry({ type: 'player-action', content: 'Ta quyết định tĩnh tâm, thử tham ngộ đại đạo trong trời đất...' });
-            
-            (async () => {
-                try {
-                    const technique = await generateRandomTechnique(gameState);
-                    setGameState(prev => {
-                        if (!prev) return null;
-                        const pc = { ...prev.playerCharacter };
-                        pc.auxiliaryTechniques = [...pc.auxiliaryTechniques, technique];
-                        return { ...prev, playerCharacter: pc };
-                    });
-                    const narrative = `Giữa lúc tĩnh tọa, trong đầu ngươi bỗng lóe lên một tia sáng. Một bộ công pháp huyền ảo mang tên [${technique.name}] tựa như được khắc sâu vào trong ký ức của ngươi!`;
-                    addStoryEntry({ type: 'narrative', content: narrative });
-                    showNotification(`Lĩnh ngộ được công pháp mới: ${technique.name}!`);
-                } catch (error) {
-                    console.error("Failed to generate technique:", error);
-                    addStoryEntry({ type: 'system', content: `Linh khí hỗn loạn, tham ngộ thất bại.` });
-                    showNotification('Tham ngộ thất bại!');
-                } finally {
-                    setIsAiResponding(false);
-                }
-            })();
+    
+            try {
+                const technique = await generateRandomTechnique(gameState);
+                setGameState(prev => {
+                    if (!prev) return null;
+                    const pc = { ...prev.playerCharacter, auxiliaryTechniques: [...prev.playerCharacter.auxiliaryTechniques, technique] };
+                    return { ...prev, playerCharacter: pc };
+                });
+                const narrative = `Giữa lúc tĩnh tọa, trong đầu ngươi bỗng lóe lên một tia sáng. Một bộ công pháp huyền ảo mang tên [${technique.name}] tựa như được khắc sâu vào trong ký ức của ngươi!`;
+                addStoryEntry({ type: 'narrative', content: narrative });
+                showNotification(`Lĩnh ngộ được công pháp mới: ${technique.name}!`);
+            } catch (error) {
+                console.error("Failed to generate technique:", error);
+                addStoryEntry({ type: 'system', content: `Linh khí hỗn loạn, tham ngộ thất bại.` });
+                showNotification('Tham ngộ thất bại!');
+            } finally {
+                setIsAiResponding(false);
+            }
             return;
         }
-
+    
         const cultivationKeywords = ['tu luyện', 'tĩnh tọa', 'hấp thụ linh khí', 'đả tọa'];
         if (type === 'act' && cultivationKeywords.some(kw => text.toLowerCase().includes(kw))) {
-            const hasCultivationTechnique = 
-                !!gameState.playerCharacter.mainCultivationTechnique || 
-                gameState.playerCharacter.auxiliaryTechniques.some(t => t.type === 'Tâm Pháp');
-
+            const hasCultivationTechnique = !!gameState.playerCharacter.mainCultivationTechnique || gameState.playerCharacter.auxiliaryTechniques.some(t => t.type === 'Tâm Pháp');
             if (!hasCultivationTechnique) {
                 addStoryEntry({ type: 'system', content: 'Bạn chưa học được bất kỳ công pháp nào, không thể tu luyện. Có lẽ nên tìm một tông môn để gia nhập, hoặc tìm kiếm kỳ duyên khác.' });
                 return;
             }
-
             const currentLocation = gameState.discoveredLocations.find(l => l.id === gameState.playerCharacter.currentLocationId);
             const qiGain = Math.floor(10 * (currentLocation?.qiConcentration || 10) / 10 * (1 + Math.random() * 0.2));
-            
             setGameState(prev => {
                 if (!prev) return null;
-                return {
-                    ...prev,
-                    playerCharacter: {
-                        ...prev.playerCharacter,
-                        cultivation: {
-                            ...prev.playerCharacter.cultivation,
-                            spiritualQi: prev.playerCharacter.cultivation.spiritualQi + qiGain,
-                        }
-                    }
-                }
+                const pc = prev.playerCharacter;
+                return { ...prev, playerCharacter: { ...pc, cultivation: { ...pc.cultivation, spiritualQi: pc.cultivation.spiritualQi + qiGain } } };
             });
             text = `Ta ngồi xuống tu luyện, hấp thụ được ${qiGain} điểm linh khí.`;
         }
@@ -336,21 +326,15 @@ const GamePlayScreenContent: React.FC = memo(() => {
         addStoryEntry({ type: type === 'say' ? 'player-dialogue' : 'player-action', content: text });
     
         let tempState = gameState;
-        
+    
         const { newState: stateAfterTime, newDay } = advanceGameTime(tempState, apCost);
-        
-        // Process Damage Over Time effects from vitals
+    
         let stateAfterDOT = { ...stateAfterTime };
         const dotEffects = stateAfterDOT.playerCharacter.activeEffects.filter(e => e.dot);
         if (dotEffects.length > 0) {
             let pc = { ...stateAfterDOT.playerCharacter };
-            let totalDamage = 0;
-            dotEffects.forEach(effect => {
-                if (effect.dot?.type === 'Sinh Mệnh') {
-                    totalDamage += effect.dot.damage;
-                }
-            });
-
+            let totalDamage = dotEffects.reduce((sum, e) => sum + (e.dot?.type === 'Sinh Mệnh' ? e.dot.damage : 0), 0);
+    
             if (totalDamage > 0) {
                 const attributesCopy = pc.attributes.map(g => ({ ...g, attributes: g.attributes.map(a => ({...a})) }));
                 const sinhMenhAttr = attributesCopy.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
@@ -363,50 +347,40 @@ const GamePlayScreenContent: React.FC = memo(() => {
             stateAfterDOT = { ...stateAfterDOT, playerCharacter: pc };
         }
         tempState = stateAfterDOT;
-
-
+    
         if (newDay) {
             addStoryEntry({ type: 'system', content: `Một ngày mới đã bắt đầu: ${tempState.gameDate.season}, ngày ${tempState.gameDate.day}` });
-            
-            // Faction simulation (once a week)
+    
             if (tempState.gameDate.day % 7 === 1) {
                 const { newEvent, narrative } = await simulateFactionTurn(tempState);
                 if (newEvent && narrative) {
                     addStoryEntry({ type: 'system-notification', content: narrative });
-                    tempState = {
-                        ...tempState,
-                        worldState: {
-                            ...tempState.worldState,
-                            dynamicEvents: [...(tempState.worldState.dynamicEvents || []), newEvent]
-                        }
-                    };
+                    tempState = { ...tempState, worldState: { ...tempState.worldState, dynamicEvents: [...(tempState.worldState.dynamicEvents || []), newEvent] } };
                 }
             }
-            
+    
             const { newState: stateAfterSim, rumors } = await simulateWorldTurn(tempState);
             tempState = stateAfterSim;
             if (rumors.length > 0) {
-                const rumorText = rumors.map(r => `Có tin đồn rằng: ${r.text}`).join('\n');
-                addStoryEntry({ type: 'narrative', content: rumorText });
+                addStoryEntry({ type: 'narrative', content: rumors.map(r => `Có tin đồn rằng: ${r.text}`).join('\n') });
             }
-
+    
             if (tempState.gameDate.day % 7 === 1) {
                 try {
                     const weeklyNews = await generateWeeklyRumor(tempState);
                     addStoryEntry({ type: 'system', content: `[Thiên Hạ Sự] ${weeklyNews}` });
-                } catch (e) {
-                    console.error("Failed to generate weekly rumor:", e);
-                }
+                } catch (e) { console.error("Failed to generate weekly rumor:", e); }
             }
         }
-
-        // Process quests before AI response
+    
         const { newState: stateAfterInitialQuests, notifications: questNotifications } = await questManager.processQuestUpdates(tempState, newDay);
         tempState = stateAfterInitialQuests;
         questNotifications.forEach(showNotification);
         setGameState(tempState);
     
         addStoryEntry({ type: 'narrative', content: '...' });
+        
+        let finalStateForSummary: GameState | null = null;
     
         try {
             const stream = generateStoryContinuationStream(tempState, text, type);
@@ -427,193 +401,145 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     return { ...prev, storyLog: newLog };
                 });
             }
-
+    
             if (fullResponse && !abortControllerRef.current.signal.aborted) {
-                
-                // Final state update after AI response
-                // This is a critical step for data synchronization
-                (async () => {
-                    // Get the most recent state after streaming updates
-                    let latestState: GameState | null = null;
-                    setGameState(gs => {
-                        latestState = gs;
-                        return gs;
-                    });
-                    await new Promise(resolve => setTimeout(resolve, 0)); // Allow state to update
-
-                    if (!latestState) return;
-
+                let latestState: GameState | null = null;
+                setGameState(gs => { latestState = gs; return gs; });
+                await new Promise(resolve => setTimeout(resolve, 0));
+    
+                if (latestState) {
                     try {
-                        // 1. Parse narrative for explicit game data changes
                         const parsedData = await parseNarrativeForGameData(fullResponse, latestState);
                         const { newItems, newTechniques, newNpcEncounterIds, statChanges, newEffects, newQuests, timeJump } = parsedData;
-
+    
                         let stateWithParsedData = { ...latestState };
                         let pc = { ...stateWithParsedData.playerCharacter };
-
-                        // Handle time jump
+    
                         if (timeJump && (timeJump.years || timeJump.seasons || timeJump.days)) {
                             let newGameDate = { ...stateWithParsedData.gameDate };
-                            
-                            let totalDaysToAdd = (timeJump.days || 0);
-                            let totalSeasonsToAdd = (timeJump.seasons || 0);
-                            let totalYearsToAdd = (timeJump.years || 0);
-
+                            let totalDaysToAdd = (timeJump.days || 0), totalSeasonsToAdd = (timeJump.seasons || 0), totalYearsToAdd = (timeJump.years || 0);
                             if(totalDaysToAdd > 0 || totalSeasonsToAdd > 0 || totalYearsToAdd > 0) {
                                 newGameDate.year += totalYearsToAdd;
-                                
                                 let currentSeasonIndex = SEASONS.indexOf(newGameDate.season);
                                 currentSeasonIndex += totalSeasonsToAdd;
                                 newGameDate.year += Math.floor(currentSeasonIndex / 4);
                                 newGameDate.season = SEASONS[currentSeasonIndex % 4];
-
                                 newGameDate.day += totalDaysToAdd;
                                 while(newGameDate.day > DAYS_PER_SEASON) {
                                     newGameDate.day -= DAYS_PER_SEASON;
                                     let seasonIdx = SEASONS.indexOf(newGameDate.season);
-                                    const nextSeasonIndex = (seasonIdx + 1) % 4;
-                                    newGameDate.season = SEASONS[nextSeasonIndex];
-                                    if (nextSeasonIndex === 0) {
-                                        newGameDate.year++;
-                                    }
+                                    newGameDate.season = SEASONS[(seasonIdx + 1) % 4];
+                                    if (newGameDate.season === 'Xuân') newGameDate.year++;
                                 }
-                                
                                 stateWithParsedData = { ...stateWithParsedData, gameDate: newGameDate };
-
-                                const timeJumpMessage = [
-                                    timeJump.years ? `${timeJump.years} năm` : '',
-                                    timeJump.seasons ? `${timeJump.seasons} quý` : '',
-                                    timeJump.days ? `${timeJump.days} ngày` : ''
-                                ].filter(Boolean).join(', ');
-                                
-                                showNotification(`Thời gian trôi qua ${timeJumpMessage}.`);
+                                showNotification(`Thời gian trôi qua ${[timeJump.years && `${timeJump.years} năm`, timeJump.seasons && `${timeJump.seasons} quý`, timeJump.days && `${timeJump.days} ngày`].filter(Boolean).join(', ')}.`);
                             }
                         }
+    
+                        const updatedItems = [...pc.inventory.items];
+                        newItems.forEach(newItem => {
+                            const existing = updatedItems.find(i => i.name === newItem.name);
+                            if (existing) existing.quantity += newItem.quantity; else updatedItems.push(newItem);
+                            showNotification(`Nhận được: ${newItem.name} x${newItem.quantity}`);
+                        });
+                        pc.inventory = { ...pc.inventory, items: updatedItems };
+    
+                        let updatedTechniques = [...pc.auxiliaryTechniques];
+                        let effectsFromTechniques: ActiveEffect[] = [];
+                        newTechniques.forEach(tech => {
+                            if (!updatedTechniques.some(t => t.name === tech.name)) {
+                                updatedTechniques.push(tech);
+                                showNotification(`Lĩnh ngộ: ${tech.name}`);
+                                if (tech.bonuses) effectsFromTechniques.push({ id: `tech-passive-${tech.id}`, name: `${tech.name} (Bị Động)`, source: `technique:${tech.id}`, description: `Hiệu quả bị động từ công pháp ${tech.name}.`, bonuses: tech.bonuses, duration: -1, isBuff: true });
+                            }
+                        });
+                        pc.auxiliaryTechniques = updatedTechniques;
+    
+                        if (statChanges?.length > 0) {
+                            const { spiritualQi = 0, hunger = 0, thirst = 0, temperature = 0, ...attributeChangesMap } = statChanges.reduce((acc, sc) => ({ ...acc, [sc.attribute]: sc.change }), {} as Record<string, number>);
 
-                        // Apply parsed data to create an intermediate state
-                        if (newItems.length > 0 || newTechniques.length > 0 || newNpcEncounterIds.length > 0 || (statChanges && statChanges.length > 0) || (newEffects && newEffects.length > 0) || (newQuests && newQuests.length > 0)) {
-                             const updatedItems = [...pc.inventory.items];
-                            newItems.forEach(newItem => {
-                                const existing = updatedItems.find(i => i.name === newItem.name);
-                                if (existing) {
-                                    existing.quantity += newItem.quantity;
-                                } else {
-                                    updatedItems.push(newItem);
-                                }
-                                showNotification(`Nhận được: ${newItem.name} x${newItem.quantity}`);
-                            });
-                            pc.inventory = { ...pc.inventory, items: updatedItems };
-
-                            let updatedTechniques = [...pc.auxiliaryTechniques];
-                            let effectsFromTechniques: ActiveEffect[] = [];
-                            newTechniques.forEach(tech => {
-                                if (!updatedTechniques.some(t => t.name === tech.name)) {
-                                    updatedTechniques.push(tech);
-                                    showNotification(`Lĩnh ngộ: ${tech.name}`);
-                                    if (tech.bonuses && tech.bonuses.length > 0) {
-                                        effectsFromTechniques.push({
-                                            id: `tech-passive-${tech.id}`,
-                                            name: `${tech.name} (Bị Động)`,
-                                            source: `technique:${tech.id}`,
-                                            description: `Hiệu quả bị động từ công pháp ${tech.name}.`,
-                                            bonuses: tech.bonuses,
-                                            duration: -1,
-                                            isBuff: true,
-                                        });
-                                    }
-                                }
-                            });
-                            pc.auxiliaryTechniques = updatedTechniques;
-
-                            const updatedEncounters = [...new Set([...stateWithParsedData.encounteredNpcIds, ...newNpcEncounterIds])];
-                            
-                            if (statChanges && statChanges.length > 0) {
-                                const attributeChanges = statChanges.filter(sc => !['spiritualQi', 'hunger', 'thirst', 'temperature'].includes(sc.attribute));
-                                const cultivationChanges = statChanges.filter(sc => sc.attribute === 'spiritualQi');
-                                const vitalsChanges = statChanges.filter(sc => ['hunger', 'thirst', 'temperature'].includes(sc.attribute));
-
-                                if (cultivationChanges.length > 0) {
-                                    const totalQiChange = cultivationChanges.reduce((sum, c) => sum + c.change, 0);
-                                    pc.cultivation.spiritualQi = Math.max(0, pc.cultivation.spiritualQi + totalQiChange);
-                                    showNotification(`Linh Khí: ${totalQiChange > 0 ? '+' : ''}${totalQiChange}`);
-                                }
-
-                                if (vitalsChanges.length > 0) {
-                                    vitalsChanges.forEach(change => {
-                                        const vitalKey = change.attribute as keyof PlayerVitals;
-                                        const maxVitalKey = `max${vitalKey.charAt(0).toUpperCase() + vitalKey.slice(1)}` as keyof PlayerVitals;
-                                        const maxVal = (pc.vitals[maxVitalKey] as number) || 100;
-                                        (pc.vitals[vitalKey] as number) = Math.max(0, Math.min(maxVal, (pc.vitals[vitalKey] as number) + change.change));
-                                        const label = vitalKey === 'hunger' ? 'No Bụng' : vitalKey === 'thirst' ? 'Nước Uống' : 'Nhiệt Độ';
-                                        showNotification(`${label}: ${change.change > 0 ? '+' : ''}${change.change}`);
-                                    });
-                                }
-
-                                if (attributeChanges.length > 0) {
-                                    const newAttributes = pc.attributes.map(group => ({
-                                        ...group,
-                                        attributes: group.attributes.map(attr => {
-                                            const changeInfo = attributeChanges.find(sc => sc.attribute === attr.name);
-                                            if (changeInfo && typeof attr.value === 'number') {
-                                                let newValue = attr.value + changeInfo.change;
-                                                if (attr.maxValue) {
-                                                    newValue = Math.max(0, Math.min(newValue, attr.maxValue));
-                                                } else {
-                                                    newValue = Math.max(0, newValue);
-                                                }
-                                                showNotification(`${attr.name}: ${changeInfo.change > 0 ? '+' : ''}${changeInfo.change}`);
-                                                return { ...attr, value: newValue };
+                            let pcAttributes = pc.attributes;
+                            const attributeChanges = Object.keys(attributeChangesMap);
+                            if (attributeChanges.length > 0) {
+                                pcAttributes = pc.attributes.map(group => ({
+                                    ...group,
+                                    attributes: group.attributes.map(attr => {
+                                        const change = attributeChangesMap[attr.name];
+                                        if (change && typeof attr.value === 'number') {
+                                            let newMaxValue = attr.maxValue; // Keep old max value
+                                            let newValue = attr.value + change;
+                                            
+                                            // Clamp new value between 0 and max value (if it exists)
+                                            if (typeof newMaxValue === 'number') {
+                                                newValue = Math.max(0, Math.min(newValue, newMaxValue));
+                                            } else {
+                                                newValue = Math.max(0, newValue);
                                             }
-                                            return attr;
-                                        })
-                                    }));
-                                    pc.attributes = newAttributes;
-                                }
+                                            
+                                            showNotification(`${attr.name}: ${change > 0 ? '+' : ''}${change}`);
+                                            return { ...attr, value: newValue, maxValue: newMaxValue };
+                                        }
+                                        return attr;
+                                    })
+                                }));
                             }
+
+                            const newCultivation = {
+                                ...pc.cultivation,
+                                spiritualQi: Math.max(0, pc.cultivation.spiritualQi + spiritualQi)
+                            };
                             
-                            const allNewEffects = [
-                                ...(newEffects || []).map(effect => ({ ...effect, id: `effect-${Date.now()}-${Math.random()}` })),
-                                ...effectsFromTechniques
-                            ];
+                            const newVitals = {
+                                ...pc.vitals,
+                                hunger: Math.max(0, Math.min(pc.vitals.maxHunger, pc.vitals.hunger + hunger)),
+                                thirst: Math.max(0, Math.min(pc.vitals.maxThirst, pc.vitals.thirst + thirst)),
+                                temperature: pc.vitals.temperature + temperature
+                            };
+                            
+                            if (spiritualQi) showNotification(`Linh Khí: ${spiritualQi > 0 ? '+' : ''}${spiritualQi}`);
+                            if (hunger) showNotification(`No Bụng: ${hunger > 0 ? '+' : ''}${hunger}`);
+                            if (thirst) showNotification(`Nước Uống: ${thirst > 0 ? '+' : ''}${thirst}`);
+                            if (temperature) showNotification(`Nhiệt Độ: ${temperature > 0 ? '+' : ''}${temperature}`);
 
-                            if (allNewEffects.length > 0) {
-                                pc.activeEffects = [...pc.activeEffects, ...allNewEffects];
-                                allNewEffects.forEach(eff => showNotification(`Bạn nhận được hiệu ứng: ${eff.name}`));
-                            }
-
-                             if (newQuests && newQuests.length > 0) {
-                                const currentQuests = [...pc.activeQuests];
-                                newQuests.forEach(questData => {
-                                    const newQuest: ActiveQuest = {
-                                        id: `quest_${questData.source || 'narrative'}_${Date.now()}`,
-                                        title: questData.title || 'Nhiệm vụ không tên',
-                                        description: questData.description || '',
-                                        type: 'SIDE', // Default to side quest
-                                        source: questData.source || `narrative-${Date.now()}`,
-                                        objectives: (questData.objectives || []).map(obj => ({ ...obj, current: 0, isCompleted: false })),
-                                        rewards: questData.rewards || {},
-                                    };
-                                    currentQuests.push(newQuest);
-                                    showNotification(`Nhiệm vụ mới: ${newQuest.title}`);
-                                });
-                                pc.activeQuests = currentQuests;
-                            }
-
-                            stateWithParsedData = { ...stateWithParsedData, playerCharacter: pc, encounteredNpcIds: updatedEncounters };
+                            pc = {
+                                ...pc,
+                                attributes: pcAttributes,
+                                cultivation: newCultivation,
+                                vitals: newVitals,
+                            };
                         }
-
-                        // 2. Run quest processor again on the fully updated state to ensure synchronization
-                        const finalQuestCheck = await questManager.processQuestUpdates(stateWithParsedData, false); // `newDay` is false here
-                        finalQuestCheck.notifications.forEach(showNotification);
                         
-                        // 3. Set the final, fully synchronized state
+                        const allNewEffects = [...(newEffects || []).map(effect => ({ ...effect, id: `effect-${Date.now()}-${Math.random()}` })), ...effectsFromTechniques];
+                        if (allNewEffects.length > 0) {
+                            pc.activeEffects = [...pc.activeEffects, ...allNewEffects];
+                            allNewEffects.forEach(eff => showNotification(`Bạn nhận được hiệu ứng: ${eff.name}`));
+                        }
+    
+                        if (newQuests?.length > 0) {
+                            pc.activeQuests = [...pc.activeQuests, ...newQuests.map(questData => ({
+                                id: `quest_${questData.source || 'narrative'}_${Date.now()}`, type: 'SIDE', source: questData.source || `narrative-${Date.now()}`,
+                                title: questData.title || 'Nhiệm vụ không tên', description: questData.description || '',
+                                objectives: (questData.objectives || []).map(obj => ({ ...obj, current: 0, isCompleted: false })), rewards: questData.rewards || {},
+                            } as ActiveQuest))];
+                            newQuests.forEach(q => showNotification(`Nhiệm vụ mới: ${q.title}`));
+                        }
+    
+                        stateWithParsedData = { ...stateWithParsedData, playerCharacter: pc, encounteredNpcIds: [...new Set([...stateWithParsedData.encounteredNpcIds, ...newNpcEncounterIds])] };
+                        
+                        const finalQuestCheck = await questManager.processQuestUpdates(stateWithParsedData, false);
+                        finalQuestCheck.notifications.forEach(showNotification);
                         setGameState(finalQuestCheck.newState);
-
+                        finalStateForSummary = finalQuestCheck.newState;
                     } catch (parseError) {
                         console.error("Lỗi khi phân tích phản hồi của AI:", parseError);
-                         setGameState(latestState); // Revert to pre-parsing state if it fails
+                        setGameState(latestState);
+                        finalStateForSummary = latestState;
                     }
-                })();
+                } else {
+                    finalStateForSummary = tempState;
+                }
+            } else {
+                 finalStateForSummary = tempState;
             }
         } catch (error: any) {
             console.error("AI story generation failed:", error);
@@ -621,18 +547,21 @@ const GamePlayScreenContent: React.FC = memo(() => {
             setGameState(prev => {
                 if (!prev) return null;
                 const filteredLog = prev.storyLog.filter(entry => entry.content !== '...');
-                return { ...prev, storyLog: [...filteredLog, { id: Date.now(), type: 'system', content: errorMessage }] };
+                // FIX: Explicitly cast the 'type' property to a literal type to match the StoryEntry union type.
+                const finalState = { ...prev, storyLog: [...filteredLog, { id: Date.now(), type: 'system' as const, content: errorMessage }] };
+                finalStateForSummary = finalState;
+                return finalState;
             });
-        } finally {
-            setIsAiResponding(false);
-            if (gameState.storyLog.length > 0 && gameState.storyLog.length % settings.autoSummaryFrequency === 0) {
-                try {
-                    const summary = await summarizeStory(gameState.storyLog);
-                    setGameState(prev => prev ? { ...prev, storySummary: summary } : null);
-                    console.log("Story summarized and saved to AI memory.");
-                } catch (summaryError) {
-                    console.error("Failed to summarize story:", summaryError);
-                }
+        }
+    
+        setIsAiResponding(false);
+        if (finalStateForSummary && finalStateForSummary.storyLog.length > 0 && finalStateForSummary.storyLog.length % settings.autoSummaryFrequency === 0) {
+            try {
+                const summary = await summarizeStory(finalStateForSummary.storyLog);
+                setGameState(prev => prev ? { ...prev, storySummary: summary } : null);
+                console.log("Story summarized and saved to AI memory.");
+            } catch (summaryError) {
+                console.error("Failed to summarize story:", summaryError);
             }
         }
     }, [isAiResponding, addStoryEntry, gameState, setGameState, settings.autoSummaryFrequency, openInventoryModal, showNotification, cancelSpeech]);

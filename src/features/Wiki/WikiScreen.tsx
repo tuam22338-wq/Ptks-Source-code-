@@ -1,7 +1,8 @@
 
+
 import React, { useState, useMemo, memo } from 'react';
 import type { NPC, Location, PlayerCharacter, PlayerNpcRelationship } from '../../types';
-import { INNATE_TALENT_RANKS, PT_NPC_LIST, PT_WORLD_MAP, JTTW_NPC_LIST, JTTW_WORLD_MAP, CHARACTER_STATUS_CONFIG } from '../../constants';
+import { PT_NPC_LIST, PT_WORLD_MAP, JTTW_NPC_LIST, JTTW_WORLD_MAP, CHARACTER_STATUS_CONFIG, REALM_SYSTEM, SPIRITUAL_ROOT_CONFIG } from '../../constants';
 import { FaUsers, FaMapMarkedAlt, FaArrowLeft, FaEye } from 'react-icons/fa';
 
 interface WikiPanelProps {
@@ -13,14 +14,21 @@ interface WikiPanelProps {
 
 const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerNpcRelationship }> = ({ npc, allNpcs, relationship }) => {
     const statusInfo = CHARACTER_STATUS_CONFIG[npc.healthStatus];
+    const realmData = REALM_SYSTEM.find(r => r.id === npc.cultivation.currentRealmId);
+    const stageData = realmData?.stages.find(s => s.id === npc.cultivation.currentStageId);
+    const realmDisplay = realmData ? `${realmData.name} ${stageData?.name || ''}`.trim() : 'Không rõ';
+    const elementInfo = npc.element ? SPIRITUAL_ROOT_CONFIG[npc.element] : null;
+
     return (
         <div className="p-4 bg-black/20 rounded-lg border border-gray-700/60 animate-fade-in" style={{animationDuration: '300ms'}}>
             <h3 className="text-xl text-amber-300 font-bold font-title">{npc.identity.name}</h3>
             <div className="mt-4 space-y-4 text-sm">
-                {relationship && (
-                    <p><strong className="text-gray-400">Quan hệ:</strong> <span className="text-yellow-300 font-semibold">{relationship.status} ({relationship.value})</span></p>
-                )}
+                <p><strong className="text-gray-400">Quan hệ với bạn:</strong> <span className="text-yellow-300 font-semibold">{relationship ? `${relationship.status} (${relationship.value})` : 'Chưa có'}</span></p>
                 <p><strong className="text-gray-400">Tình trạng:</strong> <span className={`font-semibold ${statusInfo.color}`}>{statusInfo.label}</span></p>
+                <p><strong className="text-gray-400">Cảnh giới:</strong> <span className="text-cyan-300 font-semibold">{realmDisplay}</span></p>
+                {elementInfo && (
+                    <p><strong className="text-gray-400">Thuộc tính:</strong> <span className="text-gray-300 font-semibold flex items-center gap-1"><elementInfo.icon /> {elementInfo.name}</span></p>
+                )}
                 {npc.identity.familyName && <p><strong className="text-gray-400">Gia tộc:</strong> <span className="text-gray-300 font-semibold">{npc.identity.familyName}</span></p>}
                 {npc.faction && <p><strong className="text-gray-400">Phe phái:</strong> <span className="text-gray-300 font-semibold">{npc.faction}</span></p>}
                 <p><strong className="text-gray-400">Trạng thái:</strong> <em className="text-gray-300">"{npc.status}"</em></p>
@@ -31,7 +39,7 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
                 
                 {npc.relationships && npc.relationships.length > 0 && (
                     <div>
-                        <h4 className="font-semibold text-gray-300 mb-2 border-t border-gray-700/50 pt-3">Mối quan hệ:</h4>
+                        <h4 className="font-semibold text-gray-300 mb-2 border-t border-gray-700/50 pt-3">Quan hệ thân tộc:</h4>
                         <div className="space-y-2">
                             {npc.relationships.map((rel, index) => {
                                 const targetNpc = allNpcs.find(n => n.id === rel.targetNpcId);
@@ -48,21 +56,6 @@ const NpcDetailView: React.FC<{ npc: NPC, allNpcs: NPC[], relationship?: PlayerN
                         </div>
                     </div>
                 )}
-
-                <div>
-                    <h4 className="font-semibold text-gray-300 mb-2 border-t border-gray-700/50 pt-3">Tiên Tư:</h4>
-                    <div className="space-y-2">
-                        {npc.talents.length > 0 ? npc.talents.map(talent => {
-                            const rankStyle = INNATE_TALENT_RANKS[talent.rank] || INNATE_TALENT_RANKS['Phàm Giai'];
-                            return (
-                                <div key={talent.name} className="p-2 bg-black/20 rounded-lg border border-gray-700/60" title={talent.effect}>
-                                    <h5 className={`font-bold font-title text-sm ${rankStyle.color}`}>{talent.name} <span className="text-xs">[{talent.rank}]</span></h5>
-                                    <p className="text-xs text-gray-400">{talent.description}</p>
-                                </div>
-                            )
-                        }) : <p className="text-sm text-gray-500">Không có tiên tư đặc biệt.</p>}
-                    </div>
-                </div>
             </div>
         </div>
     );

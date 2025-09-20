@@ -47,7 +47,7 @@ const techniqueSchema = {
                     icon: { type: Type.STRING, default: '📜' },
                     bonuses: {
                         type: Type.ARRAY,
-                        description: "List of passive stat bonuses. Only for passive types like 'Tâm Pháp'. Active skills should have an empty array.",
+                        description: "List of passive stat bonuses. Only for passive types like 'Tâm Pháp' or 'Luyện Thể'. Active skills should have an empty array.",
                         items: {
                             type: Type.OBJECT,
                             properties: {
@@ -218,11 +218,29 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
         }
     };
 
-    const prompt = `You are a data extraction AI. Analyze the narrative and extract all relevant game state changes based on the provided context and schema.
-    Extract ONLY NEW things. Do not list items, techniques, or quests the player already has.
-    **IMPORTANT:** If the narrative describes the player taking damage or losing health, you MUST create a 'statChanges' entry for 'Sinh Mệnh' with a negative value.
+    const prompt = `You are a precision data extraction engine for a text-based RPG. Your sole function is to analyze a narrative passage and output a structured JSON object representing concrete, real-time changes to the game state.
+
+    **Core Directive: Present-Moment Actuality**
+    Your primary directive is to distinguish between events occurring in the narrative's present moment versus non-actual events.
+    - **VALID EXTRACTIONS (Present Moment):** Actions, acquisitions, and changes that are happening *now*.
+      - Example: "He picks up the [Healing Potion]." -> EXTRACT Healing Potion.
+      - Example: "The blow strikes him, and he feels a sharp pain." -> EXTRACT Sinh Mệnh change.
+    - **INVALID EXTRACTIONS (Non-Actual Events):** You MUST IGNORE any entities mentioned in the context of:
+      - **Memories / Flashbacks:** "He remembered the [Sword of Ancients] his father gave him." -> DO NOT EXTRACT.
+      - **Dreams / Visions:** "In his dream, he saw a [Dragon Orb]." -> DO NOT EXTRACT.
+      - **Stories / Legends:** "The old man told a story about the [Cursed Amulet]." -> DO NOT EXTRACT.
+      - **Thoughts / Internal Monologues:** "He thought about the [map] he had lost." -> DO NOT EXTRACT.
+      - **Hypotheticals:** "If only he had the [Sunstone], he could pass." -> DO NOT EXTRACT.
+
+    **Processing Rules:**
+    1.  Strictly analyze the provided narrative text in the context of the game state.
+    2.  Extract ONLY new items, techniques, or quests. Do not re-extract entities the player already possesses.
+    3.  Direct damage or health loss must be represented as a \`statChanges\` entry for 'Sinh Mệnh' with a negative value.
+    4.  Strictly adhere to the provided JSON schema. If no valid changes occur in a category, provide an empty array or omit the key.
+
     ${context}
-    Return a JSON object based on the schema. If a category has no changes, return an empty array or null for it.`;
+
+    Generate the JSON output.`;
 
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
