@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import type { GameState, ShopItem, InventoryItem } from '../../../types';
-import { SHOPS, ITEM_QUALITY_STYLES } from '../../../constants';
+import type { GameState, ShopItem, InventoryItem } from '../../types';
+import { SHOPS, ITEM_QUALITY_STYLES } from '../../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';
-import { useAppContext } from '../../../contexts/AppContext';
-import { useGameUIContext } from '../../../contexts/GameUIContext';
+import { useAppContext } from '../../contexts/AppContext';
+import { useGameUIContext } from '../../contexts/GameUIContext';
 
 interface ShopModalProps {
     isOpen: boolean;
@@ -114,7 +114,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
                                     </div>
                                     <div className="text-right flex-shrink-0 ml-4">
                                         <p className="font-semibold text-amber-300">{item.price.amount.toLocaleString()} {item.price.currencyName}</p>
-                                        <button onClick={() => handleBuyItem(item)} className="mt-1 px-4 py-1 bg-[var(--button-primary-bg)] text-white text-sm font-bold rounded-lg hover:bg-[var(--button-primary-hover-bg)]">Mua</button>
+                                        <button onClick={() => handleBuyItem(item)} className="mt-1 px-4 py-1 bg-teal-700/80 text-white text-sm font-bold rounded-lg hover:bg-teal-600/80">Mua</button>
                                     </div>
                                 </div>
                             ))}
@@ -130,7 +130,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
                                     </div>
                                     <div className="text-right flex-shrink-0 ml-4">
                                         <p className="font-semibold text-yellow-300">Giá: {Math.floor((item.value || 10) / 2).toLocaleString()} Bạc</p>
-                                        <button onClick={() => handleSellItem(item)} className="mt-1 px-4 py-1 bg-[var(--secondary-accent-color)]/80 text-white text-sm font-bold rounded-lg hover:bg-[var(--secondary-accent-color)]">Bán</button>
+                                        <button onClick={() => handleSellItem(item)} className="mt-1 px-4 py-1 bg-yellow-700/80 text-white text-sm font-bold rounded-lg hover:bg-yellow-600/80">Bán</button>
                                     </div>
                                 </div>
                             )) : <p className="text-center text-gray-500">Không có vật phẩm nào để bán.</p>}

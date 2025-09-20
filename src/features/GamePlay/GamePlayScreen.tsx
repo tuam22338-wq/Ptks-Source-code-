@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -22,6 +23,9 @@ import { advanceGameTime } from '../../utils/timeManager';
 import { simulateWorldTurn, simulateFactionTurn } from '../../services/worldSimulator';
 import * as questManager from '../../utils/questManager';
 import { FaDiceD20 } from 'react-icons/fa';
+
+const DAYS_PER_SEASON = 30;
+const SEASONS: ['Xuân', 'Hạ', 'Thu', 'Đông'] = ['Xuân', 'Hạ', 'Thu', 'Đông'];
 
 interface CustomStoryPlayerProps {
     gameState: GameState;
@@ -440,10 +444,49 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     try {
                         // 1. Parse narrative for explicit game data changes
                         const parsedData = await parseNarrativeForGameData(fullResponse, latestState);
-                        const { newItems, newTechniques, newNpcEncounterIds, statChanges, newEffects, newQuests } = parsedData;
+                        const { newItems, newTechniques, newNpcEncounterIds, statChanges, newEffects, newQuests, timeJump } = parsedData;
 
                         let stateWithParsedData = { ...latestState };
                         let pc = { ...stateWithParsedData.playerCharacter };
+
+                        // Handle time jump
+                        if (timeJump && (timeJump.years || timeJump.seasons || timeJump.days)) {
+                            let newGameDate = { ...stateWithParsedData.gameDate };
+                            
+                            let totalDaysToAdd = (timeJump.days || 0);
+                            let totalSeasonsToAdd = (timeJump.seasons || 0);
+                            let totalYearsToAdd = (timeJump.years || 0);
+
+                            if(totalDaysToAdd > 0 || totalSeasonsToAdd > 0 || totalYearsToAdd > 0) {
+                                newGameDate.year += totalYearsToAdd;
+                                
+                                let currentSeasonIndex = SEASONS.indexOf(newGameDate.season);
+                                currentSeasonIndex += totalSeasonsToAdd;
+                                newGameDate.year += Math.floor(currentSeasonIndex / 4);
+                                newGameDate.season = SEASONS[currentSeasonIndex % 4];
+
+                                newGameDate.day += totalDaysToAdd;
+                                while(newGameDate.day > DAYS_PER_SEASON) {
+                                    newGameDate.day -= DAYS_PER_SEASON;
+                                    let seasonIdx = SEASONS.indexOf(newGameDate.season);
+                                    const nextSeasonIndex = (seasonIdx + 1) % 4;
+                                    newGameDate.season = SEASONS[nextSeasonIndex];
+                                    if (nextSeasonIndex === 0) {
+                                        newGameDate.year++;
+                                    }
+                                }
+                                
+                                stateWithParsedData = { ...stateWithParsedData, gameDate: newGameDate };
+
+                                const timeJumpMessage = [
+                                    timeJump.years ? `${timeJump.years} năm` : '',
+                                    timeJump.seasons ? `${timeJump.seasons} quý` : '',
+                                    timeJump.days ? `${timeJump.days} ngày` : ''
+                                ].filter(Boolean).join(', ');
+                                
+                                showNotification(`Thời gian trôi qua ${timeJumpMessage}.`);
+                            }
+                        }
 
                         // Apply parsed data to create an intermediate state
                         if (newItems.length > 0 || newTechniques.length > 0 || newNpcEncounterIds.length > 0 || (statChanges && statChanges.length > 0) || (newEffects && newEffects.length > 0) || (newQuests && newQuests.length > 0)) {

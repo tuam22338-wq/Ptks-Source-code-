@@ -1,42 +1,21 @@
 import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship } from '../types';
-import { generateWithRetry } from './geminiService';
-import * as db from './dbService';
-import { Type } from '@google/genai';
-// FIX: Aliasing PT_WORLD_MAP to WORLD_MAP as constants.ts does not export a generic WORLD_MAP.
-import { PT_WORLD_MAP as WORLD_MAP } from '../constants';
 import { generateFactionEvent } from './gemini/gameplay.service';
 import { generateRelationshipUpdate } from './gemini/npc.service';
 
 export const simulateWorldTurn = async (
     gameState: GameState
 ): Promise<{ newState: GameState; rumors: Rumor[] }> => {
-    let { activeNpcs, playerCharacter, worldState, majorEvents, gameDate, playerStall } = gameState;
-    const { dynamicEvents } = worldState;
+    let currentTurnState = { ...gameState };
+    const { activeNpcs } = currentTurnState;
     const newRumors: Rumor[] = [];
 
-    // Make a mutable copy of gameState for this turn's simulation
-    let currentTurnState = { ...gameState };
-
-    // --- Individual NPC Simulation ---
-    const npcsToSimulate = activeNpcs
-        .filter(npc => npc.locationId !== playerCharacter.currentLocationId)
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 1); // Simulate 1 random NPC's individual action per turn
-
-    for (const npc of npcsToSimulate) {
-        try {
-            // ... (rest of individual simulation logic remains the same)
-        } catch (error) {
-            console.error(`Failed to simulate action for NPC ${npc.identity.name}:`, error);
-        }
-    }
-    
     // --- Social Relationship Simulation ---
-    const npcsWithRelationships = currentTurnState.activeNpcs.filter(n => n.relationships && n.relationships.length > 0);
+    // Pick one NPC that has relationships defined
+    const npcsWithRelationships = activeNpcs.filter(n => n.relationships && n.relationships.length > 0);
     if (npcsWithRelationships.length >= 2 && Math.random() < 0.25) { // 25% chance per day
         const npc1 = npcsWithRelationships[Math.floor(Math.random() * npcsWithRelationships.length)];
         const relToUpdate = npc1.relationships![Math.floor(Math.random() * npc1.relationships!.length)];
-        const npc2 = currentTurnState.activeNpcs.find(n => n.id === relToUpdate.targetNpcId);
+        const npc2 = activeNpcs.find(n => n.id === relToUpdate.targetNpcId);
 
         if (npc2) {
             try {
@@ -46,12 +25,6 @@ export const simulateWorldTurn = async (
                     if (npc.id === npc1.id) {
                         const newRels = (npc.relationships || []).map(r => 
                             r.targetNpcId === npc2.id ? { ...r, description: update.newRelationshipDescription } : r
-                        );
-                        return { ...npc, relationships: newRels };
-                    }
-                    if (npc.id === npc2.id) {
-                        const newRels = (npc.relationships || []).map(r => 
-                            r.targetNpcId === npc1.id ? { ...r, description: update.newRelationshipDescription } : r
                         );
                         return { ...npc, relationships: newRels };
                     }
@@ -72,7 +45,6 @@ export const simulateWorldTurn = async (
         }
     }
 
-
     const newWorldState = {
         ...currentTurnState.worldState,
         rumors: [...currentTurnState.worldState.rumors, ...newRumors.filter(nr => !currentTurnState.worldState.rumors.some(r => r.text === nr.text))],
@@ -86,7 +58,6 @@ export const simulateWorldTurn = async (
         rumors: newRumors,
     };
 };
-
 
 export const simulateFactionTurn = async (
     gameState: GameState

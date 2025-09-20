@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
-import type { Location, NPC, Rumor } from '../../../../../types';
-import { FaMapMarkerAlt, FaUsers, FaRoute, FaCommentDots } from 'react-icons/fa';
+import type { Location, NPC, Rumor, DynamicWorldEvent } from '../../../../../types';
+import { FaMapMarkerAlt, FaUsers, FaRoute, FaCommentDots, FaExclamationTriangle } from 'react-icons/fa';
 import { GiForest } from 'react-icons/gi';
 
 interface WorldPanelProps {
@@ -8,14 +8,16 @@ interface WorldPanelProps {
     npcsAtLocation: NPC[];
     neighbors: Location[];
     rumors: Rumor[];
+    dynamicEvents?: DynamicWorldEvent[];
     onTravel: (destinationId: string) => void;
     onExplore: () => void;
     onNpcSelect: (npc: NPC) => void;
 }
 
-const WorldPanel: React.FC<WorldPanelProps> = ({ currentLocation, npcsAtLocation, neighbors, rumors, onTravel, onExplore, onNpcSelect }) => {
+const WorldPanel: React.FC<WorldPanelProps> = ({ currentLocation, npcsAtLocation, neighbors, rumors, dynamicEvents, onTravel, onExplore, onNpcSelect }) => {
     
     const rumorsAtLocation = rumors.filter(r => r.locationId === currentLocation.id);
+    const eventsAtLocation = dynamicEvents?.filter(e => e.affectedLocationIds.includes(currentLocation.id));
 
     return (
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
@@ -40,6 +42,23 @@ const WorldPanel: React.FC<WorldPanelProps> = ({ currentLocation, npcsAtLocation
                     )}
                 </div>
             </div>
+
+            {/* Dynamic Events */}
+            {eventsAtLocation && eventsAtLocation.length > 0 && (
+                <div>
+                    <h3 className="flex items-center gap-2 text-lg text-red-400 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
+                        <FaExclamationTriangle /> Sự Kiện
+                    </h3>
+                    <div className="space-y-2">
+                        {eventsAtLocation.map(event => (
+                            <div key={event.id} className="bg-red-900/20 p-3 rounded-lg border border-dashed border-red-500/50">
+                                <h4 className="font-bold text-red-300">{event.title}</h4>
+                                <p className="text-sm text-gray-300 italic">"{event.description}"</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Rumors */}
             {rumorsAtLocation.length > 0 && (

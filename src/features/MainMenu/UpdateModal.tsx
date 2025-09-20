@@ -13,7 +13,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
             <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl m-4 p-6 flex flex-col relative">
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
-                    <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản 1.0.6 Preview</h2>
+                    <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>
                     <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Tây Du Ký & Tối Ưu Hóa</p>
                 </div>
 

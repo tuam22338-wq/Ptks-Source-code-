@@ -1,7 +1,6 @@
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus } from '../../types';
-// FIX: Aliasing PT_FACTIONS to FACTIONS as constants.ts does not export a generic FACTIONS.
-import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS as FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES } from "../../constants";
+import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 
@@ -336,7 +335,7 @@ export const generateWeeklyRumor = async (gameState: GameState): Promise<string>
     Bối cảnh hiện tại:
     - Năm: ${gameDate.year}
     - Sự kiện lớn sắp tới: ${upcomingEvent ? `${upcomingEvent.title} (dự kiến năm ${upcomingEvent.year})` : 'Đại kiếp Phong Thần sắp kết thúc.'}
-    - Các thế lực chính: ${FACTIONS.map(f => f.name).join(', ')}.
+    - Các thế lực chính: ${PT_FACTIONS.map(f => f.name).join(', ')}.
 
     Nhiệm vụ:
     Tạo ra một đoạn tin tức ngắn gọn (1-2 câu) về một sự kiện nhỏ vừa xảy ra. Sự kiện này có thể liên quan đến:
@@ -458,7 +457,7 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
         required: ['title', 'description', 'duration', 'affectedFactions', 'affectedLocationIds']
     };
 
-    const factionList = FACTIONS.map(f => f.name).join(', ');
+    const factionList = PT_FACTIONS.map(f => f.name).join(', ');
     const activeEvents = (worldState.dynamicEvents || []).map(e => `- ${e.title}: ${e.description}`).join('\n');
 
     const prompt = `Bạn là một Game Master cho game tu tiên "Tam Thiên Thế Giới". Dựa trên tình hình thế giới, hãy tạo ra một sự kiện thế giới (World Event) mới.

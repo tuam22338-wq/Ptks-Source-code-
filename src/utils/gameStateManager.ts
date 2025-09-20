@@ -103,7 +103,7 @@ export const migrateGameState = (savedGame: any): GameState => {
         version = "1.0.4";
     }
     
-    // Migrate to 1.0.5 (current version)
+    // Migrate to 1.0.5
     if (version < "1.0.5") {
         console.log(`Migrating save from v${version} to v1.0.5...`);
         dataToProcess.playerSect = dataToProcess.playerSect ?? null;
@@ -113,6 +113,13 @@ export const migrateGameState = (savedGame: any): GameState => {
             }
         }
         version = "1.0.5";
+    }
+    
+    // Migrate to 1.0.6 (current version)
+    if (version < "1.0.6") {
+        console.log(`Migrating save from v${version} to v1.0.6...`);
+        // No structural changes, just version bump
+        version = "1.0.6";
     }
 
 
@@ -245,7 +252,6 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
         },
         techniques: [],
         inventory: { items: [], weightCapacity: 10 },
-        // FIX: Added missing 'currencies' property.
         currencies: {},
         equipment: {},
         healthStatus: 'HEALTHY',

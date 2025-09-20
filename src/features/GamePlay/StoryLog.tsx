@@ -49,9 +49,19 @@ const highlightText = (text: string, items: InventoryItem[], techniques: Cultiva
 
 const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques, onSpeak }) => {
     const endOfMessagesRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const container = scrollContainerRef.current;
+        if (container) {
+            // A threshold of 100px. If the user is scrolled up more than this, we don't auto-scroll.
+            const isNearBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 100;
+
+            if (isNearBottom) {
+                // Using 'auto' instead of 'smooth' prevents jank during rapid stream updates.
+                endOfMessagesRef.current?.scrollIntoView({ behavior: 'auto' });
+            }
+        }
     }, [story]);
 
     const handleSpeak = (content: string) => {
@@ -60,7 +70,7 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques, 
     };
 
     return (
-        <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
+        <div ref={scrollContainerRef} className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
             {story.map((entry) => {
                 const animationStyle = { animationDuration: '600ms' };
                 const contentWithHighlight = highlightText(entry.content, inventoryItems, techniques);
@@ -70,7 +80,7 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques, 
                     case 'narrative':
                         return (
                             <div key={entry.id} className="group relative animate-fade-in my-4" style={animationStyle}>
-                                <p className="text-[var(--text-muted-color)] italic text-justify leading-relaxed whitespace-pre-wrap">{contentWithHighlight}</p>
+                                <p className="font-bold text-lg text-justify leading-relaxed whitespace-pre-wrap">{contentWithHighlight}</p>
                                 {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -left-10 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
                         );
@@ -106,7 +116,7 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques, 
                         return (
                             <div key={entry.id} style={animationStyle} className="group relative flex justify-start mr-10 sm:mr-20 animate-fade-in">
                                 <div className="bg-[var(--npc-bubble-bg-color)] p-3 rounded-xl rounded-bl-none">
-                                    <p className="text-amber-200 text-lg leading-relaxed">{contentWithHighlight}</p>
+                                    <p className="text-amber-200 text-lg leading-relaxed font-bold">{contentWithHighlight}</p>
                                 </div>
                                 {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
