@@ -7,6 +7,7 @@ import {
 } from "../constants";
 import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
+import * as db from '../services/dbService';
 import {
   GiCauldron,
   GiHealthNormal, GiMagicSwirl, GiStairsGoal, GiHourglass,
@@ -17,7 +18,7 @@ import {
 } from 'react-icons/gi';
 import { FaSun, FaMoon } from 'react-icons/fa';
 
-export const migrateGameState = (savedGame: any): GameState => {
+export const migrateGameState = async (savedGame: any): Promise<GameState> => {
     if (!savedGame || typeof savedGame !== 'object') {
         throw new Error("Invalid save data provided to migration function.");
     }
@@ -161,8 +162,21 @@ export const migrateGameState = (savedGame: any): GameState => {
 
 
     // --- Re-hydration ---
-    dataToProcess.realmSystem = dataToProcess.realmSystem ?? REALM_SYSTEM;
-    dataToProcess.activeMods = dataToProcess.activeMods ?? [];
+    // Load active mods and their content first.
+    let activeMods: FullMod[] = [];
+    if (dataToProcess.activeModIds && dataToProcess.activeModIds.length > 0) {
+        activeMods = (await Promise.all(
+            dataToProcess.activeModIds.map((id: string) => db.getModContent(id))
+        )).filter((mod): mod is FullMod => mod !== undefined);
+    }
+    dataToProcess.activeMods = activeMods;
+
+    // Determine the correct realm system based on loaded mods
+    const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
+    const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
+        ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
+        : REALM_SYSTEM;
+    dataToProcess.realmSystem = realmSystemToUse;
 
     const allAttributesConfig = new Map<string, any>();
     ATTRIBUTES_CONFIG.forEach(group => {
@@ -437,10 +451,11 @@ export const createNewGameState = async (
         playerCharacter,
         activeNpcs: allNpcs,
         discoveredLocations: [startingLocation],
+        gameMode: gameMode,
     };
     
     setLoadingMessage('Đang viết nên chương truyện mở đầu cho bạn...');
-    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, isTransmigratorMode ? 'xuyen_viet_gia_phong_than' : activeWorldId);
+    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, activeWorldId);
     
     setLoadingMessage('Đang sắp đặt lại dòng thời gian...');
 

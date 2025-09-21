@@ -7,7 +7,6 @@ interface Notification {
 }
 
 interface GameUIContextState {
-    isSidebarOpen: boolean;
     notifications: Notification[];
     activeEvent: GameEvent | null;
     availablePaths: CultivationPath[];
@@ -18,7 +17,6 @@ interface GameUIContextState {
 }
 
 interface GameUIContextActions {
-    toggleSidebar: () => void;
     showNotification: (message: string) => void;
     dismissNotification: (id: number) => void;
     openShopModal: (shopId: string) => void;
@@ -39,7 +37,6 @@ type GameUIContextType = GameUIContextState & GameUIContextActions;
 const GameUIContext = createContext<GameUIContextType | undefined>(undefined);
 
 export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
     const [availablePaths, setAvailablePaths] = useState<CultivationPath[]>([]);
@@ -47,8 +44,6 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const [isInventoryOpen, setIsInventoryOpen] = useState(false);
     const [isStallModalOpen, setIsStallModalOpen] = useState(false);
     const [activeInnerDemonTrial, setActiveInnerDemonTrial] = useState<InnerDemonTrial | null>(null);
-
-    const toggleSidebar = useCallback(() => setIsSidebarOpen(prev => !prev), []);
 
     const showNotification = useCallback((message: string) => {
         const id = Date.now() + Math.random();
@@ -78,7 +73,6 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const closeInnerDemonTrial = useCallback(() => setActiveInnerDemonTrial(null), []);
     
     const contextValue: GameUIContextType = {
-        isSidebarOpen,
         notifications,
         activeEvent,
         availablePaths,
@@ -86,7 +80,6 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         isInventoryOpen,
         isStallModalOpen,
         activeInnerDemonTrial,
-        toggleSidebar,
         showNotification,
         dismissNotification,
         openShopModal,

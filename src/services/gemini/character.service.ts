@@ -149,7 +149,16 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     const settings = await db.getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
-    const isTransmigrator = worldId === 'xuyen_viet_gia_phong_than';
+    const isTransmigrator = gameState.gameMode === 'transmigrator';
+    const isDefaultFrameworkWorld = worldId === 'phong_than_dien_nghia' || worldId === 'tay_du_ky';
+    
+    const dynamicGenesisRule = isDefaultFrameworkWorld ? `
+**LUẬT SINH THÀNH ĐỘNG (DYNAMIC GENESIS RULE):**
+1.  **ĐIỀU KIỆN:** Khi game vừa bắt đầu (lịch sử trò chơi rất ngắn) VÀ "Linh Căn" của nhân vật là 'Chưa xác định', nhiệm vụ **đầu tiên** và **quan trọng nhất** của bạn là tạo ra một sự kiện tường thuật để xác định Linh Căn cho người chơi.
+2.  **SỰ KIỆN:** Sự kiện này phải phù hợp với bối cảnh thế giới (mặc định hoặc từ mod). Ví dụ: một buổi lễ thức tỉnh trong làng, một kỳ ngộ với trưởng lão, một tai nạn bất ngờ kích hoạt tiềm năng...
+3.  **KẾT QUẢ:** Sau sự kiện, hãy mô tả RÕ RÀNG kết quả Linh Căn của người chơi. Ví dụ: "Tảng đá trắc linh tỏa ra ánh sáng rực rỡ, vị trưởng lão tuyên bố ngươi sở hữu [Hỏa Thiên Linh Căn]." hoặc "Sau khi hấp thụ linh quả, một luồng năng lượng nóng rực bùng lên trong cơ thể, dường như ngươi đã thức tỉnh [Hỏa Linh Căn]."
+4.  AI Phân Tích sẽ tự động đọc mô tả này và cập nhật trạng thái cho người chơi.` : '';
+
     const transmigratorInstructions = isTransmigrator
     ? `
 **LƯU Ý CỰC KỲ QUAN TRỌNG:** Đây là chế độ "Xuyên Việt Giả". Người chơi là người từ thế giới hiện đại xuyên không tới.
@@ -160,8 +169,10 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
 5. Sử dụng định dạng [HỆ THỐNG]: cho các thông báo của Hệ Thống. Ví dụ: "[HỆ THỐNG]: Nhiệm vụ đã được ban hành."
 `
     : '';
+    
+    const finalInstructions = isTransmigrator ? transmigratorInstructions : dynamicGenesisRule;
 
-    const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi, lồng ghép vào đó là cảnh kiểm tra linh căn của họ.
+    const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     - **Giọng văn:** ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
     - **Nhân vật chính:**
         - Tên: ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi.
@@ -170,9 +181,9 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     - **Địa điểm hiện tại:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.
     - **Gia đình & Người thân:**
     ${familyInfo || 'Không có ai thân thích.'}
-    ${transmigratorInstructions}
+    ${finalInstructions}
 
-    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh: người chơi đang ở đâu, và mô tả lại khoảnh khắc họ vừa biết được kết quả linh căn của mình. Cảm xúc của họ (vui mừng, thất vọng, hay bình thản) nên phản ánh phẩm chất linh căn của họ.
+    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh: người chơi đang ở đâu. Nếu có luật DYNAMIC GENESIS, hãy mô tả khoảnh khắc họ vừa biết được kết quả linh căn của mình. Cảm xúc của họ (vui mừng, thất vọng, hay bình thản) nên phản ánh phẩm chất linh căn của họ.
     
     Ví dụ cho chế độ thường:
     "Tảng đá trắc linh trước mặt Lý Thanh Vân nguội dần, ánh sáng màu đỏ rực rỡ cũng từ từ lụi tắt. Vị trưởng lão vuốt râu gật gù, 'Hỏa Thiên Linh Căn, phẩm chất tuyệt hảo, là hạt giống tốt để tu luyện Hỏa hệ công pháp!'. Tin tức này khiến cả gia tộc chấn động, còn ngươi thì vẫn đang ngây người trước kết quả ngoài sức tưởng tượng này."

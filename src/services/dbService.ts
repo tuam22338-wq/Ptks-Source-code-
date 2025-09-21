@@ -80,6 +80,11 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
     // Create a shallow copy to avoid mutating the live state
     const dehydratedState: any = { ...gameState };
 
+    // Store active mod IDs instead of the full mod content
+    if (dehydratedState.activeMods) {
+        dehydratedState.activeModIds = dehydratedState.activeMods.map((mod: FullMod) => mod.modInfo.id);
+    }
+
     // Remove non-serializable or reconstructable data to optimize save size
     delete dehydratedState.activeMods;
     delete dehydratedState.realmSystem;

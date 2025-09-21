@@ -389,16 +389,20 @@ export const generateActionSuggestions = async (gameState: GameState): Promise<s
 };
 
 export const generateWeeklyRumor = async (gameState: GameState): Promise<string> => {
-    const { gameDate, majorEvents } = gameState;
+    const { gameDate, majorEvents, activeMods } = gameState;
 
     const upcomingEvent = majorEvents.find(e => e.year > gameDate.year);
+    
+    // Dynamically get factions from mods or default
+    const worldData = activeMods.find(m => m.content.worldData)?.content.worldData?.[0];
+    const factions = worldData?.factions || PT_FACTIONS;
 
     const prompt = `Bạn là một người kể chuyện trong game tu tiên. Thế giới đang vận động. Hãy tạo ra một tin tức, tin đồn, hoặc sự kiện nhỏ xảy ra trong tuần qua.
     
     Bối cảnh hiện tại:
     - Năm: ${gameDate.year}
-    - Sự kiện lớn sắp tới: ${upcomingEvent ? `${upcomingEvent.title} (dự kiến năm ${upcomingEvent.year})` : 'Đại kiếp Phong Thần sắp kết thúc.'}
-    - Các thế lực chính: ${PT_FACTIONS.map(f => f.name).join(', ')}.
+    - Sự kiện lớn sắp tới: ${upcomingEvent ? `${upcomingEvent.title} (dự kiến năm ${upcomingEvent.year})` : 'Đại kiếp sắp kết thúc.'}
+    - Các thế lực chính: ${factions.map(f => f.name).join(', ')}.
 
     Nhiệm vụ:
     Tạo ra một đoạn tin tức ngắn gọn (1-2 câu) về một sự kiện nhỏ vừa xảy ra. Sự kiện này có thể liên quan đến:
@@ -407,7 +411,7 @@ export const generateWeeklyRumor = async (gameState: GameState): Promise<string>
     - Hoạt động của một trong các phe phái chính.
     - Một lời tiên tri hoặc điềm báo.
 
-    Ví dụ: "Có tin đồn rằng người ta nhìn thấy một luồng bảo quang xuất hiện ở Hắc Long Đàm, dường như có dị bảo sắp xuất thế." hoặc "Đệ tử Xiển Giáo và Triệt Giáo lại xảy ra xung đột ở gần Tam Sơn Quan, một vài tu sĩ cấp thấp đã bị thương."
+    Ví dụ: "Có tin đồn rằng người ta nhìn thấy một luồng bảo quang xuất hiện ở Hắc Long Đàm, dường như có dị bảo sắp xuất thế." hoặc "Đệ tử phe A và phe B lại xảy ra xung đột ở gần [Tên địa điểm], một vài tu sĩ cấp thấp đã bị thương."
 
     Chỉ trả về đoạn văn tin tức, không thêm bất kỳ lời dẫn nào.`;
     

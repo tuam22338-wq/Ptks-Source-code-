@@ -6,7 +6,6 @@ import * as db from '../services/dbService';
 import { apiKeyManager } from '../services/gemini/gemini.core';
 import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
-import { useGameUIContext } from './GameUIContext';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
 
@@ -125,9 +124,11 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const loadSaveSlots = useCallback(async () => {
         try {
             const loadedSlots: SaveSlot[] = await db.getAllSaveSlots();
-            const processedSlots = loadedSlots.map(slot => {
+            const processedSlots = await Promise.all(loadedSlots.map(async (slot) => {
                 if (slot.data) {
-                    try { return { ...slot, data: migrateGameState(slot.data) }; }
+                    try { 
+                        return { ...slot, data: await migrateGameState(slot.data) }; 
+                    }
                     catch (error) {
                         console.error(`Slot ${slot.id} is corrupted or incompatible. Error:`, error);
                         db.deleteGameState(slot.id);
@@ -135,7 +136,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                     }
                 }
                 return slot;
-            });
+            }));
             dispatch({ type: 'SET_SAVE_SLOTS', payload: processedSlots });
             await updateStorageUsage();
         } catch (error) {
@@ -292,7 +293,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const slots = await db.getAllSaveSlots();
             const slotToVerify = slots.find(s => s.id === slotId);
             if (!slotToVerify?.data) throw new Error("Không có dữ liệu để kiểm tra.");
-            const migratedGame = migrateGameState(slotToVerify.data);
+            const migratedGame = await migrateGameState(slotToVerify.data);
             await db.saveGameState(slotId, { ...migratedGame, version: CURRENT_GAME_VERSION });
             await loadSaveSlots();
             alert(`Ô ${slotId} đã được kiểm tra và cập nhật thành công!`);
@@ -320,7 +321,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
             await db.saveGameState(state.currentSlotId, newGameState);
             await loadSaveSlots();
-            const hydratedGameState = migrateGameState(newGameState);
+            const hydratedGameState = await migrateGameState(newGameState);
             dispatch({ type: 'UPDATE_GAME_STATE', payload: hydratedGameState });
         } catch (error) {
             alert(`Lỗi tạo thế giới: ${(error as Error).message}.`);

@@ -226,7 +226,7 @@ export const ATTRIBUTES_CONFIG: AttributeGroup[] = [
   {
     title: 'Khí (气 - Chân Nguyên)',
     attributes: [
-      { name: 'Linh Căn', description: 'Tư chất tu luyện, quyết định tốc độ hấp thụ linh khí và sự tương thích với công pháp.', value: 'Ngũ Hành Tạp Linh Căn', icon: GiPentacle },
+      { name: 'Linh Căn', description: 'Tư chất tu luyện, quyết định tốc độ hấp thụ linh khí và sự tương thích với công pháp.', value: 'Chưa xác định', icon: GiPentacle },
       { name: 'Linh Lực Sát Thương', description: 'Sát thương gây ra bởi pháp thuật và pháp bảo.', value: 10, icon: GiBoltSpellCast },
       { name: 'Chân Nguyên Tinh Thuần', description: 'Độ tinh khiết của linh lực, ảnh hưởng đến uy lực kỹ năng.', value: 10, icon: GiMagicSwirl },
       { name: 'Ngự Khí Thuật', description: 'Độ khéo léo điều khiển linh khí (luyện đan, luyện khí, bố trận).', value: 10, icon: GiCauldron },

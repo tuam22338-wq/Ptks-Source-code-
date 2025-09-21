@@ -863,6 +863,7 @@ export interface GameState {
     lastSaved?: string;
     encounteredNpcIds: string[];
     activeMods: FullMod[];
+    activeModIds?: string[];
     realmSystem: RealmConfig[];
     majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;

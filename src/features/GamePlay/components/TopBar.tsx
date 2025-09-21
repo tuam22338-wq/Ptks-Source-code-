@@ -1,8 +1,7 @@
 import React, { memo, useState, useEffect } from 'react';
 import type { GameDate, MajorEvent } from '../../../types';
-import { FaArrowLeft, FaSave, FaBars, FaExpand } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaExpand } from 'react-icons/fa';
 import Timeline from '../../../components/Timeline';
-import { useGameUIContext } from '../../../contexts/GameUIContext';
 
 interface TopBarProps {
     onBack: () => void;
@@ -12,7 +11,7 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }) => {
-    const { toggleSidebar } = useGameUIContext();
+    // FIX: Removed unused 'toggleSidebar' which was causing an error as it doesn't exist on the context type.
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
     const handleFullscreen = () => {
@@ -65,15 +64,8 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }
                 <Timeline gameDate={gameDate} majorEvents={majorEvents} />
             </div>
 
-            <div className="flex items-center gap-2">
-                {/* This button is automatically hidden on desktop via CSS in index.html */}
-                <button 
-                    onClick={toggleSidebar} 
-                    className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors top-bar-sidebar-toggle"
-                    title="Mở/Đóng Bảng Điều Khiển"
-                >
-                    <FaBars className="w-5 h-5" />
-                </button>
+            <div className="w-9 h-9">
+                {/* Spacer for centering Timeline */}
             </div>
         </header>
     );
