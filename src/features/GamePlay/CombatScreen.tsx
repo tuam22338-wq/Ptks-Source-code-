@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, SkillTreeNode } from '../../types';
 import { decideNpcCombatAction } from '../../services/geminiService';
@@ -87,14 +84,14 @@ const CombatScreen: React.FC = () => {
     const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
         dispatch({
             type: 'UPDATE_GAME_STATE',
-            payload: (prev => {
+            payload: (prev) => {
                 if (!prev) return null;
                 const newId = (prev.storyLog[prev.storyLog.length - 1]?.id || 0) + 1;
                 const newEntry = { ...newEntryData, id: newId };
                 return { ...prev, storyLog: [...prev.storyLog, newEntry] };
-            })(gameState)
+            }
         });
-    }, [dispatch, gameState]);
+    }, [dispatch]);
 
     const allPlayerTechniques = React.useMemo(() => {
         if (!gameState) return [];
@@ -156,7 +153,7 @@ const CombatScreen: React.FC = () => {
                         }
                     }
 
-                    dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs => {
+                    dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
                         if (!gs) return null;
                         let newPlayer = { ...gs.playerCharacter };
                         const sinhMenhAttr = newPlayer.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
@@ -172,7 +169,7 @@ const CombatScreen: React.FC = () => {
                             return { ...nextState, combatState: null };
                         }
                         return nextState;
-                    })(gameState) });
+                    }});
                 }
                 setIsProcessingTurn(false);
             }
@@ -192,7 +189,7 @@ const CombatScreen: React.FC = () => {
         const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, false);
         addStoryEntry({ type: 'combat', content: `Bạn dùng đòn đánh thường lên ${target.identity.name}. ${narrative}` });
 
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs => {
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
             if (!gs || !gs.combatState) return null;
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
@@ -214,7 +211,7 @@ const CombatScreen: React.FC = () => {
                 return { ...postActionState, combatState: null };
             }
             return postActionState;
-        })(gameState) });
+        }});
         setIsProcessingTurn(false);
     };
     
@@ -231,7 +228,7 @@ const CombatScreen: React.FC = () => {
         const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, true, technique.element);
         addStoryEntry({ type: 'combat', content: `Bạn thi triển [${technique.name}] lên ${target.identity.name}. ${narrative}` });
 
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs => {
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
             if (!gs || !gs.combatState) return null;
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
@@ -263,7 +260,7 @@ const CombatScreen: React.FC = () => {
                 return { ...postActionState, combatState: null };
             }
             return postActionState;
-        })(gameState) });
+        }});
         setIsProcessingTurn(false);
     };
 

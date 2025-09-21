@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import React, { useState, useMemo, useCallback } from 'react';
 import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, StoryEntry, GameState } from '../../../../types';
 import CharacterPanel from './panels/CharacterPanel';
@@ -53,12 +46,12 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     if (!gameState) return null; // Should not happen if GamePlayScreen is rendered
 
     // FIX: Create a stable callback to update game state, handling both value and function updaters.
-    const setGameStateCallback = useCallback((action: React.SetStateAction<GameState | null>) => {
+    const setGameStateCallback = useCallback((updater: (gs: GameState | null) => GameState | null) => {
         dispatch({
             type: 'UPDATE_GAME_STATE',
-            payload: typeof action === 'function' ? (action as (prevState: GameState | null) => GameState | null)(gameState) : action
+            payload: updater
         });
-    }, [dispatch, gameState]);
+    }, [dispatch]);
 
     const { 
         playerCharacter, discoveredLocations, activeNpcs, worldState, storyLog,
@@ -69,6 +62,11 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     const sinhMenhAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
     const isPlayerDead = sinhMenhAttr ? (sinhMenhAttr.value as number) <= 0 : false;
 
+    const currentLocation = useMemo(() => {
+        if (!discoveredLocations || discoveredLocations.length === 0) return null;
+        return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
+    }, [discoveredLocations, playerCharacter.currentLocationId]);
+    
     if (isPlayerDead) {
         return <DeathPanel />;
     }
@@ -76,20 +74,15 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     const realmSystem = realmSystemFromState || REALM_SYSTEM;
     const rumors = worldState.rumors;
 
-    const currentLocation = useMemo(() => 
-        discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!, 
-        [discoveredLocations, playerCharacter.currentLocationId]
-    );
-    
     const npcsAtLocation = useMemo(() => 
         activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId), 
         [activeNpcs, playerCharacter.currentLocationId]
     );
 
-    const neighbors = useMemo(() => 
-        discoveredLocations.filter(l => currentLocation.neighbors.includes(l.id)), 
-        [discoveredLocations, currentLocation]
-    );
+    const neighbors = useMemo(() => {
+        if (!currentLocation) return [];
+        return discoveredLocations.filter(l => currentLocation.neighbors.includes(l.id));
+    }, [discoveredLocations, currentLocation]);
     
     const handleNpcInteraction = useCallback((npc: NPC) => {
         if (npc.shopId && SHOPS.some(s => s.id === npc.shopId)) {
@@ -161,7 +154,7 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                 {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={handleUpdatePlayerCharacter} showNotification={showNotification} />}
                 {activeTab === 'playerSect' && <PlayerSectPanel gameState={gameState} setGameState={setGameStateCallback} showNotification={showNotification} />}
                 {activeTab === 'genealogy' && <GenealogyPanel playerCharacter={playerCharacter} allNpcs={activeNpcs} onNpcSelect={handleNpcInteraction} />}
-                {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} dynamicEvents={worldState.dynamicEvents} onTravel={onTravel} onExplore={onExplore} onNpcSelect={handleNpcInteraction} />}
+                {activeTab === 'world' && currentLocation && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} dynamicEvents={worldState.dynamicEvents} onTravel={onTravel} onExplore={onExplore} onNpcSelect={handleNpcInteraction} />}
                 {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} allNpcs={activeNpcs} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}
                 {activeTab === 'aiMemory' && <AiMemoryPanel gameState={gameState} />}

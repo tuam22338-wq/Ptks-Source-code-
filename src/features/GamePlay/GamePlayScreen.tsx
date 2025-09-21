@@ -21,7 +21,7 @@ import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
 interface CustomStoryPlayerProps {
     gameState: GameState;
-    onUpdateGameState: (updater: (gs: GameState) => GameState) => void;
+    onUpdateGameState: (updater: (gs: GameState | null) => GameState | null) => void;
 }
 
 const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpdateGameState }) => {
@@ -43,7 +43,7 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpda
 
     if (!activeStory || !storySystem || !currentNode) {
         if (activeStory) {
-            onUpdateGameState(gs => ({ ...gs, activeStory: null }));
+            onUpdateGameState(gs => gs ? { ...gs, activeStory: null } : null);
         }
         return <div className="flex-shrink-0 p-4 bg-black/40 text-red-400 text-center">Lỗi: Không tìm thấy dữ liệu cốt truyện.</div>;
     }
@@ -141,9 +141,9 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 const newId = (prev.storyLog[prev.storyLog.length - 1]?.id || 0) + 1;
                 const newEntry = { ...newEntryData, id: newId };
                 return { ...prev, storyLog: [...prev.storyLog, newEntry] };
-            })(gameState)
+            })
         });
-    }, [dispatch, gameState]);
+    }, [dispatch]);
     
     const handleActionSubmit = useCallback(async (text: string, type: 'say' | 'act' = 'act', apCost: number = 1) => {
         if (text.trim().toLowerCase() === 'mở túi đồ') {
@@ -209,10 +209,17 @@ const GamePlayScreenContent: React.FC = memo(() => {
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
     const { playerCharacter, combatState, activeStory, discoveredLocations } = gameState;
-    const currentLocation = useMemo(() => discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!, [discoveredLocations, playerCharacter.currentLocationId]);
+    const currentLocation = useMemo(() => {
+        if (!discoveredLocations || discoveredLocations.length === 0) return null;
+        return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
+    }, [discoveredLocations, playerCharacter.currentLocationId]);
     
     const isSpecialPanelActive = !!(combatState || activeEvent || activeStory);
     const isOnLastPage = currentPage === storyPages.length - 1;
+
+    if (!currentLocation) {
+        return <LoadingScreen message="Lỗi: Không tìm thấy vị trí hiện tại..." />;
+    }
 
     return (
         <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col">
@@ -253,7 +260,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                         <>
                             <CombatScreen />
                             {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes.flatMap(g => g.attributes)} />}
-                            {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater(gameState)})} />}
+                            {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
                         </>
                     ) : (
                         <ActionBar 

@@ -32,21 +32,23 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
             return;
         }
 
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (prev => {
-            if (!prev) return null;
-            const pc = { ...prev.playerCharacter };
-            const newCurrencies = { ...pc.currencies, [price.currencyName]: playerCurrency - price.amount };
-            const newInventoryItems = [...pc.inventory.items];
-            const existingItem = newInventoryItems.find(i => i.name === name);
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                const { price: itemPrice, stock, ...baseItem } = item;
-                const newItem: InventoryItem = { ...baseItem, id: `item-${Date.now()}-${Math.random()}`, quantity: 1, isEquipped: false };
-                newInventoryItems.push(newItem);
+        dispatch({
+            type: 'UPDATE_GAME_STATE', payload: prev => {
+                if (!prev) return null;
+                const pc = { ...prev.playerCharacter };
+                const newCurrencies = { ...pc.currencies, [price.currencyName]: playerCurrency - price.amount };
+                const newInventoryItems = [...pc.inventory.items];
+                const existingItem = newInventoryItems.find(i => i.name === name);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    const { price: itemPrice, stock, ...baseItem } = item;
+                    const newItem: InventoryItem = { ...baseItem, id: `item-${Date.now()}-${Math.random()}`, quantity: 1, isEquipped: false };
+                    newInventoryItems.push(newItem);
+                }
+                return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
             }
-            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
-        })(gameState) });
+        });
 
         showNotification(`Đã mua [${name}]`);
     };
@@ -55,19 +57,21 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
         const sellPrice = Math.floor((item.value || 10) / 2);
         const currencyName = 'Bạc';
 
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (prev => {
-            if (!prev) return null;
-            const pc = { ...prev.playerCharacter };
-            const newCurrencies = { ...pc.currencies, [currencyName]: (pc.currencies[currencyName] || 0) + sellPrice };
-            let newInventoryItems = [...pc.inventory.items];
-            const itemInInventory = newInventoryItems.find(i => i.id === item.id);
-            if (itemInInventory && itemInInventory.quantity > 1) {
-                newInventoryItems = newInventoryItems.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i);
-            } else {
-                newInventoryItems = newInventoryItems.filter(i => i.id !== item.id);
+        dispatch({
+            type: 'UPDATE_GAME_STATE', payload: prev => {
+                if (!prev) return null;
+                const pc = { ...prev.playerCharacter };
+                const newCurrencies = { ...pc.currencies, [currencyName]: (pc.currencies[currencyName] || 0) + sellPrice };
+                let newInventoryItems = [...pc.inventory.items];
+                const itemInInventory = newInventoryItems.find(i => i.id === item.id);
+                if (itemInInventory && itemInInventory.quantity > 1) {
+                    newInventoryItems = newInventoryItems.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i);
+                } else {
+                    newInventoryItems = newInventoryItems.filter(i => i.id !== item.id);
+                }
+                return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
             }
-            return { ...prev, playerCharacter: { ...pc, currencies: newCurrencies, inventory: { ...pc.inventory, items: newInventoryItems } } };
-        })(gameState) });
+        });
 
         showNotification(`Đã bán [${item.name}] với giá ${sellPrice} ${currencyName}`);
     };

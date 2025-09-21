@@ -29,7 +29,7 @@ export type Action =
   | { type: 'LOAD_GAME'; payload: { gameState: GameState; slotId: number } }
   | { type: 'START_CHARACTER_CREATION'; payload: number }
   | { type: 'QUIT_GAME' }
-  | { type: 'UPDATE_GAME_STATE'; payload: GameState | null };
+  | { type: 'UPDATE_GAME_STATE'; payload: GameState | null | ((prevState: GameState | null) => GameState | null) };
 
 
 // The reducer function
@@ -83,9 +83,12 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             return { ...state, gameState: null, currentSlotId: null, view: 'mainMenu' };
         
         case 'UPDATE_GAME_STATE':
+             const newGameState = typeof action.payload === 'function'
+                ? (action.payload as (prevState: GameState | null) => GameState | null)(state.gameState)
+                : action.payload;
              // Prevent updates if no game is active, except when loading a new game.
-             if (!state.gameState && !action.payload) return state;
-             return { ...state, gameState: action.payload };
+             if (!state.gameState && !newGameState) return state;
+             return { ...state, gameState: newGameState };
 
         default:
             return state;

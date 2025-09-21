@@ -332,24 +332,30 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (error: any) {
             console.error("AI story generation failed:", error);
             const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${error.message}`;
-            const currentState = state.gameState;
-            if (currentState) {
-                const lastId = currentState.storyLog.length > 0 ? currentState.storyLog[currentState.storyLog.length - 1].id : 0;
-                // FIX: Explicitly type log entries to satisfy StoryEntry type
-                const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
-                const errorEntry: StoryEntry = { id: lastId + 2, type: 'system', content: errorMessage };
-                dispatch({ type: 'UPDATE_GAME_STATE', payload: { ...currentState, storyLog: [...currentState.storyLog, playerActionEntry, errorEntry] } });
-            }
+            dispatch({
+                type: 'UPDATE_GAME_STATE',
+                payload: (currentState) => {
+                    if (!currentState) return null;
+                    const lastId = currentState.storyLog.length > 0 ? currentState.storyLog[currentState.storyLog.length - 1].id : 0;
+                    const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
+                    const errorEntry: StoryEntry = { id: lastId + 2, type: 'system', content: errorMessage };
+                    return { ...currentState, storyLog: [...currentState.storyLog, playerActionEntry, errorEntry] };
+                }
+            });
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
     }, [state.gameState, state.isLoading, state.settings, cancelSpeech]);
 
     const handleUpdatePlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
-        if (!state.gameState) return;
-        const newPlayerCharacter = updater(state.gameState.playerCharacter);
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: { ...state.gameState, playerCharacter: newPlayerCharacter } });
-    }, [state.gameState]);
+        dispatch({
+            type: 'UPDATE_GAME_STATE',
+            payload: (gs) => {
+                if (!gs) return null;
+                return { ...gs, playerCharacter: updater(gs.playerCharacter) };
+            }
+        });
+    }, []);
 
     const contextValue: AppContextType = {
         state, dispatch, handleNavigate, handleSettingChange, handleSettingsSave,

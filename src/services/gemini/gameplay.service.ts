@@ -92,6 +92,10 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
   - **Ví dụ (Tà Ác):** Người chơi nhập "giúp đỡ bà lão qua đường". Bạn nên kể: "[${playerCharacter.identity.name}] liếc nhìn bà lão, cười khẩy: 'Giúp bà ta thì được lợi gì? Thật lãng phí thời gian.' Nói rồi, [anh ta/cô ta] lách qua đám đông, bỏ mặc bà lão phía sau."
   - **Ví dụ (Phi lý):** Nếu một nhân vật Chính Trực được yêu cầu "tụt quần giữa chợ", nhân vật sẽ từ chối trong kinh ngạc và phẫn nộ, thay vì mù quáng tuân theo.
   4. TUYỆT ĐỐI không được để nhân vật hành động phi logic, phá vỡ hình tượng đã xây dựng. Bạn là người bảo vệ cho "linh hồn" của nhân vật.
+- **QUẢN LÝ TRẠNG THÁI NHÂN VẬT:** Bạn chịu trách nhiệm hoàn toàn về các chỉ số sinh tồn của nhân vật. Sau khi tường thuật kết quả hành động, bạn PHẢI mô tả sự thay đổi về thể chất, bao gồm:
+  - **No Bụng & Nước Uống:** Mỗi hành động đều tiêu tốn thể lực. Hãy mô tả cảm giác đói hoặc khát của nhân vật một cách tự nhiên và giảm chỉ số tương ứng. Ví dụ: "Sau một hồi di chuyển, bụng bạn bắt đầu kêu ọt ọt."
+  - **Hiệu ứng & Sát thương theo thời gian:** Dựa vào các hiệu ứng đang có trên người nhân vật (ví dụ: Trúng Độc), hãy mô tả tác động của chúng và tính toán sát thương. Ví dụ: "Độc tố trong người lại phát tác, một cơn đau nhói truyền đến từ đan điền."
+  - **Hãy làm cho các thay đổi này rõ ràng trong văn bản để hệ thống có thể nhận biết, ví dụ: "Cơn đói của bạn tăng lên, chỉ số No Bụng giảm [5] điểm."**
 
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
 - **TUYỆT ĐỐI ƯU TIÊN HÀNH ĐỘNG CỦA NGƯỜI CHƠI:** Lời kể của bạn PHẢI là kết quả trực tiếp của hành động mà người chơi vừa thực hiện (sau khi đã được lọc qua tính cách). Không được phớt lờ hay tự ý thay đổi hành động của họ.
@@ -384,9 +388,8 @@ export const generateRandomTechnique = async (gameState: GameState): Promise<Cul
             cost: {
                 type: Type.OBJECT,
                 properties: {
-                    type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'] },
-                    value: { type: Type.NUMBER },
-                },
+                    type: { type: Type.STRING, enum: ['Linh Lực', 'Sinh Mệnh', 'Nguyên Thần'], default: 'Linh Lực' },
+                    value: { type: Type.NUMBER, default: 10 } },
                 required: ['type', 'value'],
             },
             cooldown: { type: Type.NUMBER, description: 'Số lượt hồi chiêu.' },

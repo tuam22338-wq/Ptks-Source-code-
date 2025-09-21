@@ -17,13 +17,8 @@ export const advanceGameTime = (
     let newDay = false;
     const notifications: string[] = [];
     let { gameDate, playerCharacter } = JSON.parse(JSON.stringify(currentState)); // Deep copy to prevent mutation
-    let { vitals } = playerCharacter;
 
-    // Vitals decay
-    vitals.hunger = Math.max(0, vitals.hunger - apCost * 2); // 2 hunger per AP
-    vitals.thirst = Math.max(0, vitals.thirst - apCost * 3); // 3 thirst per AP
-
-    // Process DOT effects and duration
+    // Process DOT effects and duration, which are deterministic based on AP cost
     let dotDamage = 0;
     const expiredEffects: string[] = [];
     
@@ -63,34 +58,6 @@ export const advanceGameTime = (
     }
     
     playerCharacter.activeEffects = nextEffects;
-
-    // Apply/remove debuffs based on vitals
-    const manageEffect = (effects: ActiveEffect[], condition: boolean, effectToAdd: Omit<ActiveEffect, 'id'>): ActiveEffect[] => {
-        const hasEffect = effects.some(e => e.name === effectToAdd.name);
-        if (condition && !hasEffect) {
-            return [...effects, { ...effectToAdd, id: `effect_${effectToAdd.name.replace(/\s+/g, '_')}` }];
-        }
-        if (!condition && hasEffect) {
-            return effects.filter(e => e.name !== effectToAdd.name);
-        }
-        return effects;
-    };
-
-    // Manage Hunger Debuffs
-    let updatedEffects = manageEffect(playerCharacter.activeEffects, vitals.hunger <= 20 && vitals.hunger > 0, STARVATION_DEBUFF);
-    updatedEffects = manageEffect(updatedEffects, vitals.hunger <= 0, SEVERE_STARVATION_DEBUFF);
-    if (updatedEffects.some(e => e.name === SEVERE_STARVATION_DEBUFF.name)) {
-        updatedEffects = updatedEffects.filter(e => e.name !== STARVATION_DEBUFF.name);
-    }
-
-    // Manage Thirst Debuffs
-    updatedEffects = manageEffect(updatedEffects, vitals.thirst <= 20 && vitals.thirst > 0, DEHYDRATION_DEBUFF);
-    updatedEffects = manageEffect(updatedEffects, vitals.thirst <= 0, SEVERE_DEHYDRATION_DEBUFF);
-    if (updatedEffects.some(e => e.name === SEVERE_DEHYDRATION_DEBUFF.name)) {
-        updatedEffects = updatedEffects.filter(e => e.name !== DEHYDRATION_DEBUFF.name);
-    }
-    playerCharacter.activeEffects = updatedEffects;
-    playerCharacter.vitals = vitals;
 
     let newActionPoints = gameDate.actionPoints - apCost;
 
