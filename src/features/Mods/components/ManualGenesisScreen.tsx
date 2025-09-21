@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FaArrowLeft, FaBrain } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
@@ -116,8 +115,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                         <Field label="Mục Tiêu Chính (Tùy chọn)" description="Mô tả mục tiêu cuối cùng hoặc kết thúc mong muốn của câu chuyện.">
                             <textarea name="mainGoal" value={prompts.mainGoal} onChange={handlePromptChange} rows={2} className="themed-textarea" placeholder="Vd: Người chơi phải thu thập đủ 5 mảnh tinh thể để phục hồi lõi thế giới đang suy tàn..."/>
                         </Field>
-                        <Field label="Quy Luật Thế Giới (Tùy chọn)" description="Thêm vào các quy tắc, cơ chế, hoặc hiện tượng độc đáo cho thế giới của bạn.">
-                            <textarea name="worldRules" value={prompts.worldRules} onChange={handlePromptChange} rows={2} className="themed-textarea" placeholder="Vd: Mỗi khi một tu sĩ đột phá, một hòn đảo mới sẽ được sinh ra. Tu sĩ không thể bay giữa các đảo mà phải dùng thuyền bay..."/>
+                        <Field label="Quy Luật Thế Giới (Tùy chọn)" description="Thêm vào các quy tắc, cơ chế, hoặc hiện tượng độc đáo. Đặc biệt, bạn có thể định nghĩa một hệ thống tu luyện hoàn toàn mới tại đây.">
+                            <textarea name="worldRules" value={prompts.worldRules} onChange={handlePromptChange} rows={2} className="themed-textarea" placeholder="Vd: Hệ thống tu luyện ở đây gọi là 'Thôn Phệ Hồn Lực', có các cấp bậc: Sơ Hồn, Luyện Hồn, Hồn Tướng, Hồn Vương..."/>
                         </Field>
                         <Field label="Cốt Truyện Khởi Đầu (Tùy chọn)" description="Viết phần mở đầu cho câu chuyện của bạn, hoặc để trống để AI tự tạo.">
                             <textarea name="openingStory" value={prompts.openingStory} onChange={handlePromptChange} rows={4} className="themed-textarea" placeholder="Vd: Bạn tỉnh dậy trên một con thuyền bay ọp ẹp, không một ký ức. Người lái thuyền già nua nhìn bạn và nói..."/>

@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { FaBookReader, FaExclamationCircle, FaCoins } from 'react-icons/fa';
+import { FaBookReader, FaExclamationCircle, FaCoins, FaRoute, FaLandmark } from 'react-icons/fa';
 import { GiSwapBag, GiGears, GiCauldron, GiMountainCave, GiCastle } from 'react-icons/gi';
 
 const GuideSection: React.FC<{ icon: React.ElementType; title: string; children: React.ReactNode }> = ({ icon: Icon, title, children }) => (
@@ -25,6 +25,17 @@ const GuidePanel: React.FC = () => {
                     Nhiều tính năng của game đã được tích hợp vào AI kể chuyện để mang lại trải nghiệm nhập vai sâu sắc hơn. Hãy dùng ngôn ngữ tự nhiên để tương tác với thế giới!
                 </div>
                 <div className="space-y-4">
+                    <GuideSection icon={FaRoute} title="Di Chuyển & Tương Tác">
+                        <p>Các hành động cơ bản như di chuyển và nói chuyện giờ đây được thực hiện hoàn toàn bằng ngôn ngữ tự nhiên, thay vì nút bấm.</p>
+                        <ul className="list-disc list-inside text-gray-400 italic">
+                            <li>Để di chuyển: "đi đến Triều Ca", "tới Rừng Cổ Thụ".</li>
+                            <li>Để xem có ai xung quanh: "nhìn xung quanh", "có ai ở đây không?".</li>
+                            <li>Để nói chuyện: "nói chuyện với Khương Tử Nha", "bắt chuyện với lão nông".</li>
+                            <li>Để khám phá: "khám phá khu rừng", "tìm kiếm xung quanh xem có gì không".</li>
+                        </ul>
+                        <p className="mt-2">AI sẽ tự động hiểu và tường thuật lại kết quả hành động của bạn.</p>
+                    </GuideSection>
+
                     <GuideSection icon={GiSwapBag} title="Túi Đồ & Tiền Tệ">
                         <p>Bạn có thể mở túi đồ bất cứ lúc nào bằng cách ra lệnh:</p>
                         <ul className="list-disc list-inside text-gray-400 italic">
@@ -45,10 +56,11 @@ const GuidePanel: React.FC = () => {
                         </ul>
                     </GuideSection>
 
-                     <GuideSection icon={GiGears} title="Các Hành Động Khác">
+                     <GuideSection icon={GiGears} title="Các Hành Động Hệ Thống">
                         <p>Các hành động phức tạp hơn cũng được điều khiển bằng lời nói:</p>
                         <ul className="list-disc list-inside text-gray-400 italic">
-                            <li><strong className="text-gray-300">Nơi ở (<GiMountainCave className="inline-block mb-1"/>):</strong> "tìm một hang động để bế quan", "thuê một phòng ở quán trọ".</li>
+                            <li><strong className="text-gray-300">Tông Môn (<FaLandmark className="inline-block mb-1"/>):</strong> "tìm một tông môn để gia nhập", "xin gia nhập Xiển Giáo".</li>
+                            <li><strong className="text-gray-300">Động Phủ (<GiMountainCave className="inline-block mb-1"/>):</strong> "nâng cấp Tụ Linh Trận", "cải thiện Linh Điền".</li>
                             <li><strong className="text-gray-300">Luyện Đan (<GiCauldron className="inline-block mb-1"/>):</strong> "bắt đầu luyện đan", "luyện chế Hồi Khí Đan". AI sẽ tự kiểm tra xem bạn có đan phương, nguyên liệu, và đan lô hay không.</li>
                         </ul>
                     </GuideSection>

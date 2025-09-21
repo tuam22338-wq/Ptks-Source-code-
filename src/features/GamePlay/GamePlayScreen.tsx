@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -286,7 +287,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
                            onTravel={handleTravel}
                            onExplore={() => { /* TODO */ }}
                            onNpcDialogue={handleNpcDialogue}
-                           showNotification={showNotification}
                         />
                     </div>
                 </div>

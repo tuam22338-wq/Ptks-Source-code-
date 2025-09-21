@@ -8,7 +8,7 @@ import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
 import { useGameUIContext } from './GameUIContext';
 
-export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
+export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
 
 interface AppContextType {
     state: AppState;
@@ -23,7 +23,7 @@ interface AppContextType {
     handleDeleteGame: (slotId: number) => Promise<void>;
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
     handleGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot | null },
       npcDensity: NpcDensity,
       difficulty: DifficultyLevel,
       gameMode: 'classic' | 'transmigrator',

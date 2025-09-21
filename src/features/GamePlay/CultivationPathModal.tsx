@@ -17,7 +17,7 @@ const CultivationPathModal: React.FC<CultivationPathModalProps> = ({ isOpen, pat
                 <p className="text-center text-gray-400 mt-2 mb-6">Bạn đã đột phá thành công, một con đường mới đã mở ra. Hãy lựa chọn hướng đi cho mình.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto pr-2">
                     {paths.map(path => (
-                        <div key={path.id} className="bg-black/20 p-5 rounded-xl border-2 border-gray-700/60 flex flex-col h-full transform transition-transform duration-300 hover:-translate-y-1 hover:border-[color:var(--primary-accent-color)]/80">
+                        <div key={path.id} className="bg-black/20 p-5 rounded-xl border-2 border-gray-700/60 flex flex-col h-full transform transition-transform duration-300 hover:-translate-y-1 hover:border-amber-400/80">
                             <h3 className="text-2xl font-bold font-title text-amber-400">{path.name}</h3>
                             <p className="text-sm text-gray-400 mt-2 mb-4 flex-grow">{path.description}</p>
                             <div className="space-y-1 mb-5">

@@ -5,55 +5,10 @@ import { FaUsers, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 interface SectPanelProps {
     playerCharacter: PlayerCharacter;
-    setPlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
-    showNotification: (message: string) => void;
 }
 
-const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter, setPlayerCharacter, showNotification }) => {
+const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter }) => {
     const { sect } = playerCharacter;
-
-    const handleJoinSect = (sectToJoin: Sect) => {
-        // Check requirements
-        for (const req of sectToJoin.joinRequirements) {
-            const attr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === req.attribute);
-            if (!attr || (attr.value as number) < req.value) {
-                showNotification(`Yêu cầu không đủ: Cần ${req.attribute} tối thiểu ${req.value}.`);
-                return;
-            }
-        }
-        
-        setPlayerCharacter(pc => {
-            const updatedPc = { ...pc };
-            updatedPc.sect = {
-                sectId: sectToJoin.id,
-                rank: sectToJoin.ranks[0].name,
-                contribution: 0,
-            };
-
-            // Grant starting technique
-            if (sectToJoin.startingTechnique && !updatedPc.auxiliaryTechniques.some(t => t.name === sectToJoin.startingTechnique!.name)) {
-                const newTechnique: CultivationTechnique = {
-                    id: `tech_${sectToJoin.id}_start`,
-                    level: 1,
-                    maxLevel: 10,
-                    ...sectToJoin.startingTechnique,
-                };
-                updatedPc.auxiliaryTechniques = [...updatedPc.auxiliaryTechniques, newTechnique];
-                showNotification(`Đã học được công pháp nhập môn: [${newTechnique.name}]!`);
-            }
-            
-            return updatedPc;
-        });
-
-        showNotification(`Chúc mừng bạn đã gia nhập ${sectToJoin.name}!`);
-    };
-    
-    const handleLeaveSect = () => {
-        if (window.confirm("Bạn có chắc chắn muốn rời khỏi tông môn? Hành động này có thể không thể hoàn tác.")) {
-            setPlayerCharacter(pc => ({ ...pc, sect: null }));
-            showNotification("Bạn đã trở thành một tán tu.");
-        }
-    };
 
     if (sect) {
         const currentSectData = SECTS.find(s => s.id === sect.sectId);
@@ -88,9 +43,9 @@ const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter, setPlayerCharact
                         )}
                         
                         <div className="mt-4 pt-3 border-t border-gray-700/50 space-y-2">
-                            <button className="w-full text-sm p-2 bg-gray-700/50 rounded hover:bg-gray-700/80 disabled:opacity-50" disabled>Nhiệm vụ Tông Môn</button>
-                            <button className="w-full text-sm p-2 bg-gray-700/50 rounded hover:bg-gray-700/80 disabled:opacity-50" disabled>Tàng Kinh Các</button>
-                            <button onClick={handleLeaveSect} className="w-full text-sm p-2 bg-red-800/50 rounded hover:bg-red-800/80 text-red-300">Rời Tông Môn</button>
+                             <div className="p-2 text-center bg-blue-900/20 border border-blue-600/50 rounded-lg text-blue-200 text-sm">
+                                Sử dụng ô "Hành Động" để làm nhiệm vụ hoặc tương tác với tông môn.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -104,13 +59,11 @@ const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter, setPlayerCharact
                 <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
                     <FaUsers className="inline-block mr-2" /> Gia Nhập Tông Môn
                 </h3>
+                 <div className="p-3 text-center bg-blue-900/20 border border-blue-600/50 rounded-lg text-blue-200 text-sm mb-4">
+                    Sử dụng lệnh "tìm một tông môn để gia nhập" hoặc "gia nhập [tên tông môn]".
+                </div>
                 <div className="space-y-3">
                     {SECTS.map(sectToJoin => {
-                        const requirementsMet = sectToJoin.joinRequirements.every(req => {
-                            const attr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === req.attribute);
-                            return attr && (attr.value as number) >= req.value;
-                        });
-
                         return (
                             <div key={sectToJoin.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
                                 <h4 className="font-bold text-amber-300 font-title">{sectToJoin.name} <span className="text-xs text-gray-400">({sectToJoin.alignment})</span></h4>
@@ -130,9 +83,6 @@ const SectPanel: React.FC<SectPanelProps> = ({ playerCharacter, setPlayerCharact
                                     })}
                                     </ul>
                                 </div>
-                                <button onClick={() => handleJoinSect(sectToJoin)} disabled={!requirementsMet} className="w-full mt-3 p-2 text-sm font-bold bg-teal-700/80 rounded text-white hover:bg-teal-600/80 disabled:bg-gray-600 disabled:cursor-not-allowed">
-                                    Gia Nhập
-                                </button>
                             </div>
                         )
                     })}

@@ -458,59 +458,6 @@ export interface CommunityMod {
     downloadUrl: string;
 }
 
-// --- New AI Content Generation Types ---
-export type ModContentObject =
-    | (Omit<ModItem, 'id'> & { contentType: 'item' })
-    | (Omit<ModTalent, 'id'> & { contentType: 'talent' })
-    | (Omit<ModCharacter, 'id'> & { contentType: 'character' })
-    | (Omit<ModSect, 'id'> & { contentType: 'sect' })
-    | (Omit<ModLocation, 'id'> & { contentType: 'location' })
-    | (Omit<ModWorldData, 'id'> & { contentType: 'worldData' })
-    | (Omit<ModNpc, 'id'> & { contentType: 'npc' })
-    | (Omit<ModAuxiliaryTechnique, 'id'> & { contentType: 'auxiliaryTechnique' })
-    | (Omit<ModMainCultivationTechnique, 'id'> & { contentType: 'mainCultivationTechnique' })
-    | (Omit<ModEvent, 'id'> & { contentType: 'event' })
-    | (Omit<AlchemyRecipe, 'id'> & { contentType: 'recipe' })
-    | (Omit<ModCustomPanel, 'id'> & { contentType: 'customPanel' })
-    | (Omit<ModCustomDataPack, 'id'> & { contentType: 'customDataPack' });
-
-export interface AiGeneratedModData {
-    content?: ModContentObject[];
-    realmConfigs?: Omit<RealmConfig, 'id'>[];
-    talentSystemConfig?: TalentSystemConfig;
-}
-
-export type AIActionType =
-    | 'CHAT'
-    | 'CREATE_ITEM' | 'CREATE_MULTIPLE_ITEMS' | 'CREATE_TALENT' | 'CREATE_MULTIPLE_TALENTS' | 'CREATE_SECT' | 'CREATE_MULTIPLE_SECTS' | 'CREATE_CHARACTER' | 'CREATE_MULTIPLE_CHARACTERS'
-    | 'CREATE_LOCATION' | 'CREATE_WORLD_DATA' | 'CREATE_AUX_TECHNIQUE' | 'CREATE_MAIN_TECHNIQUE' | 'CREATE_NPC' | 'CREATE_EVENT' | 'CREATE_RECIPE' | 'CREATE_CUSTOM_PANEL'
-    | 'UPDATE_ITEM' | 'UPDATE_TALENT' | 'UPDATE_SECT' | 'UPDATE_CHARACTER' | 'UPDATE_LOCATION' | 'UPDATE_WORLD_DATA' | 'UPDATE_AUX_TECHNIQUE' | 'UPDATE_MAIN_TECHNIQUE' | 'UPDATE_NPC' | 'UPDATE_EVENT' | 'UPDATE_RECIPE' | 'UPDATE_CUSTOM_PANEL'
-    | 'DELETE_ITEM' | 'DELETE_TALENT' | 'DELETE_SECT' | 'DELETE_CHARACTER' | 'DELETE_LOCATION' | 'DELETE_WORLD_DATA' | 'DELETE_AUX_TECHNIQUE' | 'DELETE_MAIN_TECHNIQUE' | 'DELETE_NPC' | 'DELETE_EVENT' | 'DELETE_RECIPE' | 'DELETE_CUSTOM_PANEL'
-    | 'CREATE_REALM_SYSTEM' | 'CONFIGURE_TALENT_SYSTEM' | 'BATCH_ACTIONS';
-
-
-export interface AIAction {
-    action: AIActionType;
-    data: any;
-}
-
-// Client-side representation of content in the mod editor
-export type AddedContentUnion = 
-    (ModItem & { contentType: 'item' }) |
-    (ModTalent & { contentType: 'talent' }) |
-    (ModCharacter & { contentType: 'character' }) |
-    (ModSect & { contentType: 'sect' }) |
-    (ModLocation & { contentType: 'location' }) |
-    (ModWorldData & { contentType: 'worldData' }) |
-    (ModNpc & { contentType: 'npc' }) |
-    (ModAuxiliaryTechnique & { contentType: 'auxiliaryTechnique' }) |
-    (ModMainCultivationTechnique & { contentType: 'mainCultivationTechnique' }) |
-    (ModEvent & { contentType: 'event' }) |
-    (AlchemyRecipe & { contentType: 'recipe' }) |
-    (ModCustomPanel & { contentType: 'customPanel' }) |
-    (ModCustomDataPack & { contentType: 'customDataPack' });
-
-
 // --- Gameplay Types ---
 export type CharacterStatus = 'HEALTHY' | 'LIGHTLY_INJURED' | 'HEAVILY_INJURED' | 'NEAR_DEATH';
 

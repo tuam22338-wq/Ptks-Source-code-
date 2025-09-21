@@ -6,13 +6,10 @@ import { GiCauldron } from 'react-icons/gi';
 
 interface AlchemyPanelProps {
     playerCharacter: PlayerCharacter;
-    setPlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
-    showNotification: (message: string) => void;
 }
 
-const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter, setPlayerCharacter, showNotification }) => {
+const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter }) => {
     const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
-    const [isCrafting, setIsCrafting] = useState(false);
 
     const knownRecipes = useMemo(() => {
         return ALCHEMY_RECIPES.filter(recipe => playerCharacter.knownRecipeIds.includes(recipe.id));
@@ -29,109 +26,18 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter, setPlayerC
         return playerCharacter.inventory.items.filter(i => i.type === 'Đan Lô');
     }, [playerCharacter.inventory.items]);
 
-    const handleCraft = () => {
-        if (!selectedRecipe || isCrafting) return;
-
-        // 1. Check Cauldron
-        if (availableCauldrons.length === 0) {
-            showNotification("Cần có Đan Lô để luyện đan!");
-            return;
-        }
-
-        // 2. Check Ingredients
-        const missingIngredients = selectedRecipe.ingredients.filter(ing => {
-            const playerItem = playerCharacter.inventory.items.find(i => i.name === ing.name);
-            return !playerItem || playerItem.quantity < ing.quantity;
-        });
-
-        if (missingIngredients.length > 0) {
-            showNotification(`Thiếu nguyên liệu: ${missingIngredients.map(i => i.name).join(', ')}`);
-            return;
-        }
-
-        // 3. Check Skill
-        if (alchemySkillValue < selectedRecipe.requiredAttribute.value) {
-            showNotification(`Ngự Khí Thuật không đủ! Yêu cầu: ${selectedRecipe.requiredAttribute.value}`);
-            return;
-        }
-        
-        setIsCrafting(true);
-
-        setTimeout(() => {
-            // 4. Calculate Success & Quality
-            const skillDifference = alchemySkillValue - selectedRecipe.requiredAttribute.value;
-            const successChance = Math.min(0.98, 0.6 + skillDifference * 0.02); // 60% base, +2% per skill point over req
-            const didSucceed = Math.random() < successChance;
-
-            if (didSucceed) {
-                let quality: ItemQuality = 'Phàm Phẩm';
-                const qualityRoll = Math.random() * (alchemySkillValue + 20); // Roll influenced by skill
-                for (const curve of selectedRecipe.qualityCurve) {
-                    if (qualityRoll >= curve.threshold) {
-                        quality = curve.quality;
-                        break;
-                    }
-                }
-
-                setPlayerCharacter(pc => {
-                    // Consume ingredients
-                    let newItems = [...pc.inventory.items];
-                    selectedRecipe.ingredients.forEach(ing => {
-                        newItems = newItems.map(i => i.name === ing.name ? { ...i, quantity: i.quantity - ing.quantity } : i);
-                    });
-                    newItems = newItems.filter(i => i.quantity > 0);
-
-                    // Add result
-                    const resultItem = pc.inventory.items.find(i => i.name === selectedRecipe.result.name);
-                    if (resultItem) {
-                        newItems = newItems.map(i => i.name === selectedRecipe.result.name ? {...i, quantity: i.quantity + selectedRecipe.result.quantity} : i);
-                    } else {
-                        // This part needs the item's full definition. For simplicity, we assume it's findable or pre-defined elsewhere.
-                        // A more robust system would fetch item templates. For now, we create a basic version.
-                        const newItem: InventoryItem = {
-                            id: `item-${Date.now()}`,
-                            name: selectedRecipe.result.name,
-                            description: `Một viên ${selectedRecipe.result.name}.`,
-                            quantity: selectedRecipe.result.quantity,
-                            type: 'Đan Dược',
-                            icon: selectedRecipe.icon,
-                            quality: quality,
-                            weight: 0.1, // default weight
-                        }
-                        newItems.push(newItem);
-                    }
-                    
-                    return { ...pc, inventory: { ...pc.inventory, items: newItems } };
-                });
-                showNotification(`Luyện chế thành công [${selectedRecipe.result.name} - ${quality}]!`);
-
-            } else {
-                // Failure - consume ingredients
-                setPlayerCharacter(pc => {
-                    let newItems = [...pc.inventory.items];
-                    selectedRecipe.ingredients.forEach(ing => {
-                        newItems = newItems.map(i => i.name === ing.name ? { ...i, quantity: i.quantity - ing.quantity } : i);
-                    });
-                    newItems = newItems.filter(i => i.quantity > 0);
-                    return { ...pc, inventory: { ...pc.inventory, items: newItems } };
-                });
-                showNotification("Luyện chế thất bại, nguyên liệu đã bị hủy!");
-            }
-            setIsCrafting(false);
-
-        }, 2000); // Crafting animation time
-    };
-
-
     return (
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
             <div>
                 <h3 className="flex items-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">
-                    <GiCauldron className="text-amber-300" /> Luyện Đan
+                    <GiCauldron className="text-amber-300" /> Sổ Tay Đan Phương
                 </h3>
                  <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 mb-4">
                     <p className="text-center text-sm">Ngự Khí Thuật: <span className="font-bold text-amber-300">{alchemySkillValue}</span></p>
                     <p className="text-center text-xs text-gray-400">Đan Lô đang dùng: {availableCauldrons.length > 0 ? availableCauldrons[0].name : 'Không có'}</p>
+                </div>
+                 <div className="p-3 text-center bg-blue-900/20 border border-blue-600/50 rounded-lg text-blue-200 text-sm mb-4">
+                    Dùng lệnh "luyện chế [tên đan dược]" để bắt đầu.
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,9 +73,12 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter, setPlayerC
                                         })}
                                     </ul>
                                 </div>
-                                <button onClick={handleCraft} disabled={isCrafting} className="w-full flex items-center justify-center gap-2 font-bold py-2 px-4 rounded transition-colors bg-red-800 hover:bg-red-700 text-white disabled:bg-gray-600">
-                                    {isCrafting ? 'Đang Luyện...' : <><FaFire /> Luyện Chế</>}
-                                </button>
+                                <div>
+                                     <p className="text-sm text-gray-400">Yêu cầu:</p>
+                                     <p className={`text-sm ${alchemySkillValue >= selectedRecipe.requiredAttribute.value ? 'text-green-400' : 'text-red-400'}`}>
+                                        - {selectedRecipe.requiredAttribute.name} >= {selectedRecipe.requiredAttribute.value}
+                                     </p>
+                                </div>
                             </div>
                         ) : (
                             <div className="flex items-center justify-center h-full text-center text-gray-500">

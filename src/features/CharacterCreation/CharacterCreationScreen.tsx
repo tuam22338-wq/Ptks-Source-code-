@@ -5,9 +5,8 @@ import { GiGalaxy, GiPerson } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
 import { generateCharacterIdentity } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import SpiritualRootSelection from './components/SpiritualRootSelection';
 import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, PT_NPC_LIST, PT_MAJOR_EVENTS, DIFFICULTY_LEVELS, SPIRITUAL_ROOT_CONFIG } from '../../constants';
+import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, PT_NPC_LIST, PT_MAJOR_EVENTS, DIFFICULTY_LEVELS } from '../../constants';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -30,7 +29,7 @@ const GENERATING_MESSAGES = [
 
 const NpcDensitySelector: React.FC<{ value: NpcDensity, onChange: (value: NpcDensity) => void }> = ({ value, onChange }) => (
     <div>
-        <p className="text-sm text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Mật độ Chúng Sinh</p>
+        <p className="text-lg font-bold font-title text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Mật độ Chúng Sinh</p>
         <div className="themed-button-group">
             {NPC_DENSITY_LEVELS.map(level => (
                 <button key={level.id} onClick={() => onChange(level.id)} title={level.description} className={`${value === level.id ? 'active' : ''}`}>
@@ -43,7 +42,7 @@ const NpcDensitySelector: React.FC<{ value: NpcDensity, onChange: (value: NpcDen
 
 const DifficultySelector: React.FC<{ value: DifficultyLevel, onChange: (value: DifficultyLevel) => void }> = ({ value, onChange }) => (
     <div>
-        <p className="text-sm text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Chọn Độ Khó</p>
+        <p className="text-lg font-bold font-title text-center mb-2" style={{color: 'var(--text-muted-color)'}}>Chọn Độ Khó</p>
         <div className="flex flex-col gap-3">
             {DIFFICULTY_LEVELS.map(level => (
                 <button 
@@ -68,7 +67,6 @@ export const CharacterCreationScreen: React.FC = memo(() => {
   const [characterConcept, setCharacterConcept] = useState('');
   const [gender, setGender] = useState<Gender>('Nam');
   const [identity, setIdentity] = useState<CharacterIdentity | null>(null);
-  const [determinedRoot, setDeterminedRoot] = useState<SpiritualRoot | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMessage, setGenerationMessage] = useState('');
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -139,8 +137,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
         personality: newIdentity.personality,
         familyName: newIdentity.familyName,
         gender: gender,
-        age: 18,
-        suggestedElement: newIdentity.suggestedElement
+        age: 18
       };
       setIdentity(fullIdentity);
       setStep('results');
@@ -153,13 +150,13 @@ export const CharacterCreationScreen: React.FC = memo(() => {
   
   const handleSelectTemplate = (template: PlayableCharacterTemplate) => {
       setIdentity({ ...template.identity, age: 18 });
-      setDeterminedRoot(template.spiritualRoot);
+      // We no longer set the spiritual root here. It will be determined in-game.
       setStep('results');
   };
 
   const handleFinalize = async () => {
-      if (!identity || !determinedRoot) {
-          alert("Vui lòng hoàn thành việc tạo nhân vật và xác định linh căn.");
+      if (!identity) {
+          alert("Vui lòng hoàn thành việc tạo nhân vật.");
           return;
       }
 
@@ -178,25 +175,13 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           }
       });
       
-      const allBonuses = determinedRoot.bonuses || [];
-      
-      allBonuses.forEach(bonus => {
-          for (const group of initialAttributes) {
-              const attr = group.attributes.find(a => a.name === bonus.attribute);
-              if (attr && typeof attr.value === 'number') {
-                  (attr.value as number) += bonus.value;
-                  break;
-              }
-          }
-      });
-      
       const characterData = {
           identity: identity,
           attributes: initialAttributes,
-          spiritualRoot: determinedRoot,
           danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
+          spiritualRoot: null,
       };
 
       await handleGameStart({ characterData, npcDensity, difficulty, gameMode });
@@ -244,7 +229,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
         return (
           <div className="text-center max-w-2xl mx-auto animate-fade-in">
             <h2 className="text-3xl font-bold font-title">Nêu Lên Ý Tưởng Của Bạn</h2>
-            <p className="text-gray-400 mt-2 mb-6">Mô tả nhân vật mà bạn muốn tạo ra. AI sẽ dựa vào đây để tạo thân phận và gợi ý linh căn.</p>
+            <p className="text-gray-400 mt-2 mb-6">Mô tả nhân vật mà bạn muốn tạo ra. AI sẽ dựa vào đây để tạo thân phận.</p>
             {generationError && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4">{generationError}</p>}
             <textarea
               value={characterConcept}
@@ -262,9 +247,6 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                     </button>
                 ))}
               </div>
-            </div>
-            <div className="mt-4">
-                <DifficultySelector value={difficulty} onChange={setDifficulty} />
             </div>
             <div className="mt-8 flex justify-center gap-4">
               <button onClick={() => setStep('modeSelection')} className="px-6 py-3 bg-gray-700/80 text-white font-bold rounded-lg hover:bg-gray-600/80">Quay Lại</button>
@@ -295,26 +277,21 @@ export const CharacterCreationScreen: React.FC = memo(() => {
       case 'results':
         if (!identity) return <LoadingSpinner message="Đang tải..." />;
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto animate-fade-in">
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold font-title text-center">Thân Phận</h2>
+          <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+              <h2 className="text-3xl font-bold font-title text-center">Xác Nhận Thân Phận</h2>
               <CharacterIdentityDisplay identity={identity} onIdentityChange={handleIdentityChange} />
-               <NpcDensitySelector value={npcDensity} onChange={setNpcDensity} />
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold font-title text-center">Linh Căn</h2>
-              <SpiritualRootSelection
-                suggestedElement={identity.suggestedElement}
-                onRootDetermined={setDeterminedRoot}
-              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-black/20 rounded-lg border border-gray-700/60">
+                  <DifficultySelector value={difficulty} onChange={setDifficulty} />
+                  <NpcDensitySelector value={npcDensity} onChange={setNpcDensity} />
+              </div>
+
               <button 
-                onClick={handleFinalize} 
-                disabled={!determinedRoot}
-                className="w-full py-4 text-xl font-bold rounded-lg themed-button-primary disabled:bg-gray-600 disabled:cursor-not-allowed"
+                  onClick={handleFinalize} 
+                  className="w-full py-4 text-xl font-bold rounded-lg themed-button-primary"
               >
-                Bắt Đầu Hành Trình
+                  Bắt Đầu Hành Trình
               </button>
-            </div>
           </div>
         );
       default:

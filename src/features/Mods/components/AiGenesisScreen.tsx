@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { FaArrowLeft, FaFileUpload, FaBrain } from 'react-icons/fa';
 import { generateWorldFromText } from '../../../services/geminiService';
@@ -67,7 +66,7 @@ const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) 
                 <FaBrain className="text-8xl text-gray-700 mb-4" />
                 <h3 className="text-4xl font-bold font-title text-amber-300">AI Sáng Thế Ký</h3>
                 <p className="text-gray-400 max-w-2xl mx-auto mt-2 mb-6">
-                    Hãy trở thành đấng sáng tạo. Tải lên một tệp văn bản (.txt) chứa toàn bộ lịch sử, địa lý, nhân vật, và quy luật của thế giới bạn mong muốn. AI sẽ phân tích và kiến tạo nên một vũ trụ hoàn chỉnh từ những con chữ của bạn.
+                    Hãy trở thành đấng sáng tạo. Tải lên một tệp văn bản (.txt) chứa lịch sử, địa lý, nhân vật, và quy luật của thế giới bạn mong muốn. Bạn cũng có thể mô tả một hệ thống tu luyện độc đáo (ví dụ: 'Một hệ thống dựa trên việc hấp thụ linh hồn quái vật với các cấp bậc như Hồn Đồ, Hồn Sư...'), và AI sẽ cố gắng tạo ra cơ chế game tương ứng. AI sẽ phân tích và kiến tạo nên một vũ trụ hoàn chỉnh từ những con chữ của bạn.
                 </p>
 
                 {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4">{error}</p>}

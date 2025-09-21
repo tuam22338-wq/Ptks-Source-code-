@@ -14,9 +14,8 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
             origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật, chi tiết và lôi cuốn.' },
             appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo.' },
             personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê.' },
-            suggestedElement: { type: Type.STRING, enum: Object.keys(SPIRITUAL_ROOT_CONFIG).filter(k => k !== 'Vô' && k !== 'Dị' && k !== 'Hỗn Độn'), description: 'Gợi ý một nguyên tố Linh Căn phù hợp nhất với ý tưởng nhân vật.' },
         },
-        required: ['name', 'origin', 'appearance', 'personality', 'familyName', 'suggestedElement'],
+        required: ['name', 'origin', 'appearance', 'personality', 'familyName'],
     };
 
     const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Tam Thiên Thế Giới, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
@@ -24,7 +23,7 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
     - **Giới tính nhân vật:** ${gender}
     - **Ý tưởng gốc từ người chơi:** "${concept}"
     
-    Nhiệm vụ: Sáng tạo ra một cái tên, họ, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh. Đồng thời, gợi ý một thuộc tính Linh Căn (Kim, Mộc, Thủy, Hỏa, Thổ) phù hợp nhất với bản chất nhân vật.
+    Nhiệm vụ: Sáng tạo ra một cái tên, họ, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
     `;
     
@@ -167,7 +166,7 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     - **Nhân vật chính:**
         - Tên: ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi.
         - Xuất thân: ${playerCharacter.identity.origin}.
-        - **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Không có'}. Mô tả: ${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'}
+        - **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. Mô tả: ${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'}
     - **Địa điểm hiện tại:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.
     - **Gia đình & Người thân:**
     ${familyInfo || 'Không có ai thân thích.'}

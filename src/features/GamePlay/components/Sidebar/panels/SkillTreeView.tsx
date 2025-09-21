@@ -5,7 +5,7 @@ import { FaLock } from 'react-icons/fa';
 
 interface SkillTreeViewProps {
     technique: MainCultivationTechnique;
-    character: PlayerCharacter;
+    playerCharacter: PlayerCharacter;
     selectedNodeId: string | null;
     onNodeSelect: (node: SkillTreeNode) => void;
 }
@@ -36,7 +36,7 @@ const SkillNode: React.FC<{
 });
 
 
-const SkillTreeView: React.FC<SkillTreeViewProps> = ({ technique, character, selectedNodeId, onNodeSelect }) => {
+const SkillTreeView: React.FC<SkillTreeViewProps> = ({ technique, playerCharacter, selectedNodeId, onNodeSelect }) => {
     
     const skillTreeByRealm = useMemo(() => {
         const grouped: { realmName: string; nodes: SkillTreeNode[] }[] = [];
@@ -69,7 +69,7 @@ const SkillTreeView: React.FC<SkillTreeViewProps> = ({ technique, character, sel
         return map;
     }, [technique]);
 
-     const { cultivation } = character;
+     const { cultivation } = playerCharacter;
      const currentRealmIndex = REALM_SYSTEM.findIndex(r => r.id === cultivation.currentRealmId);
 
     return (
@@ -97,7 +97,7 @@ const SkillTreeView: React.FC<SkillTreeViewProps> = ({ technique, character, sel
                             {group.nodes.map(node => {
                                 const parentId = parentMap.get(node.id);
                                 const isParentUnlocked = !parentId || technique.skillTreeNodes[parentId]?.isUnlocked;
-                                const isUnlockable = isParentUnlocked && isRealmUnlocked && character.techniquePoints >= node.cost;
+                                const isUnlockable = isParentUnlocked && isRealmUnlocked && playerCharacter.techniquePoints >= node.cost;
 
                                 return (
                                     <SkillNode

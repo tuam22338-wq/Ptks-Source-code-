@@ -1,8 +1,9 @@
-import type { GameState, StoryEntry, GameSettings, ActiveEffect, ActiveQuest } from '../types';
+import type { GameState, StoryEntry, GameSettings, ActiveEffect, ActiveQuest, CultivationTechnique, ItemQuality, PlayerCharacter } from '../types';
 import { generateStoryContinuationStream, parseNarrativeForGameData, summarizeStory } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
 import { simulateWorldTurn, simulateFactionTurn } from './worldSimulator';
 import * as questManager from '../utils/questManager';
+import { SECTS, ALCHEMY_RECIPES, CAVE_FACILITIES_CONFIG } from '../constants';
 
 export const processPlayerAction = async (
     gameState: GameState,
@@ -44,6 +45,12 @@ export const processPlayerAction = async (
     
     let finalState = { ...stateAfterSim };
     let pc = { ...finalState.playerCharacter };
+
+    // Apply parsed location change
+    if (parsedData.newLocation && finalState.discoveredLocations.some(l => l.id === parsedData.newLocation!.locationId)) {
+        pc.currentLocationId = parsedData.newLocation.locationId;
+        showNotification(`Đã đến: ${finalState.discoveredLocations.find(l => l.id === pc.currentLocationId)?.name || pc.currentLocationId}`);
+    }
 
     // Apply parsed items
     if (parsedData.newItems && parsedData.newItems.length > 0) {
@@ -115,11 +122,98 @@ export const processPlayerAction = async (
         allNewEffects.forEach(eff => showNotification(`Bạn nhận được hiệu ứng: ${eff.name}`));
     }
 
+    // Handle System Actions
+    if (parsedData.systemActions && parsedData.systemActions.length > 0) {
+        for (const action of parsedData.systemActions) {
+            switch (action.actionType) {
+                case 'JOIN_SECT':
+                    const sectId = action.details.sectId;
+                    const sectToJoin = SECTS.find(s => s.id === sectId);
+                    if (sectToJoin && !pc.sect) {
+                        pc.sect = { sectId: sectToJoin.id, rank: sectToJoin.ranks[0].name, contribution: 0 };
+                        if (sectToJoin.startingTechnique) {
+                            const newTechnique: CultivationTechnique = {
+                                id: `tech_${sectToJoin.id}_start`,
+                                level: 1,
+                                maxLevel: 10,
+                                ...sectToJoin.startingTechnique,
+                            };
+                            pc.auxiliaryTechniques.push(newTechnique);
+                            showNotification(`Đã học được công pháp nhập môn: [${newTechnique.name}]!`);
+                        }
+                        showNotification(`Đã gia nhập ${sectToJoin.name}!`);
+                    }
+                    break;
+                
+                case 'CRAFT_ITEM':
+                    const recipeId = action.details.recipeId;
+                    const recipe = ALCHEMY_RECIPES.find(r => r.id === recipeId);
+                    const alchemySkillAttr = pc.attributes.flatMap(g => g.attributes).find(a => a.name === 'Ngự Khí Thuật');
+                    const alchemySkillValue = (alchemySkillAttr?.value as number) || 0;
+                    
+                    if (recipe) {
+                        const hasIngredients = recipe.ingredients.every(ing => {
+                            const playerItem = pc.inventory.items.find(i => i.name === ing.name);
+                            return playerItem && playerItem.quantity >= ing.quantity;
+                        });
+                        const hasCauldron = pc.inventory.items.some(i => i.type === 'Đan Lô');
+                        const hasSkill = alchemySkillValue >= recipe.requiredAttribute.value;
+                        
+                        if (hasIngredients && hasCauldron && hasSkill) {
+                            let newItems = [...pc.inventory.items];
+                            recipe.ingredients.forEach(ing => {
+                                newItems = newItems.map(i => i.name === ing.name ? { ...i, quantity: i.quantity - ing.quantity } : i).filter(i => i.quantity > 0);
+                            });
+
+                            const skillDifference = alchemySkillValue - recipe.requiredAttribute.value;
+                            const successChance = Math.min(0.98, 0.6 + skillDifference * 0.02);
+                            if (Math.random() < successChance) {
+                                let quality: ItemQuality = 'Phàm Phẩm';
+                                const qualityRoll = Math.random() * (alchemySkillValue + 20);
+                                for (const curve of recipe.qualityCurve) {
+                                    if (qualityRoll >= curve.threshold) { quality = curve.quality; break; }
+                                }
+                                const resultItem = newItems.find(i => i.name === recipe.result.name);
+                                if (resultItem) {
+                                    newItems = newItems.map(i => i.name === recipe.result.name ? {...i, quantity: i.quantity + recipe.result.quantity} : i);
+                                } else {
+                                    newItems.push({ id: `item-${Date.now()}`, name: recipe.result.name, description: `Một viên ${recipe.result.name}.`, quantity: recipe.result.quantity, type: 'Đan Dược', icon: recipe.icon, quality: quality, weight: 0.1, bonuses: [], recipeId, slot: undefined, value: undefined, isEquipped: false, rank: undefined, vitalEffects: undefined });
+                                }
+                                pc.inventory = { ...pc.inventory, items: newItems };
+                                showNotification(`Luyện chế thành công [${recipe.result.name} - ${quality}]!`);
+                            } else {
+                                pc.inventory = { ...pc.inventory, items: newItems };
+                                showNotification("Luyện chế thất bại, nguyên liệu đã bị hủy!");
+                            }
+                        }
+                    }
+                    break;
+
+                case 'UPGRADE_CAVE':
+                    const facilityId = action.details.facilityId as keyof PlayerCharacter['caveAbode'];
+                    const facilityConfig = CAVE_FACILITIES_CONFIG.find(f => f.id === facilityId);
+                    if (facilityConfig && pc.caveAbode) {
+                        const currentLevel = pc.caveAbode[facilityId] as number;
+                        const cost = facilityConfig.upgradeCost(currentLevel);
+                        const currencyName = 'Linh thạch hạ phẩm';
+                        if ((pc.currencies[currencyName] || 0) >= cost) {
+                            pc.currencies = { ...pc.currencies, [currencyName]: pc.currencies[currencyName] - cost };
+                            pc.caveAbode = { ...pc.caveAbode, [facilityId]: currentLevel + 1 };
+                            if (facilityId === 'storageUpgradeLevel') {
+                                pc.inventory.weightCapacity += 10 * (currentLevel + 1);
+                            }
+                            showNotification(`${facilityConfig.name} đã được nâng cấp!`);
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
     // Apply parsed quests
     if (parsedData.newQuests && parsedData.newQuests.length > 0) {
         pc.activeQuests = [...pc.activeQuests, ...parsedData.newQuests.map(questData => ({
             id: `quest_${questData.source || 'narrative'}_${Date.now()}`,
-            // FIX: Use 'as const' to ensure TypeScript infers the literal type, not a generic string.
             type: 'SIDE' as const,
             source: questData.source || `narrative-${Date.now()}`,
             title: questData.title || 'Nhiệm vụ không tên',

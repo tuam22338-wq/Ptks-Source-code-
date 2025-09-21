@@ -17,6 +17,7 @@ export * from './data/recipes';
 export * from './data/cultivationPaths';
 export * from './data/mainCultivationTechniques';
 export * from './data/realmSystem';
+export * from './data/cave';
 
 // Explicitly import and re-export world-specific data for clarity
 import { PT_FACTIONS, PT_FACTION_NAMES, JTTW_FACTIONS, JTTW_FACTION_NAMES } from './data/factions';

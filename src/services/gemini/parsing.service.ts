@@ -1,8 +1,10 @@
+
 import { Type } from "@google/genai";
 import type { GameState, InventoryItem, CultivationTechnique, ActiveQuest, ActiveEffect, PlayerVitals } from '../../types';
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { ALL_PARSABLE_STATS } from "../../constants";
+import { getCustomEntityNames } from '../../utils/modManager';
 
 // --- Schemas for Specialized AI Neurons ---
 
@@ -183,6 +185,45 @@ const timeChangeSchema = {
     }
 };
 
+const locationChangeSchema = {
+    type: Type.OBJECT,
+    properties: {
+        newLocation: {
+            type: Type.OBJECT,
+            description: "An object representing the player's new location if they successfully traveled. Extract ONLY if the narrative explicitly confirms arrival at a new valid location from the context list.",
+            properties: {
+                locationId: { type: Type.STRING, description: "The ID of the new location. e.g., 'rung_co_thu'." },
+            }
+        }
+    }
+};
+
+const systemActionSchema = {
+    type: Type.OBJECT,
+    properties: {
+        systemActions: {
+            type: Type.ARRAY,
+            description: "A list of structured game system actions that the narrative describes the player performing, such as joining a sect, crafting an item, or upgrading their cave.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    actionType: { type: Type.STRING, enum: ['JOIN_SECT', 'CRAFT_ITEM', 'UPGRADE_CAVE'] },
+                    details: { 
+                        type: Type.OBJECT,
+                        properties: {
+                            sectId: { type: Type.STRING, description: "The ID of the sect joined, e.g., 'xien_giao'." },
+                            recipeId: { type: Type.STRING, description: "The ID of the recipe crafted, e.g., 'recipe_hoi_khi_dan_ha_pham'." },
+                            facilityId: { type: Type.STRING, description: "The ID of the cave facility upgraded, e.g., 'spiritGatheringArrayLevel'." }
+                        }
+                    }
+                },
+                required: ['actionType', 'details']
+            }
+        }
+    }
+};
+
+
 // --- Main Cognitive System Orchestrator ---
 
 const buildContext = (narrative: string, gameState: GameState) => {
@@ -193,7 +234,16 @@ const buildContext = (narrative: string, gameState: GameState) => {
     ];
     const unencounteredNpcs = gameState.activeNpcs.filter(npc => !gameState.encounteredNpcIds.includes(npc.id));
     const unencounteredNpcNames = unencounteredNpcs.map(n => n.identity.name);
+    const discoveredLocationInfo = gameState.discoveredLocations.map(l => ({ id: l.id, name: l.name }));
     
+    // Add custom entity names from mods
+    const customEntities = getCustomEntityNames(gameState.activeMods);
+    let customEntityContext = '';
+    if (customEntities.items.length > 0) customEntityContext += `\n- Custom Item Names: ${customEntities.items.join(', ')}`;
+    if (customEntities.locations.length > 0) customEntityContext += `\n- Custom Location Names: ${customEntities.locations.join(', ')}`;
+    if (customEntities.sects.length > 0) customEntityContext += `\n- Custom Sect Names: ${customEntities.sects.join(', ')}`;
+    if (customEntities.npcs.length > 0) customEntityContext += `\n- Custom NPC Names: ${customEntities.npcs.join(', ')}`;
+
     return `
         **Narrative Text to Analyze:** """${narrative}"""
         
@@ -201,6 +251,8 @@ const buildContext = (narrative: string, gameState: GameState) => {
         - Player's existing items: ${existingItemNames.join(', ') || 'None'}
         - Player's existing techniques: ${existingTechniqueNames.join(', ') || 'None'}
         - NPCs in the world the player has NOT met yet: ${unencounteredNpcNames.join(', ') || 'None'}
+        - Discovered Locations (map name to ID): ${JSON.stringify(discoveredLocationInfo)}
+        ${customEntityContext ? `\n- Custom Entities from Mods (Prioritize these):${customEntityContext}` : ''}
     `;
 };
 
@@ -214,7 +266,9 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
             ...statChangeSchema.properties,
             ...effectSchema.properties,
             ...finalQuestSchema.properties,
-            ...timeChangeSchema.properties
+            ...timeChangeSchema.properties,
+            ...locationChangeSchema.properties,
+            ...systemActionSchema.properties,
         }
     };
 
@@ -241,6 +295,12 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
         - **Vitals:** "ăn một chiếc bánh bao no bụng" -> \`{"attribute": "hunger", "change": 30}\`. "uống nước suối mát lạnh, cơn khát dịu đi" -> \`{"attribute": "thirst", "change": 40}\`. "cảm thấy đói cồn cào" -> \`{"attribute": "hunger", "change": -10}\`.
         - **Cultivation:** "hấp thụ một luồng linh khí thuần khiết" -> \`{"attribute": "spiritualQi", "change": 100}\`.
     4.  Strictly adhere to the provided JSON schema. If no valid changes occur in a category, provide an empty array or omit the key.
+    5.  **Location Changes:** If the narrative explicitly confirms that the player *has arrived* at a new, valid location (e.g., "bạn đã đến Rừng Cổ Thụ"), extract the location's ID from the context list. Do not extract if the player is just talking about going somewhere or is on the way.
+    6.  **System Actions:** Extract structured actions for specific game mechanics.
+        - If the player successfully joins a sect, extract: \`{"actionType": "JOIN_SECT", "details": {"sectId": "xien_giao"}}\`.
+        - If the player successfully crafts an item, extract: \`{"actionType": "CRAFT_ITEM", "details": {"recipeId": "recipe_hoi_khi_dan_ha_pham"}}\`.
+        - If the player successfully upgrades a cave facility, extract: \`{"actionType": "UPGRADE_CAVE", "details": {"facilityId": "spiritGatheringArrayLevel"}}\`.
+    7.  **Custom Entity Recognition:** Use the provided lists of custom entity names from mods in the Context to improve accuracy when extracting items, locations, etc.
 
     ${context}
 
@@ -272,6 +332,8 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
     const newEffects = result.newEffects || [];
     const newQuests = result.newQuests || [];
     const timeJump = result.timeJump || null;
+    const newLocation = result.newLocation || null;
+    const systemActions = result.systemActions || [];
 
     return {
         newItems,
@@ -280,12 +342,14 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
         statChanges,
         newEffects,
         newQuests,
-        timeJump
+        timeJump,
+        newLocation,
+        systemActions,
     };
 }
 
 
-export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: Omit<ActiveEffect, 'id'>[], newQuests: Partial<ActiveQuest>[], timeJump: { years?: number; seasons?: number; days?: number } | null }> => {
+export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: Omit<ActiveEffect, 'id'>[], newQuests: Partial<ActiveQuest>[], timeJump: { years?: number; seasons?: number; days?: number } | null, newLocation: { locationId: string } | null, systemActions: { actionType: string; details: any }[] }> => {
     console.log("Activating Cognitive Nervous System to parse narrative...");
     const context = buildContext(narrative, gameState);
 
@@ -304,6 +368,8 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
             newEffects: [],
             newQuests: [],
             timeJump: null,
+            newLocation: null,
+            systemActions: [],
         };
     }
 };

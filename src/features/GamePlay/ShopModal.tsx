@@ -11,7 +11,6 @@ interface ShopModalProps {
 }
 
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
-    // FIX: Use `state` and `dispatch` from `useAppContext`
     const { state, dispatch } = useAppContext();
     const { gameState } = state;
     const { showNotification, closeShopModal } = useGameUIContext();
@@ -38,7 +37,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
                 const pc = { ...prev.playerCharacter };
                 const currentCurrency = pc.currencies[price.currencyName] || 0;
                 if (currentCurrency < price.amount) {
-                    // Re-check inside updater for safety, and notify if it fails now
                     showNotification(`Không đủ ${price.currencyName}!`);
                     return prev;
                 }

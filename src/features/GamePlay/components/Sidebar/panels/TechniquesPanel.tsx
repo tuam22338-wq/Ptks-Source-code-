@@ -6,7 +6,7 @@ import { GiPointyHat } from 'react-icons/gi';
 import SkillTreeView from './SkillTreeView';
 
 interface TechniquesPanelProps {
-    character: PlayerCharacter;
+    playerCharacter: PlayerCharacter;
     setPlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
     showNotification: (message: string) => void;
 }
@@ -46,8 +46,8 @@ const TechniqueCard: React.FC<{ technique: CultivationTechnique }> = memo(({ tec
 });
 
 
-const TechniquesPanel: React.FC<TechniquesPanelProps> = ({ character, setPlayerCharacter, showNotification }) => {
-    const { mainCultivationTechnique, auxiliaryTechniques, techniquePoints, cultivation } = character;
+const TechniquesPanel: React.FC<TechniquesPanelProps> = ({ playerCharacter, setPlayerCharacter, showNotification }) => {
+    const { mainCultivationTechnique, auxiliaryTechniques, techniquePoints, cultivation } = playerCharacter;
     const [selectedNode, setSelectedNode] = useState<SkillTreeNode | null>(null);
 
     const handleUnlockSkill = (nodeId: string) => {
@@ -56,7 +56,7 @@ const TechniquesPanel: React.FC<TechniquesPanelProps> = ({ character, setPlayerC
         const node = mainCultivationTechnique.skillTreeNodes[nodeId];
         if (!node || node.isUnlocked) return;
         
-        if (character.techniquePoints < node.cost) {
+        if (playerCharacter.techniquePoints < node.cost) {
             showNotification("Không đủ Điểm Tiềm Năng!");
             return;
         }
@@ -133,7 +133,7 @@ const TechniquesPanel: React.FC<TechniquesPanelProps> = ({ character, setPlayerC
                     <div className="space-y-4">
                         <SkillTreeView
                             technique={mainCultivationTechnique}
-                            character={character}
+                            playerCharacter={playerCharacter}
                             onNodeSelect={setSelectedNode}
                             selectedNodeId={selectedNode?.id || null}
                         />
@@ -157,7 +157,7 @@ const TechniquesPanel: React.FC<TechniquesPanelProps> = ({ character, setPlayerC
                                 {!selectedNode.isUnlocked && (
                                      <button 
                                         onClick={() => handleUnlockSkill(selectedNode.id)}
-                                        disabled={character.techniquePoints < selectedNode.cost}
+                                        disabled={playerCharacter.techniquePoints < selectedNode.cost}
                                         className="w-full mt-3 p-2 text-sm font-bold bg-teal-700/80 rounded text-white hover:bg-teal-600/80 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                      >
                                          <FaLock /> Mở Khóa ({selectedNode.cost} TP)

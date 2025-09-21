@@ -270,7 +270,7 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong },
         npcDensity: NpcDensity,
         difficulty: DifficultyLevel,
         gameMode: 'classic' | 'transmigrator',
@@ -385,7 +385,7 @@ export const createNewGameState = async (
     let playerCharacter: PlayerCharacter = {
         identity: { ...characterData.identity, age: 18 },
         attributes: updatedAttributes,
-        spiritualRoot: characterData.spiritualRoot,
+        spiritualRoot: null,
         inventory: initialInventory,
         currencies: initialCurrencies,
         cultivation: initialCultivation,
@@ -408,7 +408,7 @@ export const createNewGameState = async (
         activeQuests: [],
         completedQuestIds: [],
         inventoryActionLog: [],
-        element: characterData.spiritualRoot.elements[0]?.type || 'Vô',
+        element: 'Vô',
         systemInfo: initialSystemInfo,
     };
     

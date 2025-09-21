@@ -13,9 +13,16 @@ interface Message {
     content: string;
 }
 
+const promptStarters = [
+    { category: 'Hướng Dẫn', question: 'Làm thế nào để tu luyện?' },
+    { category: 'Nhân Vật', question: 'Kể cho ta về Khương Tử Nha.' },
+    { category: 'Sự Kiện', question: 'Sự kiện Vạn Tiên Trận là gì?' },
+    { category: 'Địa Danh', question: 'Triều Ca là nơi như thế nào?' },
+];
+
 const AiAssistantPanel: React.FC<AiAssistantPanelProps> = ({ gameState }) => {
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'assistant', content: "Xin chào, ta là Thiên Cơ. Ngươi có điều gì muốn hỏi ta về thế giới này không?" }
+        { role: 'assistant', content: "Xin chào, ta là Thiên Cơ. Ngươi có điều gì muốn hỏi ta về thế giới này không? Từ luật lệ, nhân vật, cho đến các sự kiện trọng đại, ta đều biết rõ." }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -27,17 +34,16 @@ const AiAssistantPanel: React.FC<AiAssistantPanelProps> = ({ gameState }) => {
 
     useEffect(scrollToBottom, [messages]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    const handleQuery = async (query: string) => {
+        if (!query.trim() || isLoading) return;
 
-        const userMessage: Message = { role: 'user', content: input };
+        const userMessage: Message = { role: 'user', content: query };
         setMessages(prev => [...prev, userMessage]);
         setInput('');
         setIsLoading(true);
 
         try {
-            const response = await askAiAssistant(input, gameState);
+            const response = await askAiAssistant(query, gameState);
             const assistantMessage: Message = { role: 'assistant', content: response };
             setMessages(prev => [...prev, assistantMessage]);
         } catch (error) {
@@ -48,10 +54,19 @@ const AiAssistantPanel: React.FC<AiAssistantPanelProps> = ({ gameState }) => {
         }
     };
 
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleQuery(input);
+    };
+    
+    const handleStarterClick = (question: string) => {
+        setInput(question);
+    };
+
     return (
         <div className="flex flex-col h-full animate-fade-in" style={{ animationDuration: '300ms' }}>
             <h3 className="flex items-center gap-2 text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2 flex-shrink-0">
-                <FaBrain className="text-purple-300" /> AI Trợ Lý
+                <FaBrain className="text-purple-300" /> AI Trợ Lý (Thiên Cơ)
             </h3>
             <div className="flex-grow overflow-y-auto pr-2 space-y-4">
                 {messages.map((msg, index) => (
@@ -69,6 +84,20 @@ const AiAssistantPanel: React.FC<AiAssistantPanelProps> = ({ gameState }) => {
                     </div>
                 )}
                 <div ref={messagesEndRef} />
+            </div>
+             <div className="flex-shrink-0 pt-3 border-t border-gray-700/60">
+                <p className="text-xs text-center text-gray-500 mb-2">Gợi ý câu hỏi</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                    {promptStarters.map((p, i) => (
+                        <button 
+                            key={i} 
+                            onClick={() => handleStarterClick(p.question)}
+                            className="px-3 py-1 bg-gray-700/50 text-gray-300 text-xs font-semibold rounded-full hover:bg-gray-600/70 transition-colors"
+                        >
+                            {p.category}
+                        </button>
+                    ))}
+                </div>
             </div>
             <form onSubmit={handleSubmit} className="mt-4 flex gap-2 flex-shrink-0">
                 <input

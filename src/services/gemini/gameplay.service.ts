@@ -1,14 +1,17 @@
-
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus } from '../../types';
 import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
+import { createModContextSummary } from '../../utils/modManager';
 
-const createFullGameStateContext = (gameState: GameState): string => {
-  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog } = gameState;
+const createFullGameStateContext = (gameState: GameState, forAssistant: boolean = false): string => {
+  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds } = gameState;
   const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
   const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
+  const neighbors = currentLocation?.neighbors.map(id => discoveredLocations.find(l => l.id === id)?.name).filter(Boolean) || [];
+
+  const modContext = createModContextSummary(activeMods);
 
   // Simplify complex objects for the prompt
   const equipmentSummary = Object.entries(playerCharacter.equipment)
@@ -38,24 +41,42 @@ const createFullGameStateContext = (gameState: GameState): string => {
     : 'Không có hiệu ứng đặc biệt.';
 
   const vitalsSummary = `Tình trạng Sinh Tồn: No ${playerCharacter.vitals.hunger}/${playerCharacter.vitals.maxHunger}, Khát ${playerCharacter.vitals.thirst}/${playerCharacter.vitals.maxThirst}. ${activeEffectsSummary}`;
+  
+  let assistantContext = '';
+  if (forAssistant) {
+      const encounteredNpcsDetails = activeNpcs.filter(npc => encounteredNpcIds.includes(npc.id)).map(npc => `- ${npc.identity.name}: ${npc.identity.origin}. ${npc.status}`).join('\n');
+      assistantContext = `
+**4. Bách Khoa Toàn Thư (Thông tin đã biết)**
+- **Nhân vật đã gặp:**
+${encounteredNpcsDetails || 'Chưa gặp ai.'}
+- **Địa danh đã khám phá:**
+${discoveredLocations.map(l => `- ${l.name}: ${l.description}`).join('\n')}
+- **Thiên Mệnh Niên Biểu (Sự kiện lịch sử):**
+${majorEvents.map(e => `- Năm ${e.year}, ${e.title}: ${e.summary}`).join('\n')}
+      `;
+  }
+
 
   const context = `
-### TOÀN BỘ BỐI CẢNH GAME ###
+${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
 Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
 
 **1. Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}.
-- **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || ''})
+- **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
 - **Công Pháp Đã Học:** ${allTechniques || 'Chưa có'}.
 - **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: **${playerCharacter.identity.personality}**.
 - **Trang Bị:** ${equipmentSummary || 'Không có'}.
 - **Chỉ Số Chính:** ${keyAttributes}.
 - **${vitalsSummary}**
 - **Danh Vọng & Quan Hệ:** Danh vọng ${playerCharacter.danhVong.status}. Các phe phái: ${reputationSummary}.
+- **Thông tin Tông Môn:** ${playerCharacter.sect ? `Là đệ tử của ${playerCharacter.sect.sectId}, chức vị ${playerCharacter.sect.rank}.` : 'Hiện là tán tu.'}
+- **Vật phẩm trong túi đồ:** ${playerCharacter.inventory.items.map(i => `${i.name} (x${i.quantity})`).join(', ') || 'Trống rỗng.'}
 
 **2. Thế Giới Hiện Tại**
 - **Thời Gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, giờ ${gameDate.shichen}.
 - **Địa Điểm:** ${currentLocation?.name} - ${currentLocation?.description}.
+- **Các lối đi có thể đến:** ${neighbors.join(', ') || 'Không có'}.
 - **NPCs Tại Đây:** ${npcsHere.length > 0 ? npcsHere.map(n => `${n.identity.name} (${n.status})`).join(', ') : 'Không có ai.'}
 - **Sự Kiện Thế Giới Đang Diễn Ra:** ${worldState.dynamicEvents?.map(e => e.title).join(', ') || 'Bình yên.'}
 
@@ -66,6 +87,7 @@ ${questSummary}
 ${storySummary || 'Hành trình vừa bắt đầu.'}
 - **Nhật Ký Gần Đây (Ký ức ngắn hạn):**
 ${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}
+${assistantContext}
 #############################
   `;
   return context;
@@ -85,6 +107,17 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - Bối cảnh: Thế giới tiên hiệp huyền huyễn.
 - **QUAN TRỌNG NHẤT: PHẢI LUÔN LUÔN trả lời bằng TIẾNG VIỆT.**
 
+- **LUẬT MOD TÙY CHỈNH (ƯU TIÊN TỐI THƯỢNG):**
+  1. Nếu trong Bối Cảnh Game có phần "### BỐI CẢNH MOD TÙY CHỈNH ###", đây là nguồn thông tin **chính xác tuyệt đối** về thế giới.
+  2. Mọi chi tiết trong lời kể của bạn (tên địa danh, phe phái, quy luật tu luyện,...) PHẢI tuân thủ nghiêm ngặt thông tin trong mục này, **ghi đè** lên các kiến thức mặc định nếu có mâu thuẫn.
+  3. Hãy sử dụng các danh từ riêng (tên nhân vật, vật phẩm, địa danh) từ bối cảnh mod một cách tự nhiên trong lời kể.
+
+- **LUẬT SINH THÀNH ĐỘNG (DYNAMIC GENESIS RULE):**
+  1.  **ĐIỀU KIỆN:** Khi game vừa bắt đầu (lịch sử trò chơi rất ngắn) VÀ "Linh Căn" của nhân vật là 'Chưa xác định', nhiệm vụ **đầu tiên** và **quan trọng nhất** của bạn là tạo ra một sự kiện tường thuật để xác định Linh Căn cho người chơi.
+  2.  **SỰ KIỆN:** Sự kiện này phải phù hợp với bối cảnh thế giới (mặc định hoặc từ mod). Ví dụ: một buổi lễ thức tỉnh trong làng, một kỳ ngộ với trưởng lão, một tai nạn bất ngờ kích hoạt tiềm năng...
+  3.  **KẾT QUẢ:** Sau sự kiện, hãy mô tả RÕ RÀNG kết quả Linh Căn của người chơi. Ví dụ: "Tảng đá trắc linh tỏa ra ánh sáng rực rỡ, vị trưởng lão tuyên bố ngươi sở hữu [Hỏa Thiên Linh Căn]." hoặc "Sau khi hấp thụ linh quả, một luồng năng lượng nóng rực bùng lên trong cơ thể, dường như ngươi đã thức tỉnh [Hỏa Linh Căn]."
+  4.  AI Phân Tích sẽ tự động đọc mô tả này và cập nhật trạng thái cho người chơi.
+
 - **LUẬT LỆ VỀ TÍNH CÁCH (TAM QUAN) - CỰC KỲ QUAN TRỌNG:**
   1. Người chơi chỉ đưa ra **ý định** hành động. BẠN PHẢI diễn giải ý định đó thông qua lăng kính tính cách của nhân vật. Hành động cuối cùng phải **tuyệt đối phù hợp** với tính cách đã được định sẵn.
   2. Tính cách hiện tại của nhân vật là: **${playerCharacter.identity.personality}**. (${personalityDescription})
@@ -96,6 +129,16 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - **LUẬT TU LUYỆN:**
   1. Người chơi có thể dùng lệnh "tu luyện" để hấp thụ linh khí ngay cả khi chỉ có Công Pháp Phụ (Auxiliary Techniques).
   2. Tuy nhiên, nếu không có Công Pháp Chủ Đạo (Main Cultivation Technique), hiệu quả tu luyện sẽ kém và sức chiến đấu rất yếu. Hãy phản ánh sự yếu thế này trong lời kể nếu họ chiến đấu. Ví dụ: "Dù đã cố gắng vận chuyển linh khí, nhưng vì không có tâm pháp chủ đạo, luồng chân nguyên của bạn hỗn loạn và yếu ớt, chỉ có thể tạo ra một đòn tấn công cơ bản."
+- **LUẬT TƯƠNG TÁC THẾ GIỚI:**
+  1.  **Di Chuyển:** Nếu người chơi ra lệnh "đi đến [tên địa điểm]", hãy kiểm tra xem địa điểm đó có phải là hàng xóm (lối đi có thể đến) của địa điểm hiện tại không (dựa vào Bối Cảnh Game). Nếu có, hãy mô tả cuộc hành trình và kết thúc bằng việc thông báo họ đã đến nơi. Ví dụ: "Sau nửa canh giờ, [tên địa điểm] đã hiện ra trước mắt.". Nếu không, hãy trả lời rằng không có đường đi trực tiếp.
+  2.  **Tương tác NPC:** Nếu người chơi ra lệnh "nói chuyện với [tên NPC]", hãy kiểm tra xem NPC đó có ở địa điểm hiện tại không. Nếu có, hãy bắt đầu một cuộc đối thoại. Nếu không, hãy thông báo NPC đó không có ở đây.
+  3.  **Khám Phá:** Nếu người chơi ra lệnh "nhìn xung quanh", "khám phá", hoặc "có ai ở đây không?", hãy mô tả chi tiết về địa điểm hiện tại và liệt kê tên các NPC đang có mặt.
+  4.  **TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý DI CHUYỂN NGƯỜI CHƠI.** Mọi sự thay đổi về vị trí đều phải xuất phát từ lệnh của người chơi và được xác nhận là đã đến nơi.
+- **LUẬT HỆ THỐNG (MỚI):** Bạn có quyền xử lý các hành động quản lý hệ thống.
+  1.  **Gia Nhập Tông Môn:** Nếu người chơi muốn gia nhập một tông môn (ví dụ: "xin gia nhập Xiển Giáo", "tìm một tông môn để gia nhập"), hãy kiểm tra bối cảnh game xem họ có đủ điều kiện không (dựa vào chỉ số như Ngộ Tính, Đạo Tâm). Nếu đủ, hãy tường thuật lại cảnh họ được chấp thuận. Nếu không, hãy mô tả lý do họ bị từ chối một cách hợp lý.
+  2.  **Luyện Đan:** Nếu người chơi muốn luyện đan (ví dụ: "luyện chế Hồi Khí Đan"), hãy kiểm tra xem họ có đủ nguyên liệu, đan phương, và đan lô không. Sau đó, tường thuật lại quá trình luyện đan, có thể thành công hoặc thất bại tùy thuộc vào may mắn và chỉ số Ngự Khí Thuật của họ.
+  3.  **Quản Lý Động Phủ:** Nếu người chơi muốn nâng cấp một công trình trong động phủ (ví dụ: "nâng cấp Tụ Linh Trận"), hãy kiểm tra xem họ có đủ tài nguyên (Linh thạch) không. Nếu đủ, hãy mô tả việc nâng cấp thành công. Nếu không, thông báo họ thiếu tài nguyên.
+  4.  **Quan trọng:** Khi tường thuật các hành động này, hãy mô tả rõ ràng kết quả. Ví dụ: "Sau khi vượt qua khảo nghiệm, trưởng lão Xiển Giáo gật đầu đồng ý, chính thức thu nhận ngươi làm đệ tử.", "Lò đan rung chuyển, một viên Hồi Khí Đan [Linh Phẩm] đã thành hình!", "Một luồng sáng lóe lên, Tụ Linh Trận trong động phủ của ngươi đã được nâng lên cấp 1."
 - **QUẢN LÝ TRẠNG THÁI NHÂN VẬT:** Bạn chịu trách nhiệm hoàn toàn về các chỉ số sinh tồn của nhân vật. Sau khi tường thuật kết quả hành động, bạn PHẢI mô tả sự thay đổi về thể chất một cách tự nhiên.
   - **No Bụng & Nước Uống:** Mỗi hành động đều tiêu tốn thể lực. Hãy mô tả cảm giác đói hoặc khát của nhân vật. Ví dụ: "Sau một hồi di chuyển, bụng bạn bắt đầu kêu ọt ọt."
   - **Hiệu ứng & Sát thương theo thời gian:** Dựa vào các hiệu ứng đang có trên người nhân vật (ví dụ: Trúng Độc), hãy mô tả tác động của chúng. Ví dụ: "Độc tố trong người lại phát tác, một cơn đau nhói truyền đến từ đan điền."
@@ -106,7 +149,7 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - ${difficultyText}
 - **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
 - **TOÀN QUYỀN TRUY CẬP:** Bạn được cung cấp TOÀN BỘ bối cảnh game, bao gồm trạng thái nhân vật, nhiệm vụ, thế giới, và lịch sử. **HÃY SỬ DỤNG TRIỆT ĐỂ** thông tin này để đảm bảo mọi chi tiết trong lời kể của bạn đều nhất quán, logic và có chiều sâu. Ví dụ: nếu người chơi có danh vọng cao với một phe, NPC phe đó nên đối xử tốt hơn; nếu có một sự kiện thế giới đang diễn ra, câu chuyện nên phản ánh điều đó.
-- **Làm cho các thay đổi trạng thái game RÕ RÀNG:** Khi có sự thay đổi (nhận vật phẩm, học công pháp, bắt đầu nhiệm vụ), hãy mô tả nó một cách rõ ràng trong văn bản. Sử dụng dấu ngoặc vuông [] để đánh dấu các đối tượng hoặc tên nhiệm vụ. Ví dụ: "Bạn nhặt được [Linh Tâm Thảo] x3.", "Bạn lĩnh ngộ được [Ngự Phong Quyết]", "NPC giao cho bạn nhiệm vụ [Điều tra hang động]".
+- **Làm cho các thay đổi trạng thái game RÕ RÀNG:** Khi có sự thay đổi (nhận vật phẩm, học công pháp, bắt đầu nhiệm vụ, đến địa điểm mới), hãy mô tả nó một cách rõ ràng trong văn bản. Sử dụng dấu ngoặc vuông [] để đánh dấu các đối tượng hoặc tên nhiệm vụ. Ví dụ: "Bạn nhặt được [Linh Tâm Thảo] x3.", "Bạn lĩnh ngộ được [Ngự Phong Quyết]", "NPC giao cho bạn nhiệm vụ [Điều tra hang động]".
 - **HỆ THỐNG 'DU HIỆP' (WANDERER SYSTEM):** Khi người chơi thực hiện các hành động tự do, không có mục tiêu cụ thể (ví dụ: "khám phá xung quanh", "đi dạo trong rừng", "nghe ngóng tin tức"), BẠN CÓ TOÀN QUYỀN chủ động tạo ra các sự kiện nhỏ, ngẫu nhiên. Đây có thể là:
     - Gặp một NPC lang thang với một câu chuyện hoặc một nhiệm vụ nhỏ.
     - Tình cờ phát hiện một hang động bí ẩn, một cây linh thảo quý, hoặc dấu vết của một con yêu thú.
@@ -517,16 +560,20 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
 export const askAiAssistant = async (query: string, gameState: GameState): Promise<string> => {
     const settings = await db.getSettings();
     const systemInstruction = `You are a helpful AI game master assistant named 'Thiên Cơ' inside the RPG "Tam Thiên Thế Giới".
-    - **Your Core Role:** Answer the player's questions about the game world, characters, quests, or game mechanics based ONLY on the provided context.
-    - **Crucial Rule:** You must NOT advance the story, create new events, or speak for the narrator. Your responses are direct answers to the player.
-    - **Persona:** Act as a wise, slightly mysterious, and all-knowing entity within the game world.
-    - **Language:** ALWAYS respond in Vietnamese.
-    - **Brevity:** Be concise and to the point.
-    - **Example Query:** "Who is Khương Tử Nha?"
-    - **Example Response:** "Khương Tử Nha là đệ tử của Nguyên Thủy Thiên Tôn, người được giao phó trọng trách phò Chu diệt Thương. Hiện tại, ông ấy đang câu cá bên bờ sông Vị Thủy."
+- **Your Core Role:** Answer the player's questions about the game world, characters, quests, or game mechanics based ONLY on the provided context. You are now the central repository of all knowledge, replacing the old static panels for Lore, Wiki, and Guides.
+- **Crucial Rule:** You must NOT advance the story, create new events, or speak for the narrator. Your responses are direct answers to the player.
+- **Persona:** Act as a wise, slightly mysterious, and all-knowing entity within the game world.
+- **Language:** ALWAYS respond in Vietnamese.
+- **Brevity:** Be concise and to the point.
+- **Knowledge Domains:**
+  - **Bách Khoa (Wiki):** You have access to information about all characters and locations the player has encountered. Answer questions like "Who is Khương Tử Nha?" or "Tell me about Triều Ca."
+  - **Thiên Mệnh (Lore):** You know the entire timeline of major world events. Answer questions about past or future events like "What was the consequence of Trụ Vương's poem?"
+  - **Hướng Dẫn (Guide):** You understand all game mechanics. Answer questions like "How do I cultivate?" or "How do I join a sect?" based on the game rules provided in the main narrator's system prompt.
+- **Example Query:** "Làm thế nào để gia nhập tông môn?"
+- **Example Response:** "Để gia nhập một tông môn, trước tiên ngươi phải tìm đến nơi tông môn đó tọa lạc. Mỗi tông môn đều có những yêu cầu riêng về tư chất, chẳng hạn như Ngộ Tính, Đạo Tâm, hay Căn Cốt. Khi đã đủ điều kiện, hãy thể hiện thành ý của mình, AI kể chuyện sẽ tự động diễn giải kết quả."
     `;
 
-    const fullContext = createFullGameStateContext(gameState);
+    const fullContext = createFullGameStateContext(gameState, true); // Pass true to get extra data for assistant
     const fullPrompt = `${fullContext}\n\n**Player's Question for Thiên Cơ:**\n"${query}"\n\n**Thiên Cơ's Answer:**`;
 
     const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
