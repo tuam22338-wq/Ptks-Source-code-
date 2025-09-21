@@ -1,5 +1,7 @@
+
+
 import { Type } from "@google/genai";
-import type { AiGeneratedModData, ModContentObject, CommunityMod, Element } from '../../types';
+import type { AiGeneratedModData, ModContentObject, CommunityMod, Element, FullMod } from '../../types';
 // FIX: Aliasing PT_WORLD_MAP to WORLD_MAP as constants.ts does not export a generic WORLD_MAP.
 import { ALL_ATTRIBUTES, TALENT_RANK_NAMES, PT_WORLD_MAP as WORLD_MAP, PHAP_BAO_RANKS, COMMUNITY_MODS_URL } from "../../constants";
 import { generateWithRetry } from './gemini.core';
@@ -136,6 +138,165 @@ Dựa vào yêu cầu, hãy tạo ra các đối tượng nội dung game phù h
         return json as AiGeneratedModData;
     } catch (e) {
         console.error("Failed to parse AI response for mod content:", e);
+        console.error("Raw AI response:", response.text);
+        throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");
+    }
+};
+
+export const generateWorldFromText = async (text: string): Promise<FullMod> => {
+    const worldSchema = {
+        type: Type.OBJECT,
+        properties: {
+            modInfo: {
+                type: Type.OBJECT,
+                properties: {
+                    id: { type: Type.STRING, description: "Một ID duy nhất, viết liền, không dấu, không khoảng trắng, ví dụ: 'hac_am_the_gioi'." },
+                    name: { type: Type.STRING, description: "Tên của thế giới hoặc bản mod." },
+                    author: { type: Type.STRING, description: "Tên tác giả (để trống nếu không có)." },
+                    description: { type: Type.STRING, description: "Một mô tả ngắn gọn về bản mod." },
+                    version: { type: Type.STRING, description: "Phiên bản, mặc định là '1.0.0'." },
+                },
+                required: ['id', 'name']
+            },
+            content: {
+                type: Type.OBJECT,
+                properties: {
+                    worldData: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                name: { type: Type.STRING, description: "Tên của kịch bản thế giới, phải giống với modInfo.name." },
+                                description: { type: Type.STRING, description: "Mô tả tổng quan về thế giới, lịch sử, các quy luật đặc biệt." },
+                                startingYear: { type: Type.NUMBER, description: "Năm bắt đầu của kịch bản." },
+                                eraName: { type: Type.STRING, description: "Tên của kỷ nguyên, ví dụ: 'Kỷ Nguyên Hắc Ám'." },
+                                majorEvents: {
+                                    type: Type.ARRAY,
+                                    description: "Các sự kiện lịch sử trọng đại của thế giới.",
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            year: { type: Type.NUMBER },
+                                            title: { type: Type.STRING },
+                                            location: { type: Type.STRING },
+                                            involvedParties: { type: Type.STRING },
+                                            summary: { type: Type.STRING },
+                                            consequences: { type: Type.STRING }
+                                        },
+                                        required: ['year', 'title', 'location', 'involvedParties', 'summary', 'consequences']
+                                    }
+                                },
+                                factions: {
+                                    type: Type.ARRAY,
+                                    description: "Các phe phái chính trong thế giới.",
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, imageUrl: { type: Type.STRING, description: "Để trống." } },
+                                        required: ['name', 'description']
+                                    }
+                                },
+                                initialLocations: {
+                                    type: Type.ARRAY,
+                                    description: "Các địa điểm khởi đầu trong thế giới.",
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            description: { type: Type.STRING },
+                                            type: { type: Type.STRING, enum: ['Thành Thị', 'Thôn Làng', 'Hoang Dã', 'Sơn Mạch', 'Thánh Địa', 'Bí Cảnh', 'Quan Ải'] },
+                                            neighbors: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Tên các địa điểm lân cận." },
+                                            coordinates: { type: Type.OBJECT, properties: { x: { type: Type.NUMBER }, y: { type: Type.NUMBER } }, required: ['x', 'y'] },
+                                            qiConcentration: { type: Type.NUMBER, description: "Nồng độ linh khí, từ 1 (thấp) đến 100 (cao)." }
+                                        },
+                                        required: ['name', 'description', 'type', 'neighbors', 'coordinates', 'qiConcentration']
+                                    }
+                                },
+                                initialNpcs: {
+                                    type: Type.ARRAY,
+                                    description: "Các NPC khởi đầu trong thế giới.",
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            name: { type: Type.STRING },
+                                            status: { type: Type.STRING },
+                                            description: { type: Type.STRING, description: "Mô tả ngoại hình." },
+                                            origin: { type: Type.STRING },
+                                            personality: { type: Type.STRING },
+                                            locationId: { type: Type.STRING, description: "Tên của địa điểm NPC đang ở." }
+                                        },
+                                        required: ['name', 'status', 'description', 'origin', 'personality', 'locationId']
+                                    }
+                                }
+                            },
+                            required: ['name', 'description', 'startingYear', 'eraName', 'majorEvents', 'factions', 'initialLocations', 'initialNpcs']
+                        }
+                    },
+                    items: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING } } } },
+                },
+                required: ['worldData']
+            }
+        },
+        required: ['modInfo', 'content']
+    };
+
+    const prompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những dòng văn bản tự do thành một thế giới game có cấu trúc hoàn chỉnh.
+    Nhiệm vụ của bạn là đọc và phân tích sâu văn bản do người dùng cung cấp, sau đó trích xuất và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
+
+    **Văn bản Sáng Thế từ người dùng:**
+    ---
+    ${text}
+    ---
+
+    **Quy trình Phân Tích & Suy Luận:**
+    1.  **Đọc Tổng Thể:** Đọc toàn bộ văn bản để nắm bắt tông màu, chủ đề chính, và các khái niệm cốt lõi của thế giới.
+    2.  **\`modInfo\`:** Suy ra \`id\` và \`name\` phù hợp từ văn bản. \`id\` phải là chuỗi không dấu, không khoảng trắng.
+    3.  **\`worldData\`:** Đây là phần quan trọng nhất.
+        -   **\`name\`, \`description\`, \`eraName\`, \`startingYear\`:** Trích xuất trực tiếp từ các mô tả tổng quan.
+        -   **\`majorEvents\`:** Tìm các đoạn văn mô tả các sự kiện lịch sử, chiến tranh, hoặc các biến cố lớn và điền vào.
+        -   **\`factions\`:** Nhận diện các vương quốc, tổ chức, phe phái và trích xuất mô tả của chúng.
+        -   **\`initialLocations\`:** Nhận diện tất cả các địa danh được mô tả, suy luận ra \`type\`, \`qiConcentration\`, và mối quan hệ \`neighbors\`. Tự động tạo \`coordinates\` (x, y) một cách logic để tạo thành một bản đồ hợp lý.
+        -   **\`initialNpcs\`:** Nhận diện tất cả các nhân vật được mô tả, trích xuất ngoại hình, tính cách, xuất thân. Quan trọng nhất, suy luận \`locationId\` (tên địa điểm) mà họ có khả năng xuất hiện nhất.
+    4.  **\`items\` (Tùy chọn):** Nếu văn bản mô tả các vật phẩm đặc biệt (thần binh, bảo vật), hãy trích xuất chúng.
+    5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
+
+    Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
+
+    const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    const response = await generateWithRetry({
+// FIX: Corrected a typo in the model property name from `gameMaster-masterModel` to `gameMasterModel`. This was causing a compilation error as the hyphen was interpreted as a subtraction operator on an undefined variable `masterModel`, leading to a cascade of subsequent errors reported by the compiler.
+        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: worldSchema,
+        }
+    }, specificApiKey);
+    
+    try {
+        const json = JSON.parse(response.text.trim());
+        // Post-processing to add IDs where names are used as references
+        if (json.content?.worldData?.[0]) {
+            const world = json.content.worldData[0];
+            const locationNameIdMap = new Map<string, string>();
+            
+            world.initialLocations = world.initialLocations.map((loc: any) => {
+                const id = loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+                locationNameIdMap.set(loc.name, id);
+                return { ...loc, id: id };
+            });
+            
+            world.initialLocations.forEach((loc: any) => {
+                loc.neighbors = (loc.neighbors || []).map((name: string) => locationNameIdMap.get(name) || name);
+            });
+            
+            world.initialNpcs.forEach((npc: any) => {
+                npc.locationId = locationNameIdMap.get(npc.locationId) || npc.locationId;
+            });
+        }
+        return json as FullMod;
+    } catch (e) {
+        console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");
     }

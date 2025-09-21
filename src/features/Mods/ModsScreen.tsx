@@ -1,20 +1,21 @@
 
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
-    FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch 
+    FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch, FaBrain
 } from 'react-icons/fa';
 import type { FullMod, ModInfo, CommunityMod } from '../../types';
 import * as db from '../../services/dbService';
 import { fetchCommunityMods } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAppContext } from '../../contexts/AppContext';
+import AiGenesisScreen from './components/AiGenesisScreen';
 
 interface ModInLibrary {
     modInfo: ModInfo;
     isEnabled: boolean;
 }
 
-type LibraryView = 'main' | 'library';
+type LibraryView = 'main' | 'library' | 'genesis';
 type ModFilter = 'all' | 'installed' | 'community';
 
 type UnifiedMod =
@@ -28,7 +29,6 @@ type UnifiedMod =
         source: 'community';
         downloadUrl: string;
     };
-
 
 const MenuButton: React.FC<{
     icon: React.ElementType;
@@ -46,41 +46,20 @@ const MenuButton: React.FC<{
     </button>
 ));
 
-const ModsScreen: React.FC = () => {
-    const { handleNavigate } = useAppContext();
-    const [installedMods, setInstalledMods] = useState<ModInLibrary[]>([]);
+const ModLibrary: React.FC<{ onBack: () => void, installedMods: ModInLibrary[], setInstalledMods: React.Dispatch<React.SetStateAction<ModInLibrary[]>> }> = ({ onBack, installedMods, setInstalledMods }) => {
     const [communityMods, setCommunityMods] = useState<CommunityMod[]>([]);
-    const [view, setView] = useState<LibraryView>('main');
-    
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<ModFilter>('all');
-    
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const loadMods = async () => {
-            try {
-                const mods = await db.getModLibrary();
-                setInstalledMods(mods);
-            } catch (error) {
-                console.error("Failed to load mods from DB", error);
-                setError("Không thể tải thư viện mod.");
-            }
-        };
-        loadMods();
+        setIsLoading(true);
+        fetchCommunityMods()
+            .then(setCommunityMods)
+            .catch(err => setError(err.message || 'Không thể tải mod.'))
+            .finally(() => setIsLoading(false));
     }, []);
-    
-    useEffect(() => {
-        if (view === 'library') {
-            setIsLoading(true);
-            fetchCommunityMods()
-                .then(setCommunityMods)
-                .catch(err => setError(err.message || 'Không thể tải mod.'))
-                .finally(() => setIsLoading(false));
-        }
-    }, [view]);
 
     const handleImportOrInstallMod = async (newModData: FullMod) => {
         if (!newModData.modInfo?.id || !newModData.modInfo?.name) {
@@ -132,25 +111,6 @@ const ModsScreen: React.FC = () => {
             }
         }
     };
-    
-     const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const text = e.target?.result as string;
-                const newModData: FullMod = JSON.parse(text);
-                handleImportOrInstallMod(newModData);
-            } catch (error: any) {
-                alert(`Lỗi khi nhập mod: ${error.message}`);
-            }
-        };
-        reader.onerror = () => alert('Không thể đọc tệp tin.');
-        reader.readAsText(file);
-        event.target.value = '';
-    };
 
     const handleInstallCommunityMod = async (modToInstall: CommunityMod) => {
         try {
@@ -198,29 +158,11 @@ const ModsScreen: React.FC = () => {
             mod.modInfo.description?.toLowerCase().includes(lowercasedSearch)
         );
     }, [installedMods, communityMods, activeFilter, searchTerm]);
-
-    const renderMainView = () => (
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in md:max-w-2xl mx-auto">
-             <input type="file" accept=".json" ref={fileInputRef} onChange={handleFileSelected} className="hidden" />
-             <MenuButton 
-                icon={FaUpload}
-                title="Nhập Mod"
-                description="Tải lên tệp mod (.json) từ máy tính của bạn để thêm vào thư viện."
-                onClick={() => fileInputRef.current?.click()}
-            />
-             <MenuButton 
-                icon={FaBookOpen}
-                title="Thư Viện"
-                description="Quản lý các mod đã cài đặt và khám phá các mod từ cộng đồng."
-                onClick={() => setView('library')}
-            />
-        </div>
-    );
     
-    const renderLibraryView = () => (
+    return (
         <div className="flex-grow flex flex-col min-h-0 animate-fade-in">
             <div className="flex-shrink-0 mb-4">
-                 <button onClick={() => setView('main')} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4">
+                 <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4">
                     <FaArrowLeft /> Quay Lại Menu
                 </button>
                  <div className="flex flex-col sm:flex-row gap-3">
@@ -285,6 +227,108 @@ const ModsScreen: React.FC = () => {
             </div>
         </div>
     );
+}
+
+
+const ModsScreen: React.FC = () => {
+    const { handleNavigate } = useAppContext();
+    const [installedMods, setInstalledMods] = useState<ModInLibrary[]>([]);
+    const [view, setView] = useState<LibraryView>('main');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const loadMods = async () => {
+            try {
+                const mods = await db.getModLibrary();
+                setInstalledMods(mods);
+            } catch (error) {
+                console.error("Failed to load mods from DB", error);
+            }
+        };
+        loadMods();
+    }, []);
+    
+    const handleInstallMod = async (newModData: FullMod) => {
+        if (!newModData.modInfo?.id || !newModData.modInfo?.name) {
+            alert("Tệp mod không hợp lệ. Thiếu thông tin 'modInfo' hoặc ID/tên.");
+            return false;
+        }
+        if (installedMods.some(m => m.modInfo.id === newModData.modInfo.id)) {
+            alert(`Mod có ID "${newModData.modInfo.id}" đã tồn tại.`);
+            return false;
+        }
+
+        try {
+            const newMod: ModInLibrary = {
+                modInfo: newModData.modInfo,
+                isEnabled: true,
+            };
+            await db.saveModToLibrary(newMod);
+            await db.saveModContent(newModData.modInfo.id, newModData);
+            setInstalledMods(prev => [...prev, newMod]);
+            alert(`Mod "${newMod.modInfo.name}" đã được thêm thành công!`);
+            return true;
+        } catch (error) {
+            console.error("Error installing mod:", error);
+            alert("Lỗi khi cài đặt mod.");
+            return false;
+        }
+    };
+
+    const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result as string;
+                const newModData: FullMod = JSON.parse(text);
+                handleInstallMod(newModData);
+            } catch (error: any) {
+                alert(`Lỗi khi nhập mod: ${error.message}`);
+            }
+        };
+        reader.onerror = () => alert('Không thể đọc tệp tin.');
+        reader.readAsText(file);
+        event.target.value = '';
+    };
+
+    const renderMainView = () => (
+        <div className="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in md:max-w-4xl mx-auto">
+             <input type="file" accept=".json" ref={fileInputRef} onChange={handleFileSelected} className="hidden" />
+              <MenuButton 
+                icon={FaBrain}
+                title="AI Sáng Thế Ký"
+                description="Tải lên file .txt chứa lore để AI tự động tạo ra một thế giới hoàn chỉnh."
+                onClick={() => setView('genesis')}
+            />
+             <MenuButton 
+                icon={FaUpload}
+                title="Nhập Mod"
+                description="Tải lên tệp mod (.json) từ máy tính của bạn để thêm vào thư viện."
+                onClick={() => fileInputRef.current?.click()}
+            />
+             <MenuButton 
+                icon={FaBookOpen}
+                title="Thư Viện"
+                description="Quản lý các mod đã cài đặt và khám phá các mod từ cộng đồng."
+                onClick={() => setView('library')}
+            />
+        </div>
+    );
+    
+    const renderContent = () => {
+        switch(view) {
+            case 'genesis':
+                return <AiGenesisScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
+            case 'library':
+                return <ModLibrary onBack={() => setView('main')} installedMods={installedMods} setInstalledMods={setInstalledMods} />;
+            case 'main':
+            default:
+                return renderMainView();
+        }
+    };
 
     return (
         <div className="w-full h-full max-h-[85vh] animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 flex flex-col">
@@ -294,8 +338,7 @@ const ModsScreen: React.FC = () => {
                     <FaArrowLeft className="w-5 h-5" />
                 </button>
             </div>
-            
-           {view === 'main' ? renderMainView() : renderLibraryView()}
+           {renderContent()}
         </div>
     );
 };
