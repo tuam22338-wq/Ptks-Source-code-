@@ -134,7 +134,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
     itemsPerPage: 10,
     aiResponseWordCount: 2000,
     enableAiSoundSystem: false,
-    masterSafetySwitch: false,
+    masterSafetySwitch: true,
+    enableNsfwMode: false,
     safetyLevels: {
         harassment: 'BLOCK_MEDIUM_AND_ABOVE',
         hateSpeech: 'BLOCK_MEDIUM_AND_ABOVE',

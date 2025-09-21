@@ -1,6 +1,7 @@
 import React, { memo, useState, useEffect } from 'react';
 import type { GameDate, MajorEvent } from '../../../types';
 import { FaArrowLeft, FaSave, FaExpand } from 'react-icons/fa';
+import { GiPerson } from 'react-icons/gi';
 import Timeline from '../../../components/Timeline';
 
 interface TopBarProps {
@@ -8,10 +9,11 @@ interface TopBarProps {
     onSave: () => void;
     gameDate: GameDate;
     majorEvents: MajorEvent[];
+    isSummaryPanelVisible: boolean;
+    onToggleSummaryPanel: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }) => {
-    // FIX: Removed unused 'toggleSidebar' which was causing an error as it doesn't exist on the context type.
+const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, isSummaryPanelVisible, onToggleSummaryPanel }) => {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
     const handleFullscreen = () => {
@@ -48,6 +50,13 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents }
                     title="Lưu Game"
                 >
                     <FaSave className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={onToggleSummaryPanel}
+                    className={`p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors ${isSummaryPanelVisible ? 'text-amber-300' : ''}`}
+                    title="Bảng Trạng Thái"
+                >
+                    <GiPerson className="w-5 h-5" />
                 </button>
                 {!isFullscreen && (
                     <button 

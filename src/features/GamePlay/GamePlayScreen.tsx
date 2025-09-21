@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -80,6 +81,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
     const [activeActionTab, setActiveActionTab] = useState<'act' | 'say' | 'ask'>('act');
     const isAiResponding = state.isLoading && state.view === 'gamePlay';
     const [responseTimer, setResponseTimer] = useState(0);
+    const [isSummaryPanelVisible, setIsSummaryPanelVisible] = useState(true);
+
 
     // --- PAGINATION LOGIC ---
     const [currentPage, setCurrentPage] = useState(0);
@@ -294,7 +297,14 @@ const GamePlayScreenContent: React.FC = memo(() => {
             <InventoryModal isOpen={isInventoryOpen} />
             <InnerDemonTrialModal isOpen={!!activeInnerDemonTrial} trial={activeInnerDemonTrial} onChoice={handleInnerDemonChoice} />
             
-            <TopBar onBack={quitGame} onSave={handleSaveGame} gameDate={gameState.gameDate} majorEvents={gameState.majorEvents} />
+            <TopBar 
+                onBack={quitGame} 
+                onSave={handleSaveGame} 
+                gameDate={gameState.gameDate} 
+                majorEvents={gameState.majorEvents}
+                isSummaryPanelVisible={isSummaryPanelVisible}
+                onToggleSummaryPanel={() => setIsSummaryPanelVisible(v => !v)}
+             />
             
             <div className="gameplay-main-content relative">
                 <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0 overflow-hidden">
@@ -338,7 +348,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     )}
                 </main>
 
-                <SummaryPanel playerCharacter={playerCharacter} />
+                {isSummaryPanelVisible && <SummaryPanel playerCharacter={playerCharacter} />}
             </div>
         </div>
     );

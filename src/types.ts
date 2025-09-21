@@ -86,6 +86,7 @@ export interface GameSettings {
     aiResponseWordCount: number;
     enableAiSoundSystem: boolean;
     masterSafetySwitch: boolean;
+    enableNsfwMode: boolean;
     safetyLevels: SafetySettings;
     enablePerformanceMode: boolean;
     temperature: number;

@@ -1,5 +1,6 @@
 
-import React, { useState, memo } from 'react';
+
+import React, { useState, memo, useEffect, useRef } from 'react';
 import type { PlayerCharacter, Attribute } from '../../../types';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
@@ -12,9 +13,28 @@ interface StatBarProps {
 }
 
 const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, icon: Icon }) => {
+    const [isChanged, setIsChanged] = useState(false);
+    const prevCurrent = useRef(current);
+    const isInitialMount = useRef(true);
+
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            prevCurrent.current = current;
+            return;
+        }
+
+        if (prevCurrent.current !== current) {
+            setIsChanged(true);
+            const timer = setTimeout(() => setIsChanged(false), 700); // Corresponds to animation duration
+            prevCurrent.current = current;
+            return () => clearTimeout(timer);
+        }
+    }, [current]);
+
     const percentage = max > 0 ? (Math.max(0, current) / max) * 100 : 0;
     return (
-        <div className="stat-bar-container" title={`${label}: ${Math.floor(current)} / ${max}`}>
+        <div className={`stat-bar-container ${isChanged ? 'stat-changed-flash' : ''}`} title={`${label}: ${Math.floor(current)} / ${max}`}>
             <div className="stat-bar-icon">
                 <Icon />
             </div>
@@ -28,12 +48,12 @@ const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, icon
     );
 };
 
-const AttributeDisplay: React.FC<{ attribute: Attribute }> = ({ attribute }) => (
+const AttributeDisplay: React.FC<{ attribute: Attribute }> = memo(({ attribute }) => (
     <div className="flex justify-between items-baseline text-sm">
         <span className="text-gray-400">{attribute.name}</span>
         <span className="font-bold text-gray-200">{String(attribute.value)}</span>
     </div>
-);
+));
 
 
 const SummaryPanel: React.FC<{ playerCharacter: PlayerCharacter }> = ({ playerCharacter }) => {

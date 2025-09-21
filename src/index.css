@@ -778,6 +778,17 @@ body.force-desktop {
     to { background-position: 60px 0; }
 }
 
+@keyframes flash-bg {
+  0% { background-color: rgba(245, 158, 11, 0); }
+  50% { background-color: rgba(245, 158, 11, 0.3); }
+  100% { background-color: rgba(245, 158, 11, 0); }
+}
+
+.stat-changed-flash {
+  animation: flash-bg 0.7s ease-out;
+}
+
+
 /* New Inventory Styles */
 .equipment-slot-wrapper {
     transform: translate(-50%, -50%);
@@ -838,6 +849,7 @@ body.force-desktop {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    border-radius: 9999px;
 }
 
 .stat-bar-icon {
