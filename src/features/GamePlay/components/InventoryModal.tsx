@@ -127,10 +127,10 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 newInventoryItems.push({ ...itemToEquip, quantity: itemToEquip.quantity - 1, isEquipped: false });
             }
             return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment } };
-        })(gameState) });
+        }) });
         showNotification(`Đã trang bị [${itemToEquip.name}]`);
         setSelectedItem(null);
-    }, [dispatch, gameState, showNotification]);
+    }, [dispatch, showNotification]);
     
     const handleUnequip = useCallback((slot: EquipmentSlot) => {
         dispatch({ type: 'UPDATE_GAME_STATE', payload: (pcState => {
@@ -154,20 +154,20 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             const newEquipment = { ...pc.equipment };
             newEquipment[slot] = null;
             return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment } };
-        })(gameState) });
+        }) });
          showNotification(`Đã tháo [${playerCharacter?.equipment[slot]?.name}]`);
          setSelectedItem(null);
-    }, [playerCharacter, dispatch, gameState, showNotification]);
+    }, [playerCharacter, dispatch, showNotification]);
 
     const handleDrop = useCallback((itemToDrop: InventoryItem) => {
         if (!window.confirm(`Bạn có chắc muốn vứt bỏ ${itemToDrop.name}?`)) return;
         dispatch({ type: 'UPDATE_GAME_STATE', payload: (pcState => {
              if (!pcState) return null;
              return { ...pcState, playerCharacter: { ...pcState.playerCharacter, inventory: { ...pcState.playerCharacter.inventory, items: pcState.playerCharacter.inventory.items.filter(i => i.id !== itemToDrop.id) } } };
-        })(gameState) });
+        }) });
         showNotification(`Đã vứt bỏ [${itemToDrop.name}]`);
         setSelectedItem(null);
-    }, [dispatch, gameState, showNotification]);
+    }, [dispatch, showNotification]);
     
     const handleUse = useCallback((itemToUse: InventoryItem) => {
         if (!playerCharacter) return;
@@ -203,11 +203,11 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             pc = { ...pc, inventory: { ...pc.inventory, items: newItems } };
 
             return { ...pcState, playerCharacter: pc };
-        })(gameState) });
+        }) });
         
         showNotification(actionMessage);
         setSelectedItem(null);
-    }, [playerCharacter, dispatch, gameState, showNotification]);
+    }, [playerCharacter, dispatch, showNotification]);
 
     const sortedItems = useMemo(() => {
         if (!playerCharacter) return [];

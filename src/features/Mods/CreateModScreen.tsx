@@ -263,7 +263,7 @@ const CreateModScreen: React.FC = () => {
         }
         const modContent: Partial<ModContent> = addedContent.reduce((acc, content) => {
             const { contentType, id, ...contentData } = content;
-            const keyMap: Partial<Record<ContentType, keyof ModContent>> = { item: 'items', talent: 'talents', character: 'characters', sect: 'sects', location: 'locations', worldData: 'worldData', npc: 'npcs', auxiliaryTechnique: 'auxiliaryTechniques', mainCultivationTechnique: 'mainCultivationTechniques', event: 'events', recipe: 'recipes', customPanel: 'customPanels', customDataPack: 'customDataPacks' };
+            const keyMap: Partial<Record<ContentType, keyof ModContent>> = { item: 'items', character: 'characters', sect: 'sects', location: 'locations', worldData: 'worldData', npc: 'npcs', auxiliaryTechnique: 'auxiliaryTechniques', mainCultivationTechnique: 'mainCultivationTechniques', event: 'events', recipe: 'recipes', customPanel: 'customPanels', customDataPack: 'customDataPacks' };
             const key = keyMap[contentType as keyof typeof keyMap];
             if (key) {
                 if (!acc[key]) (acc as any)[key] = [];

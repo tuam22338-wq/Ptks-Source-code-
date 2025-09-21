@@ -65,14 +65,26 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
-        const handleVoicesChanged = () => setVoices(window.speechSynthesis.getVoices());
-        window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-        handleVoicesChanged();
-        return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+        const handleVoicesChanged = () => {
+            if (window.speechSynthesis) {
+                setVoices(window.speechSynthesis.getVoices());
+            }
+        };
+        if (window.speechSynthesis) {
+            window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+            handleVoicesChanged();
+        } else {
+            console.warn("Text-to-Speech not supported by this browser.");
+        }
+        return () => {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+            }
+        };
     }, []);
 
     const speak = useCallback((text: string, force = false) => {
-        if ((!state.settings.enableTTS && !force) || !text) return;
+        if (!window.speechSynthesis || (!state.settings.enableTTS && !force) || !text) return;
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         const selectedVoice = voices.find(v => v.voiceURI === state.settings.ttsVoiceURI);
@@ -87,7 +99,11 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         window.speechSynthesis.speak(utterance);
     }, [state.settings.enableTTS, state.settings.ttsVoiceURI, state.settings.ttsRate, state.settings.ttsPitch, state.settings.ttsVolume, voices]);
 
-    const cancelSpeech = useCallback(() => window.speechSynthesis.cancel(), []);
+    const cancelSpeech = useCallback(() => {
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+    }, []);
 
     const updateStorageUsage = useCallback(async () => {
         if (navigator.storage?.estimate) {

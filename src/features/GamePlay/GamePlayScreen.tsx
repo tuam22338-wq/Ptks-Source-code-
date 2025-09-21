@@ -7,7 +7,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import LoadingScreen from '../../components/LoadingScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
-import EventPanel from './EventPanel';
+import EventPanel from './components/EventPanel';
 import CombatScreen from './components/CombatScreen';
 import CultivationPathModal from './components/CultivationPathModal';
 import ShopModal from './components/ShopModal';

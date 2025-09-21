@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, memo, useRef } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
@@ -74,12 +75,19 @@ export const SettingsPanel: React.FC = () => {
 
     useEffect(() => {
         const loadVoices = () => {
-            const availableVoices = window.speechSynthesis.getVoices();
-            setVoices(availableVoices);
+            if (window.speechSynthesis) {
+                setVoices(window.speechSynthesis.getVoices());
+            }
         };
-        window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-        loadVoices();
-        return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+        if (window.speechSynthesis) {
+            window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+            loadVoices();
+        }
+        return () => {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+            }
+        };
     }, []);
 
     const vietnameseVoices = voices.filter(v => v.lang.startsWith('vi'));
