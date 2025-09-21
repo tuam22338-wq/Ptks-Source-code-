@@ -76,7 +76,7 @@ const AlchemyPanel: React.FC<AlchemyPanelProps> = ({ playerCharacter }) => {
                                 <div>
                                      <p className="text-sm text-gray-400">Yêu cầu:</p>
                                      <p className={`text-sm ${alchemySkillValue >= selectedRecipe.requiredAttribute.value ? 'text-green-400' : 'text-red-400'}`}>
-                                        - {selectedRecipe.requiredAttribute.name} >= {selectedRecipe.requiredAttribute.value}
+                                        - {`${selectedRecipe.requiredAttribute.name} >= ${selectedRecipe.requiredAttribute.value}`}
                                      </p>
                                 </div>
                             </div>
