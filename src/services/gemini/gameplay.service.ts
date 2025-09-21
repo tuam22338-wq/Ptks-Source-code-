@@ -92,6 +92,9 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
   - **Ví dụ (Tà Ác):** Người chơi nhập "giúp đỡ bà lão qua đường". Bạn nên kể: "[${playerCharacter.identity.name}] liếc nhìn bà lão, cười khẩy: 'Giúp bà ta thì được lợi gì? Thật lãng phí thời gian.' Nói rồi, [anh ta/cô ta] lách qua đám đông, bỏ mặc bà lão phía sau."
   - **Ví dụ (Phi lý):** Nếu một nhân vật Chính Trực được yêu cầu "tụt quần giữa chợ", nhân vật sẽ từ chối trong kinh ngạc và phẫn nộ, thay vì mù quáng tuân theo.
   4. TUYỆT ĐỐI không được để nhân vật hành động phi logic, phá vỡ hình tượng đã xây dựng. Bạn là người bảo vệ cho "linh hồn" của nhân vật.
+- **LUẬT TU LUYỆN:**
+  1. Người chơi có thể dùng lệnh "tu luyện" để hấp thụ linh khí ngay cả khi chỉ có Công Pháp Phụ (Auxiliary Techniques).
+  2. Tuy nhiên, nếu không có Công Pháp Chủ Đạo (Main Cultivation Technique), hiệu quả tu luyện sẽ kém và sức chiến đấu rất yếu. Hãy phản ánh sự yếu thế này trong lời kể nếu họ chiến đấu. Ví dụ: "Dù đã cố gắng vận chuyển linh khí, nhưng vì không có tâm pháp chủ đạo, luồng chân nguyên của bạn hỗn loạn và yếu ớt, chỉ có thể tạo ra một đòn tấn công cơ bản."
 - **QUẢN LÝ TRẠNG THÁI NHÂN VẬT:** Bạn chịu trách nhiệm hoàn toàn về các chỉ số sinh tồn của nhân vật. Sau khi tường thuật kết quả hành động, bạn PHẢI mô tả sự thay đổi về thể chất, bao gồm:
   - **No Bụng & Nước Uống:** Mỗi hành động đều tiêu tốn thể lực. Hãy mô tả cảm giác đói hoặc khát của nhân vật một cách tự nhiên và giảm chỉ số tương ứng. Ví dụ: "Sau một hồi di chuyển, bụng bạn bắt đầu kêu ọt ọt."
   - **Hiệu ứng & Sát thương theo thời gian:** Dựa vào các hiệu ứng đang có trên người nhân vật (ví dụ: Trúng Độc), hãy mô tả tác động của chúng và tính toán sát thương. Ví dụ: "Độc tố trong người lại phát tác, một cơn đau nhói truyền đến từ đan điền."
@@ -499,7 +502,7 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
-        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        model: settings?.modelApiKeyAssignments?.gameMasterModel || 'gemini-2.5-flash',
         contents: prompt,
         config: {
             responseMimeType: "application/json",
@@ -508,4 +511,31 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
     }, specificApiKey);
 
     return JSON.parse(response.text) as Omit<DynamicWorldEvent, 'id' | 'turnStart'>;
+};
+
+export const askAiAssistant = async (query: string, gameState: GameState): Promise<string> => {
+    const settings = await db.getSettings();
+    const systemInstruction = `You are a helpful AI game master assistant named 'Thiên Cơ' inside the RPG "Tam Thiên Thế Giới".
+    - **Your Core Role:** Answer the player's questions about the game world, characters, quests, or game mechanics based ONLY on the provided context.
+    - **Crucial Rule:** You must NOT advance the story, create new events, or speak for the narrator. Your responses are direct answers to the player.
+    - **Persona:** Act as a wise, slightly mysterious, and all-knowing entity within the game world.
+    - **Language:** ALWAYS respond in Vietnamese.
+    - **Brevity:** Be concise and to the point.
+    - **Example Query:** "Who is Khương Tử Nha?"
+    - **Example Response:** "Khương Tử Nha là đệ tử của Nguyên Thủy Thiên Tôn, người được giao phó trọng trách phò Chu diệt Thương. Hiện tại, ông ấy đang câu cá bên bờ sông Vị Thủy."
+    `;
+
+    const fullContext = createFullGameStateContext(gameState);
+    const fullPrompt = `${fullContext}\n\n**Player's Question for Thiên Cơ:**\n"${query}"\n\n**Thiên Cơ's Answer:**`;
+
+    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
+    const response = await generateWithRetry({
+        model: settings?.quickSupportModel || 'gemini-2.5-flash',
+        contents: fullPrompt,
+        config: {
+            systemInstruction: systemInstruction,
+        }
+    }, specificApiKey);
+
+    return response.text.trim();
 };

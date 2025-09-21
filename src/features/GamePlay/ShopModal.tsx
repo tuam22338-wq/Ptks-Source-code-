@@ -36,7 +36,13 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
             type: 'UPDATE_GAME_STATE', payload: prev => {
                 if (!prev) return null;
                 const pc = { ...prev.playerCharacter };
-                const newCurrencies = { ...pc.currencies, [price.currencyName]: playerCurrency - price.amount };
+                const currentCurrency = pc.currencies[price.currencyName] || 0;
+                if (currentCurrency < price.amount) {
+                    // Re-check inside updater for safety, and notify if it fails now
+                    showNotification(`Không đủ ${price.currencyName}!`);
+                    return prev;
+                }
+                const newCurrencies = { ...pc.currencies, [price.currencyName]: currentCurrency - price.amount };
                 const newInventoryItems = [...pc.inventory.items];
                 const existingItem = newInventoryItems.find(i => i.name === name);
                 if (existingItem) {

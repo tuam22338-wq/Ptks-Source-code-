@@ -35,13 +35,14 @@ const GuidePanel: React.FC = () => {
                         <p>Sau khi bạn trang bị, sử dụng hoặc vứt bỏ vật phẩm và đóng túi đồ lại, AI kể chuyện sẽ tự động nhận biết và tiếp nối câu chuyện một cách hợp lý.</p>
                     </GuideSection>
                     
-                     <GuideSection icon={GiCastle} title="Bái Sư & Tu Luyện">
-                        <p>Bạn không thể tu luyện nếu chưa có sư phụ. Hãy tìm một vị cao nhân và thể hiện thành ý để bái sư.</p>
+                     <GuideSection icon={GiCastle} title="Công Pháp & Tu Luyện">
+                        <p>Tu luyện là con đường hấp thụ linh khí để tăng cường tu vi. Ban đầu, bạn có thể học các <strong className="text-yellow-300">Công Pháp Phụ Đạo</strong> từ sư phụ hoặc kỳ ngộ để bắt đầu tích lũy linh khí.</p>
+                        <p>Tuy nhiên, để thực sự phát triển và có sức chiến đấu, bạn cần tìm và tu luyện một <strong className="text-amber-300">Công Pháp Chủ Đạo</strong>. Công pháp chủ đạo sẽ mở khóa cây kỹ năng, mang lại các thần thông mạnh mẽ và định hình con đường tu luyện của bạn.</p>
+                        <p className="mt-2">Không có công pháp chủ đạo, bạn sẽ rất thiệt thòi khi đối đầu với tu sĩ cùng cấp.</p>
                         <ul className="list-disc list-inside text-gray-400 italic">
-                            <li>"Ta muốn bái ngài làm sư phụ."</li>
-                            <li>"Xin tiền bối hãy thu nhận ta làm đồ đệ."</li>
+                            <li>Dùng lệnh "tu luyện" để hấp thụ linh khí.</li>
+                            <li>Tìm kiếm sư phụ hoặc bí cảnh để có được công pháp.</li>
                         </ul>
-                         <p className="mt-2">Một khi đã có sư phụ và công pháp, bạn có thể dùng lệnh "tu luyện" để tăng linh khí.</p>
                     </GuideSection>
 
                      <GuideSection icon={GiGears} title="Các Hành Động Khác">

@@ -2,37 +2,13 @@ import React, { memo, useMemo, useState } from 'react';
 import type { PlayerCharacter, Attribute, RealmConfig, ActiveEffect, StatBonus, AttributeGroup } from '../../../../../types';
 import { CHARACTER_STATUS_CONFIG, CULTIVATION_PATHS, SPIRITUAL_ROOT_CONFIG, SPIRITUAL_ROOT_QUALITY_CONFIG } from '../../../../../constants';
 import { FaBolt, FaRoute, FaChevronDown, FaShieldAlt } from 'react-icons/fa';
-import { GiPentacle, GiStomach, GiWaterDrop, GiThermometerScale } from 'react-icons/gi';
+import { GiPentacle } from 'react-icons/gi';
 
 interface CharacterPanelProps {
     character: PlayerCharacter;
     onBreakthrough: () => void;
     realmSystem: RealmConfig[];
 }
-
-const ProgressBar: React.FC<{
-    current: number;
-    max: number;
-    label: string;
-    color: string;
-    icon: React.ElementType;
-}> = ({ current, max, label, color, icon: Icon }) => {
-    const percentage = max > 0 ? (current / max) * 100 : 0;
-    return (
-        <div className="w-full">
-            <div className="flex justify-between items-baseline mb-1">
-                 <div className="flex items-center text-sm text-gray-300">
-                    <Icon className="w-4 h-4 mr-2" />
-                    <span>{label}</span>
-                 </div>
-                <span className="text-xs font-mono">{`${Math.floor(current)}/${max}`}</span>
-            </div>
-            <div className="w-full bg-black/30 rounded-full h-2.5 border border-gray-700">
-                <div className={`${color} h-2 rounded-full transition-all duration-300 animated-progress-bar`} style={{ width: `${percentage}%` }}></div>
-            </div>
-        </div>
-    );
-};
 
 const calculateFinalAttributes = (baseAttributes: AttributeGroup[], activeEffects: ActiveEffect[]): AttributeGroup[] => {
     const finalAttributes = baseAttributes.map(group => ({
@@ -50,7 +26,6 @@ const calculateFinalAttributes = (baseAttributes: AttributeGroup[], activeEffect
                 if(attr.maxValue) {
                     (attr.maxValue as number) += bonus.value;
                 }
-                break;
             }
         }
     });
@@ -88,7 +63,7 @@ const AttributeGrid: React.FC<{
 
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
-    const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects, vitals } = character;
+    const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects } = character;
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
 
     const toggleGroup = (title: string) => {
@@ -142,9 +117,6 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
         }
     }
     
-    const sinhMenh = finalAttributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh') as Attribute & { value: number; maxValue: number };
-    const linhLuc = finalAttributes.flatMap(g => g.attributes).find(a => a.name === 'Linh Lực') as Attribute & { value: number; maxValue: number };
-    
     const chosenPaths = CULTIVATION_PATHS.filter(path => chosenPathIds.includes(path.id));
     const statusInfo = CHARACTER_STATUS_CONFIG[healthStatus];
 
@@ -160,29 +132,11 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrou
                 </div>
             </div>
             
-            {/* Main Stats Bars */}
-             <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 space-y-3">
-                 <ProgressBar current={sinhMenh.value} max={sinhMenh.maxValue} label="Sinh Mệnh" color="bg-red-500" icon={sinhMenh.icon} />
-                 <ProgressBar current={linhLuc.value} max={linhLuc.maxValue} label="Linh Lực" color="bg-blue-500" icon={linhLuc.icon} />
-            </div>
-
-            {/* Vitals */}
-            {vitals && (
-                <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 space-y-3">
-                    <ProgressBar current={vitals.hunger} max={vitals.maxHunger} label="No Bụng" color="bg-yellow-600" icon={GiStomach} />
-                    <ProgressBar current={vitals.thirst} max={vitals.maxThirst} label="Nước Uống" color="bg-sky-500" icon={GiWaterDrop} />
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-300">
-                        <GiThermometerScale className="w-4 h-4" />
-                        <span>Nhiệt Độ: <span className="font-bold">{vitals.temperature.toFixed(1)}°C</span></span>
-                    </div>
-                </div>
-            )}
-
             {/* Cultivation */}
             <div>
                 <h3 className="text-lg text-gray-300 font-title font-semibold mb-3 text-center border-b border-gray-700 pb-2">Tu Luyện</h3>
                 <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60 space-y-3">
-                    <ProgressBar current={cultivation.spiritualQi} max={qiRequired} label="Linh Khí" color="bg-teal-400" icon={() => <span className="text-teal-300">🌀</span>} />
+                    <p className="text-center text-sm text-gray-300">Linh Khí hiện tại: <span className="font-bold text-teal-300 font-mono">{Math.floor(cultivation.spiritualQi).toLocaleString()} / {qiRequired.toLocaleString()}</span></p>
                     <div className="flex gap-2">
                         <button 
                             onClick={onBreakthrough} 
