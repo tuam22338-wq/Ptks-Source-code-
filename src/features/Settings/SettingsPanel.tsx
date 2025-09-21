@@ -63,7 +63,8 @@ const modelConfigs: { id: AssignableModel; label: string; description: string; m
 ];
 
 export const SettingsPanel: React.FC = () => {
-    const { settings, handleNavigate, handleSettingsSave, handleSettingChange } = useAppContext();
+    const { state, handleNavigate, handleSettingsSave, handleSettingChange } = useAppContext();
+    const { settings } = state;
     const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
     const [bgPrompt, setBgPrompt] = useState('');
     const [isGeneratingBg, setIsGeneratingBg] = useState(false);

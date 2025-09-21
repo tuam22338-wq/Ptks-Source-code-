@@ -830,12 +830,13 @@ body.force-desktop .top-bar-sidebar-toggle {
     transform: translate(-50%, -50%);
     z-index: 10;
 }
-.slot-vũ-khí { top: 50%; left: 15%; }
-.slot-thượng-y { top: 30%; left: 50%; }
-.slot-hạ-y { top: 55%; left: 50%; }
-.slot-giày { top: 80%; left: 50%; }
-.slot-phụ-kiện-1 { top: 30%; left: 85%; }
-.slot-phụ-kiện-2 { top: 60%; left: 85%; }
+.slot-vũ-khí { top: 65%; left: 20%; }
+.slot-thượng-y { top: 35%; left: 50%; }
+.slot-hạ-y { top: 65%; left: 50%; }
+.slot-giày { top: 90%; left: 50%; }
+.slot-phụ-kiện-1 { top: 35%; left: 80%; }
+.slot-phụ-kiện-2 { top: 65%; left: 80%; }
+
 
 /* New Map Styles */
 @keyframes pulse-glow {

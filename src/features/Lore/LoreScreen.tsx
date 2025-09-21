@@ -1,14 +1,15 @@
 
+
 import React, { memo, useMemo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
 
 const ThoiTheScreen: React.FC = () => {
-  const { handleNavigate, activeWorldId } = useAppContext();
+  const { handleNavigate, state } = useAppContext();
 
   const { events, title, description } = useMemo(() => {
-    if (activeWorldId === 'tay_du_ky') {
+    if (state.activeWorldId === 'tay_du_ky') {
         return { 
             events: JTTW_MAJOR_EVENTS, 
             title: 'Tây Du Niên Biểu',
@@ -21,7 +22,7 @@ const ThoiTheScreen: React.FC = () => {
         title: 'Thời Thế Loạn Lạc',
         description: 'Thế giới đang trong cơn biến động. Thiên mệnh đã định, nhưng lựa chọn là của bạn. Hãy xem xét các sự kiện lớn đang diễn ra để quyết định con đường của mình.'
     };
-  }, [activeWorldId]);
+  }, [state.activeWorldId]);
 
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">

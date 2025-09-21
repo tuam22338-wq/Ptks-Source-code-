@@ -107,7 +107,7 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
 
 
 const SaveSlotScreen: React.FC = () => {
-  const { saveSlots, handleSlotSelection, handleNavigate, handleDeleteGame, handleVerifyAndRepairSlot } = useAppContext();
+  const { state, handleSlotSelection, handleNavigate, handleDeleteGame, handleVerifyAndRepairSlot } = useAppContext();
   return (
     <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-2">
@@ -123,7 +123,7 @@ const SaveSlotScreen: React.FC = () => {
       <p className="text-center mb-8" style={{color: 'var(--text-muted-color)'}}>Hãy chọn một trang để viết nên câu chuyện của riêng bạn, hoặc tiếp tục một hành trình dang dở.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 max-w-2xl mx-auto">
-        {saveSlots.map((slot) => (
+        {state.saveSlots.map((slot) => (
           <SaveSlotCard 
             key={slot.id} 
             slot={slot} 

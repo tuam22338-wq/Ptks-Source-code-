@@ -1,6 +1,10 @@
 
 
 
+
+
+
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { PlayerCharacter, Location, NPC, Rumor, RealmConfig, FullMod, StoryEntry, GameState } from '../../../../types';
 import CharacterPanel from './panels/CharacterPanel';
@@ -22,12 +26,11 @@ import PlayerSectPanel from './panels/PlayerSectPanel';
 import DeathPanel from './panels/DeathPanel';
 import { FaUser, FaGlobe, FaBook, FaScroll, FaSun, FaGopuram, FaQuestionCircle, FaMapMarkedAlt, FaProjectDiagram, FaBrain, FaSitemap, FaUsers, FaMountain, FaFlask, FaTasks, FaDesktop } from 'react-icons/fa';
 import { GiCastle } from 'react-icons/gi';
+import { useAppContext } from '../../../../contexts/AppContext';
 import { useGameUIContext } from '../../../../contexts/GameUIContext';
 import { SHOPS, REALM_SYSTEM } from '../../../../constants';
 
 interface SidebarProps {
-    gameState: GameState;
-    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
     onBreakthrough: () => void;
     onTravel: (destinationId: string) => void;
     onExplore: () => void;
@@ -41,22 +44,26 @@ const ICON_MAP: { [key: string]: React.ElementType } = {
 };
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { gameState, setGameState, onBreakthrough, onTravel, onExplore, onNpcDialogue, showNotification } = props;
+    const { onBreakthrough, onTravel, onExplore, onNpcDialogue, showNotification } = props;
+    const { state, handleUpdatePlayerCharacter, dispatch } = useAppContext();
+    const { gameState } = state;
     const [activeTab, setActiveTab] = useState<SidebarTab>('character');
     const { openShopModal } = useGameUIContext();
     
-    // Derive all necessary data from the single gameState prop to ensure synchronization
+    if (!gameState) return null; // Should not happen if GamePlayScreen is rendered
+
+    // FIX: Create a stable callback to update game state, handling both value and function updaters.
+    const setGameStateCallback = useCallback((action: React.SetStateAction<GameState | null>) => {
+        dispatch({
+            type: 'UPDATE_GAME_STATE',
+            payload: typeof action === 'function' ? (action as (prevState: GameState | null) => GameState | null)(gameState) : action
+        });
+    }, [dispatch, gameState]);
+
     const { 
-        playerCharacter, 
-        discoveredLocations, 
-        activeNpcs, 
-        worldState, 
-        storyLog,
-        encounteredNpcIds,
-        realmSystem: realmSystemFromState,
-        activeMods,
-        majorEvents,
-        gameDate,
+        playerCharacter, discoveredLocations, activeNpcs, worldState, storyLog,
+        encounteredNpcIds, realmSystem: realmSystemFromState, activeMods,
+        majorEvents, gameDate,
     } = gameState;
 
     const sinhMenhAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
@@ -66,7 +73,6 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
         return <DeathPanel />;
     }
     
-    const allNpcs = activeNpcs;
     const realmSystem = realmSystemFromState || REALM_SYSTEM;
     const rumors = worldState.rumors;
 
@@ -76,18 +82,14 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
     );
     
     const npcsAtLocation = useMemo(() => 
-        allNpcs.filter(n => n.locationId === playerCharacter.currentLocationId), 
-        [allNpcs, playerCharacter.currentLocationId]
+        activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId), 
+        [activeNpcs, playerCharacter.currentLocationId]
     );
 
     const neighbors = useMemo(() => 
         discoveredLocations.filter(l => currentLocation.neighbors.includes(l.id)), 
         [discoveredLocations, currentLocation]
     );
-
-    const setPlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
-        setGameState(gs => gs ? { ...gs, playerCharacter: updater(gs.playerCharacter) } : null);
-    }, [setGameState]);
     
     const handleNpcInteraction = useCallback((npc: NPC) => {
         if (npc.shopId && SHOPS.some(s => s.id === npc.shopId)) {
@@ -154,16 +156,16 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
             <div className="flex-grow overflow-y-auto pr-2">
                 {activeTab === 'guide' && <GuidePanel />}
                 {activeTab === 'character' && <CharacterPanel character={playerCharacter} onBreakthrough={onBreakthrough} realmSystem={realmSystem} />}
-                {activeTab === 'system' && <SystemPanel gameState={gameState} setGameState={setGameState} showNotification={showNotification} />}
+                {activeTab === 'system' && <SystemPanel gameState={gameState} setGameState={setGameStateCallback} showNotification={showNotification} />}
                 {activeTab === 'quests' && <QuestPanel quests={playerCharacter.activeQuests} />}
-                {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={setPlayerCharacter} showNotification={showNotification} />}
-                {activeTab === 'playerSect' && <PlayerSectPanel gameState={gameState} setGameState={setGameState} showNotification={showNotification} />}
-                {activeTab === 'genealogy' && <GenealogyPanel playerCharacter={playerCharacter} allNpcs={allNpcs} onNpcSelect={handleNpcInteraction} />}
+                {activeTab === 'techniques' && <TechniquesPanel character={playerCharacter} setPlayerCharacter={handleUpdatePlayerCharacter} showNotification={showNotification} />}
+                {activeTab === 'playerSect' && <PlayerSectPanel gameState={gameState} setGameState={setGameStateCallback} showNotification={showNotification} />}
+                {activeTab === 'genealogy' && <GenealogyPanel playerCharacter={playerCharacter} allNpcs={activeNpcs} onNpcSelect={handleNpcInteraction} />}
                 {activeTab === 'world' && <WorldPanel currentLocation={currentLocation} npcsAtLocation={npcsAtLocation} neighbors={neighbors} rumors={rumors} dynamicEvents={worldState.dynamicEvents} onTravel={onTravel} onExplore={onExplore} onNpcSelect={handleNpcInteraction} />}
-                {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} allNpcs={allNpcs} />}
+                {activeTab === 'map' && <MapView discoveredLocations={discoveredLocations} playerCharacter={playerCharacter} onTravel={onTravel} allNpcs={activeNpcs} />}
                 {activeTab === 'storyGraph' && <StoryGraphPanel storyLog={storyLog} />}
                 {activeTab === 'aiMemory' && <AiMemoryPanel gameState={gameState} />}
-                {activeTab === 'wiki' && <WikiPanel playerCharacter={playerCharacter} allNpcs={allNpcs} encounteredNpcIds={encounteredNpcIds} discoveredLocations={discoveredLocations} />}
+                {activeTab === 'wiki' && <WikiPanel playerCharacter={playerCharacter} allNpcs={activeNpcs} encounteredNpcIds={encounteredNpcIds} discoveredLocations={discoveredLocations} />}
                 {activeTab === 'realms' && <RealmPanel playerCharacter={playerCharacter} realmSystem={realmSystem} />}
                 {activeTab === 'lore' && <LorePanel majorEvents={majorEvents} eraName={gameDate.era} />}
                 {activeModPanelConfig && <CustomContentPanel panelConfig={activeModPanelConfig} activeMods={activeMods} />}

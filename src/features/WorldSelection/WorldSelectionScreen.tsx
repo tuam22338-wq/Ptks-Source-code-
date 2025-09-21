@@ -41,7 +41,7 @@ const WorldCard: React.FC<{ world: WorldInfo; isActive: boolean; onSelect: () =>
 
 
 const WorldSelectionScreen: React.FC = () => {
-    const { handleNavigate, activeWorldId, handleSetActiveWorldId } = useAppContext();
+    const { handleNavigate, state, handleSetActiveWorldId } = useAppContext();
     const [worlds, setWorlds] = useState<WorldInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -103,7 +103,7 @@ const WorldSelectionScreen: React.FC = () => {
                         <WorldCard 
                             key={world.id}
                             world={world}
-                            isActive={activeWorldId === world.id}
+                            isActive={state.activeWorldId === world.id}
                             onSelect={() => handleSelectWorld(world.id)}
                         />
                     ))}

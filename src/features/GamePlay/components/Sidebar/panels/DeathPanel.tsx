@@ -3,7 +3,8 @@ import { GiDeathSkull } from 'react-icons/gi';
 import { useAppContext } from '../../../../../contexts/AppContext';
 
 const DeathPanel: React.FC = () => {
-    const { quitGame, handleSlotSelection, currentSlotId } = useAppContext();
+    // FIX: Destructure currentSlotId from the state object.
+    const { quitGame, handleSlotSelection, state: { currentSlotId } } = useAppContext();
 
     const handleReload = () => {
         if (currentSlotId !== null) {

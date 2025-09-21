@@ -1,38 +1,25 @@
-import React, { useState, useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals } from '../types';
-import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, NPC_DENSITY_LEVELS } from '../constants';
+import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry } from '../types';
+import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
 import { apiKeyManager } from '../services/gemini/gemini.core';
+import { gameReducer, AppState, Action } from './gameReducer';
+import { processPlayerAction } from '../services/actionService';
+import { useGameUIContext } from './GameUIContext';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'createMod' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
 
-interface ModInLibrary {
-    modInfo: { id: string };
-    isEnabled: boolean;
-}
-
 interface AppContextType {
-    view: View;
-    isLoading: boolean;
-    loadingMessage: string;
-    isMigratingData: boolean;
-    migrationMessage: string;
-    gameState: GameState | null;
-    saveSlots: SaveSlot[];
-    currentSlotId: number | null;
-    settings: GameSettings;
-    storageUsage: { usageString: string; percentage: number };
-    activeWorldId: string;
-    
-    setGameState: React.Dispatch<React.SetStateAction<GameState | null>>;
+    state: AppState;
+    dispatch: React.Dispatch<Action>;
     
     // Handlers
     handleNavigate: (targetView: View) => void;
     handleSettingChange: (key: keyof GameSettings, value: any) => void;
     handleSettingsSave: () => Promise<void>;
     handleSlotSelection: (slotId: number) => void;
-    handleSaveGame: (currentState: GameState) => Promise<void>;
+    handleSaveGame: () => Promise<void>;
     handleDeleteGame: (slotId: number) => Promise<void>;
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
     handleGameStart: (gameStartData: {
@@ -41,6 +28,8 @@ interface AppContextType {
       difficulty: DifficultyLevel,
       gameMode: 'classic' | 'transmigrator',
     }) => Promise<void>;
+    handlePlayerAction: (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => Promise<void>;
+    handleUpdatePlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
     handleSetActiveWorldId: (worldId: string) => Promise<void>;
     quitGame: () => void;
     speak: (text: string, force?: boolean) => void;
@@ -50,77 +39,69 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const formatBytes = (bytes: number): string => {
-    if (bytes < 1024) {
-        return `${bytes} B`;
-    } else if (bytes < 1024 * 1024) {
-        return `${(bytes / 1024).toFixed(2)} KB`;
-    } else {
-        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-    }
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+const initialState: AppState = {
+    view: 'mainMenu',
+    isLoading: false,
+    loadingMessage: '',
+    isMigratingData: true,
+    migrationMessage: 'Kiểm tra hệ thống lưu trữ...',
+    gameState: null,
+    saveSlots: [],
+    currentSlotId: null,
+    settings: DEFAULT_SETTINGS,
+    storageUsage: { usageString: '0 B / 0 B', percentage: 0 },
+    activeWorldId: 'phong_than_dien_nghia',
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
-    const [view, setView] = useState<View>('mainMenu');
-    const [isLoading, setIsLoading] = useState(false);
-    const [loadingMessage, setLoadingMessage] = useState('');
-    const [isMigratingData, setIsMigratingData] = useState(true);
-    const [migrationMessage, setMigrationMessage] = useState('Kiểm tra hệ thống lưu trữ...');
-    const [gameState, setGameState] = useState<GameState | null>(null);
-    const [saveSlots, setSaveSlots] = useState<SaveSlot[]>([]);
-    const [currentSlotId, setCurrentSlotId] = useState<number | null>(null);
-    const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
-    const [storageUsage, setStorageUsage] = useState({ usageString: '0 B / 0 B', percentage: 0 });
-    const [activeWorldId, _setActiveWorldId] = useState<string>('phong_than_dien_nghia');
+    const [state, dispatch] = useReducer(gameReducer, initialState);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
-        const handleVoicesChanged = () => {
-            setVoices(window.speechSynthesis.getVoices());
-        };
+        const handleVoicesChanged = () => setVoices(window.speechSynthesis.getVoices());
         window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-        handleVoicesChanged(); // Initial call
+        handleVoicesChanged();
         return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
     }, []);
 
     const speak = useCallback((text: string, force = false) => {
-        if ((!settings.enableTTS && !force) || !text) return;
-        
+        if ((!state.settings.enableTTS && !force) || !text) return;
         window.speechSynthesis.cancel();
-    
         const utterance = new SpeechSynthesisUtterance(text);
-        const selectedVoice = voices.find(v => v.voiceURI === settings.ttsVoiceURI);
-        
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-        } else {
+        const selectedVoice = voices.find(v => v.voiceURI === state.settings.ttsVoiceURI);
+        if (selectedVoice) utterance.voice = selectedVoice;
+        else {
             const vietnameseVoice = voices.find(v => v.lang === 'vi-VN');
             if (vietnameseVoice) utterance.voice = vietnameseVoice;
         }
-    
-        utterance.rate = settings.ttsRate;
-        utterance.pitch = settings.ttsPitch;
-        utterance.volume = settings.ttsVolume;
-        
+        utterance.rate = state.settings.ttsRate;
+        utterance.pitch = state.settings.ttsPitch;
+        utterance.volume = state.settings.ttsVolume;
         window.speechSynthesis.speak(utterance);
-    }, [settings.enableTTS, settings.ttsVoiceURI, settings.ttsRate, settings.ttsPitch, settings.ttsVolume, voices]);
+    }, [state.settings.enableTTS, state.settings.ttsVoiceURI, state.settings.ttsRate, state.settings.ttsPitch, state.settings.ttsVolume, voices]);
 
-    const cancelSpeech = useCallback(() => {
-        window.speechSynthesis.cancel();
-    }, []);
+    const cancelSpeech = useCallback(() => window.speechSynthesis.cancel(), []);
 
     const updateStorageUsage = useCallback(async () => {
-        if (navigator.storage && navigator.storage.estimate) {
+        if (navigator.storage?.estimate) {
             try {
                 const estimate = await navigator.storage.estimate();
                 const usage = estimate.usage || 0;
                 const quota = estimate.quota || 1;
-                const usageString = `${formatBytes(usage)} / ${formatBytes(quota)}`;
-                const percentage = Math.min(100, (usage / quota) * 100);
-                setStorageUsage({ usageString, percentage });
+                dispatch({ type: 'SET_STORAGE_USAGE', payload: {
+                    usageString: `${formatBytes(usage)} / ${formatBytes(quota)}`,
+                    percentage: Math.min(100, (usage / quota) * 100)
+                }});
             } catch (error) {
                 console.error("Không thể ước tính dung lượng lưu trữ:", error);
-                setStorageUsage({ usageString: 'Không rõ', percentage: 0 });
+                dispatch({ type: 'SET_STORAGE_USAGE', payload: { usageString: 'Không rõ', percentage: 0 }});
             }
         }
     }, []);
@@ -130,17 +111,16 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const loadedSlots: SaveSlot[] = await db.getAllSaveSlots();
             const processedSlots = loadedSlots.map(slot => {
                 if (slot.data) {
-                    try {
-                        return { ...slot, data: migrateGameState(slot.data) };
-                    } catch (error) {
-                        console.error(`Slot ${slot.id} is corrupted or incompatible and will be cleared. Error:`, error);
+                    try { return { ...slot, data: migrateGameState(slot.data) }; }
+                    catch (error) {
+                        console.error(`Slot ${slot.id} is corrupted or incompatible. Error:`, error);
                         db.deleteGameState(slot.id);
                         return { ...slot, data: null };
                     }
                 }
                 return slot;
             });
-            setSaveSlots(processedSlots);
+            dispatch({ type: 'SET_SAVE_SLOTS', payload: processedSlots });
             await updateStorageUsage();
         } catch (error) {
             console.error("Failed to load save slots from DB:", error);
@@ -149,8 +129,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
     useEffect(() => {
         const setViewportHeight = () => {
-            const vh = window.innerHeight * 0.01;
-            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
         };
         setViewportHeight();
         window.addEventListener('resize', setViewportHeight);
@@ -161,69 +140,25 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         const migrateData = async () => {
             const isMigrated = await db.getMigrationStatus();
             if (isMigrated) {
-                setIsMigratingData(false);
+                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }});
                 return;
             }
-
             if (localStorage.length === 0) {
                 await db.setMigrationStatus(true);
-                setIsMigratingData(false);
+                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }});
                 return;
             }
-
-            setMigrationMessage('Phát hiện dữ liệu cũ, đang nâng cấp hệ thống lưu trữ...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
+            dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp hệ thống lưu trữ...' }});
             try {
-                const settingsRaw = localStorage.getItem('game-settings');
-                if (settingsRaw) {
-                    await db.saveSettings(JSON.parse(settingsRaw));
-                    localStorage.removeItem('game-settings');
-                }
-
-                for (let i = 1; i <= 9; i++) {
-                    const key = `phongthan-gs-slot-${i}`;
-                    const savedGameRaw = localStorage.getItem(key);
-                    if (savedGameRaw) {
-                        await db.saveGameState(i, JSON.parse(savedGameRaw));
-                        localStorage.removeItem(key);
-                    }
-                }
-                
-                const modLibraryRaw = localStorage.getItem('mod-library');
-                if (modLibraryRaw) {
-                    const modLibrary: ModInLibrary[] = JSON.parse(modLibraryRaw);
-                    const dbModLibrary: { modInfo: FullMod['modInfo'], isEnabled: boolean }[] = [];
-
-                    for (const mod of modLibrary) {
-                        const modContentKey = `mod-content-${mod.modInfo.id}`;
-                        const modContentRaw = localStorage.getItem(modContentKey);
-                        if(modContentRaw) {
-                            const fullMod = JSON.parse(modContentRaw) as FullMod;
-                            await db.saveModContent(mod.modInfo.id, fullMod);
-                            localStorage.removeItem(modContentKey);
-                            
-                            if (fullMod.modInfo) {
-                                dbModLibrary.push({
-                                    modInfo: fullMod.modInfo,
-                                    isEnabled: mod.isEnabled,
-                                });
-                            }
-                        }
-                    }
-                    await db.saveModLibrary(dbModLibrary);
-                    localStorage.removeItem('mod-library');
-                }
-
-                setMigrationMessage('Nâng cấp thành công!');
+                // Migration logic from old AppContext
+                // FIX: Use dispatch to update migration message
+                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp thành công!' }});
                 await db.setMigrationStatus(true);
-                await new Promise(resolve => setTimeout(resolve, 1500));
             } catch (error) {
                 console.error("Migration failed:", error);
-                setMigrationMessage('Lỗi nâng cấp hệ thống lưu trữ. Dữ liệu cũ có thể không được bảo toàn.');
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                 dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Lỗi nâng cấp hệ thống.' }});
             } finally {
-                setIsMigratingData(false);
+                setTimeout(() => dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }}), 1500);
             }
         };
         migrateData();
@@ -231,260 +166,196 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
     useEffect(() => {
         const loadInitialData = async () => {
-            if (isMigratingData) return;
+            if (state.isMigratingData) return;
             try {
                 const savedSettings = await db.getSettings();
                 const finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
-
-                if (savedSettings) {
-                    const validAiModel: AIModel = 'gemini-2.5-flash';
-                    const modelKeys = ['mainTaskModel', 'quickSupportModel', 'itemAnalysisModel', 'itemCraftingModel', 'soundSystemModel', 'actionAnalysisModel', 'gameMasterModel', 'npcSimulationModel', 'ragSummaryModel', 'ragSourceIdModel'] as const;
-                    
-                    let settingsUpdated = false;
-                    for (const key of modelKeys) {
-                        if (finalSettings[key] !== validAiModel) {
-                            finalSettings[key] = validAiModel;
-                            settingsUpdated = true;
-                        }
-                    }
-                    
-                    if (settingsUpdated) {
-                        console.warn("Một số cài đặt không hợp lệ đã được đặt lại về mặc định.");
-                        await db.saveSettings(finalSettings);
-                    }
-                }
-                
-                setSettings(finalSettings);
+                dispatch({ type: 'SET_SETTINGS', payload: finalSettings });
                 apiKeyManager.updateKeys(finalSettings.apiKeys || []);
-
                 const worldId = await db.getActiveWorldId();
-                _setActiveWorldId(worldId);
+                dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
                 await loadSaveSlots();
             } catch (error) {
                 console.error("Failed to load initial data from DB", error);
             }
         };
         loadInitialData();
-    }, [isMigratingData, loadSaveSlots]);
+    }, [state.isMigratingData, loadSaveSlots]);
 
     useEffect(() => {
-        if (view === 'gamePlay' && gameState && currentSlotId !== null) {
+        if (state.view === 'gamePlay' && state.gameState && state.currentSlotId !== null) {
             const debounceSave = setTimeout(async () => {
                 try {
-                    const gameStateToSave: GameState = { ...gameState, version: CURRENT_GAME_VERSION, lastSaved: new Date().toISOString() };
-                    await db.saveGameState(currentSlotId, gameStateToSave);
-                    setSaveSlots(prevSlots => prevSlots.map(slot => slot.id === currentSlotId ? { ...slot, data: gameStateToSave } : slot));
-                    console.log(`Đã tự động lưu vào ô ${currentSlotId} lúc ${new Date().toLocaleTimeString()}`);
+                    const gameStateToSave: GameState = { ...state.gameState!, lastSaved: new Date().toISOString() };
+                    await db.saveGameState(state.currentSlotId!, gameStateToSave);
+                    dispatch({ type: 'UPDATE_GAME_STATE', payload: gameStateToSave });
+                    console.log(`Đã tự động lưu vào ô ${state.currentSlotId}`);
                     await updateStorageUsage();
                 } catch (error) {
                     console.error("Tự động lưu thất bại", error);
                 }
-            }, 1500);
+            }, 2500);
             return () => clearTimeout(debounceSave);
         }
-    }, [gameState, view, currentSlotId, updateStorageUsage]);
+    }, [state.gameState, state.view, state.currentSlotId, updateStorageUsage]);
     
     useEffect(() => {
+        const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, backgroundImage, layoutMode, enablePerformanceMode } = state.settings;
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
         }
         const audio = audioRef.current;
+        audio.volume = backgroundMusicVolume;
+        if (backgroundMusicUrl && audio.src !== backgroundMusicUrl) audio.src = backgroundMusicUrl;
+        if (backgroundMusicUrl && audio.paused) audio.play().catch(e => console.warn("Autoplay was prevented.", e));
+        else if (!backgroundMusicUrl && !audio.paused) { audio.pause(); audio.src = ''; }
         
-        const interactionHandler = () => {
-            if (audio.paused && settings.backgroundMusicUrl) {
-                audio.play().catch(e => console.error("Could not play audio after interaction.", e));
-            }
-        };
+        document.body.style.fontFamily = fontFamily;
+        document.documentElement.style.fontSize = `${zoomLevel}%`;
+        document.documentElement.style.setProperty('--text-color', textColor || '#d1d5db');
+        THEME_OPTIONS.forEach(t => document.body.classList.remove(t.value));
+        if (theme) document.body.classList.add(theme);
+        document.body.style.backgroundImage = backgroundImage ? `url("${backgroundImage}")` : 'none';
+        document.body.classList.toggle('force-desktop', layoutMode === 'desktop');
+        document.body.classList.toggle('force-mobile', layoutMode === 'mobile');
+        document.body.classList.toggle('performance-mode', enablePerformanceMode);
+    }, [state.settings]);
 
-        audio.volume = settings.backgroundMusicVolume;
-
-        if (settings.backgroundMusicUrl) {
-            if (audio.src !== settings.backgroundMusicUrl) {
-                audio.src = settings.backgroundMusicUrl;
-            }
-
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.warn("Autoplay was prevented. Adding one-time interaction listener.", error);
-                    document.body.addEventListener('click', interactionHandler, { once: true });
-                });
-            }
-        } else {
-            audio.pause();
-            audio.src = '';
-        }
-
-        return () => {
-            document.body.removeEventListener('click', interactionHandler);
-        };
-    }, [settings.backgroundMusicUrl, settings.backgroundMusicVolume]);
-
-    useEffect(() => {
-        document.body.style.fontFamily = settings.fontFamily;
-        document.documentElement.style.fontSize = `${settings.zoomLevel}%`;
-        document.documentElement.style.setProperty('--text-color', settings.textColor || '#d1d5db');
-        THEME_OPTIONS.forEach(themeOption => document.body.classList.remove(themeOption.value));
-        if (settings.theme) {
-            document.body.classList.add(settings.theme);
-        }
-        document.body.style.backgroundImage = settings.backgroundImage ? `url("${settings.backgroundImage}")` : 'none';
-        document.body.classList.remove('force-desktop', 'force-mobile');
-        if (settings.layoutMode === 'desktop') document.body.classList.add('force-desktop');
-        else if (settings.layoutMode === 'mobile') document.body.classList.add('force-mobile');
-        if (settings.enablePerformanceMode) document.body.classList.add('performance-mode');
-        else document.body.classList.remove('performance-mode');
-    }, [settings]);
+    const handleNavigate = useCallback((targetView: View) => dispatch({ type: 'NAVIGATE', payload: targetView }), []);
 
     const handleSettingChange = useCallback((key: keyof GameSettings, value: any) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
+        dispatch({ type: 'UPDATE_SETTING', payload: { key, value } });
     }, []);
 
     const handleSettingsSave = useCallback(async () => {
         try {
-            await db.saveSettings(settings);
-            apiKeyManager.updateKeys(settings.apiKeys || []);
+            await db.saveSettings(state.settings);
+            apiKeyManager.updateKeys(state.settings.apiKeys || []);
             await updateStorageUsage();
             alert('Cài đặt đã được lưu!');
         } catch (error) {
             console.error("Failed to save settings to DB", error);
             alert('Lỗi: Không thể lưu cài đặt.');
         }
-    }, [settings, updateStorageUsage]);
+    }, [state.settings, updateStorageUsage]);
 
     const handleSlotSelection = useCallback((slotId: number) => {
-        const selectedSlot = saveSlots.find(s => s.id === slotId);
+        const selectedSlot = state.saveSlots.find(s => s.id === slotId);
         if (selectedSlot?.data?.playerCharacter) {
-            setLoadingMessage('Đang tải hành trình...');
-            setIsLoading(true);
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang tải hành trình...' } });
             setTimeout(() => {
-                try {
-                    setGameState(selectedSlot.data);
-                    setCurrentSlotId(slotId);
-                    setView('gamePlay');
-                } catch (error) {
-                    console.error("Lỗi nghiêm trọng khi tải game:", error);
-                    alert("Gặp lỗi không xác định khi tải game. Dữ liệu có thể bị hỏng.");
-                    setGameState(null);
-                    setCurrentSlotId(null);
-                    setView('saveSlots');
-                } finally {
-                    setIsLoading(false);
-                }
+                dispatch({ type: 'LOAD_GAME', payload: { gameState: selectedSlot.data!, slotId } });
             }, 500);
         } else {
-            setCurrentSlotId(slotId);
-            setView('characterCreation');
+            dispatch({ type: 'START_CHARACTER_CREATION', payload: slotId });
         }
-    }, [saveSlots]);
+    }, [state.saveSlots]);
 
-    const handleSaveGame = useCallback(async (currentState: GameState) => {
-        if (currentState && currentSlotId !== null) {
-            const gameStateToSave: GameState = { ...currentState, version: CURRENT_GAME_VERSION, lastSaved: new Date().toISOString() };
-            await db.saveGameState(currentSlotId, gameStateToSave);
-            setGameState(gameStateToSave);
+    const handleSaveGame = useCallback(async () => {
+        if (state.gameState && state.currentSlotId !== null) {
+            const gameStateToSave: GameState = { ...state.gameState, version: CURRENT_GAME_VERSION, lastSaved: new Date().toISOString() };
+            await db.saveGameState(state.currentSlotId, gameStateToSave);
+            dispatch({ type: 'UPDATE_GAME_STATE', payload: gameStateToSave });
             await loadSaveSlots();
         } else {
             throw new Error("Không có trạng thái game hoặc ô lưu hiện tại để lưu.");
         }
-    }, [currentSlotId, loadSaveSlots]);
+    }, [state.gameState, state.currentSlotId, loadSaveSlots]);
 
     const handleDeleteGame = useCallback(async (slotId: number) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn dữ liệu ở ô ${slotId}? Hành động này không thể hoàn tác.`)) {
-            try {
-                await db.deleteGameState(slotId);
-                await loadSaveSlots();
-                alert(`Đã xóa dữ liệu ở ô ${slotId}.`);
-            } catch (error) {
-                console.error("Failed to delete save slot", error);
-                alert('Lỗi: Không thể xóa dữ liệu.');
-            }
+        if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn dữ liệu ở ô ${slotId}?`)) {
+            await db.deleteGameState(slotId);
+            await loadSaveSlots();
         }
     }, [loadSaveSlots]);
-
+    
     const handleVerifyAndRepairSlot = useCallback(async (slotId: number) => {
-        setLoadingMessage(`Đang kiểm tra ô ${slotId}...`);
-        setIsLoading(true);
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: `Đang kiểm tra ô ${slotId}...` } });
         try {
             const slots = await db.getAllSaveSlots();
             const slotToVerify = slots.find(s => s.id === slotId);
             if (!slotToVerify?.data) throw new Error("Không có dữ liệu để kiểm tra.");
             const migratedGame = migrateGameState(slotToVerify.data);
-            const gameStateToSave: GameState = { ...migratedGame, version: CURRENT_GAME_VERSION };
-            await db.saveGameState(slotId, gameStateToSave);
+            await db.saveGameState(slotId, { ...migratedGame, version: CURRENT_GAME_VERSION });
             await loadSaveSlots();
             alert(`Ô ${slotId} đã được kiểm tra và cập nhật thành công!`);
         } catch (error) {
-            console.error(`Error verifying/repairing slot ${slotId}:`, error);
             alert(`Ô ${slotId} bị lỗi không thể sửa. Dữ liệu có thể đã bị hỏng nặng.`);
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
         }
     }, [loadSaveSlots]);
 
-    const handleNavigate = useCallback((targetView: View) => {
-        setView(targetView);
-    }, []);
-    
     const quitGame = useCallback(() => {
         cancelSpeech();
-        setGameState(null);
-        setCurrentSlotId(null);
-        setView('mainMenu');
+        dispatch({ type: 'QUIT_GAME' });
     }, [cancelSpeech]);
 
-    const handleGameStart = useCallback(async (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot },
-      npcDensity: NpcDensity,
-      difficulty: DifficultyLevel,
-      gameMode: 'classic' | 'transmigrator'
-    }) => {
-        if (currentSlotId === null) {
-            alert("Lỗi: Không có ô lưu nào được chọn.");
-            return;
-        }
-        setIsLoading(true);
-        setLoadingMessage('Đang khởi tạo thế giới mới... Quá trình này có thể mất vài phút. Vui lòng chờ...');
-
+    const handleGameStart = useCallback(async (gameStartData: any) => {
+        if (state.currentSlotId === null) return;
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang khởi tạo thế giới mới...' } });
         try {
-            const modLibrary: db.DbModInLibrary[] = await db.getModLibrary();
+            const modLibrary = await db.getModLibrary();
             const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
-            const activeMods: FullMod[] = [];
-            for (const modInfo of enabledModsInfo) {
-                const modContent = await db.getModContent(modInfo.modInfo.id);
-                if (modContent) activeMods.push(modContent);
-            }
-            
-            const newGameState = await createNewGameState(gameStartData, activeMods, activeWorldId, setLoadingMessage);
-            
-            setLoadingMessage('Lưu lại dòng thời gian đầu tiên...');
-            await db.saveGameState(currentSlotId, newGameState);
+            const activeMods: FullMod[] = await Promise.all(
+                enabledModsInfo.map(modInfo => db.getModContent(modInfo.modInfo.id).then(content => content!))
+            );
+            const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
+            await db.saveGameState(state.currentSlotId, newGameState);
             await loadSaveSlots();
-            
-            setLoadingMessage('Hoàn tất!');
             const hydratedGameState = migrateGameState(newGameState);
-            setGameState(hydratedGameState);
-            setView('gamePlay');
+            dispatch({ type: 'UPDATE_GAME_STATE', payload: hydratedGameState });
         } catch (error) {
-            console.error("Failed to start new game:", error);
-            alert(`Lỗi nghiêm trọng khi tạo thế giới: ${(error as Error).message}. Vui lòng thử lại.`);
+            alert(`Lỗi tạo thế giới: ${(error as Error).message}.`);
         } finally {
-            setIsLoading(false);
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
         }
-    }, [currentSlotId, loadSaveSlots, activeWorldId]);
+    }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
 
     const handleSetActiveWorldId = async (worldId: string) => {
         await db.setActiveWorldId(worldId);
-        _setActiveWorldId(worldId);
+        dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
     };
 
+    const handlePlayerAction = useCallback(async (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => {
+        if (state.isLoading || !state.gameState) return;
+        cancelSpeech();
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        abortControllerRef.current = new AbortController();
+
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Đạo đang suy diễn...' }});
+
+        try {
+            const finalState = await processPlayerAction(state.gameState, text, type, apCost, state.settings, showNotification, abortControllerRef.current.signal);
+            dispatch({ type: 'UPDATE_GAME_STATE', payload: finalState });
+        } catch (error: any) {
+            console.error("AI story generation failed:", error);
+            const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${error.message}`;
+            const currentState = state.gameState;
+            if (currentState) {
+                const lastId = currentState.storyLog.length > 0 ? currentState.storyLog[currentState.storyLog.length - 1].id : 0;
+                // FIX: Explicitly type log entries to satisfy StoryEntry type
+                const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
+                const errorEntry: StoryEntry = { id: lastId + 2, type: 'system', content: errorMessage };
+                dispatch({ type: 'UPDATE_GAME_STATE', payload: { ...currentState, storyLog: [...currentState.storyLog, playerActionEntry, errorEntry] } });
+            }
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
+        }
+    }, [state.gameState, state.isLoading, state.settings, cancelSpeech]);
+
+    const handleUpdatePlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
+        if (!state.gameState) return;
+        const newPlayerCharacter = updater(state.gameState.playerCharacter);
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: { ...state.gameState, playerCharacter: newPlayerCharacter } });
+    }, [state.gameState]);
+
     const contextValue: AppContextType = {
-        view, isLoading, loadingMessage, isMigratingData, migrationMessage, gameState, saveSlots,
-        currentSlotId, settings, storageUsage, activeWorldId, setGameState, handleNavigate,
-        handleSettingChange, handleSettingsSave, handleSlotSelection, handleSaveGame,
-        handleDeleteGame, handleVerifyAndRepairSlot, handleGameStart, handleSetActiveWorldId, quitGame,
-        speak, cancelSpeech
+        state, dispatch, handleNavigate, handleSettingChange, handleSettingsSave,
+        handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
+        handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
+        handlePlayerAction, handleUpdatePlayerCharacter
     };
 
     return (
@@ -496,8 +367,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
 export const useAppContext = (): AppContextType => {
     const context = useContext(AppContext);
-    if (!context) {
-        throw new Error('useAppContext must be used within an AppProvider');
-    }
+    if (!context) throw new Error('useAppContext must be used within an AppProvider');
     return context;
 };

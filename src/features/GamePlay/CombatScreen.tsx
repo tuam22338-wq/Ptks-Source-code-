@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, SkillTreeNode } from '../../types';
 import { decideNpcCombatAction } from '../../services/geminiService';
@@ -77,18 +78,23 @@ const TechniqueSelectionModal: React.FC<{
 
 
 const CombatScreen: React.FC = () => {
-    const { gameState, setGameState } = useAppContext();
+    // FIX: Use `state` and `dispatch` from `useAppContext`
+    const { state, dispatch } = useAppContext();
+    const { gameState } = state;
     const { showNotification } = useGameUIContext();
     const { combatState } = gameState!;
 
     const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
-        setGameState(prev => {
-            if (!prev) return null;
-            const newId = (prev.storyLog[prev.storyLog.length - 1]?.id || 0) + 1;
-            const newEntry = { ...newEntryData, id: newId };
-            return { ...prev, storyLog: [...prev.storyLog, newEntry] };
+        dispatch({
+            type: 'UPDATE_GAME_STATE',
+            payload: (prev => {
+                if (!prev) return null;
+                const newId = (prev.storyLog[prev.storyLog.length - 1]?.id || 0) + 1;
+                const newEntry = { ...newEntryData, id: newId };
+                return { ...prev, storyLog: [...prev.storyLog, newEntry] };
+            })(gameState)
         });
-    }, [setGameState]);
+    }, [dispatch, gameState]);
 
     const allPlayerTechniques = React.useMemo(() => {
         if (!gameState) return [];
@@ -150,7 +156,7 @@ const CombatScreen: React.FC = () => {
                         }
                     }
 
-                    setGameState(gs => {
+                    dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs => {
                         if (!gs) return null;
                         let newPlayer = { ...gs.playerCharacter };
                         const sinhMenhAttr = newPlayer.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
@@ -166,13 +172,13 @@ const CombatScreen: React.FC = () => {
                             return { ...nextState, combatState: null };
                         }
                         return nextState;
-                    });
+                    })(gameState) });
                 }
                 setIsProcessingTurn(false);
             }
         };
         processEnemyTurn();
-    }, [currentActorId, isPlayerTurn, combatState, gameState, setGameState, addStoryEntry, isProcessingTurn, showNotification, advanceTurn]);
+    }, [currentActorId, isPlayerTurn, combatState, gameState, dispatch, addStoryEntry, isProcessingTurn, showNotification, advanceTurn]);
 
     const handleBasicAttack = async () => {
         if (!isPlayerTurn || !selectedTargetId || isProcessingTurn || !gameState) return;
@@ -186,7 +192,7 @@ const CombatScreen: React.FC = () => {
         const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, false);
         addStoryEntry({ type: 'combat', content: `Bạn dùng đòn đánh thường lên ${target.identity.name}. ${narrative}` });
 
-        setGameState(gs => {
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs => {
             if (!gs || !gs.combatState) return null;
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
@@ -208,7 +214,7 @@ const CombatScreen: React.FC = () => {
                 return { ...postActionState, combatState: null };
             }
             return postActionState;
-        });
+        })(gameState) });
         setIsProcessingTurn(false);
     };
     
@@ -225,7 +231,7 @@ const CombatScreen: React.FC = () => {
         const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, true, technique.element);
         addStoryEntry({ type: 'combat', content: `Bạn thi triển [${technique.name}] lên ${target.identity.name}. ${narrative}` });
 
-        setGameState(gs => {
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs => {
             if (!gs || !gs.combatState) return null;
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
@@ -257,7 +263,7 @@ const CombatScreen: React.FC = () => {
                 return { ...postActionState, combatState: null };
             }
             return postActionState;
-        });
+        })(gameState) });
         setIsProcessingTurn(false);
     };
 

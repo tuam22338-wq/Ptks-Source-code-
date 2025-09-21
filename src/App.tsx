@@ -16,8 +16,8 @@ import WorldSelectionScreen from './features/WorldSelection/WorldSelectionScreen
 import { AppProvider, useAppContext } from './contexts/AppContext';
 
 const WeatherOverlay: React.FC = () => {
-    const { gameState } = useAppContext();
-    const weather = gameState?.gameDate?.weather;
+    const { state } = useAppContext();
+    const weather = state.gameState?.gameDate?.weather;
 
     const weatherClass = useMemo(() => {
         switch (weather) {
@@ -37,6 +37,7 @@ const WeatherOverlay: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
+    const { state } = useAppContext();
     const {
         view,
         isMigratingData,
@@ -45,7 +46,7 @@ const AppContent: React.FC = () => {
         loadingMessage,
         settings,
         gameState,
-    } = useAppContext();
+    } = state;
 
     const renderContent = () => {
         if (isMigratingData) {

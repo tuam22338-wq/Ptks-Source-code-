@@ -17,7 +17,7 @@ const menuItems = [
 ];
 
 const MainMenu: React.FC = () => {
-  const { handleNavigate, storageUsage } = useAppContext();
+  const { handleNavigate, state } = useAppContext();
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
   useEffect(() => {
@@ -77,12 +77,12 @@ const MainMenu: React.FC = () => {
                     <FaDatabase />
                     <span>Dung lượng lưu trữ:</span>
                 </div>
-                <strong className="font-mono">{storageUsage.usageString}</strong>
+                <strong className="font-mono">{state.storageUsage.usageString}</strong>
             </div>
             <div className="w-full bg-[var(--bg-interactive)] rounded-full h-1.5 border border-[var(--border-subtle)]">
                 <div 
-                    className={`h-1 rounded-full transition-all duration-500 ${storageUsage.percentage > 85 ? 'bg-gradient-to-r from-amber-500 to-red-600' : 'bg-gradient-to-r from-[var(--secondary-accent-color)] to-[var(--primary-accent-color)]'}`}
-                    style={{ width: `${storageUsage.percentage}%` }}
+                    className={`h-1 rounded-full transition-all duration-500 ${state.storageUsage.percentage > 85 ? 'bg-gradient-to-r from-amber-500 to-red-600' : 'bg-gradient-to-r from-[var(--secondary-accent-color)] to-[var(--primary-accent-color)]'}`}
+                    style={{ width: `${state.storageUsage.percentage}%` }}
                 ></div>
             </div>
         </div>
