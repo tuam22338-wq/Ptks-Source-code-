@@ -14,7 +14,8 @@ export const processPlayerAction = async (
     abortSignal: AbortSignal
 ): Promise<GameState> => {
     // This is essentially the logic from the old handleActionSubmit
-    const { newState: stateAfterTime, newDay } = advanceGameTime(gameState, apCost);
+    const { newState: stateAfterTime, newDay, notifications: timeNotifications } = advanceGameTime(gameState, apCost);
+    timeNotifications.forEach(showNotification);
     
     let stateAfterSim = stateAfterTime;
     let rumors: { text: string }[] = [];

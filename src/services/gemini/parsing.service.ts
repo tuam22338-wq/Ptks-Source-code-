@@ -218,7 +218,7 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
         }
     };
 
-    const prompt = `You are a precision data extraction engine for a text-based RPG. Your sole function is to analyze a narrative passage and output a structured JSON object representing concrete, real-time changes to the game state.
+    const prompt = `You are a precision data extraction engine for a text-based RPG. Your sole function is to analyze a narrative passage and output a structured JSON object representing concrete, mechanical changes to the game state.
 
     **Core Directive: Present-Moment Actuality**
     Your primary directive is to distinguish between events occurring in the narrative's present moment versus non-actual events.
@@ -235,7 +235,11 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
     **Processing Rules:**
     1.  Strictly analyze the provided narrative text in the context of the game state.
     2.  Extract ONLY new items, techniques, or quests. Do not re-extract entities the player already possesses.
-    3.  Direct damage or health loss must be represented as a \`statChanges\` entry for 'Sinh Mệnh' with a negative value.
+    3.  **Translate narrative descriptions into concrete stat changes.** This is your most important task.
+        - **Damage/Loss:** "bị thương nặng" -> \`{"attribute": "Sinh Mệnh", "change": -25}\`. "cảm thấy kiệt sức" -> \`{"attribute": "Linh Lực", "change": -20}\`.
+        - **Healing/Recovery:** "vết thương lành lại" -> \`{"attribute": "Sinh Mệnh", "change": 20}\`. "linh lực hồi phục" -> \`{"attribute": "Linh Lực", "change": 15}\`.
+        - **Vitals:** "ăn một chiếc bánh bao no bụng" -> \`{"attribute": "hunger", "change": 30}\`. "uống nước suối mát lạnh, cơn khát dịu đi" -> \`{"attribute": "thirst", "change": 40}\`. "cảm thấy đói cồn cào" -> \`{"attribute": "hunger", "change": -10}\`.
+        - **Cultivation:** "hấp thụ một luồng linh khí thuần khiết" -> \`{"attribute": "spiritualQi", "change": 100}\`.
     4.  Strictly adhere to the provided JSON schema. If no valid changes occur in a category, provide an empty array or omit the key.
 
     ${context}

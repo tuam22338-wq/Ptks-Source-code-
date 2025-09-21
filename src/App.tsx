@@ -1,5 +1,6 @@
 
 
+
 import React, { useMemo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -52,7 +53,8 @@ const AppContent: React.FC = () => {
         if (isMigratingData) {
           return <LoadingScreen message={migrationMessage} />;
         }
-        if (isLoading) {
+        // Only show fullscreen loader if it's NOT a gameplay AI response
+        if (isLoading && view !== 'gamePlay') {
           return <LoadingScreen message={loadingMessage} />;
         }
 

@@ -17,6 +17,7 @@ import { CULTIVATION_PATHS } from '../../constants';
 import InventoryModal from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 
 interface CustomStoryPlayerProps {
     gameState: GameState;
@@ -75,6 +76,62 @@ const GamePlayScreenContent: React.FC = memo(() => {
     
     const [activeActionTab, setActiveActionTab] = useState<'say' | 'act'>('act');
     const isAiResponding = state.isLoading && state.view === 'gamePlay';
+    const [responseTimer, setResponseTimer] = useState(0);
+
+    // --- PAGINATION LOGIC ---
+    const [currentPage, setCurrentPage] = useState(0);
+
+    const storyPages = useMemo(() => {
+        if (!gameState?.storyLog) return [];
+        const pages: StoryEntry[][] = [];
+        let currentPage: StoryEntry[] = [];
+
+        for (const entry of gameState.storyLog) {
+            if (entry.type === 'player-action' || entry.type === 'player-dialogue') {
+                if (currentPage.length > 0) {
+                    pages.push(currentPage);
+                }
+                currentPage = [entry];
+            } else {
+                if (currentPage.length === 0 && pages.length === 0) {
+                     // Handle initial narrative before any player action
+                     currentPage.push(entry);
+                } else {
+                    currentPage.push(entry);
+                }
+            }
+        }
+        if (currentPage.length > 0) {
+            pages.push(currentPage);
+        }
+        return pages;
+    }, [gameState?.storyLog]);
+    
+    useEffect(() => {
+        // Auto-navigate to the last page when new content is added
+        setCurrentPage(storyPages.length > 0 ? storyPages.length - 1 : 0);
+    }, [storyPages.length]);
+    // --- END PAGINATION LOGIC ---
+
+
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+        if (isAiResponding) {
+            setResponseTimer(0);
+            interval = setInterval(() => {
+                setResponseTimer(t => t + 1);
+            }, 1000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isAiResponding]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const secs = (seconds % 60).toString().padStart(2, '0');
+        return `${mins}:${secs}`;
+    };
 
     const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
         dispatch({
@@ -153,6 +210,9 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     const { playerCharacter, combatState, activeStory, discoveredLocations } = gameState;
     const currentLocation = useMemo(() => discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)!, [discoveredLocations, playerCharacter.currentLocationId]);
+    
+    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory);
+    const isOnLastPage = currentPage === storyPages.length - 1;
 
     return (
         <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col">
@@ -167,19 +227,35 @@ const GamePlayScreenContent: React.FC = memo(() => {
             <div className="gameplay-main-content">
                 {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop bg-[var(--bg-color)]/60" onClick={toggleSidebar}></div>}
 
-                <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0">
-                    <StoryLog story={gameState.storyLog} inventoryItems={playerCharacter.inventory.items} techniques={allPlayerTechniques} onSpeak={speak} />
-                    {isAiResponding && (
-                        <div className="flex-shrink-0 p-2 flex items-center justify-center gap-2">
-                           <LoadingSpinner size="sm" message={state.loadingMessage} />
-                        </div>
-                    )}
+                <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0 overflow-hidden">
+                    <StoryLog 
+                        pageEntries={storyPages[currentPage] || []} 
+                        inventoryItems={playerCharacter.inventory.items} 
+                        techniques={allPlayerTechniques} 
+                        onSpeak={speak} 
+                    />
                     
-                    <CombatScreen />
-                    {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes.flatMap(g => g.attributes)} />}
-                    {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater(gameState)})} />}
+                    {/* Pagination Controls & Loading */}
+                    <div className="flex-shrink-0 p-2 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex items-center justify-between">
+                        <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0 || isAiResponding} className="p-2 disabled:opacity-50"><FaArrowLeft /></button>
+                         {isAiResponding && isOnLastPage ? (
+                            <div className="flex items-center justify-center gap-2">
+                                <LoadingSpinner size="sm" message={state.loadingMessage} />
+                                <span className="font-mono text-amber-300">{formatTime(responseTimer)}</span>
+                            </div>
+                        ) : (
+                            <span className="text-sm font-semibold text-[var(--text-muted-color)]">Trang {currentPage + 1} / {storyPages.length}</span>
+                        )}
+                        <button onClick={() => setCurrentPage(p => Math.min(storyPages.length - 1, p + 1))} disabled={currentPage >= storyPages.length - 1 || isAiResponding} className="p-2 disabled:opacity-50"><FaArrowRight /></button>
+                    </div>
 
-                    {!combatState && !activeEvent && !activeStory && (
+                    {isSpecialPanelActive ? (
+                        <>
+                            <CombatScreen />
+                            {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes.flatMap(g => g.attributes)} />}
+                            {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater(gameState)})} />}
+                        </>
+                    ) : (
                         <ActionBar 
                             onActionSubmit={handleActionSubmit} 
                             onContextualAction={handleContextualAction}

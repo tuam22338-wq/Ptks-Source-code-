@@ -3,7 +3,7 @@ import type { StoryEntry, InventoryItem, CultivationTechnique } from '../../type
 import { FaVolumeUp } from 'react-icons/fa';
 
 interface StoryLogProps {
-    story: StoryEntry[];
+    pageEntries: StoryEntry[];
     inventoryItems: InventoryItem[];
     techniques: CultivationTechnique[];
     onSpeak: (text: string) => void;
@@ -47,31 +47,16 @@ const highlightText = (text: string, items: InventoryItem[], techniques: Cultiva
 };
 
 
-const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques, onSpeak }) => {
-    const endOfMessagesRef = useRef<HTMLDivElement>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const container = scrollContainerRef.current;
-        if (container) {
-            // A threshold of 100px. If the user is scrolled up more than this, we don't auto-scroll.
-            const isNearBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 100;
-
-            if (isNearBottom) {
-                // Using 'auto' instead of 'smooth' prevents jank during rapid stream updates.
-                endOfMessagesRef.current?.scrollIntoView({ behavior: 'auto' });
-            }
-        }
-    }, [story]);
-
+const StoryLog: React.FC<StoryLogProps> = ({ pageEntries, inventoryItems, techniques, onSpeak }) => {
+    
     const handleSpeak = (content: string) => {
         const cleanText = content.replace(/\[.*?\]/g, '');
         onSpeak(cleanText);
     };
 
     return (
-        <div ref={scrollContainerRef} className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
-            {story.map((entry) => {
+        <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
+            {pageEntries.map((entry) => {
                 const animationStyle = { animationDuration: '600ms' };
                 const contentWithHighlight = highlightText(entry.content, inventoryItems, techniques);
                 const isSpeakable = ['narrative', 'dialogue', 'action-result', 'system-notification', 'player-dialogue', 'combat'].includes(entry.type);
@@ -123,7 +108,6 @@ const StoryLog: React.FC<StoryLogProps> = ({ story, inventoryItems, techniques, 
                         );
                 }
             })}
-            <div ref={endOfMessagesRef} />
         </div>
     );
 };

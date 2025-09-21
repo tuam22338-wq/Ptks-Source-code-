@@ -1,4 +1,4 @@
-import type { GameState, ActiveEffect } from '../types';
+import type { GameState, ActiveEffect, PlayerCharacter } from '../types';
 import { SHICHEN_LIST, TIMEOFDAY_DETAILS } from '../constants';
 
 const DAYS_PER_SEASON = 30;
@@ -13,18 +13,58 @@ const SEVERE_DEHYDRATION_DEBUFF: Omit<ActiveEffect, 'id'> = { name: 'Chết Khá
 export const advanceGameTime = (
     currentState: GameState, 
     apCost: number
-): { newState: GameState; newDay: boolean } => {
+): { newState: GameState; newDay: boolean; notifications: string[] } => {
     let newDay = false;
-    let { gameDate, playerCharacter } = currentState;
+    const notifications: string[] = [];
+    let { gameDate, playerCharacter } = JSON.parse(JSON.stringify(currentState)); // Deep copy to prevent mutation
     let { vitals } = playerCharacter;
 
     // Vitals decay
     vitals.hunger = Math.max(0, vitals.hunger - apCost * 2); // 2 hunger per AP
     vitals.thirst = Math.max(0, vitals.thirst - apCost * 3); // 3 thirst per AP
 
-    // Apply/remove debuffs based on vitals
-    let newActiveEffects = [...playerCharacter.activeEffects];
+    // Process DOT effects and duration
+    let dotDamage = 0;
+    const expiredEffects: string[] = [];
+    
+    let currentEffects = [...playerCharacter.activeEffects];
 
+    const nextEffects = currentEffects.map(effect => {
+        if (effect.dot && effect.dot.type === 'Sinh Mệnh') {
+            dotDamage += effect.dot.damage * apCost; // Damage per AP
+        }
+        if (effect.duration > 0) {
+            const newDuration = effect.duration - apCost;
+            if (newDuration <= 0) {
+                expiredEffects.push(effect.name);
+                return null; // Mark for removal
+            }
+            return { ...effect, duration: newDuration };
+        }
+        return effect;
+    }).filter(Boolean) as ActiveEffect[]; // Remove nulls (expired effects)
+
+    if (expiredEffects.length > 0) {
+        notifications.push(`Hiệu ứng đã kết thúc: ${expiredEffects.join(', ')}.`);
+    }
+
+    if (dotDamage > 0) {
+        const sinhMenhAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
+        if (sinhMenhAttr) {
+            const newSinhMenhValue = (sinhMenhAttr.value as number) - dotDamage;
+            notifications.push(`Bạn mất ${dotDamage} Sinh Mệnh vì hiệu ứng bất lợi.`);
+            playerCharacter.attributes = playerCharacter.attributes.map(group => ({
+                ...group,
+                attributes: group.attributes.map(attr => 
+                    attr.name === 'Sinh Mệnh' ? { ...attr, value: Math.max(0, newSinhMenhValue) } : attr
+                )
+            }));
+        }
+    }
+    
+    playerCharacter.activeEffects = nextEffects;
+
+    // Apply/remove debuffs based on vitals
     const manageEffect = (effects: ActiveEffect[], condition: boolean, effectToAdd: Omit<ActiveEffect, 'id'>): ActiveEffect[] => {
         const hasEffect = effects.some(e => e.name === effectToAdd.name);
         if (condition && !hasEffect) {
@@ -37,20 +77,20 @@ export const advanceGameTime = (
     };
 
     // Manage Hunger Debuffs
-    newActiveEffects = manageEffect(newActiveEffects, vitals.hunger <= 20 && vitals.hunger > 0, STARVATION_DEBUFF);
-    newActiveEffects = manageEffect(newActiveEffects, vitals.hunger <= 0, SEVERE_STARVATION_DEBUFF);
-    if (newActiveEffects.some(e => e.name === SEVERE_STARVATION_DEBUFF.name)) {
-        newActiveEffects = newActiveEffects.filter(e => e.name !== STARVATION_DEBUFF.name);
+    let updatedEffects = manageEffect(playerCharacter.activeEffects, vitals.hunger <= 20 && vitals.hunger > 0, STARVATION_DEBUFF);
+    updatedEffects = manageEffect(updatedEffects, vitals.hunger <= 0, SEVERE_STARVATION_DEBUFF);
+    if (updatedEffects.some(e => e.name === SEVERE_STARVATION_DEBUFF.name)) {
+        updatedEffects = updatedEffects.filter(e => e.name !== STARVATION_DEBUFF.name);
     }
 
     // Manage Thirst Debuffs
-    newActiveEffects = manageEffect(newActiveEffects, vitals.thirst <= 20 && vitals.thirst > 0, DEHYDRATION_DEBUFF);
-    newActiveEffects = manageEffect(newActiveEffects, vitals.thirst <= 0, SEVERE_DEHYDRATION_DEBUFF);
-    if (newActiveEffects.some(e => e.name === SEVERE_DEHYDRATION_DEBUFF.name)) {
-        newActiveEffects = newActiveEffects.filter(e => e.name !== DEHYDRATION_DEBUFF.name);
+    updatedEffects = manageEffect(updatedEffects, vitals.thirst <= 20 && vitals.thirst > 0, DEHYDRATION_DEBUFF);
+    updatedEffects = manageEffect(updatedEffects, vitals.thirst <= 0, SEVERE_DEHYDRATION_DEBUFF);
+    if (updatedEffects.some(e => e.name === SEVERE_DEHYDRATION_DEBUFF.name)) {
+        updatedEffects = updatedEffects.filter(e => e.name !== DEHYDRATION_DEBUFF.name);
     }
-
-    playerCharacter = { ...playerCharacter, vitals, activeEffects: newActiveEffects };
+    playerCharacter.activeEffects = updatedEffects;
+    playerCharacter.vitals = vitals;
 
     let newActionPoints = gameDate.actionPoints - apCost;
 
@@ -83,7 +123,8 @@ export const advanceGameTime = (
 
     } else {
         const currentShichenIndex = SHICHEN_LIST.findIndex(s => s.name === gameDate.shichen);
-        const shichensToAdvance = Math.floor(apCost * 2); // Assuming 1 AP = 2 shichens (4 hours)
+        // Assuming 1 AP = 1 shichen for simplicity in this version
+        const shichensToAdvance = apCost; 
         const nextShichenIndex = (currentShichenIndex + shichensToAdvance) % SHICHEN_LIST.length;
         const newShichen = SHICHEN_LIST[nextShichenIndex].name;
 
@@ -101,5 +142,5 @@ export const advanceGameTime = (
         playerCharacter
     };
 
-    return { newState, newDay };
+    return { newState, newDay, notifications };
 };
