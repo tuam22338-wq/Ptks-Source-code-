@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
     FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch, FaBrain
@@ -9,13 +10,14 @@ import { fetchCommunityMods } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAppContext } from '../../contexts/AppContext';
 import AiGenesisScreen from './components/AiGenesisScreen';
+import ManualGenesisScreen from './components/ManualGenesisScreen';
 
 interface ModInLibrary {
     modInfo: ModInfo;
     isEnabled: boolean;
 }
 
-type LibraryView = 'main' | 'library' | 'genesis';
+type LibraryView = 'main' | 'library' | 'genesis' | 'manualGenesis';
 type ModFilter = 'all' | 'installed' | 'community';
 
 type UnifiedMod =
@@ -295,11 +297,17 @@ const ModsScreen: React.FC = () => {
     };
 
     const renderMainView = () => (
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in md:max-w-4xl mx-auto">
+        <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in lg:max-w-7xl mx-auto">
              <input type="file" accept=".json" ref={fileInputRef} onChange={handleFileSelected} className="hidden" />
               <MenuButton 
+                icon={FaFileSignature}
+                title="Sáng Tạo Dẫn Hướng"
+                description="Điền vào biểu mẫu để AI tạo ra một thế giới dựa trên ý tưởng của bạn."
+                onClick={() => setView('manualGenesis')}
+            />
+             <MenuButton 
                 icon={FaBrain}
-                title="AI Sáng Thế Ký"
+                title="Sáng Thế từ File"
                 description="Tải lên file .txt chứa lore để AI tự động tạo ra một thế giới hoàn chỉnh."
                 onClick={() => setView('genesis')}
             />
@@ -320,6 +328,8 @@ const ModsScreen: React.FC = () => {
     
     const renderContent = () => {
         switch(view) {
+            case 'manualGenesis':
+                return <ManualGenesisScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
             case 'genesis':
                 return <AiGenesisScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
             case 'library':

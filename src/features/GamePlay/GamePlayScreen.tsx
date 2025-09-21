@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -18,6 +19,7 @@ import InventoryModal from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
+import SummaryPanel from './components/SummaryPanel';
 
 interface CustomStoryPlayerProps {
     gameState: GameState;
@@ -231,7 +233,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
             
             <TopBar onBack={quitGame} onSave={handleSaveGame} gameDate={gameState.gameDate} majorEvents={gameState.majorEvents} />
             
-            <div className="gameplay-main-content">
+            <div className="gameplay-main-content relative">
                 {isSidebarOpen && window.innerWidth < 1024 && <div className="gameplay-sidebar-backdrop bg-[var(--bg-color)]/60" onClick={toggleSidebar}></div>}
 
                 <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0 overflow-hidden">
@@ -274,6 +276,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
                         />
                     )}
                 </main>
+
+                <SummaryPanel playerCharacter={playerCharacter} />
 
                 <div className={`gameplay-sidebar-wrapper ${isSidebarOpen ? 'is-open' : ''}`}>
                     <div className="w-full h-full bg-[var(--bg-subtle)] backdrop-blur-md border-l border-[var(--border-subtle)]">

@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus } from '../../types';
 import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS } from "../../constants";
@@ -95,17 +96,17 @@ export async function* generateStoryContinuationStream(gameState: GameState, use
 - **LUẬT TU LUYỆN:**
   1. Người chơi có thể dùng lệnh "tu luyện" để hấp thụ linh khí ngay cả khi chỉ có Công Pháp Phụ (Auxiliary Techniques).
   2. Tuy nhiên, nếu không có Công Pháp Chủ Đạo (Main Cultivation Technique), hiệu quả tu luyện sẽ kém và sức chiến đấu rất yếu. Hãy phản ánh sự yếu thế này trong lời kể nếu họ chiến đấu. Ví dụ: "Dù đã cố gắng vận chuyển linh khí, nhưng vì không có tâm pháp chủ đạo, luồng chân nguyên của bạn hỗn loạn và yếu ớt, chỉ có thể tạo ra một đòn tấn công cơ bản."
-- **QUẢN LÝ TRẠNG THÁI NHÂN VẬT:** Bạn chịu trách nhiệm hoàn toàn về các chỉ số sinh tồn của nhân vật. Sau khi tường thuật kết quả hành động, bạn PHẢI mô tả sự thay đổi về thể chất, bao gồm:
-  - **No Bụng & Nước Uống:** Mỗi hành động đều tiêu tốn thể lực. Hãy mô tả cảm giác đói hoặc khát của nhân vật một cách tự nhiên và giảm chỉ số tương ứng. Ví dụ: "Sau một hồi di chuyển, bụng bạn bắt đầu kêu ọt ọt."
-  - **Hiệu ứng & Sát thương theo thời gian:** Dựa vào các hiệu ứng đang có trên người nhân vật (ví dụ: Trúng Độc), hãy mô tả tác động của chúng và tính toán sát thương. Ví dụ: "Độc tố trong người lại phát tác, một cơn đau nhói truyền đến từ đan điền."
-  - **Hãy làm cho các thay đổi này rõ ràng trong văn bản để hệ thống có thể nhận biết, ví dụ: "Cơn đói của bạn tăng lên, chỉ số No Bụng giảm [5] điểm."**
+- **QUẢN LÝ TRẠNG THÁI NHÂN VẬT:** Bạn chịu trách nhiệm hoàn toàn về các chỉ số sinh tồn của nhân vật. Sau khi tường thuật kết quả hành động, bạn PHẢI mô tả sự thay đổi về thể chất một cách tự nhiên.
+  - **No Bụng & Nước Uống:** Mỗi hành động đều tiêu tốn thể lực. Hãy mô tả cảm giác đói hoặc khát của nhân vật. Ví dụ: "Sau một hồi di chuyển, bụng bạn bắt đầu kêu ọt ọt."
+  - **Hiệu ứng & Sát thương theo thời gian:** Dựa vào các hiệu ứng đang có trên người nhân vật (ví dụ: Trúng Độc), hãy mô tả tác động của chúng. Ví dụ: "Độc tố trong người lại phát tác, một cơn đau nhói truyền đến từ đan điền."
+  - **KHÔNG cần ghi rõ số liệu thay đổi (ví dụ: [Sinh Mệnh: -5]), hệ thống game sẽ tự động suy luận từ mô tả của bạn.**
 
 - Giọng văn: ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
 - **TUYỆT ĐỐI ƯU TIÊN HÀNH ĐỘNG CỦA NGƯỜI CHƠI:** Lời kể của bạn PHẢI là kết quả trực tiếp của hành động mà người chơi vừa thực hiện (sau khi đã được lọc qua tính cách). Không được phớt lờ hay tự ý thay đổi hành động của họ.
 - ${difficultyText}
 - **Độ dài mong muốn:** Cố gắng viết phản hồi có độ dài khoảng ${settings?.aiResponseWordCount || 2000} từ.
 - **TOÀN QUYỀN TRUY CẬP:** Bạn được cung cấp TOÀN BỘ bối cảnh game, bao gồm trạng thái nhân vật, nhiệm vụ, thế giới, và lịch sử. **HÃY SỬ DỤNG TRIỆT ĐỂ** thông tin này để đảm bảo mọi chi tiết trong lời kể của bạn đều nhất quán, logic và có chiều sâu. Ví dụ: nếu người chơi có danh vọng cao với một phe, NPC phe đó nên đối xử tốt hơn; nếu có một sự kiện thế giới đang diễn ra, câu chuyện nên phản ánh điều đó.
-- **Làm cho các thay đổi trạng thái game RÕ RÀNG:** Khi có sự thay đổi (nhận vật phẩm, tăng/giảm chỉ số, học công pháp, bắt đầu nhiệm vụ), hãy mô tả nó một cách rõ ràng trong văn bản. Ví dụ: "Bạn nhặt được [Linh Tâm Thảo] x3.", "Một luồng nhiệt ấm áp chảy khắp cơ thể, Linh Khí của bạn tăng lên [50] điểm.", "NPC nói: 'Hãy giúp ta làm việc này...', và một nhiệm vụ mới xuất hiện trong sổ tay của bạn: [Tên Nhiệm Vụ Mới]". Điều này rất quan trọng để hệ thống game có thể nhận biết và cập nhật.
+- **Làm cho các thay đổi trạng thái game RÕ RÀNG:** Khi có sự thay đổi (nhận vật phẩm, học công pháp, bắt đầu nhiệm vụ), hãy mô tả nó một cách rõ ràng trong văn bản. Sử dụng dấu ngoặc vuông [] để đánh dấu các đối tượng hoặc tên nhiệm vụ. Ví dụ: "Bạn nhặt được [Linh Tâm Thảo] x3.", "Bạn lĩnh ngộ được [Ngự Phong Quyết]", "NPC giao cho bạn nhiệm vụ [Điều tra hang động]".
 - **HỆ THỐNG 'DU HIỆP' (WANDERER SYSTEM):** Khi người chơi thực hiện các hành động tự do, không có mục tiêu cụ thể (ví dụ: "khám phá xung quanh", "đi dạo trong rừng", "nghe ngóng tin tức"), BẠN CÓ TOÀN QUYỀN chủ động tạo ra các sự kiện nhỏ, ngẫu nhiên. Đây có thể là:
     - Gặp một NPC lang thang với một câu chuyện hoặc một nhiệm vụ nhỏ.
     - Tình cờ phát hiện một hang động bí ẩn, một cây linh thảo quý, hoặc dấu vết của một con yêu thú.

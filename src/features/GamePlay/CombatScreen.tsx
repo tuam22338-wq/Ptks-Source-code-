@@ -75,11 +75,16 @@ const TechniqueSelectionModal: React.FC<{
 
 
 const CombatScreen: React.FC = () => {
-    // FIX: Use `state` and `dispatch` from `useAppContext`
     const { state, dispatch } = useAppContext();
     const { gameState } = state;
     const { showNotification } = useGameUIContext();
-    const { combatState } = gameState!;
+
+    // Early return if there's no game state or combat state. This prevents crashes.
+    if (!gameState || !gameState.combatState) {
+        return null;
+    }
+
+    const { combatState } = gameState;
 
     const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
         dispatch({
@@ -263,8 +268,6 @@ const CombatScreen: React.FC = () => {
         }});
         setIsProcessingTurn(false);
     };
-
-    if (!combatState || !gameState) return null;
 
     const playerSinhMenh = gameState.playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
     

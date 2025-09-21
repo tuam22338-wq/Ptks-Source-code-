@@ -11,7 +11,7 @@ export const processPlayerAction = async (
     apCost: number,
     settings: GameSettings,
     showNotification: (message: string) => void,
-    abortSignal: AbortSignal
+    abortSignal: AbortController['signal']
 ): Promise<GameState> => {
     // This is essentially the logic from the old handleActionSubmit
     const { newState: stateAfterTime, newDay, notifications: timeNotifications } = advanceGameTime(gameState, apCost);

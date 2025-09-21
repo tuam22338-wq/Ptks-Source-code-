@@ -64,7 +64,7 @@ const AttributeGrid: React.FC<{
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ character, onBreakthrough, realmSystem }) => {
     const { identity, attributes, spiritualRoot, cultivation, chosenPathIds, danhVong, healthStatus, activeEffects } = character;
-    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Thuộc tính Cơ Bản', 'Thiên Hướng']));
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['Tinh (精 - Nhục Thân)', 'Khí (气 - Chân Nguyên)', 'Thần (神 - Linh Hồn)', 'Ngoại Duyên (外缘 - Yếu Tố Bên Ngoài)']));
 
     const toggleGroup = (title: string) => {
         setExpandedGroups(prev => {

@@ -1,3 +1,4 @@
+
 :root {
   --bg-color: #1a2e29;
   --text-color: #f0ead6;
@@ -162,6 +163,9 @@ body.force-desktop {
     body:not(.force-mobile) .top-bar-sidebar-toggle {
         display: none;
     }
+    body:not(.force-mobile) .summary-panel {
+      display: block !important;
+    }
 }
 body.force-desktop .gameplay-main-content {
     flex-direction: row;
@@ -177,6 +181,10 @@ body.force-desktop .gameplay-sidebar-wrapper {
 body.force-desktop .top-bar-sidebar-toggle {
     display: none;
 }
+body.force-desktop .summary-panel {
+    display: block !important;
+}
+
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
@@ -856,4 +864,90 @@ body.force-desktop .top-bar-sidebar-toggle {
   border-radius: 9999px;
   background-color: currentColor;
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* --- NEW SUMMARY PANEL --- */
+.summary-panel {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 300px;
+    z-index: 30;
+    background-color: rgba(12, 10, 9, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(107, 114, 128, 0.4);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+    display: none; /* Hidden on mobile by default */
+}
+
+.summary-panel-vitals {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-bar-icon {
+    flex-shrink: 0;
+    width: 1.25rem;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.stat-bar-progress-wrapper {
+    flex-grow: 1;
+    height: 0.75rem;
+    background-color: rgba(0,0,0,0.4);
+    border-radius: 9999px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.5);
+}
+
+.stat-bar-progress {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease-in-out;
+}
+
+.stat-bar-text {
+    font-size: 0.7rem;
+    font-family: ui-monospace, monospace;
+    color: var(--text-muted-color);
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.summary-panel-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-muted-color);
+}
+
+.summary-panel-toggle:hover {
+    color: var(--text-color);
+}
+
+.summary-panel-attributes {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 0.375rem;
+    animation: fadeIn 0.3s ease-out;
 }
