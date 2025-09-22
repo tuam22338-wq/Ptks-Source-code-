@@ -167,6 +167,7 @@ ${context}
 Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối cảnh, hãy tiếp tục câu chuyện. Chỉ trả về đoạn văn tường thuật tiếp theo.
     `;
 
+    const settings = await db.getSettings();
     const model = settings?.mainTaskModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.mainTaskModel;
 
@@ -349,4 +350,63 @@ export const askAiAssistant = async (query: string, gameState: GameState): Promi
     }, specificApiKey);
 
     return response.text.trim();
+};
+
+// FIX: Add missing generateInnerDemonTrial function
+export const generateInnerDemonTrial = async (gameState: GameState, targetRealm: RealmConfig, targetStageName: string): Promise<InnerDemonTrial> => {
+    const { playerCharacter } = gameState;
+
+    const trialSchema = {
+        type: Type.OBJECT,
+        properties: {
+            challenge: { type: Type.STRING, description: "Một câu hỏi hoặc tình huống thử thách đạo tâm của người chơi, dựa trên xuất thân, tính cách và các sự kiện đã trải qua. Ví dụ: 'Sức mạnh và tình thân, ngươi chọn gì?'." },
+            choices: {
+                type: Type.ARRAY,
+                description: "3 lựa chọn cho người chơi. Chỉ có MỘT lựa chọn là đúng đắn (isCorrect = true), thể hiện đạo tâm kiên định. Hai lựa chọn còn lại đại diện cho sự yếu đuối, tham lam, hoặc sợ hãi.",
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        text: { type: Type.STRING },
+                        isCorrect: { type: Type.BOOLEAN }
+                    },
+                    required: ['text', 'isCorrect']
+                }
+            }
+        },
+        required: ['challenge', 'choices']
+    };
+
+    const prompt = `Bạn là Game Master AI, chuyên tạo ra thử thách "Tâm Ma Kiếp" cho người chơi trong game tu tiên.
+    Dựa vào thông tin người chơi và cảnh giới họ sắp đột phá, hãy tạo ra một thử thách tâm ma độc đáo.
+
+    **Thông tin người chơi:**
+    - Tên: ${playerCharacter.identity.name}
+    - Tính cách: ${playerCharacter.identity.personality}
+    - Xuất thân: ${playerCharacter.identity.origin}
+    - Tóm tắt cốt truyện gần đây: ${gameState.storySummary || "Chưa có sự kiện gì đáng chú ý."}
+
+    **Bối cảnh đột phá:**
+    - Đang cố gắng đột phá lên: ${targetRealm.name} - ${targetStageName}
+    - Mô tả kiếp nạn: ${targetRealm.tribulationDescription}
+
+    **Nhiệm vụ:**
+    1.  Tạo ra một câu "challenge" (thử thách) đánh vào điểm yếu, quá khứ, hoặc mâu thuẫn nội tâm của người chơi.
+    2.  Tạo ra 3 "choices" (lựa chọn):
+        -   1 lựa chọn đúng (isCorrect: true): Thể hiện sự kiên định, vượt qua tâm ma.
+        -   2 lựa chọn sai (isCorrect: false): Thể hiện sự sa ngã, yếu đuối, hoặc đi sai đường.
+    
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
+
+    const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    const response = await generateWithRetry({
+        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: trialSchema
+        }
+    }, specificApiKey);
+    
+    return JSON.parse(response.text) as InnerDemonTrial;
 };
