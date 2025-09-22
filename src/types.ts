@@ -314,17 +314,6 @@ export type ModAuxiliaryTechnique = Omit<CultivationTechnique, 'id' | 'type'> & 
     requirements?: StatBonus[];
     tags?: string[];
 };
-
-export type ModSkillTreeNode = Omit<SkillTreeNode, 'isUnlocked'>;
-
-export interface ModMainCultivationTechnique {
-    id: string;
-    name: string;
-    description: string;
-    skillTreeNodes: ModSkillTreeNode[];
-    compatibleElements: Element[];
-    minPurity?: number;
-}
 // --- END UPDATED TECHNIQUE MODDING TYPES ---
 
 
@@ -349,7 +338,7 @@ export type ModNpc = {
     tags: string[];
 };
 
-export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'location' | 'worldData' | 'npc' | 'auxiliaryTechnique' | 'mainCultivationTechnique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem' | 'customDataPack';
+export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'location' | 'worldData' | 'npc' | 'auxiliaryTechnique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem' | 'customDataPack';
 
 export type EventTriggerType = 'ON_ENTER_LOCATION' | 'ON_TALK_TO_NPC' | 'ON_GAME_DATE';
 export interface EventTrigger {
@@ -435,7 +424,6 @@ export interface ModContent {
     locations?: Omit<ModLocation, 'id'>[];
     worldData?: Omit<ModWorldData, 'id'>[];
     auxiliaryTechniques?: Omit<ModAuxiliaryTechnique, 'id'>[];
-    mainCultivationTechniques?: Omit<ModMainCultivationTechnique, 'id'>[];
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];
     recipes?: Omit<AlchemyRecipe, 'id'>[];
@@ -612,36 +600,6 @@ export interface CultivationTechnique {
     bonuses?: StatBonus[];
 }
 
-
-// --- New Main Cultivation Technique System ---
-export type SkillTreeNodeType = 'passive_bonus' | 'active_skill' | 'core_enhancement';
-
-export interface SkillTreeNode {
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    realmRequirement: string; // ID of the realm, e.g., 'luyen_khi'
-    cost: number; // Technique points to unlock
-    isUnlocked: boolean;
-    type: SkillTreeNodeType;
-    childrenIds: string[];
-    position: { x: number; y: number }; // For rendering the tree
-    bonuses?: StatBonus[];
-    activeSkill?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
-}
-
-export interface MainCultivationTechnique {
-    id: string;
-    name: string;
-    description: string;
-    skillTreeNodes: Record<string, SkillTreeNode>; // Keyed by node ID
-    compatibleElements: Element[];
-    minPurity?: number;
-}
-// --- End New System ---
-
-
 export interface PlayerNpcRelationship {
     npcId: string;
     type: string; // e.g., 'Phụ thân', 'Bằng hữu', 'Thanh mai trúc mã'
@@ -763,10 +721,9 @@ export interface PlayerCharacter {
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     vitals: PlayerVitals;
     
-    // New Technique System
-    mainCultivationTechnique: MainCultivationTechnique | null;
-    auxiliaryTechniques: CultivationTechnique[];
-    techniquePoints: number;
+    // New Simplified Technique System
+    mainCultivationTechniqueInfo: { name: string; description: string; } | null;
+    techniques: CultivationTechnique[];
 
     relationships: PlayerNpcRelationship[];
     danhVong: DanhVong;

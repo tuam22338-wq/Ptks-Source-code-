@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, SkillTreeNode } from '../../types';
+import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry } from '../../types';
 import { decideNpcCombatAction } from '../../services/geminiService';
 import * as combatManager from '../../utils/combatManager';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -100,10 +100,7 @@ const CombatScreen: React.FC = () => {
 
     const allPlayerTechniques = React.useMemo(() => {
         if (!gameState) return [];
-        const activeSkills = Object.values(gameState.playerCharacter.mainCultivationTechnique?.skillTreeNodes || {})
-            .filter((node: SkillTreeNode) => node.isUnlocked && node.type === 'active_skill' && node.activeSkill)
-            .map((node: SkillTreeNode) => ({ ...node.activeSkill!, id: node.id, level: 1, maxLevel: 10 } as CultivationTechnique));
-        return [...activeSkills, ...gameState.playerCharacter.auxiliaryTechniques];
+        return gameState.playerCharacter.techniques || [];
     }, [gameState]);
 
     const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);

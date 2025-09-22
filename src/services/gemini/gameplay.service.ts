@@ -31,11 +31,6 @@ const createFullGameStateContext = (gameState: GameState, forAssistant: boolean 
     .map(a => `${a.name}: ${a.value}${a.maxValue ? `/${a.maxValue}`: ''}`)
     .join(', ');
 
-  const allTechniques = [
-      playerCharacter.mainCultivationTechnique?.name,
-      ...playerCharacter.auxiliaryTechniques.map(t => t.name)
-  ].filter(Boolean).join(', ');
-
   const activeEffectsSummary = playerCharacter.activeEffects.length > 0
     ? `Hiệu ứng: ${playerCharacter.activeEffects.map(e => e.name).join(', ')}.`
     : 'Không có hiệu ứng đặc biệt.';
@@ -64,7 +59,8 @@ ${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
 **1. Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}.
 - **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
-- **Công Pháp Đã Học:** ${allTechniques || 'Chưa có'}.
+- **Công Pháp Chủ Đạo:** ${playerCharacter.mainCultivationTechniqueInfo ? `${playerCharacter.mainCultivationTechniqueInfo.name} - ${playerCharacter.mainCultivationTechniqueInfo.description}` : 'Chưa có'}.
+- **Thần Thông/Kỹ Năng:** ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa có'}.
 - **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: **${playerCharacter.identity.personality}**.
 - **Trang Bị:** ${equipmentSummary || 'Không có'}.
 - **Chỉ Số Chính:** ${keyAttributes}.
@@ -118,6 +114,13 @@ ${nsfwInstruction}
   2. Mọi chi tiết trong lời kể của bạn (tên địa danh, phe phái, quy luật tu luyện,...) PHẢI tuân thủ nghiêm ngặt thông tin trong mục này, **ghi đè** lên các kiến thức mặc định nếu có mâu thuẫn.
   3. Hãy sử dụng các danh từ riêng (tên nhân vật, vật phẩm, địa danh) từ bối cảnh mod một cách tự nhiên trong lời kể.
 
+- **LUẬT SÁNG TẠO (CREATIVE RULE):** Bạn có quyền năng sáng tạo ra các [Công Pháp], [Vật Phẩm] mới khi câu chuyện yêu cầu hoặc để tạo ra kỳ ngộ bất ngờ cho người chơi.
+  - Khi bạn tạo ra một công pháp hoặc vật phẩm mới, hãy mô tả nó một cách chi tiết trong lời kể.
+  - **QUAN TRỌNG:** Sử dụng dấu ngoặc vuông \`[]\` để đánh dấu tên của vật phẩm/công pháp mới. Ví dụ: "Trong hang động, ngươi phát hiện một quyển trục da thú cũ kỹ, trên đó ghi bốn chữ [Vạn Thú Quyết]."
+  - AI Phân Tích sẽ tự động đọc mô tả của bạn, tạo ra chỉ số và thêm công pháp/vật phẩm đó vào dữ liệu game. Hãy mô tả sao cho AI Phân Tích có thể hiểu được (ví dụ: mô tả công pháp tấn công thì nên có yếu tố sát thương, phòng ngự thì nên có yếu tố bảo vệ).
+
+- **LUẬT CÔNG PHÁP CHỦ ĐẠO:** Công pháp chủ đạo của người chơi (nếu có) được mô tả bằng một đoạn văn bản. BẠN chịu trách nhiệm cho sự tiến hóa của nó. Khi người chơi tu luyện hoặc đột phá, hãy mô tả công pháp của họ trở nên mạnh mẽ hơn như thế nào, hoặc họ lĩnh ngộ được những khả năng mới ra sao. Khi bạn mô tả một khả năng mới có thể sử dụng được (như một kỹ năng), AI Phân Tích sẽ tự động nhận diện và thêm nó vào danh sách kỹ năng của người chơi.
+
 - **LUẬT SINH THÀNH ĐỘNG (DYNAMIC GENESIS RULE):**
   1.  **ĐIỀU KIỆN:** Khi game vừa bắt đầu (lịch sử trò chơi rất ngắn) VÀ "Linh Căn" của nhân vật là 'Chưa xác định', nhiệm vụ **đầu tiên** và **quan trọng nhất** của bạn là tạo ra một sự kiện tường thuật để xác định Linh Căn cho người chơi.
   2.  **SỰ KIỆN:** Sự kiện này phải phù hợp với bối cảnh thế giới (mặc định hoặc từ mod). Ví dụ: một buổi lễ thức tỉnh trong làng, một kỳ ngộ với trưởng lão, một tai nạn bất ngờ kích hoạt tiềm năng...
@@ -132,9 +135,7 @@ ${nsfwInstruction}
   - **Ví dụ (Tà Ác):** Người chơi nhập "giúp đỡ bà lão qua đường". Bạn nên kể: "[${playerCharacter.identity.name}] liếc nhìn bà lão, cười khẩy: 'Giúp bà ta thì được lợi gì? Thật lãng phí thời gian.' Nói rồi, [anh ta/cô ta] lách qua đám đông, bỏ mặc bà lão phía sau."
   - **Ví dụ (Phi lý):** Nếu một nhân vật Chính Trực được yêu cầu "tụt quần giữa chợ", nhân vật sẽ từ chối trong kinh ngạc và phẫn nộ, thay vì mù quáng tuân theo.
   4. TUYỆT ĐỐI không được để nhân vật hành động phi logic, phá vỡ hình tượng đã xây dựng. Bạn là người bảo vệ cho "linh hồn" của nhân vật.
-- **LUẬT TU LUYỆN:**
-  1. Người chơi có thể dùng lệnh "tu luyện" để hấp thụ linh khí ngay cả khi chỉ có Công Pháp Phụ (Auxiliary Techniques).
-  2. Tuy nhiên, nếu không có Công Pháp Chủ Đạo (Main Cultivation Technique), hiệu quả tu luyện sẽ kém và sức chiến đấu rất yếu. Hãy phản ánh sự yếu thế này trong lời kể nếu họ chiến đấu. Ví dụ: "Dù đã cố gắng vận chuyển linh khí, nhưng vì không có tâm pháp chủ đạo, luồng chân nguyên của bạn hỗn loạn và yếu ớt, chỉ có thể tạo ra một đòn tấn công cơ bản."
+
 - **LUẬT TƯƠNG TÁC THẾ GIỚI:**
   1.  **Di Chuyển:** Nếu người chơi ra lệnh "đi đến [tên địa điểm]", hãy kiểm tra xem địa điểm đó có phải là hàng xóm (lối đi có thể đến) của địa điểm hiện tại không (dựa vào Bối Cảnh Game). Nếu có, hãy mô tả cuộc hành trình và kết thúc bằng việc thông báo họ đã đến nơi. Ví dụ: "Sau nửa canh giờ, [tên địa điểm] đã hiện ra trước mắt.". Nếu không, hãy trả lời rằng không có đường đi trực tiếp.
   2.  **Tương tác NPC:** Nếu người chơi ra lệnh "nói chuyện với [tên NPC]", hãy kiểm tra xem NPC đó có ở địa điểm hiện tại không. Nếu có, hãy bắt đầu một cuộc đối thoại. Nếu không, hãy thông báo NPC đó không có ở đây.

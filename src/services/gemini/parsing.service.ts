@@ -1,5 +1,6 @@
 
 
+
 import { Type } from "@google/genai";
 import type { GameState, InventoryItem, CultivationTechnique, ActiveQuest, ActiveEffect, PlayerVitals } from '../../types';
 import { generateWithRetry } from './gemini.core';
@@ -230,8 +231,9 @@ const systemActionSchema = {
 const buildContext = (narrative: string, gameState: GameState) => {
     const existingItemNames = gameState.playerCharacter.inventory.items.map(i => i.name);
     const existingTechniqueNames = [
-        ...(gameState.playerCharacter.mainCultivationTechnique ? [gameState.playerCharacter.mainCultivationTechnique.name] : []),
-        ...gameState.playerCharacter.auxiliaryTechniques.map(t => t.name)
+// Fix: Use mainCultivationTechniqueInfo and techniques instead of deprecated properties
+        ...(gameState.playerCharacter.mainCultivationTechniqueInfo ? [gameState.playerCharacter.mainCultivationTechniqueInfo.name] : []),
+        ...gameState.playerCharacter.techniques.map(t => t.name)
     ];
     const unencounteredNpcs = gameState.activeNpcs.filter(npc => !gameState.encounteredNpcIds.includes(npc.id));
     const unencounteredNpcNames = unencounteredNpcs.map(n => n.identity.name);

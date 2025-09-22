@@ -65,7 +65,8 @@ export const processPlayerAction = async (
 
     // Apply parsed techniques
     if (parsedData.newTechniques && parsedData.newTechniques.length > 0) {
-        let updatedTechniques = [...pc.auxiliaryTechniques];
+// Fix: Use the correct 'techniques' property instead of the deprecated 'auxiliaryTechniques'
+        let updatedTechniques = [...pc.techniques];
         let effectsFromTechniques: ActiveEffect[] = [];
         parsedData.newTechniques.forEach(tech => {
             if (!updatedTechniques.some(t => t.name === tech.name)) {
@@ -74,7 +75,8 @@ export const processPlayerAction = async (
                 if (tech.bonuses) effectsFromTechniques.push({ id: `tech-passive-${tech.id}`, name: `${tech.name} (Bị Động)`, source: `technique:${tech.id}`, description: `Hiệu quả bị động từ công pháp ${tech.name}.`, bonuses: tech.bonuses, duration: -1, isBuff: true });
             }
         });
-        pc.auxiliaryTechniques = updatedTechniques;
+// Fix: Use the correct 'techniques' property instead of the deprecated 'auxiliaryTechniques'
+        pc.techniques = updatedTechniques;
             if (effectsFromTechniques.length > 0) {
             pc.activeEffects = [...pc.activeEffects, ...effectsFromTechniques];
         }
@@ -138,7 +140,8 @@ export const processPlayerAction = async (
                                 maxLevel: 10,
                                 ...sectToJoin.startingTechnique,
                             };
-                            pc.auxiliaryTechniques.push(newTechnique);
+// Fix: Use the correct 'techniques' property instead of the deprecated 'auxiliaryTechniques'
+                            pc.techniques.push(newTechnique);
                             showNotification(`Đã học được công pháp nhập môn: [${newTechnique.name}]!`);
                         }
                         showNotification(`Đã gia nhập ${sectToJoin.name}!`);

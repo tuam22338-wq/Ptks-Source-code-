@@ -182,6 +182,8 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
           spiritualRoot: null,
+          techniques: [],
+          mainCultivationTechniqueInfo: null,
       };
 
       await handleGameStart({ characterData, npcDensity, difficulty, gameMode });

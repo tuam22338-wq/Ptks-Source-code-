@@ -1,11 +1,11 @@
 import { FaQuestionCircle } from 'react-icons/fa';
 import {
     ATTRIBUTES_CONFIG, CURRENT_GAME_VERSION, REALM_SYSTEM, SECTS,
-    MAIN_CULTIVATION_TECHNIQUES_DATABASE, DEFAULT_WORLD_ID, CURRENCY_ITEMS,
+    DEFAULT_WORLD_ID, CURRENCY_ITEMS,
     PT_FACTIONS, PT_WORLD_MAP, PT_NPC_LIST, PT_MAJOR_EVENTS,
     JTTW_FACTIONS, JTTW_WORLD_MAP, JTTW_NPC_LIST, JTTW_MAJOR_EVENTS
 } from "../constants";
-import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, MainCultivationTechnique, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals } from "../types";
+import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 import * as db from '../services/dbService';
 import {
@@ -63,13 +63,15 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
     // Migrate from 1.0.2 to 1.0.3 (Example: Add Main Cultivation Technique system)
     if (version < "1.0.3") {
         console.log(`Migrating save from v${version} to v1.0.3...`);
-        if (dataToProcess.playerCharacter && dataToProcess.playerCharacter.techniques) {
-             const randomIndex = Math.floor(Math.random() * MAIN_CULTIVATION_TECHNIQUES_DATABASE.length);
-             const newTechnique = JSON.parse(JSON.stringify(MAIN_CULTIVATION_TECHNIQUES_DATABASE[randomIndex]));
-             if(newTechnique) {
-                newTechnique.skillTreeNodes['root'].isUnlocked = true;
-             }
-             dataToProcess.playerCharacter.mainCultivationTechnique = newTechnique;
+        if (dataToProcess.playerCharacter) {
+             const placeholderTechnique = {
+                 id: "migrated_placeholder",
+                 name: "Công Pháp Cũ",
+                 description: "Công pháp này được di trú từ phiên bản cũ của game.",
+                 skillTreeNodes: { root: { isUnlocked: true } },
+                 compatibleElements: ['Vô'],
+             };
+             dataToProcess.playerCharacter.mainCultivationTechnique = placeholderTechnique;
              dataToProcess.playerCharacter.auxiliaryTechniques = dataToProcess.playerCharacter.techniques || [];
              delete dataToProcess.playerCharacter.techniques;
              dataToProcess.playerCharacter.techniquePoints = dataToProcess.playerCharacter.techniquePoints ?? 1;
@@ -123,11 +125,58 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
         version = "1.0.6";
     }
 
-    // Migrate to 1.0.7 (current version)
+    // Migrate to 1.0.7
     if (version < "1.0.7") {
         console.log(`Migrating save from v${version} to v1.0.7...`);
         // No structural changes, just version bump
         version = "1.0.7";
+    }
+
+    // Migrate to 1.0.8 (Main Technique Overhaul)
+    if (version < "1.0.8") {
+        console.log(`Migrating save from v${version} to v1.0.8...`);
+        if (dataToProcess.playerCharacter) {
+            const pc = dataToProcess.playerCharacter;
+            
+            // Check if old fields exist
+            if (pc.hasOwnProperty('mainCultivationTechnique') || pc.hasOwnProperty('auxiliaryTechniques')) {
+                let allTechniques: CultivationTechnique[] = [...(pc.auxiliaryTechniques || [])];
+                
+                if (pc.mainCultivationTechnique && pc.mainCultivationTechnique.name) {
+                    pc.mainCultivationTechniqueInfo = {
+                        name: pc.mainCultivationTechnique.name,
+                        description: pc.mainCultivationTechnique.description,
+                    };
+                    
+                    const skillTreeNodes = pc.mainCultivationTechnique.skillTreeNodes || {};
+                    Object.values(skillTreeNodes).forEach((node: any) => {
+                         if (node.isUnlocked && node.type === 'active_skill' && node.activeSkill) {
+                            const newSkill: CultivationTechnique = { 
+                                ...node.activeSkill, 
+                                id: node.id, 
+                                level: 1, 
+                                maxLevel: 10 
+                            };
+                            allTechniques.push(newSkill);
+                        }
+                    });
+                } else {
+                    pc.mainCultivationTechniqueInfo = null;
+                }
+                
+                pc.techniques = allTechniques;
+
+                delete pc.mainCultivationTechnique;
+                delete pc.auxiliaryTechniques;
+                delete pc.techniquePoints;
+
+            } else if (!pc.hasOwnProperty('techniques')) {
+                // Handle cases that might have slipped through or are new but based on old code
+                pc.techniques = [];
+                pc.mainCultivationTechniqueInfo = null;
+            }
+        }
+        version = "1.0.8";
     }
 
 
@@ -284,7 +333,7 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 
 export const createNewGameState = async (
     gameStartData: {
-        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' |'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong },
+        characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechniqueInfo' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong },
         npcDensity: NpcDensity,
         difficulty: DifficultyLevel,
         gameMode: 'classic' | 'transmigrator',
@@ -406,9 +455,8 @@ export const createNewGameState = async (
         currentLocationId: startingLocation.id,
         equipment: {},
         vitals: initialVitals,
-        mainCultivationTechnique: null,
-        auxiliaryTechniques: [],
-        techniquePoints: 0,
+        mainCultivationTechniqueInfo: null,
+        techniques: [],
         relationships: [],
         danhVong: characterData.danhVong,
         reputation: factionsToUse.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),

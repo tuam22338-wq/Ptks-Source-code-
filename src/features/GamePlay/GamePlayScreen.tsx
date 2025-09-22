@@ -2,8 +2,10 @@
 
 
 
+
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, SkillTreeNode, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -268,10 +270,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
     
     const allPlayerTechniques = useMemo(() => {
         if (!gameState) return [];
-        const activeSkills = Object.values(gameState.playerCharacter.mainCultivationTechnique?.skillTreeNodes || {})
-            .filter((node: SkillTreeNode) => node.isUnlocked && node.type === 'active_skill' && node.activeSkill)
-            .map((node: SkillTreeNode) => ({ ...node.activeSkill!, id: node.id, level: 1, maxLevel: 10 } as CultivationTechnique));
-        return [...activeSkills, ...gameState.playerCharacter.auxiliaryTechniques];
+        return gameState.playerCharacter.techniques || [];
     }, [gameState]);
 
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
