@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import type { GameState } from '../../../../../types';
+import type { GameState } from '../../../../types';
 import { FaTimes, FaUser, FaMapMarkedAlt, FaBook, FaBrain, FaQuestionCircle } from 'react-icons/fa';
 
 // Import panel components
@@ -39,7 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
     const ActivePanel = PANELS.find(p => p.id === activePanelId)?.component;
     
     const panelProps = {
-        character: { playerCharacter: gameState.playerCharacter },
+        character: { playerCharacter: gameState.playerCharacter, gameState: gameState },
         map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
         memory: { gameState },
