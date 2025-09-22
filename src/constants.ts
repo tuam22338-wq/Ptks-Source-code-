@@ -1,4 +1,5 @@
-import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition } from './types';
+
+import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition, WorldlyBackground, TransmigratorLegacy } from './types';
 import { UI_ICONS } from './data/uiIcons';
 
 // Re-export non-world-specific data
@@ -30,6 +31,63 @@ export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
 export const CURRENT_GAME_VERSION = "1.0.10";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
+
+// --- NEW CHARACTER CREATION DATA ---
+export const WORLDLY_BACKGROUNDS: WorldlyBackground[] = [
+    {
+        id: 'noble_child',
+        name: 'Con Cháu Dòng Dõi Quý Tộc',
+        description: 'Sinh ra trong nhung lụa, bạn có khởi đầu thuận lợi về tiền bạc và các mối quan hệ, nhưng cũng dễ vướng vào tranh đấu gia tộc.',
+        bonuses: [{ attribute: 'Mị Lực', value: 5 }, { attribute: 'Ngộ Tính', value: 2 }],
+        startingItems: [
+            { name: 'Ngọc Bội Gia Truyền', quantity: 1, description: 'Một miếng ngọc bội tinh xảo, có thể là vật tín.', type: 'Tạp Vật', quality: 'Bảo Phẩm', icon: '💎' },
+        ],
+    },
+    {
+        id: 'street_orphan',
+        name: 'Cô Nhi Đầu Đường',
+        description: 'Lớn lên trong sự thiếu thốn và hiểm nguy, bạn không có gì ngoài sự lanh lợi và ý chí sinh tồn mãnh liệt.',
+        bonuses: [{ attribute: 'Thân Pháp', value: 5 }, { attribute: 'Bền Bỉ', value: 2 }],
+        startingItems: [],
+    },
+    {
+        id: 'library_disciple',
+        name: 'Đệ Tử Thư Viện',
+        description: 'Dành cả tuổi thơ đắm mình trong sách vở, bạn có kiến thức uyên bác và khả năng lĩnh ngộ vượt trội.',
+        bonuses: [{ attribute: 'Ngộ Tính', value: 5 }, { attribute: 'Đạo Tâm', value: 2 }],
+        startingItems: [
+            { name: 'Sách Cổ Rách Nát', quantity: 1, description: 'Một cuốn sách cũ ghi lại những câu chuyện kỳ dị, có thể ẩn chứa bí mật.', type: 'Tạp Vật', quality: 'Phàm Phẩm', icon: '📖' },
+        ],
+    },
+    {
+        id: 'mountain_hunter',
+        name: 'Thợ Săn Vùng Sơn Cước',
+        description: 'Lớn lên giữa núi rừng hoang dã, bạn thông thạo địa hình và có kỹ năng sinh tồn tuyệt vời.',
+        bonuses: [{ attribute: 'Lực Lượng', value: 3 }, { attribute: 'Thân Pháp', value: 3 }, { attribute: 'Căn Cốt', value: 2 }],
+        startingItems: [
+            { name: 'Cung Gỗ Thô', quantity: 1, description: 'Một cây cung săn đơn giản nhưng hiệu quả.', type: 'Vũ Khí', quality: 'Phàm Phẩm', icon: '🏹' },
+        ],
+    }
+];
+
+export const TRANSMIGRATOR_LEGACIES: TransmigratorLegacy[] = [
+    {
+        id: 'system_user',
+        name: 'Kiến Thức Dị Giới (Hệ Thống)',
+        description: 'Bạn mang theo một "Hệ Thống" bí ẩn, cung cấp nhiệm vụ, cửa hàng điểm thưởng và khả năng phân tích độc nhất.',
+        bonuses: [{ attribute: 'Ngộ Tính', value: 5 }],
+        isSystemUser: true,
+    },
+    {
+        id: 'engraved_skill',
+        name: 'Kỹ Năng Khắc Sâu',
+        description: 'Một kỹ năng từ kiếp trước đã khắc sâu vào linh hồn bạn, một kiến thức không thuộc về thế giới này.',
+        bonuses: [{ attribute: 'Ngự Khí Thuật', value: 10 }],
+        isSystemUser: false,
+    }
+];
+// --- END NEW CHARACTER CREATION DATA ---
+
 
 export const SPIRITUAL_ROOT_CONFIG: Record<Element, { name: string, iconName: string, description: string, baseBonuses: StatBonus[] }> = {
     'Kim': { name: 'Kim', iconName: 'GiGoldBar', description: 'Chủ về sát伐, cương mãnh vô song. Tu sĩ Kim Linh Căn có lực công kích và phòng ngự vật lý vượt trội.', baseBonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },

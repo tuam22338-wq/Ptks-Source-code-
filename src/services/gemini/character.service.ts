@@ -1,31 +1,116 @@
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, WorldlyBackground, TransmigratorLegacy, StatBonus, FormativeEvent, SpiritualRoot } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
-export const generateCharacterIdentity = async (concept: string, gender: Gender): Promise<Omit<CharacterIdentity, 'gender' | 'age'>> => {
+export const generateFormativeEvent = async (origin: { name: string, description: string }): Promise<FormativeEvent> => {
+    const eventSchema = {
+        type: Type.OBJECT,
+        properties: {
+            scenario: { type: Type.STRING, description: 'Một kịch bản ngắn gọn, khoảng 2-3 câu, mô tả một sự kiện quan trọng trong quá khứ của nhân vật dựa trên lai lịch của họ.' },
+            choices: {
+                type: Type.ARRAY,
+                description: '3 lựa chọn cho người chơi, mỗi lựa chọn dẫn đến một kết quả và bonus thuộc tính khác nhau.',
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        text: { type: Type.STRING, description: 'Nội dung lựa chọn.' },
+                        narrative: { type: Type.STRING, description: 'Mô tả ngắn gọn kết quả của lựa chọn này.' },
+                        outcome: {
+                            type: Type.OBJECT,
+                            properties: {
+                                attribute: { type: Type.STRING, enum: ['Đạo Tâm', 'Bền Bỉ', 'Ma Đạo', 'Ngộ Tính', 'Cơ Duyên', 'Mị Lực'] },
+                                value: { type: Type.NUMBER, description: 'Giá trị bonus, có thể là số dương hoặc âm.' }
+                            },
+                            required: ['attribute', 'value']
+                        }
+                    },
+                    required: ['text', 'narrative', 'outcome']
+                }
+            }
+        },
+        required: ['scenario', 'choices']
+    };
+
+    const prompt = `Bạn là một Game Master AI. Hãy tạo một "Sự Kiện Trưởng Thành" (Formative Event) cho nhân vật dựa trên lai lịch của họ.
+
+    **Lai Lịch Nhân Vật:**
+    - **Tên Lai Lịch:** ${origin.name}
+    - **Mô tả:** ${origin.description}
+
+    **Nhiệm vụ:**
+    1.  Tạo ra một kịch bản (scenario) ngắn gọn, phù hợp với lai lịch.
+    2.  Tạo ra 3 lựa chọn (choices) có ý nghĩa. Mỗi lựa chọn phải:
+        -   Có nội dung rõ ràng.
+        -   Có một kết quả tường thuật (narrative) hợp lý.
+        -   Gắn liền với một bonus thuộc tính (outcome) phản ánh bản chất của lựa chọn đó. Ví dụ: lựa chọn nhân từ tăng Đạo Tâm, lựa chọn ích kỷ tăng Ma Đạo, lựa chọn thông minh tăng Ngộ Tính.
+
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
+
+    const settings = await db.getSettings();
+    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+
+    const response = await generateWithRetry({
+        model,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: eventSchema
+        }
+    }, specificApiKey);
+
+    return JSON.parse(response.text) as FormativeEvent;
+};
+
+
+export const generateCharacterIdentity = async (
+    context: {
+        origin: { name: string; description: string };
+        formativeEventResult: { narrative: string; outcome: StatBonus };
+        spiritualRoot: SpiritualRoot;
+        gender: Gender;
+    }
+): Promise<Omit<CharacterIdentity, 'gender' | 'age'>> => {
     const identitySchema = {
         type: Type.OBJECT,
         properties: {
             name: { type: Type.STRING, description: 'Tên Hán Việt, phù hợp bối cảnh tiên hiệp. Ví dụ: "Lý Thanh Vân", "Hàn Lập".' },
             familyName: { type: Type.STRING, description: 'Họ của nhân vật, ví dụ: "Lý", "Trần".' },
-            origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật, chi tiết và lôi cuốn.' },
-            appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo.' },
-            personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê.' },
+            origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật. Phải kết hợp thông tin từ Lai Lịch, Sự Kiện Trưởng Thành và Linh Căn để tạo ra một câu chuyện nền độc đáo và logic.' },
+            appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo, có thể phản ánh Linh Căn hoặc quá khứ của nhân vật.' },
+            personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê, phải phù hợp với lựa chọn trong Sự Kiện Trưởng Thành.' },
         },
         required: ['name', 'origin', 'appearance', 'personality', 'familyName'],
     };
 
-    const prompt = `Dựa trên ý tưởng và bối cảnh game tu tiên Tam Thiên Thế Giới, hãy tạo ra Thân Phận (Identity) cho một nhân vật.
-    - **Bối cảnh:** Tam Thiên Thế Giới, thế giới huyền huyễn, tiên hiệp.
-    - **Giới tính nhân vật:** ${gender}
-    - **Ý tưởng gốc từ người chơi:** "${concept}"
-    
-    Nhiệm vụ: Sáng tạo ra một cái tên, họ, xuất thân, ngoại hình, và tính cách độc đáo, sâu sắc và phù hợp với bối cảnh.
-    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
-    `;
+    const prompt = `Dựa trên các lựa chọn định mệnh của người chơi trong quá trình tạo nhân vật, hãy tạo ra một Thân Phận (Identity) hoàn chỉnh và sâu sắc.
+
+    **Bối cảnh:** Game tu tiên Tam Thiên Thế Giới.
+    **Giới tính:** ${context.gender}
+
+    **Các Lựa Chọn Định Mệnh:**
+    1.  **Lai Lịch Khởi Nguyên:**
+        - **Tên:** ${context.origin.name}
+        - **Mô tả:** ${context.origin.description}
+    2.  **Sự Kiện Trưởng Thành:**
+        - **Kết quả:** "${context.formativeEventResult.narrative}"
+        - **Ảnh hưởng tính cách:** ${context.formativeEventResult.outcome.attribute} +${context.formativeEventResult.outcome.value}
+    3.  **Linh Căn Thức Tỉnh:**
+        - **Tên:** ${context.spiritualRoot.name}
+        - **Mô tả:** ${context.spiritualRoot.description}
+
+    **Nhiệm vụ:**
+    Tổng hợp tất cả các thông tin trên để tạo ra một nhân vật nhất quán:
+    -   **Xuất thân (origin):** Viết lại một cách chi tiết, kết nối cả 3 yếu tố trên thành một câu chuyện nền mạch lạc.
+    -   **Ngoại hình (appearance):** Có thể phản ánh linh căn (ví dụ: người có Hỏa Linh Căn có tóc hơi hung đỏ).
+    -   **Tính cách (personality):** Phải phù hợp với lựa chọn trong Sự Kiện Trưởng Thành (ví dụ: lựa chọn nhân từ nên có tính cách Chính Trực hoặc Trung Lập).
+    -   **Tên (name) và Họ (familyName):** Sáng tạo một cái tên phù hợp với toàn bộ bối cảnh đã hình thành.
+
+    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
     
     const settings = await db.getSettings();
     const model = settings?.gameMasterModel || 'gemini-2.5-flash';
@@ -183,13 +268,7 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     const isTransmigrator = gameState.gameMode === 'transmigrator';
     const isDefaultFrameworkWorld = worldId === 'phong_than_dien_nghia' || worldId === 'tay_du_ky';
     
-    const dynamicGenesisRule = isDefaultFrameworkWorld ? `
-**LUẬT SINH THÀNH ĐỘNG (DYNAMIC GENESIS RULE):**
-1.  **ĐIỀU KIỆN:** Khi game vừa bắt đầu (lịch sử trò chơi rất ngắn) VÀ "Linh Căn" của nhân vật là 'Chưa xác định', nhiệm vụ **đầu tiên** và **quan trọng nhất** của bạn là tạo ra một sự kiện tường thuật để xác định Linh Căn cho người chơi.
-2.  **SỰ KIỆN:** Sự kiện này phải phù hợp với bối cảnh thế giới (mặc định hoặc từ mod). Ví dụ: một buổi lễ thức tỉnh trong làng, một kỳ ngộ với trưởng lão, một tai nạn bất ngờ kích hoạt tiềm năng...
-3.  **KẾT QUẢ:** Sau sự kiện, hãy mô tả RÕ RÀNG kết quả Linh Căn của người chơi. Ví dụ: "Tảng đá trắc linh tỏa ra ánh sáng rực rỡ, vị trưởng lão tuyên bố ngươi sở hữu [Hỏa Thiên Linh Căn]." hoặc "Sau khi hấp thụ linh quả, một luồng năng lượng nóng rực bùng lên trong cơ thể, dường như ngươi đã thức tỉnh [Hỏa Linh Căn]."
-4.  AI Phân Tích sẽ tự động đọc mô tả này và cập nhật trạng thái cho người chơi.` : '';
-
+    // The DYNAMIC GENESIS RULE is now handled by the character creation flow, no longer needed here.
     const transmigratorInstructions = isTransmigrator
     ? `
 **LƯU Ý CỰC KỲ QUAN TRỌNG:** Đây là chế độ "Xuyên Việt Giả". Người chơi là người từ thế giới hiện đại xuyên không tới.
@@ -201,7 +280,7 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
 `
     : '';
     
-    const finalInstructions = isTransmigrator ? transmigratorInstructions : dynamicGenesisRule;
+    const finalInstructions = transmigratorInstructions;
 
     const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     - **Giọng văn:** ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
@@ -214,10 +293,10 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     ${familyInfo || 'Không có ai thân thích.'}
     ${finalInstructions}
 
-    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh: người chơi đang ở đâu. Nếu có luật DYNAMIC GENESIS, hãy mô tả khoảnh khắc họ vừa biết được kết quả linh căn của mình. Cảm xúc của họ (vui mừng, thất vọng, hay bình thản) nên phản ánh phẩm chất linh căn của họ.
+    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh nhân vật đang ở đâu, làm gì, và cảm xúc của họ. Nó phải phản ánh đúng xuất thân và linh căn vừa được xác định của họ.
     
-    Ví dụ cho chế độ thường:
-    "Tảng đá trắc linh trước mặt Lý Thanh Vân nguội dần, ánh sáng màu đỏ rực rỡ cũng từ từ lụi tắt. Vị trưởng lão vuốt râu gật gù, 'Hỏa Thiên Linh Căn, phẩm chất tuyệt hảo, là hạt giống tốt để tu luyện Hỏa hệ công pháp!'. Tin tức này khiến cả gia tộc chấn động, còn ngươi thì vẫn đang ngây người trước kết quả ngoài sức tưởng tượng này."
+    Ví dụ:
+    "Lý Thanh Vân đứng lặng trước tảng đá trắc linh đã nguội lạnh, trong lòng vẫn còn dư chấn từ kết quả 'Hỏa Thiên Linh Căn' ngoài sức tưởng tượng. Ánh mắt của vị trưởng lão, của những người trong gia tộc, có ngưỡng mộ, có ghen tị, tất cả đều đổ dồn về phía hắn, một thiếu niên từ chi thứ vốn không được ai chú ý."
     
     Hãy viết một đoạn văn độc đáo và phù hợp với nhân vật. Chỉ trả về đoạn văn tường thuật, không thêm bất kỳ lời dẫn hay bình luận nào khác.`;
 

@@ -114,6 +114,34 @@ export interface GameSettings {
 }
 
 // --- Character Creation & Stats Types ---
+export type GameMode = 'classic' | 'transmigrator';
+
+export interface WorldlyBackground {
+  id: string;
+  name: string;
+  description: string;
+  bonuses: StatBonus[];
+  startingItems: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
+}
+
+export interface TransmigratorLegacy {
+  id: string;
+  name: string;
+  description: string;
+  bonuses: StatBonus[];
+  isSystemUser: boolean;
+}
+
+export interface FormativeEventChoice {
+    text: string;
+    outcome: StatBonus;
+    narrative: string;
+}
+
+export interface FormativeEvent {
+    scenario: string;
+    choices: FormativeEventChoice[];
+}
 
 // NEW: Universal Attribute Framework
 export interface AttributeDefinition {
@@ -164,6 +192,9 @@ export interface CharacterIdentity {
   age: number;
   familyName?: string;
   suggestedElement?: Element;
+  backgroundId?: string;
+  legacyId?: string;
+  incarnationId?: string;
 }
 
 // --- Timeline Types ---
@@ -905,7 +936,7 @@ export interface GameState {
     worldSects?: Sect[];
     eventIllustrations?: { eventId: string; imageUrl: string; narrative: string }[];
     storySummary?: string;
-    gameMode?: 'classic' | 'transmigrator';
+    gameMode?: GameMode;
     shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
     playerStall: PlayerStall | null;
     playerSect: PlayerSect | null;

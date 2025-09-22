@@ -5,7 +5,7 @@ import { advanceGameTime } from '../utils/timeManager';
 import { simulateWorldTurn, simulateFactionTurn } from './worldSimulator';
 import * as questManager from '../utils/questManager';
 import { SECTS, ALCHEMY_RECIPES, CAVE_FACILITIES_CONFIG, FACTION_REPUTATION_TIERS, DEFAULT_ATTRIBUTE_DEFINITIONS, RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS } from '../constants';
-import { addEntryToMemory, saveGraphEdges, retrieveAndSynthesizeMemory } from './memoryService';
+import { addEntryToMemory, retrieveAndSynthesizeMemory } from './memoryService';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
 const nameToIdMap = new Map<string, string>();
@@ -240,7 +240,7 @@ export const processPlayerAction = async (
     
     const instantMemoryReport = await retrieveAndSynthesizeMemory(text, stateAfterSim, currentSlotId);
 
-    const stream = generateStoryContinuationStream(stateAfterSim, text, type, instantMemoryReport);
+    const stream = generateStoryContinuationStream(stateAfterSim, text, type, instantMemoryReport, settings);
     let fullResponse = '';
     for await (const chunk of stream) {
         if (abortSignal.aborted) throw new Error("Hành động đã bị hủy.");

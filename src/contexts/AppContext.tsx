@@ -1,6 +1,6 @@
 
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry } from '../types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, GameMode, StatBonus, ItemType, ItemQuality, InventoryItem } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
@@ -9,6 +9,18 @@ import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
+
+export interface GameStartData {
+    identity: Omit<PlayerCharacter['identity'], 'age'>;
+    npcDensity: NpcDensity;
+    difficulty: DifficultyLevel;
+    gameMode: GameMode;
+    initialBonuses: StatBonus[];
+    initialItems: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
+    spiritualRoot: SpiritualRoot;
+    danhVong: DanhVong;
+}
+
 
 interface AppContextType {
     state: AppState;
@@ -22,12 +34,7 @@ interface AppContextType {
     handleSaveGame: () => Promise<void>;
     handleDeleteGame: (slotId: number) => Promise<void>;
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
-    handleGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechniqueInfo' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong },
-      npcDensity: NpcDensity,
-      difficulty: DifficultyLevel,
-      gameMode: 'classic' | 'transmigrator',
-    }) => Promise<void>;
+    handleGameStart: (gameStartData: GameStartData) => Promise<void>;
     handlePlayerAction: (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => Promise<void>;
     handleUpdatePlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
     handleSetActiveWorldId: (worldId: string) => Promise<void>;
@@ -311,7 +318,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'QUIT_GAME' });
     }, [cancelSpeech]);
 
-    const handleGameStart = useCallback(async (gameStartData: any) => {
+    const handleGameStart = useCallback(async (gameStartData: GameStartData) => {
         if (state.currentSlotId === null) return;
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang khởi tạo thế giới mới...' } });
         try {

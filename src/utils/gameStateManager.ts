@@ -8,12 +8,14 @@ import {
     JTTW_FACTIONS, JTTW_WORLD_MAP, JTTW_NPC_LIST, JTTW_MAJOR_EVENTS,
     DEFAULT_ATTRIBUTE_DEFINITIONS,
     DEFAULT_ATTRIBUTE_GROUPS,
-    CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
+    CURRENT_GAME_VERSION, DIFFICULTY_LEVELS, WORLDLY_BACKGROUNDS
 } from "../constants";
-import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem } from "../types";
-import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
+import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, GameMode, StatBonus } from "../types";
+// FIX: Import `generateDynamicNpcs` to resolve 'Cannot find name' error.
+import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
+import type { GameStartData } from '../contexts/AppContext';
 
 const ATTRIBUTE_NAME_TO_ID_MAP: Record<string, string> = {
     'Căn Cốt': 'can_cot',
@@ -205,18 +207,12 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 };
 
 export const createNewGameState = async (
-    gameStartData: {
-        characterData: Omit<PlayerCharacter, 'attributes' | 'inventory' | 'currencies' | 'sect' | 'caveAbode' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechniqueInfo' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong },
-        npcDensity: NpcDensity,
-        difficulty: DifficultyLevel,
-        gameMode: 'classic' | 'transmigrator',
-    },
+    gameStartData: GameStartData,
     activeMods: FullMod[],
     activeWorldId: string,
     setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
-    const { characterData, npcDensity, difficulty, gameMode } = gameStartData;
-    const isTransmigratorMode = gameMode === 'transmigrator';
+    const { identity, npcDensity, difficulty, gameMode, initialBonuses, initialItems, spiritualRoot, danhVong } = gameStartData;
 
     const worldMapToUse = PT_WORLD_MAP;
     const initialNpcsFromData = PT_NPC_LIST;
@@ -248,13 +244,38 @@ export const createNewGameState = async (
         }
     });
 
+    // Apply bonuses from character creation
+    initialBonuses.forEach(bonus => {
+        const attrDef = attributeSystemToUse.definitions.find(d => d.name === bonus.attribute);
+        if (attrDef && initialAttributes[attrDef.id]) {
+            initialAttributes[attrDef.id].value += bonus.value;
+        }
+    });
+    spiritualRoot.bonuses.forEach(bonus => {
+        const attrDef = attributeSystemToUse.definitions.find(d => d.name === bonus.attribute);
+        if (attrDef && initialAttributes[attrDef.id]) {
+            initialAttributes[attrDef.id].value += bonus.value;
+        }
+    });
+
     const canCotValue = initialAttributes['can_cot']?.value || baseStatValue;
     const initialWeightCapacity = 20 + (canCotValue - 10) * 2;
     
     const initialCurrencies: Currency = { 'Bạc': 50, 'Linh thạch hạ phẩm': 20 };
-    if (isTransmigratorMode) initialCurrencies['Điểm Nguồn'] = 100;
+    if (gameMode === 'transmigrator') initialCurrencies['Điểm Nguồn'] = 100;
 
-    const initialInventory: Inventory = { weightCapacity: initialWeightCapacity, items: [] };
+    const startingInventoryItems: InventoryItem[] = initialItems.map((item, index) => ({
+        id: `start-item-${index}-${Date.now()}`,
+        name: item.name,
+        description: item.description,
+        quantity: item.quantity,
+        type: item.type,
+        quality: item.quality,
+        weight: 0.1,
+        icon: item.icon
+    }));
+
+    const initialInventory: Inventory = { weightCapacity: initialWeightCapacity, items: startingInventoryItems };
     const initialCultivation: CultivationState = {
         currentRealmId: realmSystemToUse[0].id,
         currentStageId: realmSystemToUse[0].stages[0].id,
@@ -268,7 +289,7 @@ export const createNewGameState = async (
     };
     const startingLocation = worldMapToUse[0];
     const initialCaveAbode: CaveAbode = {
-        name: `${characterData.identity.name} Động Phủ`,
+        name: `${identity.name} Động Phủ`,
         level: 1,
         spiritGatheringArrayLevel: 0,
         spiritHerbFieldLevel: 0,
@@ -276,16 +297,15 @@ export const createNewGameState = async (
         storageUpgradeLevel: 0,
         locationId: 'dong_phu'
     };
-    const initialSystemInfo: SystemInfo | undefined = isTransmigratorMode ? { unlockedFeatures: ['status', 'quests', 'store'] } : undefined;
+    const initialSystemInfo: SystemInfo | undefined = gameMode === 'transmigrator' ? { unlockedFeatures: ['status', 'quests', 'store'] } : undefined;
 
     // Calculate derived stats for the first time
     const attributesWithDerived = calculateDerivedStats(initialAttributes, attributeSystemToUse.definitions);
 
     let playerCharacter: PlayerCharacter = {
-        ...characterData,
-        identity: { ...characterData.identity, age: 18 },
+        identity: { ...identity, age: 18 },
         attributes: attributesWithDerived,
-        spiritualRoot: null,
+        spiritualRoot: spiritualRoot,
         inventory: initialInventory,
         currencies: initialCurrencies,
         cultivation: initialCultivation,
@@ -295,6 +315,7 @@ export const createNewGameState = async (
         mainCultivationTechniqueInfo: null,
         techniques: [],
         relationships: [],
+        danhVong: danhVong,
         reputation: factionsToUse.map(f => ({ factionName: f.name, value: 0, status: 'Trung Lập' })),
         chosenPathIds: [],
         knownRecipeIds: [],
@@ -306,12 +327,12 @@ export const createNewGameState = async (
         activeQuests: [],
         completedQuestIds: [],
         inventoryActionLog: [],
-        element: 'Vô',
+        element: spiritualRoot.elements.length === 1 ? spiritualRoot.elements[0].type : 'Hỗn Độn',
         systemInfo: initialSystemInfo,
     };
     
     setLoadingMessage('Đang tạo ra gia đình và chúng sinh trong thế giới...');
-    const familyPromise = isTransmigratorMode
+    const familyPromise = gameMode === 'transmigrator'
         ? Promise.resolve({ npcs: [], relationships: [] })
         : generateFamilyAndFriends(playerCharacter.identity, startingLocation.id);
     const [familyResult, generatedNpcs] = await Promise.all([
@@ -374,7 +395,7 @@ export const createNewGameState = async (
         eventIllustrations: [],
         storySummary: '',
         difficulty: difficulty,
-        gameMode: isTransmigratorMode ? 'transmigrator' : 'classic',
+        gameMode: gameMode,
         shopStates: {},
         playerStall: null,
         playerSect: null,
