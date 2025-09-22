@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, GameMode, StatBonus, ItemType, ItemQuality, InventoryItem } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from '../constants';
@@ -345,6 +346,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
     };
 
+    // FIX: Changed type from 'say' | 'act' | 'ask' to 'say' | 'act' to match processPlayerAction signature
     const handlePlayerAction = useCallback(async (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => {
         if (state.isLoading || !state.gameState || state.currentSlotId === null) return;
         cancelSpeech();

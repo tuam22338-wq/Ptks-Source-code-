@@ -1,13 +1,16 @@
+
+
 import React, { useState, useEffect, memo, useRef } from 'react';
-import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../../constants';
+import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, AI_SYNC_MODES } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
-import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, RagEmbeddingModel, AssignableModel } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle, FaMusic, FaVolumeUp, FaFire, FaDownload, FaUpload } from 'react-icons/fa';
+import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, RagEmbeddingModel, AssignableModel, AiSyncMode } from '../../types';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle, FaMusic, FaVolumeUp, FaFire, FaDownload, FaUpload, FaSearchPlus } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
+import RagSourceManagerModal from './RagSourceManagerModal';
 
-type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'safety' | 'gameplay' | 'advanced';
+type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'gameplay' | 'advanced';
 
 const SettingsSection: React.FC<{ title: string; onReset?: () => void; children: React.ReactNode }> = memo(({ title, onReset, children }) => (
   <section className="settings-section">
@@ -56,8 +59,10 @@ const modelConfigs: { id: AssignableModel; label: string; description: string; m
     { id: 'itemCraftingModel', label: 'Model Tạo Vật Phẩm/Công Pháp', description: 'Chuyên tạo chi tiết cho vật phẩm, công pháp mới.', modelType: 'text' },
     { id: 'soundSystemModel', label: 'Model Hệ thống Âm thanh', description: 'Dùng để tạo mô tả âm thanh và nhạc nền khi bật.', modelType: 'text' },
     { id: 'imageGenerationModel', label: 'Model Tạo Ảnh', description: 'Model dùng để tạo ảnh đại diện và ảnh nền.', modelType: 'image' },
-    { id: 'ragSummaryModel', label: 'Model Tóm tắt RAG', description: 'Model dùng để tóm tắt các nguồn dữ liệu cho RAG.', modelType: 'text' },
-    { id: 'ragSourceIdModel', label: 'Model Nhận dạng Nguồn RAG', description: 'Model dùng để xác định nguồn thông tin liên quan nhất.', modelType: 'text' },
+    { id: 'ragEmbeddingModel', label: 'Model Embedding RAG', description: 'Model dùng để vector hóa văn bản cho RAG.', modelType: 'rag' },
+    { id: 'ragOrchestratorModel', label: 'Model Điều Phối RAG', description: 'Model dùng để phân tích ý định và chọn nguồn tri thức.', modelType: 'text' },
+    { id: 'memorySynthesisModel', label: 'Model Tổng Hợp Ký Ức', description: 'Model dùng để tổng hợp ký ức thành báo cáo ngắn gọn.', modelType: 'text' },
+    { id: 'narrativeHarmonizerModel', label: 'Model Hài hòa Tường thuật', description: 'Model siêu nhanh, dùng để sửa lại văn bản cho khớp với cơ chế game.', modelType: 'text' },
 ];
 
 export const SettingsPanel: React.FC = () => {
@@ -70,6 +75,7 @@ export const SettingsPanel: React.FC = () => {
     const musicInputRef = useRef<HTMLInputElement>(null);
     const importInputRef = useRef<HTMLInputElement>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [isRagManagerOpen, setIsRagManagerOpen] = useState(false);
 
     useEffect(() => {
         const loadVoices = () => {
@@ -207,6 +213,7 @@ export const SettingsPanel: React.FC = () => {
 
     return (
         <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 flex flex-col h-full max-h-[85vh]">
+            {isRagManagerOpen && <RagSourceManagerModal onClose={() => setIsRagManagerOpen(false)} />}
             <div className="settings-header">
                 <button onClick={() => handleNavigate('mainMenu')} className="settings-back-button" title="Quay Lại Menu">
                     <FaArrowLeft className="w-5 h-5" />
@@ -219,6 +226,7 @@ export const SettingsPanel: React.FC = () => {
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
                 <TabButton tabId="sound" activeTab={activeTab} onClick={setActiveTab} icon={FaVolumeUp} label="Âm Thanh" />
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI" />
+                <TabButton tabId="rag" activeTab={activeTab} onClick={setActiveTab} icon={FaSearchPlus} label="RAG" />
                 <TabButton tabId="safety" activeTab={activeTab} onClick={setActiveTab} icon={FaShieldAlt} label="An Toàn" />
                 <TabButton tabId="gameplay" activeTab={activeTab} onClick={setActiveTab} icon={FaGamepad} label="Lối Chơi" />
                 <TabButton tabId="advanced" activeTab={activeTab} onClick={setActiveTab} icon={FaCog} label="Nâng Cao" />
@@ -359,6 +367,21 @@ export const SettingsPanel: React.FC = () => {
                         </SettingsRow>
                     </SettingsSection>
                 )}
+                 {activeTab === 'rag' && (
+                    <SettingsSection title="Hệ Thống Tri Thức (RAG)">
+                        <SettingsRow label="Số Lượng Tri Thức (Top K)" description="Số lượng thông tin liên quan nhất được truy xuất từ cơ sở dữ liệu tri thức để cung cấp cho AI. Giá trị cao hơn tăng độ chính xác nhưng có thể làm tăng độ trễ.">
+                            <div className="flex items-center gap-4">
+                               <input type="range" min="1" max="10" step="1" value={settings.ragTopK} onChange={(e) => handleSettingChange('ragTopK', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                               <span className="themed-slider-value">{settings.ragTopK}</span>
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Quản lý Nguồn Tri Thức" description="Thêm, xóa, và quản lý các nguồn tri thức cho AI, bao gồm lore mặc định, lore từ mod, và các ghi chép của riêng bạn.">
+                             <button onClick={() => setIsRagManagerOpen(true)} className="settings-button flex items-center gap-2">
+                                <FaSearchPlus /> Mở Bảng Quản Lý
+                            </button>
+                        </SettingsRow>
+                    </SettingsSection>
+                )}
                 {activeTab === 'safety' && (
                     <SettingsSection title="Cài Đặt An Toàn AI">
                          <SettingsRow label="Bật Chế Độ NSFW (18+)" description="Kích hoạt chế độ NSFW. Khi bật, AI sẽ tạo ra nội dung người lớn chi tiết, không che đậy và bỏ qua tất cả các bộ lọc an toàn khác.">
@@ -409,6 +432,20 @@ export const SettingsPanel: React.FC = () => {
                              <div className="themed-button-group">
                                 {NARRATIVE_STYLES.map(style => (
                                     <button key={style.value} className={settings.narrativeStyle === style.value ? 'active' : ''} onClick={() => handleSettingChange('narrativeStyle', style.value)}>{style.label}</button>
+                                ))}
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Chế độ Đồng Bộ AI" description="Thay đổi cách AI tương tác với cơ chế game. 'Thiên Cơ' được khuyến khích để có trải nghiệm tốt nhất.">
+                            <div className="flex flex-col gap-3">
+                                {AI_SYNC_MODES.map(mode => (
+                                    <button
+                                        key={mode.value}
+                                        onClick={() => handleSettingChange('aiSyncMode', mode.value)}
+                                        className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${settings.aiSyncMode === mode.value ? `border-teal-500 bg-teal-500/10` : 'bg-black/20 border-gray-700 hover:border-gray-500'}`}
+                                    >
+                                        <div className="font-bold text-md text-white">{mode.label}</div>
+                                        <p className="text-sm text-gray-400 mt-1">{mode.description}</p>
+                                    </button>
                                 ))}
                             </div>
                         </SettingsRow>

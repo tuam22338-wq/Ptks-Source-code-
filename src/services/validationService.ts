@@ -1,0 +1,75 @@
+
+import type { GameState, MechanicalIntent } from '../types';
+import { RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
+
+/**
+ * Pillar 3: The Mechanical Filter / "Thiên Đạo Giám Sát"
+ * Post-processes data from the AI's mechanical intent to ensure game balance.
+ * It caps item/technique ranks and stat gains based on the player's current realm.
+ * This acts as a "Heavenly Dao" that prevents the player from becoming overpowered too quickly.
+ */
+export const validateMechanicalChanges = (
+    intent: MechanicalIntent,
+    gameState: GameState
+): { validatedIntent: MechanicalIntent, validationNotifications: string[] } => {
+    const validatedIntent = JSON.parse(JSON.stringify(intent));
+    const validationNotifications: string[] = [];
+    const { playerCharacter, realmSystem } = gameState;
+    const playerRealmId = playerCharacter.cultivation.currentRealmId;
+
+    const caps = REALM_RANK_CAPS[playerRealmId];
+    if (caps) {
+        const maxRankIndex = RANK_ORDER.indexOf(caps.maxRank);
+        const maxQualityIndex = QUALITY_ORDER.indexOf(caps.maxQuality);
+
+        if (validatedIntent.itemsGained) {
+            validatedIntent.itemsGained.forEach((item: any) => {
+                const currentQualityIndex = QUALITY_ORDER.indexOf(item.quality);
+                if (currentQualityIndex > maxQualityIndex) {
+                    const originalQuality = item.quality;
+                    item.quality = caps.maxQuality;
+                    validationNotifications.push(`Vật phẩm "${item.name}" (${originalQuality}) ẩn chứa sức mạnh kinh người, nhưng với cảnh giới hiện tại, bạn chỉ có thể cảm nhận được uy lực ở mức ${caps.maxQuality}.`);
+                }
+            });
+        }
+
+        if (validatedIntent.newTechniques) {
+            validatedIntent.newTechniques.forEach((tech: any) => {
+                const currentRankIndex = RANK_ORDER.indexOf(tech.rank);
+                if (currentRankIndex > maxRankIndex) {
+                    const originalRank = tech.rank;
+                    tech.rank = caps.maxRank;
+                    validationNotifications.push(`Công pháp "${tech.name}" (${originalRank}) quá cao thâm. Bạn cố gắng lĩnh ngộ nhưng chỉ có thể nắm được những huyền ảo ở tầng thứ ${caps.maxRank}.`);
+                }
+            });
+        }
+    }
+
+    if (validatedIntent.statChanges) {
+        const realm = realmSystem.find(r => r.id === playerRealmId);
+        const currentStageIndex = realm?.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId);
+        
+        let qiCap = 5000;
+        if (realm && currentStageIndex !== undefined && currentStageIndex < realm.stages.length - 1) {
+            const currentStage = realm.stages[currentStageIndex];
+            const nextStage = realm.stages[currentStageIndex + 1];
+            const qiToNext = nextStage.qiRequired - currentStage.qiRequired;
+            qiCap = Math.max(5000, Math.floor(qiToNext * 0.3));
+        }
+
+        validatedIntent.statChanges.forEach((change: any) => {
+            const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.id === change.attribute);
+            if (change.attribute === 'spiritualQi' && change.change > qiCap) {
+                const originalChange = change.change;
+                change.change = qiCap;
+                validationNotifications.push(`Luồng linh khí thu được (${originalChange.toLocaleString()}) quá hùng hậu. Kinh mạch của bạn chỉ có thể chịu được ${change.change.toLocaleString()} điểm, phần còn lại đã tiêu tán.`);
+            } else if (attrDef && attrDef.type === 'PRIMARY' && change.change > 3) {
+                const originalChange = change.change;
+                change.change = 3;
+                validationNotifications.push(`Cơ thể bạn được một luồng năng lượng kỳ lạ gột rửa, ${attrDef.name} tăng lên. Tuy nhiên, do căn cơ chưa vững, bạn chỉ hấp thụ được ${change.change} điểm (nguyên gốc ${originalChange}).`);
+            }
+        });
+    }
+
+    return { validatedIntent, validationNotifications };
+};

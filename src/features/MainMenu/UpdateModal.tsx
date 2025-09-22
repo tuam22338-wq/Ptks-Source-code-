@@ -23,7 +23,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
                         <li>
                             <strong className="text-amber-300">Sao Lưu & Khôi Phục Dữ Liệu</strong>
                             <p className="text-sm text-gray-400 pl-2">
-                                Thêm tính năng cho phép bạn sao lưu toàn bộ dữ liệu game (bao gồm các file lưu, cài đặt và mods) ra một tệp tin duy nhất. Bạn có thể sử dụng tệp này để chuyển dữ liệu sang thiết bị khác hoặc khôi phục lại khi cần. Tính năng này nằm trong `Cài Đặt &gt; Nâng Cao`.
+                                Thêm tính năng cho phép bạn sao lưu toàn bộ dữ liệu game (bao gồm các file lưu, cài đặt và mods) ra một tệp tin duy nhất. Bạn có thể sử dụng tệp này để chuyển dữ liệu sang thiết bị khác hoặc khôi phục lại khi cần. Tính năng này nằm trong `Cài Đặt > Nâng Cao`.
                             </p>
                         </li>
                         <li>

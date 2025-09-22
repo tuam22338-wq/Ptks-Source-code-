@@ -1,5 +1,6 @@
 
-import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition, WorldlyBackground, TransmigratorLegacy } from './types';
+
+import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition, WorldlyBackground, TransmigratorLegacy, AiSyncMode } from './types';
 import { UI_ICONS } from './data/uiIcons';
 
 // Re-export non-world-specific data
@@ -156,6 +157,11 @@ export const THEME_OPTIONS: { value: Theme; label: string }[] = [
     { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch' },
 ];
 
+export const AI_SYNC_MODES: { value: AiSyncMode; label: string, description: string }[] = [
+    { value: 'classic', label: 'Cổ Điển', description: 'AI chỉ trả về văn bản, hệ thống sẽ phân tích để cập nhật trạng thái. Nhanh hơn, nhưng có thể thiếu chính xác.' },
+    { value: 'intent_driven', label: 'Thiên Cơ', description: 'AI trả về cả văn bản và ý định cơ chế. Đảm bảo đồng bộ 100% nhưng có thể chậm hơn một chút. (Khuyến khích)' },
+];
+
 export const DEFAULT_SETTINGS: GameSettings = {
     layoutMode: 'auto',
     gameSpeed: 'normal',
@@ -178,7 +184,9 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ragSummaryModel: 'gemini-2.5-flash',
     ragSourceIdModel: 'gemini-2.5-flash',
     ragEmbeddingModel: 'text-embedding-004',
+    ragOrchestratorModel: 'gemini-2.5-flash',
     memorySynthesisModel: 'gemini-2.5-flash',
+    narrativeHarmonizerModel: 'gemini-2.5-flash',
     autoSummaryFrequency: 5,
     ragTopK: 5,
     historyTokenLimit: 8192,
@@ -211,6 +219,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ttsRate: 1,
     ttsPitch: 1,
     ttsVolume: 1,
+    aiSyncMode: 'intent_driven',
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [

@@ -1,4 +1,5 @@
 
+
 // FIX: Import ElementType for local use and re-export it for other modules, resolving multiple 'Cannot find name' errors.
 import type { ElementType } from 'react';
 export type { ElementType };
@@ -46,6 +47,7 @@ export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
 export type Theme = 'theme-bamboo-forest';
 export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
+export type AiSyncMode = 'classic' | 'intent_driven';
 
 
 export interface SafetySettings {
@@ -59,7 +61,9 @@ export type AssignableModel =
     | 'mainTaskModel' | 'quickSupportModel' | 'itemAnalysisModel' | 'itemCraftingModel' 
     | 'soundSystemModel' | 'actionAnalysisModel' | 'gameMasterModel' | 'npcSimulationModel' 
     | 'dataParsingModel' | 'imageGenerationModel' | 'ragSummaryModel' | 'ragSourceIdModel'
-    | 'memorySynthesisModel';
+    | 'ragEmbeddingModel' | 'ragOrchestratorModel'
+    | 'memorySynthesisModel'
+    | 'narrativeHarmonizerModel';
 
 export interface GameSettings {
     layoutMode: LayoutMode;
@@ -83,7 +87,9 @@ export interface GameSettings {
     ragSummaryModel: AIModel;
     ragSourceIdModel: AIModel;
     ragEmbeddingModel: RagEmbeddingModel;
+    ragOrchestratorModel: AIModel;
     memorySynthesisModel: AIModel;
+    narrativeHarmonizerModel: AIModel;
     autoSummaryFrequency: number;
     ragTopK: number;
     historyTokenLimit: number;
@@ -111,6 +117,7 @@ export interface GameSettings {
     ttsRate: number;
     ttsPitch: number;
     ttsVolume: number;
+    aiSyncMode: AiSyncMode;
 }
 
 // --- Character Creation & Stats Types ---
@@ -1054,4 +1061,46 @@ export interface GraphEdge {
   type: RelationshipType;
   memoryFragmentId: number; // Foreign key to the memory fragment that generated this edge
   gameDate: GameDate;
+}
+
+// --- RAG System Types ---
+export type RagSourceType = 'CORE_LORE' | 'CORE_MECHANICS' | 'MOD' | 'PLAYER_JOURNAL' | 'SESSION_MEMORY';
+export type RagSourceStatus = 'UNINDEXED' | 'INDEXING' | 'INDEXED' | 'ERROR';
+
+export interface RagSource {
+  id: string; // e.g., 'core_events', 'player_journal_1', 'mod_hac_am'
+  name: string; // "Lịch sử Phong Thần", "Nhật ký của Lý Thanh Vân"
+  type: RagSourceType;
+  status: RagSourceStatus;
+  lastIndexed: string | null;
+  isEnabled: boolean;
+  content?: string; // Only for player-added sources before indexing
+}
+
+export interface RagEmbedding {
+  id?: number;
+  sourceId: string; // Foreign key to RagSource
+  chunk: string; // The actual text chunk
+  embedding: number[]; // The vector embedding
+}
+
+
+// --- Thien Co Luan Hoi (State Sync) Types ---
+export interface MechanicalIntent {
+    statChanges?: { attribute: string; change: number; }[];
+    itemsGained?: Omit<InventoryItem, 'id' | 'quantity' | 'isEquipped'> & { quantity?: number }[];
+    itemsLost?: { name: string; quantity: number; }[];
+    newTechniques?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel' | 'effects'>[];
+    newQuests?: Partial<ActiveQuest>[];
+    newEffects?: Omit<ActiveEffect, 'id'>[];
+    npcEncounters?: string[]; // Names of newly encountered NPCs
+    locationChange?: string; // New location ID
+    timeJump?: { years?: number; seasons?: number; days?: number; };
+    emotionChanges?: { npcName: string; emotion: 'trust' | 'fear' | 'anger'; change: number; reason: string; }[];
+    systemActions?: { actionType: string; details: Record<string, any>; }[];
+}
+
+export interface AIResponsePayload {
+    narrative: string;
+    mechanicalIntent: MechanicalIntent;
 }

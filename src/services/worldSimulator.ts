@@ -1,4 +1,5 @@
 
+
 import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, StatBonus, CharacterAttributes } from '../types';
 import { generateFactionEvent } from './gemini/gameplay.service';
 import { generateRelationshipUpdate } from './gemini/npc.service';
