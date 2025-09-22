@@ -1,4 +1,6 @@
 import type { NPC, PlayerCharacter, CultivationTechnique, Element } from '../types';
+// FIX: Import attribute definitions to look up attribute data.
+import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 
 const ELEMENTAL_CHART: Record<Element, { strongAgainst: Element[], weakAgainst: Element[] }> = {
     'Kim': { strongAgainst: ['Mộc'], weakAgainst: ['Hỏa'] },
@@ -12,12 +14,19 @@ const ELEMENTAL_CHART: Record<Element, { strongAgainst: Element[], weakAgainst: 
     'Hỗn Độn': { strongAgainst: ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ'], weakAgainst: [] },
 };
 
+// FIX: Rewrote getFinalAttributeValue to work with the new CharacterAttributes record.
 const getFinalAttributeValue = (character: PlayerCharacter | NPC, name: string): number => {
-    const baseValue = (character.attributes?.flatMap(g => g.attributes).find(a => a.name === name)?.value as number) || 10;
+    const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === name);
+    if (!attrDef) return 10;
+    const attributeId = attrDef.id;
+
+    const baseValue = character.attributes[attributeId]?.value || 10;
+    
     const bonus = (character.activeEffects || [])
         .flatMap(e => e.bonuses)
         .filter(b => b.attribute === name)
         .reduce((sum, b) => sum + b.value, 0);
+
     return baseValue + bonus;
 };
 

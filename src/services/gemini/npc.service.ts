@@ -1,7 +1,9 @@
+
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, AttributeGroup } from '../../types';
-import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, ATTRIBUTES_CONFIG, CURRENCY_ITEMS } from "../../constants";
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes } from '../../types';
+import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS, CURRENCY_ITEMS } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { FaQuestionCircle } from "react-icons/fa";
@@ -25,8 +27,20 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
                 description: { type: Type.STRING, description: 'Mô tả ngoại hình của NPC.' },
                 origin: { type: Type.STRING, description: 'Mô tả xuất thân, nguồn gốc của NPC.' },
                 personality: { type: Type.STRING, description: 'Tính cách của NPC (ví dụ: Trung Lập, Tà Ác, Hỗn Loạn, Chính Trực).' },
+                motivation: { type: Type.STRING, description: "Động lực cốt lõi, sâu xa nhất của NPC. Ví dụ: 'Chứng tỏ bản thân', 'Tìm kiếm sự thật', 'Báo thù cho gia tộc'." },
+                goals: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách 1-3 mục tiêu dài hạn mà NPC đang theo đuổi. Ví dụ: ['Trở thành đệ nhất luyện đan sư', 'Tìm ra kẻ đã hãm hại sư phụ']." },
                 realmName: { type: Type.STRING, enum: availableRealms, description: 'Cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
                 element: { type: Type.STRING, enum: elements, description: 'Thuộc tính ngũ hành của NPC.' },
+                initialEmotions: {
+                    type: Type.OBJECT,
+                    description: "Trạng thái cảm xúc ban đầu của NPC. Dựa vào tính cách để quyết định.",
+                    properties: {
+                        trust: { type: Type.NUMBER, description: "Độ tin tưởng ban đầu (0-100)." },
+                        fear: { type: Type.NUMBER, description: "Mức độ sợ hãi/nhút nhát (0-100)." },
+                        anger: { type: Type.NUMBER, description: "Mức độ nóng giận/thù địch (0-100)." }
+                    },
+                    required: ['trust', 'fear', 'anger']
+                },
                 ChinhDao: { type: Type.NUMBER, description: 'Điểm Chính Đạo (0-100).' },
                 MaDao: { type: Type.NUMBER, description: 'Điểm Ma Đạo (0-100).' },
                 LucLuong: { type: Type.NUMBER, description: 'Chỉ số Lực Lượng (sát thương vật lý).' },
@@ -69,7 +83,7 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
                 },
                 locationId: { type: Type.STRING, enum: availableLocations },
             },
-            required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'realmName', 'element', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'LucLuong', 'LinhLucSatThuong', 'CanCot', 'NguyenThanKhang', 'SinhMenh', 'currency'],
+            required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'motivation', 'goals', 'realmName', 'element', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'LucLuong', 'LinhLucSatThuong', 'CanCot', 'NguyenThanKhang', 'SinhMenh', 'currency', 'initialEmotions'],
         },
     };
     
@@ -79,11 +93,12 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
     **QUAN TRỌNG:** KHÔNG tạo ra các NPC có tên trong danh sách sau đây: ${existingNames.join(', ')}.
     
     **Yêu cầu chi tiết:**
-    1.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu mới.
-    2.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp.
-    3.  **Ngũ Hành:** Gán một thuộc tính ngũ hành (element) cho mỗi NPC.
-    4.  **Tiên Tư:** Tạo ra 1-2 tiên tư (talents) độc đáo và phù hợp cho mỗi NPC tu sĩ.
-    5.  **Tài Sản:** Gán cho họ một lượng tiền tệ phù hợp.`;
+    1.  **"Linh Hồn" NPC:** Dựa trên tính cách và xuất thân, hãy gán cho họ một trạng thái cảm xúc, động lực (motivation), và các mục tiêu (goals) hợp lý và có chiều sâu.
+    2.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu mới.
+    3.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp.
+    4.  **Ngũ Hành:** Gán một thuộc tính ngũ hành (element) cho mỗi NPC.
+    5.  **Tiên Tư:** Tạo ra 1-2 tiên tư (talents) độc đáo và phù hợp cho mỗi NPC tu sĩ.
+    6.  **Tài Sản:** Gán cho họ một lượng tiền tệ phù hợp.`;
     
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
@@ -97,16 +112,9 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
     }, specificApiKey);
 
     const npcsData = JSON.parse(response.text);
-    
-    const attrConfigMap = new Map<string, { description: string, icon: ElementType }>();
-    ATTRIBUTES_CONFIG.forEach(group => {
-        group.attributes.forEach(attr => {
-            attrConfigMap.set(attr.name, { description: attr.description, icon: attr.icon || FaQuestionCircle });
-        });
-    });
 
     return npcsData.map((npcData: any): NPC => {
-        const { name, gender, description, origin, personality, talents, realmName, currency, element, ...stats } = npcData;
+        const { name, gender, description, origin, personality, talents, realmName, currency, element, initialEmotions, motivation, goals, ...stats } = npcData;
         
         const targetRealm = REALM_SYSTEM.find(r => r.name === realmName) || REALM_SYSTEM[0];
         const targetStage = targetRealm.stages[Math.floor(Math.random() * targetRealm.stages.length)];
@@ -117,30 +125,33 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
             spiritualQi: Math.floor(Math.random() * targetStage.qiRequired),
             hasConqueredInnerDemon: false,
         };
-
-        const baseAttributes: AttributeGroup[] = ATTRIBUTES_CONFIG.map(group => ({
-            ...group,
-            attributes: group.attributes.map(attr => ({ ...attr }))
-        }));
         
-        const updateAttr = (name: string, value: number | string) => {
-            for (const group of baseAttributes) {
-                const attr = group.attributes.find(a => a.name === name);
-                if (attr) {
-                    attr.value = value;
-                    if(attr.maxValue !== undefined) attr.maxValue = value as number;
-                    return;
+        const baseAttributes: CharacterAttributes = {};
+        DEFAULT_ATTRIBUTE_DEFINITIONS.forEach(attrDef => {
+            if(attrDef.baseValue !== undefined) {
+                 baseAttributes[attrDef.id] = {
+                    value: attrDef.baseValue,
+                    ...(attrDef.type === 'VITAL' && { maxValue: attrDef.baseValue })
+                };
+            }
+        });
+        
+        const updateAttr = (id: string, value: number) => {
+             if (baseAttributes[id]) {
+                baseAttributes[id].value = value;
+                if(baseAttributes[id].maxValue !== undefined) {
+                    baseAttributes[id].maxValue = value;
                 }
             }
         };
 
-        updateAttr('Lực Lượng', stats.LucLuong || 10);
-        updateAttr('Linh Lực Sát Thương', stats.LinhLucSatThuong || 10);
-        updateAttr('Căn Cốt', stats.CanCot || 10);
-        updateAttr('Nguyên Thần Kháng', stats.NguyenThanKhang || 10);
-        updateAttr('Sinh Mệnh', stats.SinhMenh || 100);
-        updateAttr('Chính Đạo', stats.ChinhDao || 0);
-        updateAttr('Ma Đạo', stats.MaDao || 0);
+        updateAttr('luc_luong', stats.LucLuong || 10);
+        updateAttr('linh_luc_sat_thuong', stats.LinhLucSatThuong || 10);
+        updateAttr('can_cot', stats.CanCot || 10);
+        updateAttr('nguyen_than_khang', stats.NguyenThanKhang || 10);
+        updateAttr('sinh_menh', stats.SinhMenh || 100);
+        updateAttr('chinh_dao', stats.ChinhDao || 0);
+        updateAttr('ma_dao', stats.MaDao || 0);
 
         const npcCurrencies: Partial<Currency> = {};
         if (currency?.linhThachHaPham > 0) {
@@ -154,7 +165,6 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
         } else {
             npcCurrencies['Bạc'] = 10 + Math.floor(Math.random() * 100);
         }
-
 
         return {
             ...stats,
@@ -170,6 +180,11 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
             element: element || 'Vô',
             talents: talents || [],
             attributes: baseAttributes,
+            emotions: initialEmotions || { trust: 50, fear: 10, anger: 10 },
+            memory: { shortTerm: [], longTerm: [] },
+            motivation: motivation || "Sống một cuộc sống bình yên.",
+            goals: goals || [],
+            currentPlan: null,
             cultivation,
             techniques: [],
             currencies: npcCurrencies,
@@ -204,12 +219,12 @@ export const generateRelationshipUpdate = async (
     **NPC 1:**
     - Tên: ${npc1.identity.name}
     - Tính cách: ${npc1.identity.personality}
-    - Mục tiêu: ${npc1.mucTieu || 'Không có'}
+    - Mục tiêu: ${npc1.goals.join('; ') || 'Không có'}
 
     **NPC 2:**
     - Tên: ${npc2.identity.name}
     - Tính cách: ${npc2.identity.personality}
-    - Mục tiêu: ${npc2.mucTieu || 'Không có'}
+    - Mục tiêu: ${npc2.goals.join('; ') || 'Không có'}
 
     **Mối quan hệ hiện tại (${npc1.identity.name} -> ${npc2.identity.name}):**
     - Loại: ${currentRelationship.type}

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React, { useState, useEffect, memo, useRef } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
@@ -428,6 +422,36 @@ export const SettingsPanel: React.FC = () => {
                 )}
                  {activeTab === 'advanced' && (
                     <SettingsSection title="Nâng Cao">
+                        <SettingsRow label="Nhiệt độ (Temperature)" description="Kiểm soát mức độ sáng tạo/ngẫu nhiên của AI. Giá trị cao hơn (vd: 1.2) cho kết quả đa dạng, giá trị thấp hơn (vd: 0.7) cho kết quả nhất quán hơn.">
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="0" max="2" step="0.1" value={settings.temperature} onChange={(e) => handleSettingChange('temperature', parseFloat(e.target.value))} className="themed-slider flex-grow" />
+                                <span className="themed-slider-value">{settings.temperature.toFixed(1)}</span>
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Top-K" description="Giới hạn số lượng token có khả năng cao nhất mà AI xem xét ở mỗi bước. Giá trị thấp hơn làm cho AI bớt ngẫu nhiên.">
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="1" max="128" step="1" value={settings.topK} onChange={(e) => handleSettingChange('topK', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                <span className="themed-slider-value">{settings.topK}</span>
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Top-P" description="Chọn các token có xác suất tích lũy đạt đến một ngưỡng nhất định. Kiểm soát sự đa dạng của phản hồi.">
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={(e) => handleSettingChange('topP', parseFloat(e.target.value))} className="themed-slider flex-grow" />
+                                <span className="themed-slider-value">{settings.topP.toFixed(2)}</span>
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Bật 'Suy Nghĩ' (Thinking)" description="Cho phép model suy nghĩ trước khi trả lời để có chất lượng cao hơn (chỉ cho gemini-2.5-flash). Tắt có thể giảm độ trễ.">
+                            <label className="flex items-center cursor-pointer">
+                                <input type="checkbox" checked={settings.enableThinking} onChange={e => handleSettingChange('enableThinking', e.target.checked)} className="themed-checkbox" />
+                                <span className="ml-3 text-sm text-gray-300">Bật Thinking</span>
+                            </label>
+                        </SettingsRow>
+                        <SettingsRow label="Ngân sách 'Suy Nghĩ' (Thinking Budget)" description="Lượng token tối đa mà model có thể dùng để 'suy nghĩ'. Giá trị cao hơn có thể cải thiện chất lượng nhưng tăng độ trễ. Đặt là 0 để tắt." disabled={!settings.enableThinking}>
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="0" max="2000" step="50" value={settings.thinkingBudget} onChange={(e) => handleSettingChange('thinkingBudget', parseInt(e.target.value))} className="themed-slider flex-grow" disabled={!settings.enableThinking}/>
+                                <span className="themed-slider-value">{settings.thinkingBudget}</span>
+                            </div>
+                        </SettingsRow>
                         <SettingsRow label="Bảng điều khiển nhà phát triển" description="Hiển thị một console trong game để theo dõi log và các thông tin gỡ lỗi.">
                             <label className="flex items-center cursor-pointer">
                                 <input type="checkbox" checked={settings.enableDeveloperConsole} onChange={e => handleSettingChange('enableDeveloperConsole', e.target.checked)} className="themed-checkbox" />

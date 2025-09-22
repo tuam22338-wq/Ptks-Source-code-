@@ -1,14 +1,5 @@
-import type { GameSettings, AttributeGroup, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality } from './types';
-import {
-  GiCauldron, GiBroadsword,
-  GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
-  GiRunningShoe, GiScrollQuill, GiSparklingSabre, GiStairsGoal, GiStoneTower, GiYinYang,
-  GiSpinalCoil, GiMuscularTorso, GiSoulVessel, GiBoltSpellCast, GiHeartTower, GiScales,
-  GiMountainCave, GiDoubleDragon, GiTalk, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle,
-  GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire, GiGroundbreaker,
-  GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace
-} from 'react-icons/gi';
-import { FaSun, FaMoon, FaShieldAlt } from 'react-icons/fa';
+import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition } from './types';
+import { UI_ICONS } from './data/uiIcons';
 
 // Re-export non-world-specific data
 export * from './data/sects';
@@ -17,12 +8,15 @@ export * from './data/recipes';
 export * from './data/cultivationPaths';
 export * from './data/realmSystem';
 export * from './data/cave';
+export * from './data/attributes';
+export * from './data/uiIcons';
 
 // Explicitly import and re-export world-specific data for clarity
 import { PT_FACTIONS, PT_FACTION_NAMES, JTTW_FACTIONS, JTTW_FACTION_NAMES } from './data/factions';
 import { PT_WORLD_MAP, JTTW_WORLD_MAP } from './data/locations';
 import { PT_NPC_LIST, JTTW_NPC_LIST } from './data/npcs';
 import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS } from './data/events';
+import { DEFAULT_ATTRIBUTE_DEFINITIONS } from './data/attributes';
 
 export {
     PT_FACTIONS, PT_FACTION_NAMES, JTTW_FACTIONS, JTTW_FACTION_NAMES,
@@ -33,19 +27,19 @@ export {
 
 
 export const DEFAULT_WORLD_ID = "phong_than_dien_nghia";
-export const CURRENT_GAME_VERSION = "1.0.8";
+export const CURRENT_GAME_VERSION = "1.0.10";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
-export const SPIRITUAL_ROOT_CONFIG: Record<Element, { name: string, icon: React.ElementType, description: string, baseBonuses: StatBonus[] }> = {
-    'Kim': { name: 'Kim', icon: GiGoldBar, description: 'Chủ về sát伐, cương mãnh vô song. Tu sĩ Kim Linh Căn có lực công kích và phòng ngự vật lý vượt trội.', baseBonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },
-    'Mộc': { name: 'Mộc', icon: GiTreeBranch, description: 'Chủ về sinh cơ, chữa trị và khống chế. Tu sĩ Mộc Linh Căn có khả năng hồi phục mạnh mẽ và am hiểu thảo dược.', baseBonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Ngự Khí Thuật', value: 3 }] },
-    'Thủy': { name: 'Thủy', icon: GiWaterDrop, description: 'Chủ về biến hóa, linh hoạt và khống chế. Tu sĩ Thủy Linh Căn có thân pháp nhanh nhẹn và pháp thuật đa dạng.', baseBonuses: [{ attribute: 'Thân Pháp', value: 5 }, { attribute: 'Linh Lực', value: 15 }] },
-    'Hỏa': { name: 'Hỏa', icon: GiFire, description: 'Chủ về bùng nổ, hủy diệt. Tu sĩ Hỏa Linh Căn có sát thương pháp thuật cực cao, thiêu đốt vạn vật.', baseBonuses: [{ attribute: 'Linh Lực Sát Thương', value: 5 }, { attribute: 'Nguyên Thần', value: 3 }] },
-    'Thổ': { name: 'Thổ', icon: GiGroundbreaker, description: 'Chủ về phòng ngự, vững chắc và bền bỉ. Tu sĩ Thổ Linh Căn có sức phòng ngự và sức bền không gì sánh bằng.', baseBonuses: [{ attribute: 'Bền Bỉ', value: 5 }, { attribute: 'Nguyên Thần Kháng', value: 3 }] },
-    'Vô': { name: 'Vô', icon: GiYinYang, description: 'Không có linh căn.', baseBonuses: [] },
-    'Dị': { name: 'Dị', icon: GiYinYang, description: 'Linh căn biến dị đặc biệt.', baseBonuses: [] },
-    'Hỗn Độn': { name: 'Hỗn Độn', icon: GiYinYang, description: 'Linh căn trong truyền thuyết.', baseBonuses: [] },
+export const SPIRITUAL_ROOT_CONFIG: Record<Element, { name: string, iconName: string, description: string, baseBonuses: StatBonus[] }> = {
+    'Kim': { name: 'Kim', iconName: 'GiGoldBar', description: 'Chủ về sát伐, cương mãnh vô song. Tu sĩ Kim Linh Căn có lực công kích và phòng ngự vật lý vượt trội.', baseBonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },
+    'Mộc': { name: 'Mộc', iconName: 'GiTreeBranch', description: 'Chủ về sinh cơ, chữa trị và khống chế. Tu sĩ Mộc Linh Căn có khả năng hồi phục mạnh mẽ và am hiểu thảo dược.', baseBonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Ngự Khí Thuật', value: 3 }] },
+    'Thủy': { name: 'Thủy', iconName: 'GiWaterDrop', description: 'Chủ về biến hóa, linh hoạt và khống chế. Tu sĩ Thủy Linh Căn có thân pháp nhanh nhẹn và pháp thuật đa dạng.', baseBonuses: [{ attribute: 'Thân Pháp', value: 5 }, { attribute: 'Linh Lực', value: 15 }] },
+    'Hỏa': { name: 'Hỏa', iconName: 'GiFire', description: 'Chủ về bùng nổ, hủy diệt. Tu sĩ Hỏa Linh Căn có sát thương pháp thuật cực cao, thiêu đốt vạn vật.', baseBonuses: [{ attribute: 'Linh Lực Sát Thương', value: 5 }, { attribute: 'Nguyên Thần', value: 3 }] },
+    'Thổ': { name: 'Thổ', iconName: 'GiGroundbreaker', description: 'Chủ về phòng ngự, vững chắc và bền bỉ. Tu sĩ Thổ Linh Căn có sức phòng ngự và sức bền không gì sánh bằng.', baseBonuses: [{ attribute: 'Bền Bỉ', value: 5 }, { attribute: 'Nguyên Thần Kháng', value: 3 }] },
+    'Vô': { name: 'Vô', iconName: 'GiYinYang', description: 'Không có linh căn.', baseBonuses: [] },
+    'Dị': { name: 'Dị', iconName: 'GiYinYang', description: 'Linh căn biến dị đặc biệt.', baseBonuses: [] },
+    'Hỗn Độn': { name: 'Hỗn Độn', iconName: 'GiYinYang', description: 'Linh căn trong truyền thuyết.', baseBonuses: [] },
 };
 
 export const SPIRITUAL_ROOT_QUALITY_CONFIG: Record<SpiritualRootQuality, { color: string, glow?: string, weight: number, multiplier: number }> = {
@@ -111,7 +105,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     fontFamily: "'Noto Serif', serif",
     theme: 'theme-bamboo-forest',
     backgroundImage: '',
-    zoomLevel: 100,
+    zoomLevel: 50,
     textColor: '#d1d5db',
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
@@ -214,68 +208,9 @@ export const PERSONALITY_TRAITS = [
   { name: 'Tà Ác', description: 'Không từ thủ đoạn để đạt được mục đích, coi thường sinh mạng.' },
 ];
 
-export const ATTRIBUTES_CONFIG: AttributeGroup[] = [
-  {
-    title: 'Tinh (精 - Nhục Thân)',
-    attributes: [
-      { name: 'Căn Cốt', description: 'Nền tảng cơ thể, ảnh hưởng đến giới hạn Sinh Mệnh, phòng ngự vật lý và tiềm năng thể tu.', value: 10, icon: GiSpinalCoil },
-      { name: 'Lực Lượng', description: 'Sức mạnh vật lý, ảnh hưởng đến sát thương cận chiến và khả năng mang vác.', value: 10, icon: GiMuscularTorso },
-      { name: 'Thân Pháp', description: 'Sự nhanh nhẹn, tốc độ di chuyển, né tránh và tốc độ ra đòn.', value: 10, icon: GiRunningShoe },
-      { name: 'Bền Bỉ', description: 'Khả năng kháng các hiệu ứng bất lợi vật lý (trúng độc, choáng,...).', value: 10, icon: GiHeartTower },
-    ],
-  },
-  {
-    title: 'Khí (气 - Chân Nguyên)',
-    attributes: [
-      { name: 'Linh Căn', description: 'Tư chất tu luyện, quyết định tốc độ hấp thụ linh khí và sự tương thích với công pháp.', value: 'Chưa xác định', icon: GiPentacle },
-      { name: 'Linh Lực Sát Thương', description: 'Sát thương gây ra bởi pháp thuật và pháp bảo.', value: 10, icon: GiBoltSpellCast },
-      { name: 'Chân Nguyên Tinh Thuần', description: 'Độ tinh khiết của linh lực, ảnh hưởng đến uy lực kỹ năng.', value: 10, icon: GiMagicSwirl },
-      { name: 'Ngự Khí Thuật', description: 'Độ khéo léo điều khiển linh khí (luyện đan, luyện khí, bố trận).', value: 10, icon: GiCauldron },
-    ],
-  },
-  {
-    title: 'Thần (神 - Linh Hồn)',
-    attributes: [
-      { name: 'Ngộ Tính', description: 'Khả năng lĩnh hội đại đạo, ảnh hưởng tốc độ học công pháp và đột phá.', value: 10, icon: GiScrollQuill },
-      { name: 'Nguyên Thần', description: 'Sức mạnh linh hồn, ảnh hưởng đến uy lực thần hồn kỹ và kháng hiệu ứng tinh thần.', value: 10, icon: GiSoulVessel },
-      { name: 'Nguyên Thần Kháng', description: 'Khả năng phòng ngự trước các đòn tấn công linh hồn và pháp thuật.', value: 10, icon: FaShieldAlt },
-      { name: 'Thần Thức', description: 'Phạm vi và độ rõ nét của giác quan tâm linh, dùng để dò xét, điều khiển pháp bảo.', value: 10, icon: GiSparklingSabre },
-      { name: 'Đạo Tâm', description: 'Sự kiên định trên con đường tu luyện, ảnh hưởng khả năng chống lại tâm ma.', value: 10, icon: GiStoneTower },
-    ],
-  },
-  {
-    title: 'Ngoại Duyên (外缘 - Yếu Tố Bên Ngoài)',
-    attributes: [
-      { name: 'Cơ Duyên', description: 'Vận may, khả năng gặp được kỳ ngộ và tìm thấy bảo vật.', value: 10, icon: GiPerspectiveDiceSixFacesRandom },
-      { name: 'Mị Lực', description: 'Sức hấp dẫn cá nhân, ảnh hưởng đến thái độ của NPC và giá cả mua bán.', value: 10, icon: GiTalk },
-      { name: 'Nhân Quả', description: 'Nghiệp báo từ những hành động đã làm, có thể dẫn đến phúc hoặc họa.', value: 0, icon: GiScales },
-    ],
-  },
-   {
-    title: 'Chỉ số Sinh Tồn',
-    attributes: [
-      { name: 'Sinh Mệnh', description: 'Thể lực của nhân vật. Về 0 sẽ tử vong.', value: 100, icon: GiHealthNormal },
-      { name: 'Linh Lực', description: 'Năng lượng để thi triển pháp thuật và kỹ năng.', value: 50, icon: GiMagicSwirl },
-    ],
-  },
-  {
-    title: 'Thông Tin Tu Luyện',
-    attributes: [
-      { name: 'Cảnh Giới', description: 'Cấp độ tu vi hiện tại.', value: 'Phàm Nhân', icon: GiStairsGoal },
-      { name: 'Tuổi Thọ', description: 'Thời gian sống còn lại.', value: 80, icon: GiHourglass },
-    ],
-  },
-  {
-    title: 'Thiên Hướng',
-    attributes: [
-      { name: 'Chính Đạo', description: 'Danh tiếng trong chính đạo. Càng cao càng được phe chính phái yêu mến, nhưng bị ma đạo căm ghét.', value: 0, icon: FaSun },
-      { name: 'Ma Đạo', description: 'Uy danh trong ma đạo. Càng cao càng được ma tu kính sợ, nhưng bị chính đạo truy lùng.', value: 0, icon: FaMoon },
-    ],
-  },
-];
-export const ALL_ATTRIBUTES = ATTRIBUTES_CONFIG.flatMap(g => g.attributes.map(a => a.name));
+export const ALL_ATTRIBUTES = DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name);
 
-export const ALL_PARSABLE_STATS = [...ALL_ATTRIBUTES, 'spiritualQi', 'hunger', 'thirst', 'temperature'];
+export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'spiritualQi', 'hunger', 'thirst', 'temperature'];
 
 
 export const INNATE_TALENT_PROBABILITY: { rank: InnateTalentRank, weight: number }[] = [
@@ -329,13 +264,13 @@ export const EQUIPMENT_SLOTS: Record<EquipmentSlot, { label: string }> = {
     'Phụ Kiện 2': { label: 'Phụ Kiện 2' },
 };
 
-export const EQUIPMENT_SLOT_ICONS: Record<EquipmentSlot, React.ElementType> = {
-    'Vũ Khí': GiBroadsword,
-    'Thượng Y': GiChestArmor,
-    'Hạ Y': GiLegArmor,
-    'Giày': GiBoots,
-    'Phụ Kiện 1': GiRing,
-    'Phụ Kiện 2': GiNecklace,
+export const EQUIPMENT_SLOT_ICONS: Record<EquipmentSlot, string> = {
+    'Vũ Khí': 'GiBroadsword',
+    'Thượng Y': 'GiChestArmor',
+    'Hạ Y': 'GiLegArmor',
+    'Giày': 'GiBoots',
+    'Phụ Kiện 1': 'GiRing',
+    'Phụ Kiện 2': 'GiNecklace',
 };
 
 export const SHICHEN_LIST: { name: string; icon: string }[] = [
@@ -386,4 +321,21 @@ export const DEFAULT_WORLDS_INFO = {
         majorEvents: JTTW_MAJOR_EVENTS,
         source: 'default' as const,
     }
+};
+
+// Constants for Mechanical Filter (Pillar 3)
+export const RANK_ORDER: PhapBaoRank[] = ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'];
+export const QUALITY_ORDER: ItemQuality[] = ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'];
+
+export const REALM_RANK_CAPS: Record<string, { maxRank: PhapBaoRank, maxQuality: ItemQuality }> = {
+    'pham_nhan': { maxRank: 'Phàm Giai', maxQuality: 'Phàm Phẩm' },
+    'luyen_khi': { maxRank: 'Phàm Giai', maxQuality: 'Phàm Phẩm' },
+    'truc_co': { maxRank: 'Tiểu Giai', maxQuality: 'Linh Phẩm' },
+    'ket_dan': { maxRank: 'Trung Giai', maxQuality: 'Pháp Phẩm' },
+    'nguyen_anh': { maxRank: 'Cao Giai', maxQuality: 'Bảo Phẩm' },
+    'hoa_than': { maxRank: 'Siêu Giai', maxQuality: 'Tiên Phẩm' },
+    'luyen_hu': { maxRank: 'Địa Giai', maxQuality: 'Tuyệt Phẩm' },
+    'hop_the': { maxRank: 'Thiên Giai', maxQuality: 'Tuyệt Phẩm' },
+    'dai_thua': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    // Immortal realms have no caps
 };

@@ -1,6 +1,4 @@
 import type { Sect, SectMission, CultivationTechnique } from '../types';
-import { FaSun } from 'react-icons/fa';
-import { GiYinYang } from 'react-icons/gi';
 
 const XIEN_GIAO_MISSIONS: SectMission[] = [
     {
@@ -38,7 +36,7 @@ export const SECTS: Sect[] = [
         name: 'Xiển Giáo',
         description: 'Do Nguyên Thủy Thiên Tôn đứng đầu, tuân theo thiên mệnh, đề cao căn cơ và tư chất. Đệ tử đều là những người có phúc duyên sâu dày.',
         alignment: 'Chính Phái',
-        icon: FaSun,
+        iconName: 'FaSun',
         joinRequirements: [{ attribute: 'Ngộ Tính', value: 15, greaterThan: true }, { attribute: 'Cơ Duyên', value: 15, greaterThan: true }],
         ranks: [
             { name: 'Đệ tử Ghi danh', contributionRequired: 0 },
@@ -64,7 +62,7 @@ export const SECTS: Sect[] = [
         name: 'Triệt Giáo',
         description: "Do Thông Thiên Giáo Chủ sáng lập, chủ trương 'hữu giáo vô loại', thu nhận mọi chúng sinh có lòng cầu đạo, không phân biệt nguồn gốc.",
         alignment: 'Trung Lập',
-        icon: GiYinYang,
+        iconName: 'GiYinYang',
         joinRequirements: [{ attribute: 'Đạo Tâm', value: 12, greaterThan: true }],
         ranks: [
             { name: 'Ký danh Đệ tử', contributionRequired: 0 },

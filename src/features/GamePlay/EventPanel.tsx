@@ -1,11 +1,14 @@
 import React from 'react';
-import type { GameEvent, EventChoice, Attribute } from '../../types';
+// FIX: Update type imports to use `CharacterAttributes` instead of the removed `Attribute` type.
+import type { GameEvent, EventChoice, CharacterAttributes } from '../../types';
 import { FaDiceD20 } from 'react-icons/fa';
+// FIX: Import attribute definitions to look up attribute IDs by name.
+import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../../constants';
 
 interface EventPanelProps {
     event: GameEvent;
     onChoice: (choice: EventChoice) => void;
-    playerAttributes: Attribute[];
+    playerAttributes: CharacterAttributes;
 }
 
 const EventPanel: React.FC<EventPanelProps> = ({ event, onChoice, playerAttributes }) => {
@@ -16,8 +19,9 @@ const EventPanel: React.FC<EventPanelProps> = ({ event, onChoice, playerAttribut
                 <div className="space-y-2">
                     {event.choices.map(choice => {
                         const check = choice.check;
-                        const playerAttr = check ? playerAttributes.find(a => a.name === check.attribute) : null;
-                        const playerAttrValue = (playerAttr?.value as number) || 0;
+                        // FIX: Correctly look up the attribute value from the `CharacterAttributes` record using its name.
+                        const attrDef = check ? DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === check.attribute) : null;
+                        const playerAttrValue = attrDef ? (playerAttributes[attrDef.id]?.value || 0) : 0;
                         
                         return (
                             <button

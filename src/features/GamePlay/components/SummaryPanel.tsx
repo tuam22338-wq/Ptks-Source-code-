@@ -1,6 +1,7 @@
 import React, { useState, memo, useEffect, useRef } from 'react';
-import type { PlayerCharacter, Attribute } from '../../../types';
+import type { PlayerCharacter, GameState, AttributeDefinition } from '../../../types';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { UI_ICONS } from '../../../constants';
 
 interface StatBarProps {
     label: string;
@@ -46,39 +47,61 @@ const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, icon
     );
 };
 
-const AttributeDisplay: React.FC<{ attribute: Attribute }> = memo(({ attribute }) => (
+const AttributeDisplay: React.FC<{ definition: AttributeDefinition; value: number; }> = memo(({ definition, value }) => (
     <div className="flex justify-between items-baseline text-sm">
-        <span className="text-gray-400">{attribute.name}</span>
-        <span className="font-bold text-gray-200">{String(Math.floor(attribute.value as number))}</span>
+        <span className="text-gray-400">{definition.name}</span>
+        <span className="font-bold text-gray-200">{String(Math.floor(value))}</span>
     </div>
 ));
 
 
-const SummaryPanel: React.FC<{ playerCharacter: PlayerCharacter }> = ({ playerCharacter }) => {
+const SummaryPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
     const [isAttributesExpanded, setIsAttributesExpanded] = useState(false);
 
-    const { attributes, vitals } = playerCharacter;
+    const { playerCharacter, attributeSystem } = gameState;
+    const { attributes } = playerCharacter;
 
-    const sinhMenh = attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
-    const linhLuc = attributes.flatMap(g => g.attributes).find(a => a.name === 'Linh Lực');
-    const coreAttributes = attributes.flatMap(g => g.attributes).filter(a => ['Lực Lượng', 'Thân Pháp', 'Căn Cốt', 'Nguyên Thần', 'Ngộ Tính', 'Cơ Duyên'].includes(a.name));
+    if (!attributeSystem) return null;
+
+    const vitalAttributes = attributeSystem.definitions.filter(def => def.type === 'VITAL' && attributes[def.id]?.maxValue);
+    const coreAttributeDefs = attributeSystem.definitions.filter(def => ['luc_luong', 'than_phap', 'can_cot', 'nguyen_than', 'ngo_tinh', 'co_duyen'].includes(def.id));
+    
+    const VITAL_COLORS: Record<string, string> = {
+        'sinh_menh': 'bg-red-500',
+        'linh_luc': 'bg-blue-500',
+        'tuoi_tho': 'bg-purple-500',
+        'hunger': 'bg-yellow-600',
+        'thirst': 'bg-sky-500',
+        'default': 'bg-gray-500'
+    };
+    const VITAL_ICON_COLORS: Record<string, string> = {
+        'sinh_menh': 'text-red-400',
+        'linh_luc': 'text-blue-400',
+        'tuoi_tho': 'text-purple-400',
+        'hunger': 'text-yellow-500',
+        'thirst': 'text-sky-400',
+        'default': 'text-gray-400'
+    }
 
     return (
         <div className="summary-panel animate-fade-in" style={{animationDuration: '300ms'}}>
             <div className="summary-panel-vitals">
-                {sinhMenh && sinhMenh.maxValue && <StatBar label="Sinh Mệnh" current={sinhMenh.value as number} max={sinhMenh.maxValue as number} colorClass="bg-red-500" icon={() => <span className="text-red-400">❤</span>} />}
-                {linhLuc && linhLuc.maxValue && <StatBar label="Linh Lực" current={linhLuc.value as number} max={linhLuc.maxValue as number} colorClass="bg-blue-500" icon={() => <span className="text-blue-400">✧</span>} />}
-                <StatBar label="No Bụng" current={vitals.hunger} max={vitals.maxHunger} colorClass="bg-yellow-600" icon={() => <span className="text-yellow-500">♨</span>} />
-                <StatBar label="Nước Uống" current={vitals.thirst} max={vitals.maxThirst} colorClass="bg-sky-500" icon={() => <span className="text-sky-400">💧</span>} />
-                 <div className="stat-bar-container" title="Nhiệt độ cơ thể">
-                    <div className="stat-bar-icon">
-                        <span className="text-orange-400">🔥</span>
-                    </div>
-                    <div className="flex-grow text-sm text-gray-400">Nhiệt độ</div>
-                    <div className="stat-bar-text !w-auto font-bold text-gray-200">
-                        {vitals.temperature.toFixed(1)}°C
-                    </div>
-                </div>
+                {vitalAttributes.map(def => {
+                    const attr = attributes[def.id];
+                    const Icon = UI_ICONS[def.iconName];
+                    const color = VITAL_COLORS[def.id] || VITAL_COLORS['default'];
+                    const iconColor = VITAL_ICON_COLORS[def.id] || VITAL_ICON_COLORS['default'];
+                    return (
+                        <StatBar 
+                            key={def.id}
+                            label={def.name}
+                            current={attr.value}
+                            max={attr.maxValue!}
+                            colorClass={color}
+                            icon={() => <Icon className={iconColor} />}
+                        />
+                    );
+                })}
             </div>
 
             <button onClick={() => setIsAttributesExpanded(!isAttributesExpanded)} className="summary-panel-toggle">
@@ -89,7 +112,10 @@ const SummaryPanel: React.FC<{ playerCharacter: PlayerCharacter }> = ({ playerCh
             {isAttributesExpanded && (
                 <div className="summary-panel-attributes">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                        {coreAttributes.map(attr => <AttributeDisplay key={attr.name} attribute={attr} />)}
+                        {coreAttributeDefs.map(def => {
+                            const attr = attributes[def.id];
+                            return attr ? <AttributeDisplay key={def.id} definition={def} value={attr.value} /> : null;
+                        })}
                     </div>
                 </div>
             )}

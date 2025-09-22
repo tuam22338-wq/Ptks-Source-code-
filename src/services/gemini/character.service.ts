@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -28,14 +28,27 @@ export const generateCharacterIdentity = async (concept: string, gender: Gender)
     `;
     
     const settings = await db.getSettings();
+    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    
+    const generationConfig: any = {
+        responseMimeType: "application/json",
+        responseSchema: identitySchema,
+        temperature: settings?.temperature,
+        topK: settings?.topK,
+        topP: settings?.topP,
+    };
+
+    if (model === 'gemini-2.5-flash') {
+        generationConfig.thinkingConfig = {
+            thinkingBudget: settings?.enableThinking ? settings.thinkingBudget : 0,
+        };
+    }
+    
     const response = await generateWithRetry({
-        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        model,
         contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: identitySchema,
-        }
+        config: generationConfig
     }, specificApiKey);
 
     const json = JSON.parse(response.text);
@@ -80,14 +93,27 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
     `;
     
     const settings = await db.getSettings();
+    const model = settings?.npcSimulationModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
+
+    const generationConfig: any = {
+        responseMimeType: "application/json",
+        responseSchema: familySchema,
+        temperature: settings?.temperature,
+        topK: settings?.topK,
+        topP: settings?.topP,
+    };
+    
+    if (model === 'gemini-2.5-flash') {
+        generationConfig.thinkingConfig = {
+            thinkingBudget: settings?.enableThinking ? settings.thinkingBudget : 0,
+        };
+    }
+
     const response = await generateWithRetry({
-        model: settings?.npcSimulationModel || 'gemini-2.5-flash',
+        model,
         contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: familySchema,
-        }
+        config: generationConfig
     }, specificApiKey);
 
     const data = JSON.parse(response.text);
@@ -108,7 +134,12 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
                 familyName: identity.familyName,
             },
             status: member.status,
-            attributes: [], // They are mortals, few attributes needed
+            attributes: {}, // They are mortals, few attributes needed
+            emotions: { trust: 70, fear: 10, anger: 5 }, // Family starts with high trust
+            memory: { shortTerm: [], longTerm: [] },
+            motivation: `Bảo vệ và chăm sóc cho gia đình.`,
+            goals: [`Mong ${identity.name} có một cuộc sống bình an.`],
+            currentPlan: null,
             talents: [],
             locationId: locationId,
             cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
@@ -190,10 +221,25 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     
     Hãy viết một đoạn văn độc đáo và phù hợp với nhân vật. Chỉ trả về đoạn văn tường thuật, không thêm bất kỳ lời dẫn hay bình luận nào khác.`;
 
+    const model = settings?.mainTaskModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.mainTaskModel;
+    
+    const generationConfig: any = {
+        temperature: settings?.temperature,
+        topK: settings?.topK,
+        topP: settings?.topP,
+    };
+    
+    if (model === 'gemini-2.5-flash') {
+        generationConfig.thinkingConfig = {
+            thinkingBudget: settings?.enableThinking ? settings.thinkingBudget : 0,
+        };
+    }
+
     const response = await generateWithRetry({
-        model: settings?.mainTaskModel || 'gemini-2.5-flash',
+        model,
         contents: prompt,
+        config: generationConfig
     }, specificApiKey);
 
     return response.text.trim();

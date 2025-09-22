@@ -1,25 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry } from '../../types';
+import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, CharacterAttributes } from '../../types';
 import { decideNpcCombatAction } from '../../services/geminiService';
 import * as combatManager from '../../utils/combatManager';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { FaTimes } from 'react-icons/fa';
-import { PHAP_BAO_RANKS } from '../../constants';
+// FIX: Import DEFAULT_ATTRIBUTE_DEFINITIONS to look up attribute data.
+import { PHAP_BAO_RANKS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../../constants';
 import { useGameUIContext } from '../../contexts/GameUIContext';
 import { useAppContext } from '../../contexts/AppContext';
 
-const getBaseAttributeValue = (character: PlayerCharacter | NPC, name: string): number => {
-    if ('attributes' in character && character.attributes) {
-        return (character.attributes.flatMap(g => g.attributes).find(a => a.name === name)?.value as number) || 10;
-    }
-    return 10;
+// FIX: Rewrote getBaseAttributeValue to work with the new CharacterAttributes record.
+const getBaseAttributeValue = (character: PlayerCharacter | NPC, attributeId: string): number => {
+    return character.attributes[attributeId]?.value || 0;
 };
 
-const getFinalAttributeValue = (character: PlayerCharacter | NPC, name: string): number => {
-    const baseValue = getBaseAttributeValue(character, name);
+// FIX: Rewrote getFinalAttributeValue to use the new attribute system.
+const getFinalAttributeValue = (character: PlayerCharacter | NPC, attributeId: string): number => {
+    const baseValue = getBaseAttributeValue(character, attributeId);
+    const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.id === attributeId);
+    if (!attrDef) return baseValue;
+
     const bonus = (character.activeEffects || [])
         .flatMap(e => e.bonuses)
-        .filter(b => b.attribute === name)
+        .filter(b => b.attribute === attrDef.name) // bonuses use names
         .reduce((sum, b) => sum + b.value, 0);
     return baseValue + bonus;
 };
@@ -39,7 +42,7 @@ const TechniqueSelectionModal: React.FC<{
     onSelect: (technique: CultivationTechnique) => void;
     onClose: () => void;
 }> = ({ techniques, player, onSelect, onClose }) => {
-    const playerLinhLuc = getFinalAttributeValue(player, 'Linh Lực');
+    const playerLinhLuc = getFinalAttributeValue(player, 'linh_luc');
     return (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
             <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -112,14 +115,14 @@ const CombatScreen: React.FC = () => {
 
     useEffect(() => {
         if (combatState && combatState.enemies.length > 0) {
-            setSelectedTargetId(combatState.enemies.find(e => getFinalAttributeValue(e, 'Sinh Mệnh') > 0)?.id || null);
+            setSelectedTargetId(combatState.enemies.find(e => getFinalAttributeValue(e, 'sinh_menh') > 0)?.id || null);
         }
     }, [combatState]);
 
     const advanceTurn = useCallback((currentState: GameState): GameState => {
         if (!currentState.combatState) return currentState;
         const { combatState } = currentState;
-        const newTurnOrder = combatState.turnOrder.filter(id => id === 'player' || combatState.enemies.some(e => e.id === id && getBaseAttributeValue(e, 'Sinh Mệnh') > 0));
+        const newTurnOrder = combatState.turnOrder.filter(id => id === 'player' || combatState.enemies.some(e => e.id === id && getBaseAttributeValue(e, 'sinh_menh') > 0));
         if (newTurnOrder.length === 0) {
              return { ...currentState, combatState: null };
         }
@@ -158,14 +161,14 @@ const CombatScreen: React.FC = () => {
                     dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
                         if (!gs) return null;
                         let newPlayer = { ...gs.playerCharacter };
-                        const sinhMenhAttr = newPlayer.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
+                        const sinhMenhAttr = newPlayer.attributes['sinh_menh'];
                         if (sinhMenhAttr) {
-                            const newSinhMenh = (sinhMenhAttr.value as number) - damage;
-                            const updatedAttributes = newPlayer.attributes.map(g => ({ ...g, attributes: g.attributes.map(a => a.name === 'Sinh Mệnh' ? { ...a, value: newSinhMenh } : a) }));
-                            newPlayer = { ...newPlayer, attributes: updatedAttributes };
+                            const newSinhMenh = sinhMenhAttr.value - damage;
+                            const newAttributes: CharacterAttributes = { ...newPlayer.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
+                            newPlayer = { ...newPlayer, attributes: newAttributes };
                         }
                         const nextState = advanceTurn({ ...gs, playerCharacter: newPlayer });
-                        if ((getBaseAttributeValue(newPlayer, 'Sinh Mệnh')) <= 0) {
+                        if (getBaseAttributeValue(newPlayer, 'sinh_menh') <= 0) {
                             addStoryEntry({ type: 'combat', content: 'Bạn đã bị đánh bại!' });
                             showNotification("Thất bại!");
                             return { ...nextState, combatState: null };
@@ -195,14 +198,14 @@ const CombatScreen: React.FC = () => {
             if (!gs || !gs.combatState) return null;
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
-                    const sinhMenhAttr = e.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
-                    const newSinhMenh = (sinhMenhAttr?.value as number) - damage;
-                    const updatedAttributes = e.attributes.map(g => ({ ...g, attributes: g.attributes.map(a => a.name === 'Sinh Mệnh' ? {...a, value: newSinhMenh} : a) }));
-                    return { ...e, attributes: updatedAttributes };
+                    const sinhMenhAttr = e.attributes['sinh_menh'];
+                    const newSinhMenh = sinhMenhAttr.value - damage;
+                    const newAttributes: CharacterAttributes = { ...e.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
+                    return { ...e, attributes: newAttributes };
                 }
                 return e;
             });
-            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'Sinh Mệnh') <= 0);
+            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'sinh_menh') <= 0);
             if(defeatedEnemy) {
                 addStoryEntry({ type: 'combat', content: `${defeatedEnemy.identity.name} đã bị đánh bại!` });
                 newEnemies = newEnemies.filter(e => e.id !== defeatedEnemy.id);
@@ -234,24 +237,24 @@ const CombatScreen: React.FC = () => {
             if (!gs || !gs.combatState) return null;
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
-                    const sinhMenhAttr = e.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
-                    const newSinhMenh = (sinhMenhAttr?.value as number) - damage;
-                    const updatedAttributes = e.attributes.map(g => ({ ...g, attributes: g.attributes.map(a => a.name === 'Sinh Mệnh' ? {...a, value: newSinhMenh} : a) }));
-                    return { ...e, attributes: updatedAttributes };
+                    const sinhMenhAttr = e.attributes['sinh_menh'];
+                    const newSinhMenh = sinhMenhAttr.value - damage;
+                    const newAttributes: CharacterAttributes = { ...e.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
+                    return { ...e, attributes: newAttributes };
                 }
                 return e;
             });
             let newPlayer = { ...gs.playerCharacter };
-            const linhLucAttr = newPlayer.attributes.flatMap(g => g.attributes).find(a => a.name === 'Linh Lực');
+            const linhLucAttr = newPlayer.attributes['linh_luc'];
             if (linhLucAttr) {
-                const newLinhLuc = (linhLucAttr.value as number) - technique.cost.value;
-                const updatedAttributes = newPlayer.attributes.map(g => ({...g, attributes: g.attributes.map(a => a.name === 'Linh Lực' ? { ...a, value: newLinhLuc } : a) }));
-                newPlayer = { ...newPlayer, attributes: updatedAttributes };
+                const newLinhLuc = linhLucAttr.value - technique.cost.value;
+                const newAttributes: CharacterAttributes = { ...newPlayer.attributes, 'linh_luc': { ...linhLucAttr, value: newLinhLuc }};
+                newPlayer = { ...newPlayer, attributes: newAttributes };
             }
             const newCooldowns = { ...newPlayer.techniqueCooldowns, [technique.id]: technique.cooldown };
             newPlayer = { ...newPlayer, techniqueCooldowns: newCooldowns };
             
-            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'Sinh Mệnh') <= 0);
+            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'sinh_menh') <= 0);
             if(defeatedEnemy) {
                 addStoryEntry({ type: 'combat', content: `${defeatedEnemy.identity.name} đã bị đánh bại!` });
                 newEnemies = newEnemies.filter(e => e.id !== defeatedEnemy.id);
@@ -266,7 +269,7 @@ const CombatScreen: React.FC = () => {
         setIsProcessingTurn(false);
     };
 
-    const playerSinhMenh = gameState.playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
+    const playerSinhMenh = gameState.playerCharacter.attributes['sinh_menh'];
     
     return (
         <div className="flex-shrink-0 p-4 bg-red-900/20 backdrop-blur-sm border-t-2 border-red-500/50 relative">
@@ -281,18 +284,18 @@ const CombatScreen: React.FC = () => {
             <div className="flex justify-between items-start mb-4">
                 <div className="w-1/3 text-center p-2 bg-black/20 rounded-lg">
                     <p className="font-semibold text-gray-200">{gameState.playerCharacter.identity.name}</p>
-                     {playerSinhMenh && <HealthBar current={getFinalAttributeValue(gameState.playerCharacter, 'Sinh Mệnh')} max={playerSinhMenh.maxValue as number} />}
+                     {playerSinhMenh && playerSinhMenh.maxValue !== undefined && <HealthBar current={getFinalAttributeValue(gameState.playerCharacter, 'sinh_menh')} max={playerSinhMenh.maxValue} />}
                     {isPlayerTurn && !isProcessingTurn && <p className="text-xs text-amber-300 animate-pulse">Lượt của bạn</p>}
                 </div>
                  <div className="w-2/3 grid grid-cols-2 gap-2 pl-4">
                     {combatState.enemies.map(enemy => {
-                         const enemySinhMenh = enemy.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
+                         const enemySinhMenh = enemy.attributes['sinh_menh'];
                          const isCurrentTurn = currentActorId === enemy.id;
                          return (
                             <div key={enemy.id} onClick={() => setSelectedTargetId(enemy.id)}
                                 className={`p-2 bg-black/20 rounded-lg cursor-pointer transition-all duration-200 ${selectedTargetId === enemy.id ? 'border-2 border-amber-400' : 'border-2 border-transparent'}`}>
                                 <p className="font-semibold text-gray-200 text-sm truncate">{enemy.identity.name}</p>
-                                {enemySinhMenh && <HealthBar current={getFinalAttributeValue(enemy, 'Sinh Mệnh')} max={enemySinhMenh.maxValue as number} />}
+                                {enemySinhMenh && enemySinhMenh.maxValue !== undefined && <HealthBar current={getFinalAttributeValue(enemy, 'sinh_menh')} max={enemySinhMenh.maxValue} />}
                                 {isCurrentTurn && <p className="text-xs text-red-400">Lượt của địch</p>}
                             </div>
                          )

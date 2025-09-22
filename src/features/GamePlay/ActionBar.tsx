@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { FaPaperPlane, FaComment, FaBolt, FaLightbulb, FaSync } from 'react-icons/fa';
 import { GiSprout } from 'react-icons/gi';
 import type { Location, GameState } from '../../types';
-import { generateActionSuggestions } from '../../services/geminiService';
+// FIX: Corrected import path as generateActionSuggestions is now in a specific service file.
+import { generateActionSuggestions } from '../../services/gemini/gameplay.service';
 
 type ActionType = 'say' | 'act';
 

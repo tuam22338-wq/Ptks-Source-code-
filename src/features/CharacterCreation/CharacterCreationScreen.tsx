@@ -1,14 +1,15 @@
 import React, { useState, useCallback, useEffect, memo, useMemo } from 'react';
-import type { AttributeGroup, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, StatBonus, DanhVong, DifficultyLevel, SpiritualRoot } from '../../types';
+import type { CharacterAttributes, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, StatBonus, DanhVong, DifficultyLevel, SpiritualRoot } from '../../types';
 import { FaArrowLeft, FaDesktop } from 'react-icons/fa';
 import { GiGalaxy, GiPerson } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
 import { generateCharacterIdentity } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, PT_NPC_LIST, PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS } from '../../constants';
+import { DEFAULT_ATTRIBUTE_DEFINITIONS, SHICHEN_LIST, NPC_DENSITY_LEVELS, PT_NPC_LIST, PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS, DEFAULT_ATTRIBUTE_GROUPS } from '../../constants';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
+import { calculateDerivedStats } from '../../utils/statCalculator';
 
 interface PlayableCharacterTemplate {
   id: string;
@@ -167,30 +168,36 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           return;
       }
 
-      const initialAttributes = JSON.parse(JSON.stringify(ATTRIBUTES_CONFIG)) as AttributeGroup[];
-      
+      const initialAttributes: CharacterAttributes = {};
       const selectedDifficulty = DIFFICULTY_LEVELS.find(d => d.id === difficulty) || DIFFICULTY_LEVELS.find(d => d.id === 'medium')!;
       const baseStatValue = selectedDifficulty.baseStatValue;
+      
+      const attributeSystemToUse = { definitions: DEFAULT_ATTRIBUTE_DEFINITIONS, groups: DEFAULT_ATTRIBUTE_GROUPS };
 
-      initialAttributes.forEach(group => {
-          if (['Tinh (精 - Nhục Thân)', 'Khí (气 - Chân Nguyên)', 'Thần (神 - Linh Hồn)', 'Ngoại Duyên (外缘 - Yếu Tố Bên Ngoài)'].includes(group.title)) {
-              group.attributes.forEach(attr => {
-                  if (typeof attr.value === 'number') {
-                      attr.value = baseStatValue;
-                  }
-              });
-          }
+      attributeSystemToUse.definitions.forEach(attrDef => {
+        if (attrDef.type === 'PRIMARY') {
+            initialAttributes[attrDef.id] = { value: baseStatValue };
+        } else if (attrDef.type === 'VITAL' && attrDef.baseValue !== undefined) {
+             let value = attrDef.baseValue;
+             if(attrDef.id === 'sinh_menh') {
+                 const canCotValue = initialAttributes['can_cot']?.value || baseStatValue;
+                 value += (canCotValue - 10) * 5;
+             }
+             initialAttributes[attrDef.id] = { value: value, maxValue: value };
+        }
       });
+
+      const attributesWithDerived = calculateDerivedStats(initialAttributes, attributeSystemToUse.definitions);
       
       const characterData = {
           identity: identity,
-          attributes: initialAttributes,
           danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
           healthStatus: 'HEALTHY' as const,
           activeEffects: [],
           spiritualRoot: null,
           techniques: [],
           mainCultivationTechniqueInfo: null,
+          attributes: attributesWithDerived
       };
 
       await handleGameStart({ characterData, npcDensity, difficulty, gameMode });

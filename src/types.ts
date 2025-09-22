@@ -1,4 +1,8 @@
+
+// FIX: Import ElementType for local use and re-export it for other modules, resolving multiple 'Cannot find name' errors.
 import type { ElementType } from 'react';
+export type { ElementType };
+
 
 // --- Generic Types ---
 export interface Faction {
@@ -110,18 +114,32 @@ export interface GameSettings {
 }
 
 // --- Character Creation & Stats Types ---
-export interface Attribute {
-  name: string;
+
+// NEW: Universal Attribute Framework
+export interface AttributeDefinition {
+  id: string; 
+  name: string; 
   description: string;
-  value: number | string;
-  maxValue?: number;
-  icon?: ElementType;
+  iconName: string; 
+  type: 'PRIMARY' | 'SECONDARY' | 'VITAL' | 'INFORMATIONAL';
+  baseValue?: number;
+  formula?: string;
+  tags?: string[];
+  group: string;
 }
 
-export interface AttributeGroup {
-  title: string;
-  attributes: Attribute[];
+export interface AttributeGroupDefinition {
+    id: string;
+    name: string;
+    order: number;
 }
+
+export type CharacterAttributes = Record<string, {
+    value: number;
+    maxValue?: number;
+}>;
+
+// END: Universal Attribute Framework
 
 export type InnateTalentRank = 'Phàm Giai' | 'Siêu Phàm Giai' | 'Sơ Tiên Giai' | 'Trung Tiên Giai' | 'Hậu Tiên Giai' | 'Đại Tiên Giai' | 'Thánh Giai';
 
@@ -254,7 +272,7 @@ export interface ModCharacter {
 }
 
 // --- NEW MODDING TYPES FOR WORLD OVERHAUL ---
-export type ModLocation = Omit<Location, 'contextualActions' | 'shopIds'> & {
+export type ModLocation = Omit<Location, 'id' | 'contextualActions' | 'shopIds'> & {
     id: string;
     tags: string[];
 };
@@ -435,6 +453,11 @@ export interface AiHooks {
   on_action_evaluate?: string[]; // Dynamic rules evaluated on each player action
 }
 
+export interface ModAttributeSystem {
+    definitions: AttributeDefinition[];
+    groups: AttributeGroupDefinition[];
+}
+
 export interface ModContent {
     items?: Omit<ModItem, 'id'>[];
     talents?: Omit<ModTalent, 'id'>[];
@@ -455,6 +478,7 @@ export interface ModContent {
     customDataPacks?: (Omit<ModCustomDataPack, 'id' | 'data'> & { data: Record<string, any> })[];
     dynamicEvents?: Omit<DynamicModEvent, 'id'>[];
     aiHooks?: AiHooks;
+    attributeSystem?: ModAttributeSystem;
 }
 
 export interface FullMod {
@@ -530,7 +554,7 @@ export interface Location {
         id: string;
         label: string;
         description: string;
-        icon?: ElementType;
+        iconName?: string;
     }[];
     shopIds?: string[];
 }
@@ -541,11 +565,25 @@ export interface Relationship {
   description: string;
 }
 
+// --- NEW NPC MIND STATE ---
+export interface EmotionState {
+    trust: number; // 0-100
+    fear: number;  // 0-100
+    anger: number; // 0-100
+}
+
+export interface MemoryState {
+    shortTerm: string[]; // Recent events, max length of ~5
+    longTerm: string[];  // Core, defining memories
+}
+// --- END NPC MIND STATE ---
+
+// --- NEW NPC WILLPOWER STATE ---
 export interface NPC {
     id: string;
     identity: CharacterIdentity;
     status: string;
-    attributes: AttributeGroup[];
+    attributes: CharacterAttributes;
     talents: InnateTalent[]; // NPCs still use talents for now
     locationId: string;
     relationships?: Relationship[];
@@ -563,8 +601,11 @@ export interface NPC {
     loot?: { itemId: string; chance: number; min: number; max: number }[];
     tuoiTho: number;
     element?: Element;
-    mucTieu?: string;
-    trangThaiHanhDong?: string;
+    emotions: EmotionState;
+    memory: MemoryState;
+    motivation: string; // Core drive, e.g., "Protect my family at all costs."
+    goals: string[]; // Long-term objectives, e.g., ["Find the cure for my sister's illness", "Become a master blacksmith"]
+    currentPlan: string[] | null; // Step-by-step plan to achieve a goal, null if idle.
 }
 
 export interface InventoryItem {
@@ -733,7 +774,7 @@ export interface PlayerVitals {
 
 export interface PlayerCharacter {
     identity: CharacterIdentity;
-    attributes: AttributeGroup[];
+    attributes: CharacterAttributes;
     spiritualRoot: SpiritualRoot | null;
     inventory: Inventory;
     currencies: Currency;
@@ -855,6 +896,7 @@ export interface GameState {
     activeMods: FullMod[];
     activeModIds?: string[];
     realmSystem: RealmConfig[];
+    attributeSystem: ModAttributeSystem;
     majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;
     combatState: CombatState | null;
@@ -944,7 +986,7 @@ export interface Sect {
     ranks: SectRank[];
     joinRequirements: { attribute: string; value: number; greaterThan?: boolean }[];
     missions: SectMission[];
-    icon?: ElementType;
+    iconName?: string;
     startingTechnique?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
 }
 

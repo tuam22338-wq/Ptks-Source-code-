@@ -1,3 +1,4 @@
+
 import Dexie, { type Table } from 'dexie';
 import { REALM_SYSTEM } from '../constants';
 import type { 
@@ -6,7 +7,7 @@ import type {
     ModInfo, 
     FullMod, 
     SaveSlot, 
-    AttributeGroup, 
+    CharacterAttributes, 
     NPC, 
     Sect, 
     Location,
@@ -47,6 +48,7 @@ export class MyDatabase extends Dexie {
   constructor() {
     super('PhongThanKySuDB');
     // Version 3 adds the graphEdges table for the Entity Graph system.
+    // FIX: Cast 'this' to Dexie to resolve typing issue with subclassing.
     (this as Dexie).version(3).stores({
       saveSlots: 'id',
       settings: 'key',
@@ -78,16 +80,6 @@ export const setMigrationStatus = async (isComplete: boolean): Promise<void> => 
 };
 
 // --- Dehydration logic for saving ---
-const dehydrateAttributesForSave = (groups: AttributeGroup[]): any[] => {
-    return groups.map(group => ({
-        ...group,
-        attributes: group.attributes.map(attr => {
-            const { icon, ...rest } = attr; // remove icon component
-            return rest;
-        })
-    }));
-};
-
 const dehydrateGameStateForSave = (gameState: GameState): GameState => {
     // Create a shallow copy to avoid mutating the live state
     const dehydratedState: any = { ...gameState };
@@ -100,33 +92,21 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
     // Remove non-serializable or reconstructable data to optimize save size
     delete dehydratedState.activeMods;
     delete dehydratedState.realmSystem;
-
-    if (dehydratedState.playerCharacter?.attributes) {
-        dehydratedState.playerCharacter = {
-            ...dehydratedState.playerCharacter,
-            attributes: dehydrateAttributesForSave(dehydratedState.playerCharacter.attributes) as AttributeGroup[]
-        };
-    }
-
+    delete dehydratedState.attributeSystem; // Attribute definitions can be reconstructed on load
+    
+    // The new attribute system (Record<string, ...>) is fully serializable.
+    // No need to dehydrate player or NPC attributes anymore.
+    
     if (dehydratedState.activeNpcs) {
         dehydratedState.activeNpcs = dehydratedState.activeNpcs.map((npc: NPC) => {
-            let newNpc: any = { ...npc };
-            if (newNpc.attributes) {
-                newNpc = {
-                    ...newNpc,
-                    attributes: dehydrateAttributesForSave(newNpc.attributes) as AttributeGroup[]
-                };
-            }
-            if ('currencies' in newNpc) {
-                delete newNpc.currencies;
-            }
-            return newNpc;
+            const { currencies, ...rest } = npc;
+            return rest;
         });
     }
 
     if (dehydratedState.worldSects) {
         dehydratedState.worldSects = dehydratedState.worldSects.map(sect => {
-            const { icon, ...rest } = sect;
+            const { iconName, ...rest } = sect;
             return rest as Sect;
         })
     }
@@ -139,7 +119,7 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
             return {
                 ...location,
                 contextualActions: location.contextualActions.map(action => {
-                    const { icon, ...rest } = action;
+                    const { iconName, ...rest } = action;
                     return rest;
                 })
             };
@@ -192,6 +172,7 @@ export const saveModToLibrary = async (mod: DbModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: DbModInLibrary[]): Promise<void> => {
+    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
     await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
@@ -251,8 +232,10 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
  */
 export const exportAllData = async (): Promise<Record<string, any>> => {
   const data: Record<string, any> = {};
-  await (db as Dexie).transaction('r', db.tables, async () => {
-    for (const table of db.tables) {
+  // FIX: Cast `db` to `Dexie` to access the `tables` property.
+  await (db as Dexie).transaction('r', (db as Dexie).tables, async () => {
+    // FIX: Cast `db` to `Dexie` to access the `tables` property.
+    for (const table of (db as Dexie).tables) {
       data[table.name] = await table.toArray();
     }
   });
@@ -264,12 +247,15 @@ export const exportAllData = async (): Promise<Record<string, any>> => {
  * @param data A record object where keys are table names and values are arrays of records.
  */
 export const importAllData = async (data: Record<string, any>): Promise<void> => {
-  await (db as Dexie).transaction('rw', db.tables, async () => {
+  // FIX: Cast `db` to `Dexie` to access the `tables` property.
+  await (db as Dexie).transaction('rw', (db as Dexie).tables, async () => {
     // Clear all tables first for a clean import
-    await Promise.all(db.tables.map(table => table.clear()));
+    // FIX: Cast `db` to `Dexie` to access the `tables` property.
+    await Promise.all((db as Dexie).tables.map(table => table.clear()));
 
     // Import new data table by table
-    for (const table of db.tables) {
+    // FIX: Cast `db` to `Dexie` to access the `tables` property.
+    for (const table of (db as Dexie).tables) {
       // Check if the backup data contains this table
       if (data[table.name] && Array.isArray(data[table.name])) {
         try {
@@ -289,6 +275,7 @@ export const importAllData = async (data: Record<string, any>): Promise<void> =>
 
 // Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
 export const deleteDb = (): Promise<void> => {
+    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
     return (db as Dexie).delete();
 };
 

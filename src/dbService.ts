@@ -1,3 +1,4 @@
+
 import Dexie, { type Table } from 'dexie';
 import { REALM_SYSTEM } from '../constants';
 import type { 
@@ -6,7 +7,7 @@ import type {
     ModInfo, 
     FullMod, 
     SaveSlot, 
-    AttributeGroup, 
+    CharacterAttributes, 
     NPC, 
     Sect, 
     Location,
@@ -47,7 +48,8 @@ export class MyDatabase extends Dexie {
   constructor() {
     super('PhongThanKySuDB');
     // Version 3 adds the graphEdges table for the Entity Graph system.
-    this.version(3).stores({
+    // FIX: Cast 'this' to Dexie to resolve typing issue with subclassing.
+    (this as Dexie).version(3).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
@@ -58,7 +60,8 @@ export class MyDatabase extends Dexie {
       graphEdges: '++id, slotId, [source.id+target.id], type, memoryFragmentId',
     });
     // Migrate from v2 to v3 if needed (no specific migration action required, just table creation)
-    this.on('populate', () => {
+    // FIX: Cast 'this' to Dexie to resolve typing issue with subclassing.
+    (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });
   }
@@ -77,16 +80,6 @@ export const setMigrationStatus = async (isComplete: boolean): Promise<void> => 
 };
 
 // --- Dehydration logic for saving ---
-const dehydrateAttributesForSave = (groups: AttributeGroup[]): any[] => {
-    return groups.map(group => ({
-        ...group,
-        attributes: group.attributes.map(attr => {
-            const { icon, ...rest } = attr; // remove icon component
-            return rest;
-        })
-    }));
-};
-
 const dehydrateGameStateForSave = (gameState: GameState): GameState => {
     // Create a shallow copy to avoid mutating the live state
     const dehydratedState: any = { ...gameState };
@@ -99,33 +92,21 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
     // Remove non-serializable or reconstructable data to optimize save size
     delete dehydratedState.activeMods;
     delete dehydratedState.realmSystem;
-
-    if (dehydratedState.playerCharacter?.attributes) {
-        dehydratedState.playerCharacter = {
-            ...dehydratedState.playerCharacter,
-            attributes: dehydrateAttributesForSave(dehydratedState.playerCharacter.attributes) as AttributeGroup[]
-        };
-    }
-
+    delete dehydratedState.attributeSystem; // Attribute definitions can be reconstructed on load
+    
+    // The new attribute system (Record<string, ...>) is fully serializable.
+    // No need to dehydrate player or NPC attributes anymore.
+    
     if (dehydratedState.activeNpcs) {
         dehydratedState.activeNpcs = dehydratedState.activeNpcs.map((npc: NPC) => {
-            let newNpc: any = { ...npc };
-            if (newNpc.attributes) {
-                newNpc = {
-                    ...newNpc,
-                    attributes: dehydrateAttributesForSave(newNpc.attributes) as AttributeGroup[]
-                };
-            }
-            if ('currencies' in newNpc) {
-                delete newNpc.currencies;
-            }
-            return newNpc;
+            const { currencies, ...rest } = npc;
+            return rest;
         });
     }
 
     if (dehydratedState.worldSects) {
         dehydratedState.worldSects = dehydratedState.worldSects.map(sect => {
-            const { icon, ...rest } = sect;
+            const { iconName, ...rest } = sect;
             return rest as Sect;
         })
     }
@@ -138,7 +119,7 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
             return {
                 ...location,
                 contextualActions: location.contextualActions.map(action => {
-                    const { icon, ...rest } = action;
+                    const { iconName, ...rest } = action;
                     return rest;
                 })
             };
@@ -191,7 +172,8 @@ export const saveModToLibrary = async (mod: DbModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: DbModInLibrary[]): Promise<void> => {
-    await db.transaction('rw', db.modLibrary, async () => {
+    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
+    await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
     });
@@ -244,8 +226,57 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
     await db.misc.put({ key: 'lastDismissedUpdate', value: version });
 };
 
+/**
+ * Exports all data from all tables in the database.
+ * @returns A record object where keys are table names and values are arrays of records.
+ */
+export const exportAllData = async (): Promise<Record<string, any>> => {
+  const data: Record<string, any> = {};
+  // FIX: Cast `db` to `Dexie` to access the `tables` property.
+  await (db as Dexie).transaction('r', (db as Dexie).tables, async () => {
+    // FIX: Cast `db` to `Dexie` to access the `tables` property.
+    for (const table of (db as Dexie).tables) {
+      data[table.name] = await table.toArray();
+    }
+  });
+  return data;
+};
+
+/**
+ * Imports data into the database, overwriting all existing data.
+ * @param data A record object where keys are table names and values are arrays of records.
+ */
+export const importAllData = async (data: Record<string, any>): Promise<void> => {
+  // FIX: Cast `db` to `Dexie` to access the `tables` property.
+  await (db as Dexie).transaction('rw', (db as Dexie).tables, async () => {
+    // Clear all tables first for a clean import
+    // FIX: Cast `db` to `Dexie` to access the `tables` property.
+    await Promise.all((db as Dexie).tables.map(table => table.clear()));
+
+    // Import new data table by table
+    // FIX: Cast `db` to `Dexie` to access the `tables` property.
+    for (const table of (db as Dexie).tables) {
+      // Check if the backup data contains this table
+      if (data[table.name] && Array.isArray(data[table.name])) {
+        try {
+          await table.bulkPut(data[table.name]);
+        } catch (error) {
+          console.error(`Lỗi khi nhập dữ liệu cho bảng ${table.name}:`, error);
+          // Optional: re-throw to abort the entire transaction
+          throw new Error(`Nhập dữ liệu cho bảng ${table.name} thất bại.`);
+        }
+      } else {
+        console.warn(`Không tìm thấy dữ liệu cho bảng '${table.name}' trong tệp sao lưu. Bảng này sẽ bị trống.`);
+      }
+    }
+  });
+};
+
+
+// Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
 export const deleteDb = (): Promise<void> => {
-    return db.delete();
+    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
+    return (db as Dexie).delete();
 };
 
 // --- Memory Service ---
@@ -254,7 +285,8 @@ export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<numb
 };
 
 export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
-    await db.transaction('rw', db.memoryFragments, db.graphEdges, async () => {
+    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
+    await (db as Dexie).transaction('rw', db.memoryFragments, db.graphEdges, async () => {
         await db.memoryFragments.where('slotId').equals(slotId).delete();
         await db.graphEdges.where('slotId').equals(slotId).delete();
     });
@@ -265,10 +297,6 @@ export const getRelevantMemories = async (
   entityIds: string[],
   limit: number = 15
 ): Promise<MemoryFragment[]> => {
-  if (entityIds.length === 0) {
-    return [];
-  }
-  
   const fragmentsByEntity = await db.memoryFragments
     .where('entities.id').anyOf(entityIds)
     .and(frag => frag.slotId === slotId)
@@ -276,10 +304,7 @@ export const getRelevantMemories = async (
 
   const edgeQueries = entityIds
       .filter(id => id !== 'player')
-      .flatMap(targetId => [
-          ['player', targetId],
-          [targetId, 'player']
-      ]);
+      .map(targetId => ['player', targetId]);
 
   const edges = edgeQueries.length > 0 ? await db.graphEdges
       .where('[source.id+target.id]').anyOf(...edgeQueries)
@@ -288,12 +313,12 @@ export const getRelevantMemories = async (
 
   const fragmentIdsFromEdges = edges.map(e => e.memoryFragmentId);
   const fragmentsFromEdges = fragmentIdsFromEdges.length > 0
-    ? (await db.memoryFragments.bulkGet(fragmentIdsFromEdges)).filter((f): f is MemoryFragment => f !== undefined)
+    ? await db.memoryFragments.bulkGet(fragmentIdsFromEdges)
     : [];
 
   const allFragments = [
       ...fragmentsByEntity,
-      ...fragmentsFromEdges,
+      ...(fragmentsFromEdges.filter((f): f is MemoryFragment => f !== undefined)),
   ];
 
   // Deduplicate and sort

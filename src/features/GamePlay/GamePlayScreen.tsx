@@ -1,21 +1,21 @@
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
-import LoadingScreen from '../../components/LoadingScreen';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import NotificationArea from '../../components/NotificationArea';
+import LoadingScreen from '../../../components/LoadingScreen';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import NotificationArea from '../../../components/NotificationArea';
 import EventPanel from './components/EventPanel';
 import CombatScreen from './components/CombatScreen';
 import CultivationPathModal from './components/CultivationPathModal';
 import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
-import { generateInnerDemonTrial, askAiAssistant } from '../../services/geminiService';
-import { CULTIVATION_PATHS } from '../../constants';
+import { generateInnerDemonTrial, askAiAssistant } from '../../../services/geminiService';
+import { CULTIVATION_PATHS } from '../../../constants';
 import InventoryModal from './components/InventoryModal';
-import { useAppContext } from '../../contexts/AppContext';
-import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
+import { useAppContext } from '../../../contexts/AppContext';
+import { GameUIProvider, useGameUIContext } from '../../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import SummaryPanel from './components/SummaryPanel';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -332,7 +332,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     {isSpecialPanelActive ? (
                         <>
                             {combatState && <CombatScreen />}
-                            {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes.flatMap(g => g.attributes)} />}
+                            {/* FIX: Correctly pass the CharacterAttributes record instead of attempting to flatMap it. */}
+                            {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes} />}
                             {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
                         </>
                     ) : (
@@ -348,7 +349,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     )}
                 </main>
 
-                {isSummaryPanelVisible && <SummaryPanel playerCharacter={playerCharacter} />}
+                {isSummaryPanelVisible && <SummaryPanel gameState={gameState} />}
             </div>
         </div>
     );

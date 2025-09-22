@@ -10,3 +10,4 @@ export * from './gemini/modding.service';
 export * from './gemini/quest.service';
 export * from './gemini/combat.service';
 export * from './gemini/parsing.service';
+export * from './gemini/interaction.service';

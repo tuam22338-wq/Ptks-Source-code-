@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { GameState, NPC } from '../../types';
+import type { GameState, NPC, CharacterAttributes } from '../../types';
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
@@ -33,10 +33,10 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
 
     **Bối cảnh trận đấu:**
     - **NPC:** ${npc.identity.name} (Ngũ hành: ${npc.element || 'Vô'})
-    - **Sinh Mệnh NPC:** ${npc.attributes.flatMap(g=>g.attributes).find(a=>a.name === 'Sinh Mệnh')?.value}
+    - **Sinh Mệnh NPC:** ${npc.attributes['sinh_menh']?.value}
     - **Công pháp có thể dùng:** ${availableTechniques.map(t => `${t.name} (ID: ${t.id}, Ngũ hành: ${t.element || 'Vô'})`).join(', ') || 'Không có'}
     - **Đối thủ:** ${playerCharacter.identity.name} (Ngũ hành: ${playerCharacter.element || 'Vô'})
-    - **Sinh Mệnh đối thủ:** ${playerCharacter.attributes.flatMap(g=>g.attributes).find(a=>a.name === 'Sinh Mệnh')?.value}
+    - **Sinh Mệnh đối thủ:** ${playerCharacter.attributes['sinh_menh']?.value}
     - **Tương khắc Ngũ Hành:** Kim > Mộc > Thổ > Thủy > Hỏa > Kim.
 
     **Nhiệm vụ:**

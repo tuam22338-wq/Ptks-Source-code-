@@ -222,6 +222,46 @@ const systemActionSchema = {
     }
 };
 
+const emotionChangeSchema = {
+    type: Type.OBJECT,
+    properties: {
+        emotionChanges: {
+            type: Type.ARRAY,
+            description: "List of changes in an NPC's emotions towards the player. Only extract if the narrative explicitly states or strongly implies a change.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    npcName: { type: Type.STRING, description: "Name of the NPC whose emotion is changing." },
+                    emotion: { type: Type.STRING, enum: ['trust', 'fear', 'anger'], description: "The emotion that is changing." },
+                    change: { type: Type.NUMBER, description: "The amount of change (e.g., +10 for increase, -5 for decrease)." },
+                    reason: { type: Type.STRING, description: "A brief reason for the change, which will become a memory for the NPC. E.g., 'Player gave me a gift'." }
+                },
+                required: ['npcName', 'emotion', 'change', 'reason']
+            }
+        }
+    }
+};
+
+const mindsetChangeSchema = {
+    type: Type.OBJECT,
+    properties: {
+        mindsetChanges: {
+            type: Type.ARRAY,
+            description: "List of fundamental, long-term changes to an NPC's personality (traits) or worldview (beliefs). Only extract for significant, character-altering moments.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    npcName: { type: Type.STRING },
+                    changeType: { type: Type.STRING, enum: ['ADD_TRAIT', 'REMOVE_TRAIT', 'ADD_BELIEF', 'REMOVE_BELIEF'] },
+                    value: { type: Type.STRING, description: "The trait or belief string to add or remove. E.g., 'Đa Nghi', 'Sức mạnh là chân lý'." },
+                    reason: { type: Type.STRING, description: "The reason for this fundamental change. E.g., 'Bị người chơi lừa dối nhiều lần'." }
+                },
+                required: ['npcName', 'changeType', 'value', 'reason']
+            }
+        }
+    }
+};
+
 
 // --- Main Cognitive System Orchestrator ---
 
@@ -268,6 +308,8 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
             ...timeChangeSchema.properties,
             ...locationChangeSchema.properties,
             ...systemActionSchema.properties,
+            ...emotionChangeSchema.properties,
+            ...mindsetChangeSchema.properties,
         }
     };
 
@@ -293,27 +335,43 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
         - **Healing/Recovery:** "vết thương lành lại" -> \`{"attribute": "Sinh Mệnh", "change": 20}\`. "linh lực hồi phục" -> \`{"attribute": "Linh Lực", "change": 15}\`.
         - **Vitals:** "ăn một chiếc bánh bao no bụng" -> \`{"attribute": "hunger", "change": 30}\`. "uống nước suối mát lạnh, cơn khát dịu đi" -> \`{"attribute": "thirst", "change": 40}\`. "cảm thấy đói cồn cào" -> \`{"attribute": "hunger", "change": -10}\`.
         - **Cultivation:** "hấp thụ một luồng linh khí thuần khiết" -> \`{"attribute": "spiritualQi", "change": 100}\`.
-    4.  Strictly adhere to the provided JSON schema. If no valid changes occur in a category, provide an empty array or omit the key.
-    5.  **Location Changes:** If the narrative explicitly confirms that the player *has arrived* at a new, valid location (e.g., "bạn đã đến Rừng Cổ Thụ"), extract the location's ID from the context list. Do not extract if the player is just talking about going somewhere or is on the way.
-    6.  **System Actions:** Extract structured actions for specific game mechanics.
+    4.  **Emotion & Mindset Changes:**
+        - **Emotions (Short-term):** If the narrative shows an NPC's feelings towards the player changing, extract it. Example: "Lão nông nhìn bạn với vẻ biết ơn." -> \`{"npcName": "Lão nông", "emotion": "trust", "change": 10, "reason": "Player helped me."}\`.
+        - **Mindset (Long-term):** ONLY if the narrative describes a fundamental, character-altering change, extract it. Example: "Sau nhiều lần bị lừa dối, ông ta không còn tin vào lòng tốt của người khác nữa." -> \`{"npcName": "Lão nông", "changeType": "ADD_BELIEF", "value": "Lòng tốt chỉ là giả dối.", "reason": "Bị người chơi lừa dối nhiều lần."}\`.
+    5.  Strictly adhere to the provided JSON schema. If no valid changes occur in a category, provide an empty array or omit the key.
+    6.  **Location Changes:** If the narrative explicitly confirms that the player *has arrived* at a new, valid location (e.g., "bạn đã đến Rừng Cổ Thụ"), extract the location's ID from the context list. Do not extract if the player is just talking about going somewhere or is on the way.
+    7.  **System Actions:** Extract structured actions for specific game mechanics.
         - If the player successfully joins a sect, extract: \`{"actionType": "JOIN_SECT", "details": {"sectId": "xien_giao"}}\`.
         - If the player successfully crafts an item, extract: \`{"actionType": "CRAFT_ITEM", "details": {"recipeId": "recipe_hoi_khi_dan_ha_pham"}}\`.
         - If the player successfully upgrades a cave facility, extract: \`{"actionType": "UPGRADE_CAVE", "details": {"facilityId": "spiritGatheringArrayLevel"}}\`.
-    7.  **Custom Entity Recognition:** Use the provided lists of custom entity names from mods in the Context to improve accuracy when extracting items, locations, etc.
+    8.  **Custom Entity Recognition:** Use the provided lists of custom entity names from mods in the Context to improve accuracy when extracting items, locations, etc.
 
     ${context}
 
     Generate the JSON output.`;
 
     const settings = await db.getSettings();
+    const model = settings?.dataParsingModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.dataParsingModel;
+
+    const generationConfig: any = {
+        responseMimeType: "application/json",
+        responseSchema: masterParsingSchema,
+        temperature: settings?.temperature,
+        topK: settings?.topK,
+        topP: settings?.topP,
+    };
+    
+    if (model === 'gemini-2.5-flash') {
+        generationConfig.thinkingConfig = {
+            thinkingBudget: settings?.enableThinking ? settings.thinkingBudget : 0,
+        };
+    }
+    
     const response = await generateWithRetry({
-        model: settings?.dataParsingModel || 'gemini-2.5-flash',
+        model,
         contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: masterParsingSchema
-        }
+        config: generationConfig
     }, specificApiKey);
     
     const result = JSON.parse(response.text);
@@ -333,6 +391,8 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
     const timeJump = result.timeJump || null;
     const newLocation = result.newLocation || null;
     const systemActions = result.systemActions || [];
+    const emotionChanges = result.emotionChanges || [];
+    const mindsetChanges = result.mindsetChanges || [];
 
     return {
         newItems,
@@ -344,11 +404,13 @@ async function parseNarrativeWithSingleCall(context: string, gameState: GameStat
         timeJump,
         newLocation,
         systemActions,
+        emotionChanges,
+        mindsetChanges,
     };
 }
 
 
-export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: Omit<ActiveEffect, 'id'>[], newQuests: Partial<ActiveQuest>[], timeJump: { years?: number; seasons?: number; days?: number } | null, newLocation: { locationId: string } | null, systemActions: { actionType: string; details: any }[] }> => {
+export const parseNarrativeForGameData = async (narrative: string, gameState: GameState): Promise<{ newItems: InventoryItem[], newTechniques: CultivationTechnique[], newNpcEncounterIds: string[], statChanges: {attribute: string, change: number}[], newEffects: Omit<ActiveEffect, 'id'>[], newQuests: Partial<ActiveQuest>[], timeJump: { years?: number; seasons?: number; days?: number } | null, newLocation: { locationId: string } | null, systemActions: { actionType: string; details: any }[], emotionChanges: { npcName: string; emotion: 'trust' | 'fear' | 'anger'; change: number; reason: string }[], mindsetChanges: { npcName: string; changeType: 'ADD_TRAIT' | 'REMOVE_TRAIT' | 'ADD_BELIEF' | 'REMOVE_BELIEF'; value: string; reason: string }[] }> => {
     console.log("Activating Cognitive Nervous System to parse narrative...");
     const context = buildContext(narrative, gameState);
 
@@ -369,6 +431,8 @@ export const parseNarrativeForGameData = async (narrative: string, gameState: Ga
             timeJump: null,
             newLocation: null,
             systemActions: [],
+            emotionChanges: [],
+            mindsetChanges: [],
         };
     }
 };

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, Attribute, AttributeGroup, PlayerVitals } from '../../../types';
-import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS } from '../../../constants';
+import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
+import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
 import { GiWeight, GiPerson } from "react-icons/gi";
 import { FaTimes, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -15,31 +15,26 @@ type SortOrder = 'name_asc' | 'name_desc' | 'quality_desc' | 'weight_desc';
 
 const ITEMS_PER_PAGE = 28; // 4 rows * 7 columns
 
-const deepCopyAttributes = (attributeGroups: PlayerCharacter['attributes']): PlayerCharacter['attributes'] => {
-    return attributeGroups.map(group => ({
-        ...group,
-        attributes: group.attributes.map(attr => ({ ...attr })),
-    }));
+const deepCopyAttributes = (attributes: CharacterAttributes): CharacterAttributes => {
+    return JSON.parse(JSON.stringify(attributes));
 };
 
-const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add' | 'subtract'): PlayerCharacter['attributes'] => {
+const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add' | 'subtract'): CharacterAttributes => {
     const newAttributes = deepCopyAttributes(pc.attributes);
     const multiplier = operation === 'add' ? 1 : -1;
 
     bonuses.forEach(bonus => {
-        for (const group of newAttributes) {
-            const attr = group.attributes.find(a => a.name === bonus.attribute);
-            if (attr && typeof attr.value === 'number') {
-                const newValue = (attr.value as number) + (bonus.value * multiplier);
-                attr.value = newValue;
-                if (attr.maxValue !== undefined) {
-                    const newMaxValue = (attr.maxValue as number) + (bonus.value * multiplier);
-                    attr.maxValue = newMaxValue;
-                    if (operation === 'subtract' && attr.value > newMaxValue) {
-                        attr.value = newMaxValue;
-                    }
+        const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === bonus.attribute);
+        if (attrDef && newAttributes[attrDef.id]) {
+            const attr = newAttributes[attrDef.id];
+            attr.value += (bonus.value * multiplier);
+
+            if (attr.maxValue !== undefined) {
+                const newMaxValue = attr.maxValue + (bonus.value * multiplier);
+                attr.maxValue = newMaxValue;
+                if (operation === 'subtract' && attr.value > newMaxValue) {
+                    attr.value = newMaxValue;
                 }
-                break;
             }
         }
     });
@@ -52,7 +47,8 @@ const EquipmentSlotComponent: React.FC<{
     onUnequip: (slot: EquipmentSlot) => void;
     onSelect: (item: InventoryItem | null) => void;
 }> = ({ slot, item, onUnequip, onSelect }) => {
-    const Icon = EQUIPMENT_SLOT_ICONS[slot];
+    const iconName = EQUIPMENT_SLOT_ICONS[slot];
+    const Icon = UI_ICONS[iconName] || (() => <span />);
     const slotInfo = EQUIPMENT_SLOTS[slot];
     
     return (
