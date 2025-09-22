@@ -13,11 +13,14 @@ export const extractEntities = (content: string, gameState: GameState): EntityRe
     entities.set('player', { id: 'player', type: 'player', name: gameState.playerCharacter.identity.name });
     
     // Always add current location
-    entities.set(gameState.playerCharacter.currentLocationId, {
-        id: gameState.playerCharacter.currentLocationId,
-        type: 'location',
-        name: gameState.discoveredLocations.find(l => l.id === gameState.playerCharacter.currentLocationId)?.name || 'Unknown'
-    });
+    const currentLocation = gameState.discoveredLocations.find(l => l.id === gameState.playerCharacter.currentLocationId);
+    if(currentLocation) {
+        entities.set(currentLocation.id, {
+            id: currentLocation.id,
+            type: 'location',
+            name: currentLocation.name
+        });
+    }
 
     // Match items/techniques in brackets: [Item Name]
     const bracketMatches = content.match(/\[(.*?)\]/g);
@@ -88,8 +91,7 @@ export const addEntryToMemory = async (entry: StoryEntry, gameState: GameState, 
 export const saveGraphEdges = async (edges: GraphEdge[]): Promise<void> => {
     if (edges.length === 0) return;
     try {
-        // FIX: The 'db' import is a module namespace. The Dexie instance is on 'db.db'.
-        await (db.db.graphEdges as any).bulkAdd(edges);
+        await db.db.graphEdges.bulkAdd(edges);
     } catch (error) {
         console.error("Failed to save graph edges:", error, edges);
     }

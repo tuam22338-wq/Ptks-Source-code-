@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, memo } from 'react';
+import React, { useState, useCallback, useEffect, memo, useMemo } from 'react';
 import type { AttributeGroup, CharacterIdentity, PlayerCharacter, NpcDensity, Gender, GameDate, FullMod, StatBonus, DanhVong, DifficultyLevel, SpiritualRoot } from '../../types';
 import { FaArrowLeft, FaDesktop } from 'react-icons/fa';
 import { GiGalaxy, GiPerson } from "react-icons/gi";
@@ -6,7 +6,7 @@ import Timeline from '../../components/Timeline';
 import { generateCharacterIdentity } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
-import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, PT_NPC_LIST, PT_MAJOR_EVENTS, DIFFICULTY_LEVELS } from '../../constants';
+import { ATTRIBUTES_CONFIG, SHICHEN_LIST, NPC_DENSITY_LEVELS, PT_NPC_LIST, PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS } from '../../constants';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -62,7 +62,7 @@ const DifficultySelector: React.FC<{ value: DifficultyLevel, onChange: (value: D
 );
 
 export const CharacterCreationScreen: React.FC = memo(() => {
-  const { handleNavigate, handleGameStart } = useAppContext();
+  const { state, handleNavigate, handleGameStart } = useAppContext();
   const [step, setStep] = useState<'modeSelection' | 'idea' | 'roleplay' | 'generating' | 'results'>('modeSelection');
   const [characterConcept, setCharacterConcept] = useState('');
   const [gender, setGender] = useState<Gender>('Nam');
@@ -79,6 +79,13 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const shichen = SHICHEN_LIST[Math.floor(Math.random() * SHICHEN_LIST.length)].name;
     return { era: 'Tiên Phong Thần', year: 1, season: 'Xuân', day: 1, timeOfDay: 'Buổi Sáng', shichen, weather: 'SUNNY', actionPoints: 4, maxActionPoints: 4 };
   });
+  
+  const majorEventsForTimeline = useMemo(() => {
+      if (state.activeWorldId === 'tay_du_ky') {
+          return JTTW_MAJOR_EVENTS;
+      }
+      return PT_MAJOR_EVENTS;
+  }, [state.activeWorldId]);
 
   const updateGenerationMessage = useCallback(() => {
     const message = GENERATING_MESSAGES[Math.floor(Math.random() * GENERATING_MESSAGES.length)];
@@ -312,7 +319,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
           <FaArrowLeft className="w-5 h-5" />
         </button>
         <div className="text-center flex-grow">
-          <Timeline gameDate={gameDate} majorEvents={PT_MAJOR_EVENTS} />
+          <Timeline gameDate={gameDate} majorEvents={majorEventsForTimeline} />
         </div>
         <div className="w-9 h-9"></div>
       </div>

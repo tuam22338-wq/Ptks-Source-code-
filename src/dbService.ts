@@ -47,7 +47,7 @@ export class MyDatabase extends Dexie {
   constructor() {
     super('PhongThanKySuDB');
     // Version 3 adds the graphEdges table for the Entity Graph system.
-    (this as Dexie).version(3).stores({
+    this.version(3).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
@@ -58,8 +58,7 @@ export class MyDatabase extends Dexie {
       graphEdges: '++id, slotId, [source.id+target.id], type, memoryFragmentId',
     });
     // Migrate from v2 to v3 if needed (no specific migration action required, just table creation)
-    // FIX: Cast 'this' to Dexie to resolve typing issue with subclassing.
-    (this as Dexie).on('populate', () => {
+    this.on('populate', () => {
         // This is where you'd put initial data if needed.
     });
   }
@@ -192,7 +191,7 @@ export const saveModToLibrary = async (mod: DbModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: DbModInLibrary[]): Promise<void> => {
-    await (db as Dexie).transaction('rw', db.modLibrary, async () => {
+    await db.transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
     });
@@ -245,51 +244,8 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
     await db.misc.put({ key: 'lastDismissedUpdate', value: version });
 };
 
-/**
- * Exports all data from all tables in the database.
- * @returns A record object where keys are table names and values are arrays of records.
- */
-export const exportAllData = async (): Promise<Record<string, any>> => {
-  const data: Record<string, any> = {};
-  await (db as Dexie).transaction('r', db.tables, async () => {
-    for (const table of db.tables) {
-      data[table.name] = await table.toArray();
-    }
-  });
-  return data;
-};
-
-/**
- * Imports data into the database, overwriting all existing data.
- * @param data A record object where keys are table names and values are arrays of records.
- */
-export const importAllData = async (data: Record<string, any>): Promise<void> => {
-  await (db as Dexie).transaction('rw', db.tables, async () => {
-    // Clear all tables first for a clean import
-    await Promise.all(db.tables.map(table => table.clear()));
-
-    // Import new data table by table
-    for (const table of db.tables) {
-      // Check if the backup data contains this table
-      if (data[table.name] && Array.isArray(data[table.name])) {
-        try {
-          await table.bulkPut(data[table.name]);
-        } catch (error) {
-          console.error(`Lỗi khi nhập dữ liệu cho bảng ${table.name}:`, error);
-          // Optional: re-throw to abort the entire transaction
-          throw new Error(`Nhập dữ liệu cho bảng ${table.name} thất bại.`);
-        }
-      } else {
-        console.warn(`Không tìm thấy dữ liệu cho bảng '${table.name}' trong tệp sao lưu. Bảng này sẽ bị trống.`);
-      }
-    }
-  });
-};
-
-
-// Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
 export const deleteDb = (): Promise<void> => {
-    return (db as Dexie).delete();
+    return db.delete();
 };
 
 // --- Memory Service ---
@@ -298,8 +254,7 @@ export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<numb
 };
 
 export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
-    await (db as Dexie).transaction('rw', db.memoryFragments, db.graphEdges, async () => {
+    await db.transaction('rw', db.memoryFragments, db.graphEdges, async () => {
         await db.memoryFragments.where('slotId').equals(slotId).delete();
         await db.graphEdges.where('slotId').equals(slotId).delete();
     });
@@ -310,6 +265,10 @@ export const getRelevantMemories = async (
   entityIds: string[],
   limit: number = 15
 ): Promise<MemoryFragment[]> => {
+  if (entityIds.length === 0) {
+    return [];
+  }
+  
   const fragmentsByEntity = await db.memoryFragments
     .where('entities.id').anyOf(entityIds)
     .and(frag => frag.slotId === slotId)
@@ -317,7 +276,10 @@ export const getRelevantMemories = async (
 
   const edgeQueries = entityIds
       .filter(id => id !== 'player')
-      .map(targetId => ['player', targetId]);
+      .flatMap(targetId => [
+          ['player', targetId],
+          [targetId, 'player']
+      ]);
 
   const edges = edgeQueries.length > 0 ? await db.graphEdges
       .where('[source.id+target.id]').anyOf(...edgeQueries)
@@ -326,12 +288,12 @@ export const getRelevantMemories = async (
 
   const fragmentIdsFromEdges = edges.map(e => e.memoryFragmentId);
   const fragmentsFromEdges = fragmentIdsFromEdges.length > 0
-    ? await db.memoryFragments.bulkGet(fragmentIdsFromEdges)
+    ? (await db.memoryFragments.bulkGet(fragmentIdsFromEdges)).filter((f): f is MemoryFragment => f !== undefined)
     : [];
 
   const allFragments = [
       ...fragmentsByEntity,
-      ...(fragmentsFromEdges.filter((f): f is MemoryFragment => f !== undefined)),
+      ...fragmentsFromEdges,
   ];
 
   // Deduplicate and sort

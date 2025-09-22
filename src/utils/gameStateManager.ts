@@ -8,13 +8,15 @@ import {
 import type { GameState, AttributeGroup, Attribute, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique } from "../types";
 import { generateDynamicNpcs, generateFamilyAndFriends, generateOpeningScene } from '../services/geminiService';
 import * as db from '../services/dbService';
+// FIX: Added missing GiMountainCave import
 import {
   GiCauldron,
   GiHealthNormal, GiMagicSwirl, GiStairsGoal, GiHourglass,
   GiSpinalCoil, GiMuscularTorso, GiRunningShoe, GiHeartTower,
   GiPentacle, GiBoltSpellCast, GiScrollQuill, GiSoulVessel,
   GiSparklingSabre, GiStoneTower, GiPerspectiveDiceSixFacesRandom,
-  GiTalk, GiScales, GiMountainCave, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle
+  GiTalk, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle,
+  GiMountainCave
 } from 'react-icons/gi';
 import { FaSun, FaMoon } from 'react-icons/fa';
 
@@ -202,8 +204,10 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
     if(dataToProcess.worldState) {
         dataToProcess.worldState.rumors = dataToProcess.worldState.rumors ?? [];
         dataToProcess.worldState.dynamicEvents = dataToProcess.worldState.dynamicEvents ?? [];
+        dataToProcess.worldState.foreshadowedEvents = dataToProcess.worldState.foreshadowedEvents ?? [];
+        dataToProcess.worldState.triggeredDynamicEventIds = dataToProcess.worldState.triggeredDynamicEventIds ?? {};
     } else {
-        dataToProcess.worldState = { rumors: [], dynamicEvents: [] };
+        dataToProcess.worldState = { rumors: [], dynamicEvents: [], foreshadowedEvents: [], triggeredDynamicEventIds: {} };
     }
 
     // Stamp the migrated save with the current game version to prevent re-migration.
@@ -531,7 +535,7 @@ export const createNewGameState = async (
         maxActionPoints: 4,
     };
 
-    const initialWorldState: WorldState = { rumors: [], dynamicEvents: [] };
+    const initialWorldState: WorldState = { rumors: [], dynamicEvents: [], foreshadowedEvents: [], triggeredDynamicEventIds: {} };
 
     const discoveredLocations: Location[] = [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))];
 

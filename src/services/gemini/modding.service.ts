@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -59,6 +59,56 @@ const realmConfigSchema = {
             }
         },
         required: ['name', 'stages']
+    }
+};
+
+const aiHooksSchema = {
+    type: Type.OBJECT,
+    description: "Các quy tắc AI tùy chỉnh. Suy luận các quy luật độc đáo của thế giới và điền vào đây.",
+    properties: {
+        on_world_build: {
+            type: Type.ARRAY,
+            description: "Các quy tắc vĩnh cửu, không thay đổi của thế giới.",
+            items: { type: Type.STRING }
+        },
+        on_action_evaluate: {
+            type: Type.ARRAY,
+            description: "Các quy tắc động, được xem xét mỗi khi người chơi hành động.",
+            items: { type: Type.STRING }
+        }
+    }
+};
+
+const dynamicEventSchema = {
+    type: Type.ARRAY,
+    description: "Các sự kiện động, tự động kích hoạt trong game. Ví dụ: thưởng vật phẩm khi người chơi bước vào một hang động.",
+    items: {
+        type: Type.OBJECT,
+        properties: {
+            id: { type: Type.STRING, description: "ID duy nhất cho sự kiện, vd: 'hidden_chest_in_cave'."},
+            trigger: {
+                type: Type.OBJECT,
+                properties: {
+                    type: { type: Type.STRING, enum: ['ON_ENTER_LOCATION', 'ON_GAME_DATE'] as EventTriggerType[] },
+                    details: { type: Type.OBJECT, description: "Chi tiết tác nhân. Vd: { locationId: 'id_cua_hang_dong' } hoặc { year: 1, day: 10 }."}
+                },
+                required: ['type', 'details']
+            },
+            outcomes: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        type: { type: Type.STRING, enum: ['GIVE_ITEM', 'CHANGE_STAT', 'ADD_RUMOR', 'UPDATE_REPUTATION'] as EventOutcomeType[] },
+                        details: { type: Type.OBJECT, description: "Chi tiết kết quả. Vd: { itemName: 'Chìa Khóa Cũ', quantity: 1 } hoặc { attribute: 'Cơ Duyên', change: 5 }."}
+                    },
+                    required: ['type', 'details']
+                }
+            },
+            narrative: { type: Type.STRING, description: "Đoạn văn tường thuật sẽ hiển thị cho người chơi khi sự kiện xảy ra." },
+            cooldownDays: { type: Type.NUMBER, description: "Số ngày hồi chiêu. Để trống hoặc 0 nếu chỉ xảy ra một lần." }
+        },
+        required: ['id', 'trigger', 'outcomes', 'narrative']
     }
 };
 
@@ -152,6 +202,8 @@ const worldSchema = {
                 },
                 items: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING } } } },
                 realmConfigs: realmConfigSchema,
+                aiHooks: aiHooksSchema,
+                dynamicEvents: dynamicEventSchema,
             },
             required: ['worldData']
         }
@@ -179,7 +231,9 @@ export const generateWorldFromText = async (text: string): Promise<FullMod> => {
         -   **\`initialNpcs\`:** Nhận diện tất cả các nhân vật được mô tả, trích xuất ngoại hình, tính cách, xuất thân. Quan trọng nhất, suy luận \`locationId\` (tên địa điểm) mà họ có khả năng xuất hiện nhất.
     4.  **\`items\` (Tùy chọn):** Nếu văn bản mô tả các vật phẩm đặc biệt (thần binh, bảo vật), hãy trích xuất chúng.
     5.  **\`realmConfigs\` (Hệ Thống Tu Luyện):** Phân tích kỹ lưỡng các đoạn văn mô tả hệ thống sức mạnh, cấp bậc, hoặc con đường tu luyện. Nếu có, hãy suy luận và tạo ra một cấu trúc \`realmConfigs\` hoàn chỉnh. Đảm bảo \`qiRequired\` tăng dần một cách logic và \`bonuses\` phù hợp với mô tả của từng cấp bậc.
-    6.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
+    6.  **\`aiHooks\` (Quy Luật Thế Giới - Cực Kỳ Quan Trọng):** Đọc kỹ văn bản để tìm ra các quy luật vật lý, ma thuật, hoặc xã hội độc nhất. Ví dụ, nếu thế giới có "ma thuật máu", một quy luật trong \`on_action_evaluate\` có thể là "Sử dụng ma thuật máu sẽ tiêu hao Sinh Mệnh thay vì Linh Lực". Nếu là một thế giới steampunk, một luật \`on_world_build\` có thể là "Tu luyện trong thế giới này thực chất là việc nâng cấp và tối ưu hóa các bộ phận máy móc trên cơ thể." Hãy sáng tạo và suy luận ra ít nhất 1-3 quy luật độc đáo.
+    7. **\`dynamicEvents\` (Sự kiện động):** Dựa trên lore và các địa điểm, hãy tạo ra 1-3 sự kiện động đơn giản để làm thế giới thêm sống động. Ví dụ, tạo một sự kiện thưởng cho người chơi một vật phẩm bí mật khi họ lần đầu bước vào một hang động cổ xưa, hoặc một sự kiện lễ hội diễn ra vào một ngày cụ thể.
+    8.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
 
@@ -214,6 +268,14 @@ export const generateWorldFromText = async (text: string): Promise<FullMod> => {
             world.initialNpcs.forEach((npc: any) => {
                 npc.locationId = locationNameIdMap.get(npc.locationId) || npc.locationId;
             });
+
+            if (json.content.dynamicEvents) {
+                json.content.dynamicEvents.forEach((event: any) => {
+                    if (event.trigger.type === 'ON_ENTER_LOCATION' && event.trigger.details.locationId) {
+                        event.trigger.details.locationId = locationNameIdMap.get(event.trigger.details.locationId) || event.trigger.details.locationId;
+                    }
+                });
+            }
         }
         return json as FullMod;
     } catch (e) {
@@ -228,10 +290,15 @@ interface WorldGenPrompts {
     setting: string;
     mainGoal?: string;
     openingStory?: string;
-    worldRules?: string;
+    aiHooks?: {
+        on_world_build?: string;
+        on_action_evaluate?: string;
+    };
 }
 
 export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
+    const aiHooksText = (prompts.aiHooks?.on_world_build || '') + '\n' + (prompts.aiHooks?.on_action_evaluate || '');
+    
     const masterPrompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những ý tưởng cốt lõi thành một thế giới game có cấu trúc hoàn chỉnh.
     Nhiệm vụ của bạn là đọc và phân tích các ý tưởng do người dùng cung cấp, sau đó mở rộng, chi tiết hóa và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
 
@@ -240,7 +307,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     - **Tên Mod:** ${prompts.modInfo.name}
     - **Bối Cảnh (Setting):** ${prompts.setting}
     - **Mục Tiêu Chính (Nếu có):** ${prompts.mainGoal || "AI tự do sáng tạo."}
-    - **Quy Luật Thế Giới (Nếu có):** ${prompts.worldRules || "Không có quy luật đặc biệt."}
+    - **Quy Luật Thế Giới (AI Hooks):** ${aiHooksText.trim() || "Không có quy luật đặc biệt, AI tự do sáng tạo."}
     - **Cốt Truyện Khởi Đầu (Nếu có):** ${prompts.openingStory || "AI tự tạo một phần mở đầu hấp dẫn."}
     ---
 
@@ -253,7 +320,9 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         -   **Tạo Nhân vật (\`initialNpcs\`):** Tạo ra 3-5 NPC quan trọng, có vai trò trong cốt truyện hoặc các phe phái. Đặt họ vào các địa điểm (\`locationId\`) phù hợp bằng cách sử dụng TÊN của địa điểm đã tạo.
     3.  **\`items\` (Tùy chọn):** Tạo ra 1-2 vật phẩm khởi đầu hoặc vật phẩm quan trọng liên quan đến cốt truyện.
     4.  **\`realmConfigs\` (Hệ Thống Tu Luyện):** Dựa vào "Quy Luật Thế Giới", nếu người dùng mô tả một hệ thống tu luyện, hãy tạo ra cấu trúc \`realmConfigs\` tương ứng. Nếu không, có thể tạo một hệ thống cơ bản hoặc để trống.
-    5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
+    5.  **\`aiHooks\`:** **QUAN TRỌNG:** Dựa vào các quy luật người dùng cung cấp và suy luận thêm từ bối cảnh, hãy tạo ra 1-3 quy luật độc đáo cho thế giới. Phân loại chúng vào \`on_world_build\` (vĩnh cửu) hoặc \`on_action_evaluate\` (tình huống).
+    6. **\`dynamicEvents\` (Sự kiện động):** Dựa trên lore và các địa điểm, hãy tạo ra 1-3 sự kiện động đơn giản để làm thế giới thêm sống động.
+    7.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
 
@@ -287,6 +356,14 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
             world.initialNpcs.forEach((npc: any) => {
                 npc.locationId = locationNameIdMap.get(npc.locationId) || npc.locationId;
             });
+            
+            if (json.content.dynamicEvents) {
+                json.content.dynamicEvents.forEach((event: any) => {
+                    if (event.trigger.type === 'ON_ENTER_LOCATION' && event.trigger.details.locationId) {
+                        event.trigger.details.locationId = locationNameIdMap.get(event.trigger.details.locationId) || event.trigger.details.locationId;
+                    }
+                });
+            }
         }
         return json as FullMod;
     } catch (e) {

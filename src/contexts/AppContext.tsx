@@ -22,7 +22,7 @@ interface AppContextType {
     handleDeleteGame: (slotId: number) => Promise<void>;
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
     handleGameStart: (gameStartData: {
-      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechnique' | 'auxiliaryTechniques' | 'techniquePoints' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong, spiritualRoot: SpiritualRoot | null },
+      characterData: Omit<PlayerCharacter, 'inventory' | 'currencies' | 'cultivation' | 'currentLocationId' | 'equipment' | 'mainCultivationTechniqueInfo' | 'techniques' | 'relationships' | 'chosenPathIds' | 'knownRecipeIds' | 'reputation' | 'sect' | 'caveAbode' | 'techniqueCooldowns' | 'activeQuests' | 'completedQuestIds' | 'inventoryActionLog' | 'danhVong' | 'element' | 'systemInfo' | 'spiritualRoot' | 'vitals'> & { danhVong: DanhVong },
       npcDensity: NpcDensity,
       difficulty: DifficultyLevel,
       gameMode: 'classic' | 'transmigrator',
@@ -316,9 +316,10 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         try {
             const modLibrary = await db.getModLibrary();
             const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
-            const activeMods: FullMod[] = await Promise.all(
-                enabledModsInfo.map(modInfo => db.getModContent(modInfo.modInfo.id).then(content => content!))
-            );
+            const activeMods: FullMod[] = (await Promise.all(
+                enabledModsInfo.map(modInfo => db.getModContent(modInfo.modInfo.id))
+            )).filter((mod): mod is FullMod => mod !== undefined);
+            
             const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
             await db.saveGameState(state.currentSlotId, newGameState);
             await loadSaveSlots();

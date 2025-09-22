@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect } from 'react';
-import type { GameDate, MajorEvent } from '../../../types';
+import type { GameDate, MajorEvent, DynamicWorldEvent, ForeshadowedEvent } from '../../../types';
 import { FaArrowLeft, FaSave, FaExpand, FaBars } from 'react-icons/fa';
 import { GiPerson } from 'react-icons/gi';
 import Timeline from '../../../components/Timeline';
@@ -9,13 +9,15 @@ interface TopBarProps {
     onSave: () => void;
     gameDate: GameDate;
     majorEvents: MajorEvent[];
+    dynamicEvents?: DynamicWorldEvent[];
+    foreshadowedEvents?: ForeshadowedEvent[];
     isSummaryPanelVisible: boolean;
     onToggleSummaryPanel: () => void;
     isSidebarOpen: boolean;
     onToggleSidebar: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, isSummaryPanelVisible, onToggleSummaryPanel, isSidebarOpen, onToggleSidebar }) => {
+const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, dynamicEvents, foreshadowedEvents, isSummaryPanelVisible, onToggleSummaryPanel, isSidebarOpen, onToggleSidebar }) => {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
     const handleFullscreen = () => {
@@ -79,10 +81,10 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, 
             </div>
 
             <div className="flex-grow flex justify-center">
-                <Timeline gameDate={gameDate} majorEvents={majorEvents} />
+                <Timeline gameDate={gameDate} majorEvents={majorEvents} dynamicEvents={dynamicEvents} foreshadowedEvents={foreshadowedEvents} />
             </div>
 
-            <div className="w-9 h-9">
+            <div className="w-32 md:w-48">
                 {/* Spacer for centering Timeline */}
             </div>
         </header>

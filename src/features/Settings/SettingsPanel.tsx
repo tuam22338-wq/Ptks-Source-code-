@@ -2,11 +2,13 @@
 
 
 
+
+
 import React, { useState, useEffect, memo, useRef } from 'react';
 import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
 import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, RagEmbeddingModel, AssignableModel } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle, FaMusic, FaVolumeUp, FaFire } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle, FaMusic, FaVolumeUp, FaFire, FaDownload, FaUpload } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
 import { useAppContext } from '../../contexts/AppContext';
@@ -72,6 +74,7 @@ export const SettingsPanel: React.FC = () => {
     const [isGeneratingBg, setIsGeneratingBg] = useState(false);
     const [newApiKey, setNewApiKey] = useState('');
     const musicInputRef = useRef<HTMLInputElement>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
     useEffect(() => {
@@ -135,6 +138,66 @@ export const SettingsPanel: React.FC = () => {
         handleSettingChange('apiKeys', settings.apiKeys.filter(key => key !== keyToRemove));
     };
     
+    const handleExportData = async () => {
+        if (!window.confirm("Bạn có muốn sao lưu toàn bộ dữ liệu game (lưu game, cài đặt, mods) ra một tệp JSON không?")) {
+            return;
+        }
+        try {
+            const allData = await db.exportAllData();
+            const jsonString = JSON.stringify(allData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            link.href = url;
+            link.download = `tamthienthegioi_backup_${timestamp}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert('Đã xuất dữ liệu thành công!');
+        } catch (error) {
+            console.error("Failed to export data:", error);
+            alert('Xuất dữ liệu thất bại.');
+        }
+    };
+
+    const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (!window.confirm("CẢNH BÁO: Thao tác này sẽ XÓA TOÀN BỘ dữ liệu hiện tại của bạn và thay thế bằng dữ liệu từ tệp sao lưu. Bạn có chắc chắn muốn tiếp tục không?")) {
+            if(importInputRef.current) importInputRef.current.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const text = e.target?.result as string;
+                const data = JSON.parse(text);
+
+                if (!data.saveSlots || !data.settings) {
+                    throw new Error("Tệp sao lưu không hợp lệ hoặc bị hỏng.");
+                }
+
+                await db.importAllData(data);
+                alert("Nhập dữ liệu thành công! Trò chơi sẽ được tải lại.");
+                window.location.reload();
+            } catch (error: any) {
+                console.error("Failed to import data:", error);
+                alert(`Nhập dữ liệu thất bại: ${error.message}`);
+            } finally {
+                if(importInputRef.current) importInputRef.current.value = "";
+            }
+        };
+        reader.onerror = () => {
+            alert('Không thể đọc tệp tin.');
+            if(importInputRef.current) importInputRef.current.value = "";
+        };
+        reader.readAsText(file);
+    };
+
     const handleResetData = async () => {
         if (window.confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ DỮ LIỆU GAME KHÔNG? HÀNH ĐỘNG NÀY SẼ XÓA TẤT CẢ CÁC FILE LƯU, CÀI ĐẶT VÀ MOD CỦA BẠN. KHÔNG THỂ HOÀN TÁC!")) {
             try {
@@ -376,6 +439,23 @@ export const SettingsPanel: React.FC = () => {
                                 <input type="checkbox" checked={settings.enablePerformanceMode} onChange={e => handleSettingChange('enablePerformanceMode', e.target.checked)} className="themed-checkbox" />
                                 <span className="ml-3 text-sm text-gray-300">Bật Performance Mode</span>
                             </label>
+                        </SettingsRow>
+                        <SettingsRow label="Quản lý Dữ liệu" description="Sao lưu toàn bộ dữ liệu game (lưu game, cài đặt, mods) ra file hoặc khôi phục từ file sao lưu.">
+                             <div className="flex gap-2">
+                                <button onClick={handleExportData} className="settings-button flex items-center gap-2">
+                                    <FaDownload /> Sao Lưu
+                                </button>
+                                <button onClick={() => importInputRef.current?.click()} className="settings-button flex items-center gap-2">
+                                    <FaUpload /> Nhập Dữ liệu
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={importInputRef}
+                                    className="hidden"
+                                    accept=".json"
+                                    onChange={handleImportData}
+                                />
+                            </div>
                         </SettingsRow>
                         <SettingsRow label="Xóa toàn bộ dữ liệu" description="Hành động này sẽ xóa tất cả các file lưu, cài đặt và mod của bạn. Không thể hoàn tác.">
                              <button onClick={handleResetData} className="settings-button-danger flex items-center gap-2">

@@ -1,5 +1,3 @@
-
-
 import React, { useState, memo, useEffect, useRef } from 'react';
 import type { PlayerCharacter, Attribute } from '../../../types';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
@@ -51,7 +49,7 @@ const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, icon
 const AttributeDisplay: React.FC<{ attribute: Attribute }> = memo(({ attribute }) => (
     <div className="flex justify-between items-baseline text-sm">
         <span className="text-gray-400">{attribute.name}</span>
-        <span className="font-bold text-gray-200">{String(attribute.value)}</span>
+        <span className="font-bold text-gray-200">{String(Math.floor(attribute.value as number))}</span>
     </div>
 ));
 
@@ -66,7 +64,7 @@ const SummaryPanel: React.FC<{ playerCharacter: PlayerCharacter }> = ({ playerCh
     const coreAttributes = attributes.flatMap(g => g.attributes).filter(a => ['Lực Lượng', 'Thân Pháp', 'Căn Cốt', 'Nguyên Thần', 'Ngộ Tính', 'Cơ Duyên'].includes(a.name));
 
     return (
-        <div className="summary-panel">
+        <div className="summary-panel animate-fade-in" style={{animationDuration: '300ms'}}>
             <div className="summary-panel-vitals">
                 {sinhMenh && sinhMenh.maxValue && <StatBar label="Sinh Mệnh" current={sinhMenh.value as number} max={sinhMenh.maxValue as number} colorClass="bg-red-500" icon={() => <span className="text-red-400">❤</span>} />}
                 {linhLuc && linhLuc.maxValue && <StatBar label="Linh Lực" current={linhLuc.value as number} max={linhLuc.maxValue as number} colorClass="bg-blue-500" icon={() => <span className="text-blue-400">✧</span>} />}

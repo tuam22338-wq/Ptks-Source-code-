@@ -54,7 +54,8 @@ export interface SafetySettings {
 export type AssignableModel = 
     | 'mainTaskModel' | 'quickSupportModel' | 'itemAnalysisModel' | 'itemCraftingModel' 
     | 'soundSystemModel' | 'actionAnalysisModel' | 'gameMasterModel' | 'npcSimulationModel' 
-    | 'dataParsingModel' | 'imageGenerationModel' | 'ragSummaryModel' | 'ragSourceIdModel';
+    | 'dataParsingModel' | 'imageGenerationModel' | 'ragSummaryModel' | 'ragSourceIdModel'
+    | 'memorySynthesisModel';
 
 export interface GameSettings {
     layoutMode: LayoutMode;
@@ -78,6 +79,7 @@ export interface GameSettings {
     ragSummaryModel: AIModel;
     ragSourceIdModel: AIModel;
     ragEmbeddingModel: RagEmbeddingModel;
+    memorySynthesisModel: AIModel;
     autoSummaryFrequency: number;
     ragTopK: number;
     historyTokenLimit: number;
@@ -360,6 +362,17 @@ export type ModEvent = Omit<GameEvent, 'id' | 'choices'> & {
     tags?: string[];
 };
 
+// NEW: Pillar 2 - Dynamic Mod Events
+export interface DynamicModEvent {
+    id: string;
+    trigger: EventTrigger;
+    outcomes: EventOutcome[];
+    narrative: string;
+    cooldownDays?: number;
+    tags?: string[];
+}
+// END: Pillar 2
+
 export interface AlchemyRecipe {
   id: string;
   name: string;
@@ -416,6 +429,12 @@ export interface ModCustomDataPack {
     tags?: string[];
 }
 
+// New AI Hooks type for "Pillar 3"
+export interface AiHooks {
+  on_world_build?: string[]; // Permanent world rules
+  on_action_evaluate?: string[]; // Dynamic rules evaluated on each player action
+}
+
 export interface ModContent {
     items?: Omit<ModItem, 'id'>[];
     talents?: Omit<ModTalent, 'id'>[];
@@ -434,6 +453,8 @@ export interface ModContent {
     storySystems?: Omit<StorySystem, 'id'>[];
     customPanels?: Omit<ModCustomPanel, 'id'>[];
     customDataPacks?: (Omit<ModCustomDataPack, 'id' | 'data'> & { data: Record<string, any> })[];
+    dynamicEvents?: Omit<DynamicModEvent, 'id'>[];
+    aiHooks?: AiHooks;
 }
 
 export interface FullMod {
@@ -764,9 +785,20 @@ export interface DynamicWorldEvent {
   affectedLocationIds: string[]; // Location IDs
 }
 
+export interface ForeshadowedEvent {
+  id: string;
+  title: string;
+  description: string;
+  turnStart: number; // Game day number it was created
+  potentialTriggerDay: number; // Estimated day it might happen
+  chance: 'Thấp' | 'Vừa' | 'Cao' | 'Chắc chắn';
+}
+
 export interface WorldState {
     rumors: Rumor[];
     dynamicEvents?: DynamicWorldEvent[];
+    foreshadowedEvents?: ForeshadowedEvent[];
+    triggeredDynamicEventIds?: Record<string, number>; // stores { eventId: gameDayNumber }
 }
 
 export interface ActiveStoryState {
@@ -916,7 +948,7 @@ export interface Sect {
     startingTechnique?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
 }
 
-// --- AI Memory System Types (Phase 1) ---
+// --- AI Memory System Types ---
 export interface EntityReference {
   id: string; // ID of the entity (e.g., 'npc_khuong_tu_nha', 'item_123', 'player')
   type: 'player' | 'npc' | 'item' | 'location' | 'quest' | 'technique' | 'faction';
@@ -932,7 +964,6 @@ export interface MemoryFragment {
   entities: EntityReference[];
 }
 
-// --- AI Memory System Types (Phase 2) ---
 export type RelationshipType = 
   | 'TALKED_TO' 
   | 'VISITED' 

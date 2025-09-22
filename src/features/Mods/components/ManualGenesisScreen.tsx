@@ -23,7 +23,10 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         setting: '',
         mainGoal: '',
         openingStory: '',
-        worldRules: '',
+    });
+    const [aiHooks, setAiHooks] = useState({
+        on_world_build: '',
+        on_action_evaluate: '',
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -41,6 +44,11 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         const { name, value } = e.target;
         setPrompts(prev => ({ ...prev, [name]: value }));
     };
+    
+    const handleHooksChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setAiHooks(prev => ({...prev, [name]: value}));
+    };
 
     const handleGenerateWorld = async () => {
         if (!modInfo.name.trim() || !modInfo.id.trim()) {
@@ -55,7 +63,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         setError(null);
         try {
             const fullModInfo: Omit<ModInfo, 'description' | 'version'> & { description?: string, version?: string } = { ...modInfo, description: `Một thế giới được tạo bởi AI dựa trên bối cảnh: ${prompts.setting}`, version: '1.0.0' };
-            const generatedMod = await generateWorldFromPrompts({ modInfo: fullModInfo, ...prompts });
+            const generatedMod = await generateWorldFromPrompts({ modInfo: fullModInfo, ...prompts, aiHooks });
             const success = await onInstall(generatedMod);
             if (success) {
                 alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và cài đặt thành công!`);
@@ -115,11 +123,18 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                         <Field label="Mục Tiêu Chính (Tùy chọn)" description="Mô tả mục tiêu cuối cùng hoặc kết thúc mong muốn của câu chuyện.">
                             <textarea name="mainGoal" value={prompts.mainGoal} onChange={handlePromptChange} rows={2} className="themed-textarea" placeholder="Vd: Người chơi phải thu thập đủ 5 mảnh tinh thể để phục hồi lõi thế giới đang suy tàn..."/>
                         </Field>
-                        <Field label="Quy Luật Thế Giới (Tùy chọn)" description="Thêm vào các quy tắc, cơ chế, hoặc hiện tượng độc đáo. Đặc biệt, bạn có thể định nghĩa một hệ thống tu luyện hoàn toàn mới tại đây.">
-                            <textarea name="worldRules" value={prompts.worldRules} onChange={handlePromptChange} rows={2} className="themed-textarea" placeholder="Vd: Hệ thống tu luyện ở đây gọi là 'Thôn Phệ Hồn Lực', có các cấp bậc: Sơ Hồn, Luyện Hồn, Hồn Tướng, Hồn Vương..."/>
-                        </Field>
                         <Field label="Cốt Truyện Khởi Đầu (Tùy chọn)" description="Viết phần mở đầu cho câu chuyện của bạn, hoặc để trống để AI tự tạo.">
                             <textarea name="openingStory" value={prompts.openingStory} onChange={handlePromptChange} rows={4} className="themed-textarea" placeholder="Vd: Bạn tỉnh dậy trên một con thuyền bay ọp ẹp, không một ký ức. Người lái thuyền già nua nhìn bạn và nói..."/>
+                        </Field>
+                    </div>
+                    
+                    <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
+                        <h4 className="text-xl font-semibold font-title text-cyan-300">Luật Lệ AI (AI Hooks - Nâng cao)</h4>
+                        <Field label="Luật Lệ Vĩnh Cửu (on_world_build)" description="Các quy tắc cốt lõi, không thay đổi của thế giới mà AI phải luôn tuân theo. Mỗi quy tắc một dòng.">
+                            <textarea name="on_world_build" value={aiHooks.on_world_build} onChange={handleHooksChange} rows={3} className="themed-textarea" placeholder="Vd: Trong thế giới này, yêu tộc và nhân tộc có mối thù truyền kiếp."/>
+                        </Field>
+                        <Field label="Luật Lệ Tình Huống (on_action_evaluate)" description="Các quy tắc được AI xem xét và áp dụng cho kết quả của mỗi hành động người chơi. Mỗi quy tắc một dòng.">
+                            <textarea name="on_action_evaluate" value={aiHooks.on_action_evaluate} onChange={handleHooksChange} rows={3} className="themed-textarea" placeholder="Vd: Nếu người chơi ở nơi có âm khí nồng đậm, tốc độ tu luyện ma công tăng gấp đôi."/>
                         </Field>
                     </div>
                 </div>

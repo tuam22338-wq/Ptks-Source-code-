@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -278,7 +271,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
-    const { playerCharacter, combatState, activeStory, discoveredLocations } = gameState;
+    const { playerCharacter, combatState, activeStory, discoveredLocations, worldState } = gameState;
     const currentLocation = useMemo(() => {
         if (!discoveredLocations || discoveredLocations.length === 0) return null;
         return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
@@ -305,6 +298,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 onSave={handleSaveGame} 
                 gameDate={gameState.gameDate} 
                 majorEvents={gameState.majorEvents}
+                dynamicEvents={worldState.dynamicEvents}
+                foreshadowedEvents={worldState.foreshadowedEvents}
                 isSummaryPanelVisible={isSummaryPanelVisible}
                 isSidebarOpen={isSidebarOpen}
                 onToggleSummaryPanel={() => setIsSummaryPanelVisible(v => !v)}
@@ -336,7 +331,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
                     {isSpecialPanelActive ? (
                         <>
-                            <CombatScreen />
+                            {combatState && <CombatScreen />}
                             {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes.flatMap(g => g.attributes)} />}
                             {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
                         </>

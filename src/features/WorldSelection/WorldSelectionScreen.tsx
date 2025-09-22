@@ -54,12 +54,13 @@ const WorldSelectionScreen: React.FC = () => {
             try {
                 const modLibrary = await db.getModLibrary();
                 for (const modInLib of modLibrary) {
+                    if (!modInLib.isEnabled) continue;
                     const modContent = await db.getModContent(modInLib.modInfo.id);
                     if (modContent?.content.worldData) {
                         for (const worldData of modContent.content.worldData) {
                             modWorlds.push({
                                 ...worldData,
-                                id: worldData.name,
+                                id: worldData.name, // Use name as ID for selection
                                 source: 'mod',
                                 author: modContent.modInfo.author,
                             });
@@ -107,9 +108,9 @@ const WorldSelectionScreen: React.FC = () => {
                             onSelect={() => handleSelectWorld(world.id)}
                         />
                     ))}
-                    {worlds.length === 1 && (
+                     {worlds.length === 0 && (
                         <div className="md:col-span-2 lg:col-span-3 text-center text-gray-500 p-8">
-                            <p>Bạn có thể thêm các thế giới khác bằng cách cài đặt mod có chứa "Dữ Liệu Thế Giới".</p>
+                            <p>Không tìm thấy thế giới nào.</p>
                         </div>
                     )}
                 </div>

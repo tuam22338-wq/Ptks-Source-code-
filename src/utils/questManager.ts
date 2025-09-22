@@ -1,5 +1,5 @@
 import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem, EventOutcome, PlayerNpcRelationship } from '../types';
-import { generateMainQuestFromEvent, generateSideQuestFromNpc } from '../services/geminiService';
+import { generateMainQuestFromEvent, generateSideQuestFromNpc, generateSystemQuest } from '../services/geminiService';
 import { FACTION_REPUTATION_TIERS } from '../constants';
 
 interface QuestUpdateResult {
@@ -82,6 +82,25 @@ export const checkForNewSideQuest = async (currentState: GameState, npc: NPC): P
                 console.error(`Failed to generate side quest for NPC "${npc.identity.name}":`, error);
             }
         }
+    }
+    
+    return { newState, notifications };
+};
+
+export const checkForNewSystemQuest = async (currentState: GameState): Promise<QuestUpdateResult> => {
+    let newState = { ...currentState };
+    const notifications: string[] = [];
+    // Only generate a new system quest if there are no other active system quests
+    if (newState.playerCharacter.activeQuests.some(q => q.type === 'SYSTEM')) {
+        return { newState, notifications };
+    }
+
+    try {
+        const questData = await generateSystemQuest(newState);
+        newState = addQuest(newState, questData, 'SYSTEM', 'system');
+        notifications.push(`[Hệ Thống] Nhiệm vụ mới: ${questData.title}`);
+    } catch (error) {
+        console.error(`Failed to generate system quest:`, error);
     }
     
     return { newState, notifications };
@@ -291,35 +310,15 @@ export const checkFailedQuests = (currentState: GameState): QuestUpdateResult =>
     return { newState, notifications };
 };
 
-export const processQuestUpdates = async (currentState: GameState, isNewDay: boolean): Promise<QuestUpdateResult> => {
-    let state1 = { ...currentState };
-    let notifications1: string[] = [];
+export const processQuestUpdates = (currentState: GameState): QuestUpdateResult => {
+    // 1. Update progress on existing quests
+    const { newState: stateAfterProgress, notifications: progressNotifications } = updateQuestProgress(currentState);
 
-    if (isNewDay) {
-        // Decrement timers on quests
-        const timedQuests = state1.playerCharacter.activeQuests.map(q => 
-            q.timeLimit ? { ...q, timeLimit: q.timeLimit - 1 } : q
-        );
-        state1 = { ...state1, playerCharacter: { ...state1.playerCharacter, activeQuests: timedQuests }};
-        
-        // Check for failed quests
-        const failResult = checkFailedQuests(state1);
-        state1 = failResult.newState;
-        notifications1 = failResult.notifications;
-    }
-
-    // Main quest generation is now handled by the AI narrative parser to ensure context consistency.
-    const stateAfterMainQuests = state1;
-    const mainQuestNotifications: string[] = [];
-    
-    // 2. Update progress on existing quests
-    const { newState: stateAfterProgress, notifications: progressNotifications } = updateQuestProgress(stateAfterMainQuests);
-
-    // 3. Check for and process completed quests
+    // 2. Check for and process completed quests
     const { newState: stateAfterCompletion, notifications: completionNotifications } = processCompletedQuests(stateAfterProgress);
 
     return {
         newState: stateAfterCompletion,
-        notifications: [...notifications1, ...mainQuestNotifications, ...progressNotifications, ...completionNotifications],
+        notifications: [...progressNotifications, ...completionNotifications],
     };
 };
