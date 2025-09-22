@@ -166,17 +166,16 @@ ${context}
 
 Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối cảnh, hãy tiếp tục câu chuyện. Chỉ trả về đoạn văn tường thuật tiếp theo.
     `;
-
-    const settings = await db.getSettings();
+    
     const model = settings?.mainTaskModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.mainTaskModel;
-
+    
     const generationConfig: any = {
         temperature: settings?.temperature,
         topK: settings?.topK,
         topP: settings?.topP,
     };
-
+    
     if (model === 'gemini-2.5-flash') {
         generationConfig.thinkingConfig = {
             thinkingBudget: settings?.enableThinking ? settings.thinkingBudget : 0,
