@@ -915,3 +915,39 @@ export interface Sect {
     icon?: ElementType;
     startingTechnique?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
 }
+
+// --- AI Memory System Types (Phase 1) ---
+export interface EntityReference {
+  id: string; // ID of the entity (e.g., 'npc_khuong_tu_nha', 'item_123', 'player')
+  type: 'player' | 'npc' | 'item' | 'location' | 'quest' | 'technique' | 'faction';
+  name: string; // Display name for easier debugging
+}
+
+export interface MemoryFragment {
+  id?: number; // Auto-incremented primary key
+  slotId: number; // Foreign key to the save slot
+  gameDate: GameDate;
+  type: StoryEntry['type'];
+  content: string;
+  entities: EntityReference[];
+}
+
+// --- AI Memory System Types (Phase 2) ---
+export type RelationshipType = 
+  | 'TALKED_TO' 
+  | 'VISITED' 
+  | 'ACQUIRED' 
+  | 'USED_ITEM_ON' 
+  | 'DEFEATED' 
+  | 'QUEST_START' 
+  | 'QUEST_COMPLETE';
+
+export interface GraphEdge {
+  id?: number; // Auto-incremented primary key
+  slotId: number; // Foreign key to the save slot
+  source: EntityReference;
+  target: EntityReference;
+  type: RelationshipType;
+  memoryFragmentId: number; // Foreign key to the memory fragment that generated this edge
+  gameDate: GameDate;
+}

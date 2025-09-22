@@ -1,11 +1,11 @@
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus } from '../../types';
+import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus, MemoryFragment } from '../../types';
 import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 import { createModContextSummary } from '../../utils/modManager';
 
-const createFullGameStateContext = (gameState: GameState, forAssistant: boolean = false): string => {
+const createFullGameStateContext = (gameState: GameState, instantMemoryReport: string, forAssistant: boolean = false): string => {
   const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds } = gameState;
   const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
   const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
@@ -51,6 +51,11 @@ ${majorEvents.map(e => `- Năm ${e.year}, ${e.title}: ${e.summary}`).join('\n')}
       `;
   }
 
+  const memoryReportContext = instantMemoryReport
+    ? `
+**Ký Ức Liên Quan Gần Đây (TRỌNG TÂM):**
+${instantMemoryReport}`
+    : '';
 
   const context = `
 ${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
@@ -81,6 +86,7 @@ ${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
 ${questSummary}
 - **Tóm Tắt Cốt Truyện (Ký ức dài hạn):**
 ${storySummary || 'Hành trình vừa bắt đầu.'}
+${memoryReportContext}
 - **Nhật Ký Gần Đây (Ký ức ngắn hạn):**
 ${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}
 ${assistantContext}
@@ -89,7 +95,12 @@ ${assistantContext}
   return context;
 };
 
-export async function* generateStoryContinuationStream(gameState: GameState, userInput: string, inputType: 'say' | 'act'): AsyncIterable<string> {
+export async function* generateStoryContinuationStream(
+    gameState: GameState, 
+    userInput: string, 
+    inputType: 'say' | 'act',
+    instantMemoryReport: string
+): AsyncIterable<string> {
     const { playerCharacter, difficulty } = gameState;
     
     const settings = await db.getSettings();
@@ -118,6 +129,8 @@ ${nsfwInstruction}
   - Khi bạn tạo ra một công pháp hoặc vật phẩm mới, hãy mô tả nó một cách chi tiết trong lời kể.
   - **QUAN TRỌNG:** Sử dụng dấu ngoặc vuông \`[]\` để đánh dấu tên của vật phẩm/công pháp mới. Ví dụ: "Trong hang động, ngươi phát hiện một quyển trục da thú cũ kỹ, trên đó ghi bốn chữ [Vạn Thú Quyết]."
   - AI Phân Tích sẽ tự động đọc mô tả của bạn, tạo ra chỉ số và thêm công pháp/vật phẩm đó vào dữ liệu game. Hãy mô tả sao cho AI Phân Tích có thể hiểu được (ví dụ: mô tả công pháp tấn công thì nên có yếu tố sát thương, phòng ngự thì nên có yếu tố bảo vệ).
+
+- **LUẬT GHI NHỚ (MEMORY RULE):** Ngoài Tóm Tắt Cốt Truyện, bạn sẽ được cung cấp một mục "Ký Ức Liên Quan Gần Đây". Đây là những hồi tưởng **quan trọng nhất** liên quan trực tiếp đến hành động hiện tại của người chơi. Hãy **ƯU TIÊN** sử dụng thông tin này để làm cho lời kể của bạn trở nên sâu sắc và nhất quán. Ví dụ: nếu ký ức cho thấy người chơi từng cứu một NPC, NPC đó nên nhận ra và đối xử tốt với người chơi.
 
 - **LUẬT CÔNG PHÁP CHỦ ĐẠO:** Công pháp chủ đạo của người chơi (nếu có) được mô tả bằng một đoạn văn bản. BẠN chịu trách nhiệm cho sự tiến hóa của nó. Khi người chơi tu luyện hoặc đột phá, hãy mô tả công pháp của họ trở nên mạnh mẽ hơn như thế nào, hoặc họ lĩnh ngộ được những khả năng mới ra sao. Khi bạn mô tả một khả năng mới có thể sử dụng được (như một kỹ năng), AI Phân Tích sẽ tự động nhận diện và thêm nó vào danh sách kỹ năng của người chơi.
 
@@ -166,7 +179,7 @@ Mục tiêu là làm cho thế giới cảm thấy sống động và đầy nh�
 - **Hành động không phải lúc nào cũng thành công:** Dựa vào độ khó, bối cảnh, và chỉ số của nhân vật, hãy quyết định kết quả một cách hợp lý. Có thể có thành công, thất bại, hoặc thành công một phần với hậu quả không mong muốn.
 - Khi người chơi thực hiện một hành động, hãy mô tả kết quả của hành động đó.`;
     
-    const fullContext = createFullGameStateContext(gameState);
+    const fullContext = createFullGameStateContext(gameState, instantMemoryReport);
     
     const userAction = inputType === 'say'
         ? `${playerCharacter.identity.name} nói: "${userInput}"`
@@ -584,7 +597,7 @@ export const askAiAssistant = async (query: string, gameState: GameState): Promi
 - **Example Response:** "Để gia nhập một tông môn, trước tiên ngươi phải tìm đến nơi tông môn đó tọa lạc. Mỗi tông môn đều có những yêu cầu riêng về tư chất, chẳng hạn như Ngộ Tính, Đạo Tâm, hay Căn Cốt. Khi đã đủ điều kiện, hãy thể hiện thành ý của mình, AI kể chuyện sẽ tự động diễn giải kết quả."
     `;
 
-    const fullContext = createFullGameStateContext(gameState, true); // Pass true to get extra data for assistant
+    const fullContext = createFullGameStateContext(gameState, '', true); // Pass true to get extra data for assistant
     const fullPrompt = `${fullContext}\n\n**Player's Question for Thiên Cơ:**\n"${query}"\n\n**Thiên Cơ's Answer:**`;
 
     const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
@@ -594,6 +607,48 @@ export const askAiAssistant = async (query: string, gameState: GameState): Promi
         config: {
             systemInstruction: systemInstruction,
         }
+    }, specificApiKey);
+
+    return response.text.trim();
+};
+
+export const synthesizeMemoriesForPrompt = async (
+    memories: MemoryFragment[],
+    playerAction: string,
+    characterName: string
+): Promise<string> => {
+    if (memories.length === 0) {
+        return "";
+    }
+
+    const formattedMemories = memories
+        .map(m => `Vào [${m.gameDate.era} ${m.gameDate.year}, ${m.gameDate.season} ngày ${m.gameDate.day}], sự kiện: ${m.content}`)
+        .join('\n---\n');
+
+    const prompt = `Bạn là một AI Tổng Hợp Ký Ức. Nhiệm vụ của bạn là đọc một danh sách các "mảnh ký ức" thô và hành động dự định của người chơi, sau đó tạo ra một đoạn văn ngắn gọn, súc tích (viết ở ngôi thứ ba) tóm tắt các tương tác trong quá khứ có liên quan nhất. Đoạn tóm tắt này sẽ được cung cấp cho một AI khác để kể tiếp câu chuyện.
+
+    **Yêu cầu:**
+    - Chỉ tập trung vào những gì liên quan trực tiếp đến hành động của người chơi.
+    - Viết dưới dạng một đoạn văn tường thuật ngắn, như một đoạn hồi tưởng nhanh.
+    - Không bịa đặt thông tin.
+    - Giữ cho nó ngắn gọn, khoảng 2-4 câu.
+    - **QUAN TRỌNG:** Luôn trả lời bằng Tiếng Việt.
+
+    **Hành động dự định của người chơi "${characterName}":**
+    "${playerAction}"
+
+    **Các mảnh ký ức thô (sắp xếp từ mới đến cũ):**
+    ---
+    ${formattedMemories}
+    ---
+
+    **Báo cáo ký ức tức thời (viết ở ngôi thứ ba, ví dụ: "Lần cuối gặp Lão Rèn, hắn đã..."):**`;
+
+    const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
+    const response = await generateWithRetry({
+        model: settings?.quickSupportModel || 'gemini-2.5-flash',
+        contents: prompt,
     }, specificApiKey);
 
     return response.text.trim();

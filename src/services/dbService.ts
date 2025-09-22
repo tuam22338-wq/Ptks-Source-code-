@@ -9,7 +9,9 @@ import type {
     AttributeGroup, 
     NPC, 
     Sect, 
-    Location
+    Location,
+    MemoryFragment,
+    GraphEdge
 } from '../types';
 
 export interface DbSaveSlot {
@@ -39,16 +41,25 @@ export class MyDatabase extends Dexie {
   modContent!: Table<DbModContent, string>; // primary key is id
   modDrafts!: Table<{id: string, data: any}, string>;
   misc!: Table<{key: string, value: any}, string>;
+  memoryFragments!: Table<MemoryFragment, number>;
+  graphEdges!: Table<GraphEdge, number>;
 
   constructor() {
     super('PhongThanKySuDB');
-    (this as Dexie).version(1).stores({
+    // Version 3 adds the graphEdges table for the Entity Graph system.
+    (this as Dexie).version(3).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
       modContent: 'id',
       modDrafts: 'id',
       misc: 'key',
+      memoryFragments: '++id, slotId, [slotId+gameDate.year], *entities.id',
+      graphEdges: '++id, slotId, [source.id+target.id], type, memoryFragmentId',
+    });
+    // Migrate from v2 to v3 if needed (no specific migration action required, just table creation)
+    this.on('populate', () => {
+        // This is where you'd put initial data if needed.
     });
   }
 }
@@ -236,4 +247,60 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
 // Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
 export const deleteDb = (): Promise<void> => {
     return (db as Dexie).delete();
+};
+
+// --- Memory Service ---
+export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<number> => {
+    return await db.memoryFragments.add(fragment);
+};
+
+export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
+    await db.transaction('rw', db.memoryFragments, db.graphEdges, async () => {
+        await db.memoryFragments.where('slotId').equals(slotId).delete();
+        await db.graphEdges.where('slotId').equals(slotId).delete();
+    });
+};
+
+export const getRelevantMemories = async (
+  slotId: number,
+  entityIds: string[],
+  limit: number = 15
+): Promise<MemoryFragment[]> => {
+  const fragmentsByEntity = await db.memoryFragments
+    .where('entities.id').anyOf(entityIds)
+    .and(frag => frag.slotId === slotId)
+    .toArray();
+
+  const edgeQueries = entityIds
+      .filter(id => id !== 'player')
+      .map(targetId => ['player', targetId]);
+
+  const edges = edgeQueries.length > 0 ? await db.graphEdges
+      .where('[source.id+target.id]').anyOf(...edgeQueries)
+      .and(edge => edge.slotId === slotId)
+      .toArray() : [];
+
+  const fragmentIdsFromEdges = edges.map(e => e.memoryFragmentId);
+  const fragmentsFromEdges = fragmentIdsFromEdges.length > 0
+    ? await db.memoryFragments.bulkGet(fragmentIdsFromEdges)
+    : [];
+
+  const allFragments = [
+      ...fragmentsByEntity,
+      ...(fragmentsFromEdges.filter((f): f is MemoryFragment => f !== undefined)),
+  ];
+
+  // Deduplicate and sort
+  const uniqueFragments = Array.from(new Map(allFragments.map(f => [f.id, f])).values());
+  
+  uniqueFragments.sort((a, b) => {
+      if (a.gameDate.year !== b.gameDate.year) return b.gameDate.year - a.gameDate.year;
+      const seasonOrder = ['Xuân', 'Hạ', 'Thu', 'Đông'];
+      if (a.gameDate.season !== b.gameDate.season) return seasonOrder.indexOf(b.gameDate.season) - seasonOrder.indexOf(a.gameDate.season);
+      if (a.gameDate.day !== b.gameDate.day) return b.gameDate.day - a.gameDate.day;
+      // Could add shichen sorting if needed
+      return 0;
+  });
+
+  return uniqueFragments.slice(0, limit);
 };

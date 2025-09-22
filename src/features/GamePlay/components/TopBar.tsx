@@ -1,6 +1,6 @@
 import React, { memo, useState, useEffect } from 'react';
 import type { GameDate, MajorEvent } from '../../../types';
-import { FaArrowLeft, FaSave, FaExpand } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaExpand, FaBars } from 'react-icons/fa';
 import { GiPerson } from 'react-icons/gi';
 import Timeline from '../../../components/Timeline';
 
@@ -11,9 +11,11 @@ interface TopBarProps {
     majorEvents: MajorEvent[];
     isSummaryPanelVisible: boolean;
     onToggleSummaryPanel: () => void;
+    isSidebarOpen: boolean;
+    onToggleSidebar: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, isSummaryPanelVisible, onToggleSummaryPanel }) => {
+const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, isSummaryPanelVisible, onToggleSummaryPanel, isSidebarOpen, onToggleSidebar }) => {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
     const handleFullscreen = () => {
@@ -37,6 +39,13 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, 
     return (
         <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-3 bg-[var(--bg-subtle)] backdrop-blur-sm border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-2">
+                <button
+                    onClick={onToggleSidebar}
+                    className={`p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors ${isSidebarOpen ? 'text-amber-300' : ''}`}
+                    title="Mở Bảng Điều Khiển"
+                >
+                    <FaBars className="w-5 h-5" />
+                </button>
                 <button 
                     onClick={onBack} 
                     className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors"

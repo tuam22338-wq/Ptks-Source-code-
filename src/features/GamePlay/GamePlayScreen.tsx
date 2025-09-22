@@ -4,6 +4,7 @@
 
 
 
+
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
 import StoryLog from './components/StoryLog';
@@ -24,6 +25,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import SummaryPanel from './components/SummaryPanel';
+import Sidebar from './components/Sidebar/Sidebar';
 
 interface CustomStoryPlayerProps {
     gameState: GameState;
@@ -84,6 +86,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
     const isAiResponding = state.isLoading && state.view === 'gamePlay';
     const [responseTimer, setResponseTimer] = useState(0);
     const [isSummaryPanelVisible, setIsSummaryPanelVisible] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 
     // --- PAGINATION LOGIC ---
@@ -292,6 +295,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
         <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col">
             <NotificationArea notifications={notifications} onDismiss={dismissNotification} />
             <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} gameState={gameState} />
             <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} />
             <InventoryModal isOpen={isInventoryOpen} />
             <InnerDemonTrialModal isOpen={!!activeInnerDemonTrial} trial={activeInnerDemonTrial} onChoice={handleInnerDemonChoice} />
@@ -302,10 +306,12 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 gameDate={gameState.gameDate} 
                 majorEvents={gameState.majorEvents}
                 isSummaryPanelVisible={isSummaryPanelVisible}
+                isSidebarOpen={isSidebarOpen}
                 onToggleSummaryPanel={() => setIsSummaryPanelVisible(v => !v)}
+                onToggleSidebar={() => setIsSidebarOpen(v => !v)}
              />
             
-            <div className="gameplay-main-content relative">
+            <div className={`gameplay-main-content relative ${isSidebarOpen ? 'sidebar-open' : ''}`}>
                 <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0 overflow-hidden">
                     <StoryLog 
                         pageEntries={storyPages[currentPage] || []} 

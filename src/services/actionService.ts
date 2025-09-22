@@ -1,9 +1,10 @@
-import type { GameState, StoryEntry, GameSettings, ActiveEffect, ActiveQuest, CultivationTechnique, ItemQuality, PlayerCharacter } from '../types';
+import type { GameState, StoryEntry, GameSettings, ActiveEffect, ActiveQuest, CultivationTechnique, ItemQuality, PlayerCharacter, GraphEdge, EntityReference } from '../types';
 import { generateStoryContinuationStream, parseNarrativeForGameData, summarizeStory } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
 import { simulateWorldTurn, simulateFactionTurn } from './worldSimulator';
 import * as questManager from '../utils/questManager';
 import { SECTS, ALCHEMY_RECIPES, CAVE_FACILITIES_CONFIG } from '../constants';
+import { addEntryToMemory, saveGraphEdges, retrieveAndSynthesizeMemory } from './memoryService';
 
 export const processPlayerAction = async (
     gameState: GameState,
@@ -12,7 +13,8 @@ export const processPlayerAction = async (
     apCost: number,
     settings: GameSettings,
     showNotification: (message: string) => void,
-    abortSignal: AbortController['signal']
+    abortSignal: AbortController['signal'],
+    currentSlotId: number
 ): Promise<GameState> => {
     // This is essentially the logic from the old handleActionSubmit
     const { newState: stateAfterTime, newDay, notifications: timeNotifications } = advanceGameTime(gameState, apCost);
@@ -32,7 +34,14 @@ export const processPlayerAction = async (
         rumors = simResult.rumors;
     }
     
-    const stream = generateStoryContinuationStream(stateAfterSim, text, type);
+    // PHASE 3: Retrieve and synthesize relevant memories before generating story
+    const instantMemoryReport = await retrieveAndSynthesizeMemory(
+        text, 
+        stateAfterSim, 
+        currentSlotId
+    );
+
+    const stream = generateStoryContinuationStream(stateAfterSim, text, type, instantMemoryReport);
     let fullResponse = '';
     for await (const chunk of stream) {
         if (abortSignal.aborted) {
@@ -238,7 +247,67 @@ export const processPlayerAction = async (
     newLogEntries.push({ id: 0, type: 'narrative', content: fullResponse });
     
     const lastId = gameState.storyLog.length > 0 ? gameState.storyLog[gameState.storyLog.length - 1].id : 0;
-    finalState.storyLog = [...gameState.storyLog, ...newLogEntries.map((entry, index) => ({ ...entry, id: lastId + index + 1 }))];
+    const finalNewLogEntries = newLogEntries.map((entry, index) => ({ ...entry, id: lastId + index + 1 }));
+    finalState.storyLog = [...gameState.storyLog, ...finalNewLogEntries];
+
+    // --- MEMORY & GRAPH SYSTEM (PHASE 1 & 2) ---
+    // This part is now integrated into the main async flow.
+    const newEdges: GraphEdge[] = [];
+    const playerEntity: EntityReference = { id: 'player', type: 'player', name: finalState.playerCharacter.identity.name };
+
+    let aiResponseFragmentId: number | null = null;
+    
+    for (const entry of finalNewLogEntries) {
+        try {
+            const id = await addEntryToMemory(entry, finalState, currentSlotId);
+            if (entry.type === 'narrative') {
+                aiResponseFragmentId = id;
+            }
+        } catch (err) {
+            console.error('[Memory] Failed to save a fragment during action processing.', err);
+        }
+    }
+
+    if (aiResponseFragmentId) {
+        // Create graph edges based on the single parse result for this turn.
+        if (parsedData.newLocation) {
+            const locEntity: EntityReference = { id: parsedData.newLocation.locationId, type: 'location', name: finalState.discoveredLocations.find(l => l.id === parsedData.newLocation!.locationId)?.name || 'Unknown' };
+            newEdges.push({ slotId: currentSlotId, source: playerEntity, target: locEntity, type: 'VISITED', memoryFragmentId: aiResponseFragmentId, gameDate: { ...finalState.gameDate } });
+        }
+        if (parsedData.newItems) {
+            for (const item of parsedData.newItems) {
+                const itemInState = finalState.playerCharacter.inventory.items.find(i => i.name === item.name);
+                if (itemInState) {
+                    const itemEntity: EntityReference = { id: itemInState.id, type: 'item', name: itemInState.name };
+                    newEdges.push({ slotId: currentSlotId, source: playerEntity, target: itemEntity, type: 'ACQUIRED', memoryFragmentId: aiResponseFragmentId, gameDate: { ...finalState.gameDate } });
+                }
+            }
+        }
+        if (parsedData.newNpcEncounterIds) {
+            for (const npcId of parsedData.newNpcEncounterIds) {
+                const npc = finalState.activeNpcs.find(n => n.id === npcId);
+                if (npc) {
+                    const npcEntity: EntityReference = { id: npc.id, type: 'npc', name: npc.identity.name };
+                    newEdges.push({ slotId: currentSlotId, source: playerEntity, target: npcEntity, type: 'TALKED_TO', memoryFragmentId: aiResponseFragmentId, gameDate: { ...finalState.gameDate } });
+                }
+            }
+        }
+        if (parsedData.newQuests) {
+             for (const quest of parsedData.newQuests) {
+                const questInState = finalState.playerCharacter.activeQuests.find(q => q.title === quest.title && q.source === quest.source);
+                if (questInState) {
+                    const questEntity: EntityReference = { id: questInState.id, type: 'quest', name: questInState.title };
+                    newEdges.push({ slotId: currentSlotId, source: playerEntity, target: questEntity, type: 'QUEST_START', memoryFragmentId: aiResponseFragmentId, gameDate: { ...finalState.gameDate } });
+                }
+            }
+        }
+        
+        await saveGraphEdges(newEdges);
+        if (newEdges.length > 0) {
+            console.log(`[Graph] Saved ${newEdges.length} new relationships to memory.`);
+        }
+    }
+    // --- END MEMORY & GRAPH ---
 
     const finalQuestCheck = await questManager.processQuestUpdates(finalState, newDay);
     finalQuestCheck.notifications.forEach(showNotification);

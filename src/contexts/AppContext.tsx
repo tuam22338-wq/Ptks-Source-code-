@@ -283,6 +283,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleDeleteGame = useCallback(async (slotId: number) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn dữ liệu ở ô ${slotId}?`)) {
             await db.deleteGameState(slotId);
+            await db.deleteMemoryForSlot(slotId); // Also delete associated memory
             await loadSaveSlots();
         }
     }, [loadSaveSlots]);
@@ -336,7 +337,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     };
 
     const handlePlayerAction = useCallback(async (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => {
-        if (state.isLoading || !state.gameState) return;
+        if (state.isLoading || !state.gameState || state.currentSlotId === null) return;
         cancelSpeech();
         if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
@@ -344,7 +345,16 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Đạo đang suy diễn...' }});
 
         try {
-            const finalState = await processPlayerAction(state.gameState, text, type, apCost, state.settings, showNotification, abortControllerRef.current.signal);
+            const finalState = await processPlayerAction(
+                state.gameState, 
+                text, 
+                type, 
+                apCost, 
+                state.settings, 
+                showNotification, 
+                abortControllerRef.current.signal,
+                state.currentSlotId
+            );
             dispatch({ type: 'UPDATE_GAME_STATE', payload: finalState });
         } catch (error: any) {
             console.error("AI story generation failed:", error);
@@ -362,7 +372,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
-    }, [state.gameState, state.isLoading, state.settings, cancelSpeech]);
+    }, [state.gameState, state.isLoading, state.settings, state.currentSlotId, cancelSpeech]);
 
     const handleUpdatePlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
         dispatch({
