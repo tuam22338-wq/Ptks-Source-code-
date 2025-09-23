@@ -1,55 +1,50 @@
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, WorldlyBackground, TransmigratorLegacy, StatBonus, FormativeEvent, SpiritualRoot } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, CharacterCreationChoice } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
-export const generateFormativeEvent = async (origin: { name: string, description: string }): Promise<FormativeEvent> => {
-    const eventSchema = {
+export const generatePowerSource = async (context: { raceName: string, backgroundName: string, playerInput?: string }): Promise<SpiritualRoot> => {
+    const powerSourceSchema = {
         type: Type.OBJECT,
         properties: {
-            scenario: { type: Type.STRING, description: 'Một kịch bản ngắn gọn, khoảng 2-3 câu, mô tả một sự kiện quan trọng trong quá khứ của nhân vật dựa trên lai lịch của họ.' },
-            choices: {
+            name: { type: Type.STRING, description: "Một cái tên độc đáo và thi vị cho nguồn gốc sức mạnh này. Ví dụ: 'Huyết Mạch Cổ Long', 'Dị Bảo Thôn Phệ', 'Trái Tim Máy Móc'." },
+            description: { type: Type.STRING, description: "Mô tả chi tiết về nguồn gốc sức mạnh, giải thích nó hoạt động như thế nào và ảnh hưởng đến nhân vật ra sao." },
+            bonuses: {
                 type: Type.ARRAY,
-                description: '3 lựa chọn cho người chơi, mỗi lựa chọn dẫn đến một kết quả và bonus thuộc tính khác nhau.',
+                description: "Một danh sách từ 2-4 bonus thuộc tính phù hợp với bản chất của nguồn sức mạnh.",
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        text: { type: Type.STRING, description: 'Nội dung lựa chọn.' },
-                        narrative: { type: Type.STRING, description: 'Mô tả ngắn gọn kết quả của lựa chọn này.' },
-                        outcome: {
-                            type: Type.OBJECT,
-                            properties: {
-                                attribute: { type: Type.STRING, enum: ['Đạo Tâm', 'Bền Bỉ', 'Ma Đạo', 'Ngộ Tính', 'Cơ Duyên', 'Mị Lực'] },
-                                value: { type: Type.NUMBER, description: 'Giá trị bonus, có thể là số dương hoặc âm.' }
-                            },
-                            required: ['attribute', 'value']
-                        }
+                        attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                        value: { type: Type.NUMBER, description: "Giá trị bonus, có thể dương hoặc âm." }
                     },
-                    required: ['text', 'narrative', 'outcome']
+                    required: ['attribute', 'value']
                 }
             }
         },
-        required: ['scenario', 'choices']
+        required: ['name', 'description', 'bonuses']
     };
 
-    const prompt = `Bạn là một Game Master AI. Hãy tạo một "Sự Kiện Trưởng Thành" (Formative Event) cho nhân vật dựa trên lai lịch của họ.
+    const prompt = `Bạn là một Game Master AI. Hãy tạo ra một "Nguồn Gốc Sức Mạnh" (Power Source) cho nhân vật dựa trên các thông tin sau.
 
-    **Lai Lịch Nhân Vật:**
-    - **Tên Lai Lịch:** ${origin.name}
-    - **Mô tả:** ${origin.description}
+    **Bối cảnh nhân vật:**
+    - **Chủng tộc:** ${context.raceName}
+    - **Xuất thân:** ${context.backgroundName}
+    ${context.playerInput ? `- **Mô tả của người chơi:** "${context.playerInput}"` : ''}
 
     **Nhiệm vụ:**
-    1.  Tạo ra một kịch bản (scenario) ngắn gọn, phù hợp với lai lịch.
-    2.  Tạo ra 3 lựa chọn (choices) có ý nghĩa. Mỗi lựa chọn phải:
-        -   Có nội dung rõ ràng.
-        -   Có một kết quả tường thuật (narrative) hợp lý.
-        -   Gắn liền với một bonus thuộc tính (outcome) phản ánh bản chất của lựa chọn đó. Ví dụ: lựa chọn nhân từ tăng Đạo Tâm, lựa chọn ích kỷ tăng Ma Đạo, lựa chọn thông minh tăng Ngộ Tính.
+    1.  **Phân tích:** Dựa vào các thông tin trên, hãy hình dung ra một nguồn sức mạnh độc đáo.
+        -   Nếu có mô tả của người chơi, hãy dựa vào đó làm ý tưởng chính.
+        -   Nếu không có, hãy tự do sáng tạo dựa trên chủng tộc và xuất thân.
+    2.  **Sáng tạo:** Tạo ra Tên, Mô tả, và các Bonus thuộc tính phù hợp.
+        -   Bonus phải phản ánh đúng bản chất của sức mạnh. Ví dụ: Huyết Mạch Rồng thì tăng Lực Lượng, Căn Cốt. Trái tim máy móc có thể tăng Bền Bỉ nhưng giảm Đạo Tâm.
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
-
+    
     const settings = await db.getSettings();
     const model = settings?.gameMasterModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
@@ -59,56 +54,55 @@ export const generateFormativeEvent = async (origin: { name: string, description
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: eventSchema
+            responseSchema: powerSourceSchema
         }
     }, specificApiKey);
+    
+    const result = JSON.parse(response.text);
 
-    return JSON.parse(response.text) as FormativeEvent;
+    // Make it compatible with SpiritualRoot type
+    return {
+        ...result,
+        elements: [], // Can be enhanced later to derive elements
+        quality: 'Thánh Căn', // Custom power sources are always unique
+    } as SpiritualRoot;
 };
 
-
-export const generateCharacterIdentity = async (
+export const generateCharacterDetails = async (
     context: {
-        origin: { name: string; description: string };
-        formativeEventResult: { narrative: string; outcome: StatBonus };
-        spiritualRoot: SpiritualRoot;
-        gender: Gender;
+        race: CharacterCreationChoice;
+        background: CharacterCreationChoice;
+        powerSource: SpiritualRoot;
+        draftIdentity: Omit<CharacterIdentity, 'origin' | 'age'>;
     }
-): Promise<Omit<CharacterIdentity, 'gender' | 'age'>> => {
+): Promise<CharacterIdentity> => {
     const identitySchema = {
         type: Type.OBJECT,
         properties: {
-            name: { type: Type.STRING, description: 'Tên Hán Việt, phù hợp bối cảnh tiên hiệp. Ví dụ: "Lý Thanh Vân", "Hàn Lập".' },
-            familyName: { type: Type.STRING, description: 'Họ của nhân vật, ví dụ: "Lý", "Trần".' },
-            origin: { type: Type.STRING, description: 'Xuất thân, nguồn gốc của nhân vật. Phải kết hợp thông tin từ Lai Lịch, Sự Kiện Trưởng Thành và Linh Căn để tạo ra một câu chuyện nền độc đáo và logic.' },
-            appearance: { type: Type.STRING, description: 'Mô tả ngoại hình chi tiết, độc đáo, có thể phản ánh Linh Căn hoặc quá khứ của nhân vật.' },
-            personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'], description: 'Một trong các tính cách được liệt kê, phải phù hợp với lựa chọn trong Sự Kiện Trưởng Thành.' },
+            name: { type: Type.STRING, description: `Tên Hán Việt, phù hợp bối cảnh. Có thể giữ nguyên hoặc cải tiến từ tên người chơi nhập: '${context.draftIdentity.name}'.` },
+            familyName: { type: Type.STRING, description: `Họ của nhân vật. Có thể giữ nguyên hoặc cải tiến từ họ người chơi nhập: '${context.draftIdentity.familyName}'.` },
+            appearance: { type: Type.STRING, description: `Mô tả ngoại hình chi tiết hơn, kết hợp ý tưởng của người chơi ('${context.draftIdentity.appearance}') với các yếu tố từ chủng tộc, xuất thân và sức mạnh.` },
+            origin: { type: Type.STRING, description: 'VIẾT MỘT CÂU TRUYỆN NỀN (backstory) HOÀN CHỈNH, có chiều sâu, kết nối tất cả các yếu tố (chủng tộc, xuất thân, sức mạnh) thành một câu chuyện logic, mạch lạc và hấp dẫn.' },
         },
-        required: ['name', 'origin', 'appearance', 'personality', 'familyName'],
+        required: ['name', 'familyName', 'appearance', 'origin'],
     };
 
-    const prompt = `Dựa trên các lựa chọn định mệnh của người chơi trong quá trình tạo nhân vật, hãy tạo ra một Thân Phận (Identity) hoàn chỉnh và sâu sắc.
+    const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game tu tiên. Dựa trên các lựa chọn của người chơi, hãy hoàn thiện chi tiết và viết nên một câu chuyện nền hấp dẫn cho nhân vật của họ.
 
-    **Bối cảnh:** Game tu tiên Tam Thiên Thế Giới.
-    **Giới tính:** ${context.gender}
-
-    **Các Lựa Chọn Định Mệnh:**
-    1.  **Lai Lịch Khởi Nguyên:**
-        - **Tên:** ${context.origin.name}
-        - **Mô tả:** ${context.origin.description}
-    2.  **Sự Kiện Trưởng Thành:**
-        - **Kết quả:** "${context.formativeEventResult.narrative}"
-        - **Ảnh hưởng tính cách:** ${context.formativeEventResult.outcome.attribute} +${context.formativeEventResult.outcome.value}
-    3.  **Linh Căn Thức Tỉnh:**
-        - **Tên:** ${context.spiritualRoot.name}
-        - **Mô tả:** ${context.spiritualRoot.description}
+    **Các Lựa Chọn Của Người Chơi:**
+    - **Thông tin cơ bản (Bản nháp):**
+        - Tên: ${context.draftIdentity.name || '(chưa có)'}, Họ: ${context.draftIdentity.familyName || '(chưa có)'}
+        - Giới tính: ${context.draftIdentity.gender}
+        - Ngoại hình (ý tưởng): "${context.draftIdentity.appearance || '(không có mô tả)'}"
+        - Tính cách: ${context.draftIdentity.personality}
+    - **Chủng tộc:** ${context.race.name} (${context.race.description})
+    - **Xuất thân:** ${context.background.name} (${context.background.description})
+    - **Nguồn gốc sức mạnh:** ${context.powerSource.name} (${context.powerSource.description})
 
     **Nhiệm vụ:**
-    Tổng hợp tất cả các thông tin trên để tạo ra một nhân vật nhất quán:
-    -   **Xuất thân (origin):** Viết lại một cách chi tiết, kết nối cả 3 yếu tố trên thành một câu chuyện nền mạch lạc.
-    -   **Ngoại hình (appearance):** Có thể phản ánh linh căn (ví dụ: người có Hỏa Linh Căn có tóc hơi hung đỏ).
-    -   **Tính cách (personality):** Phải phù hợp với lựa chọn trong Sự Kiện Trưởng Thành (ví dụ: lựa chọn nhân từ nên có tính cách Chính Trực hoặc Trung Lập).
-    -   **Tên (name) và Họ (familyName):** Sáng tạo một cái tên phù hợp với toàn bộ bối cảnh đã hình thành.
+    1.  **Tổng hợp:** Kết hợp tất cả các yếu tố trên một cách sáng tạo.
+    2.  **Hoàn thiện Tên & Ngoại hình:** Dựa trên bản nháp của người chơi, hãy đề xuất một phiên bản hoàn thiện hơn nếu cần. Tên phải Hán Việt. Ngoại hình nên phản ánh cả chủng tộc và sức mạnh.
+    3.  **Viết nên "Xuất Thân" (origin):** Đây là phần quan trọng nhất. Hãy viết một đoạn văn (khoảng 4-6 câu) kể về câu chuyện nền của nhân vật, giải thích cách các yếu tố trên kết nối với nhau. Ví dụ: một Tiên Tộc (chủng tộc) vì sao lại có xuất thân Nô Lệ? Nguồn sức mạnh của họ đã thức tỉnh như thế nào trong hoàn cảnh đó?
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
     
@@ -137,7 +131,11 @@ export const generateCharacterIdentity = async (
     }, specificApiKey);
 
     const json = JSON.parse(response.text);
-    return json as Omit<CharacterIdentity, 'gender' | 'age'>;
+    return {
+        ...context.draftIdentity, // Keep gender and personality from player's choice
+        ...json,
+        age: 18, // Default starting age
+    } as CharacterIdentity;
 };
 
 export const generateFamilyAndFriends = async (identity: CharacterIdentity, locationId: string): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[] }> => {
@@ -264,36 +262,18 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     
     const settings = await db.getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
-
-    const isTransmigrator = gameState.gameMode === 'transmigrator';
-    const isDefaultFrameworkWorld = worldId === 'phong_than_dien_nghia' || worldId === 'tay_du_ky';
     
-    // The DYNAMIC GENESIS RULE is now handled by the character creation flow, no longer needed here.
-    const transmigratorInstructions = isTransmigrator
-    ? `
-**LƯU Ý CỰC KỲ QUAN TRỌNG:** Đây là chế độ "Xuyên Việt Giả". Người chơi là người từ thế giới hiện đại xuyên không tới.
-1. Bắt đầu bằng việc mô tả sự bàng hoàng, lạ lẫm của nhân vật khi nhận ra mình đã xuyên không.
-2. Ngay sau đó, hãy mô tả sự xuất hiện của "Hệ Thống". Mô tả nó như một giao diện holographic (toàn息投影) màu xanh lam hiện ra trước mắt người chơi, với âm thanh máy móc, vô cảm.
-3. Hệ Thống phải thông báo: "Kích hoạt Hệ Thống Xuyên Việt Giả. Chào mừng Ký Chủ."
-4. Hệ Thống sau đó phải giao nhiệm vụ đầu tiên: "[Nhiệm vụ Tân Thủ]: Làm quen với thế giới. Mục tiêu: Trò chuyện với một người thân để tìm hiểu bối cảnh."
-5. Sử dụng định dạng [HỆ THỐNG]: cho các thông báo của Hệ Thống. Ví dụ: "[HỆ THỐNG]: Nhiệm vụ đã được ban hành."
-`
-    : '';
-    
-    const finalInstructions = transmigratorInstructions;
-
     const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     - **Giọng văn:** ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
     - **Nhân vật chính:**
         - Tên: ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi.
-        - Xuất thân: ${playerCharacter.identity.origin}.
-        - **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. Mô tả: ${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'}
+        - Xuất thân & Câu chuyện nền: ${playerCharacter.identity.origin}.
+        - **Nguồn Gốc Sức Mạnh:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. Mô tả: ${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'}
     - **Địa điểm hiện tại:** ${currentLocation?.name}. Mô tả: ${currentLocation?.description}.
     - **Gia đình & Người thân:**
     ${familyInfo || 'Không có ai thân thích.'}
-    ${finalInstructions}
 
-    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh nhân vật đang ở đâu, làm gì, và cảm xúc của họ. Nó phải phản ánh đúng xuất thân và linh căn vừa được xác định của họ.
+    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh nhân vật đang ở đâu, làm gì, và cảm xúc của họ. Nó phải phản ánh đúng xuất thân và nguồn gốc sức mạnh của họ.
     
     Ví dụ:
     "Lý Thanh Vân đứng lặng trước tảng đá trắc linh đã nguội lạnh, trong lòng vẫn còn dư chấn từ kết quả 'Hỏa Thiên Linh Căn' ngoài sức tưởng tượng. Ánh mắt của vị trưởng lão, của những người trong gia tộc, có ngưỡng mộ, có ghen tị, tất cả đều đổ dồn về phía hắn, một thiếu niên từ chi thứ vốn không được ai chú ý."

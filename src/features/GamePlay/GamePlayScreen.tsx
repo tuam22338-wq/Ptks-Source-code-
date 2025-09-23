@@ -19,6 +19,7 @@ import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import SummaryPanel from './components/SummaryPanel';
 import Sidebar from './components/Sidebar/Sidebar';
+import InteractionOverlay from './components/InteractionOverlay';
 
 interface CustomStoryPlayerProps {
     gameState: GameState;
@@ -65,7 +66,7 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpda
 };
 
 const GamePlayScreenContent: React.FC = memo(() => {
-    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch } = useAppContext();
+    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleSkillCheckResult, handleDialogueChoice } = useAppContext();
     const { gameState, settings } = state;
     const { 
         notifications, dismissNotification, availablePaths,
@@ -271,13 +272,13 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
-    const { playerCharacter, combatState, activeStory, discoveredLocations, worldState } = gameState;
+    const { playerCharacter, combatState, activeStory, discoveredLocations, worldState, activeSkillCheck, dialogueChoices } = gameState;
     const currentLocation = useMemo(() => {
         if (!discoveredLocations || discoveredLocations.length === 0) return null;
         return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
     }, [discoveredLocations, playerCharacter.currentLocationId]);
     
-    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory);
+    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory || activeSkillCheck || dialogueChoices);
     const isOnLastPage = currentPage === storyPages.length - 1;
 
     if (!currentLocation) {
@@ -332,9 +333,17 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     {isSpecialPanelActive ? (
                         <>
                             {combatState && <CombatScreen />}
-                            {/* FIX: Correctly pass the CharacterAttributes record instead of attempting to flatMap it. */}
                             {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes} />}
                             {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
+                            {(activeSkillCheck || dialogueChoices) && (
+                                <InteractionOverlay 
+                                    skillCheck={activeSkillCheck}
+                                    choices={dialogueChoices}
+                                    playerAttributes={playerCharacter.attributes}
+                                    onSkillCheckResult={handleSkillCheckResult}
+                                    onChoiceSelect={handleDialogueChoice}
+                                />
+                            )}
                         </>
                     ) : (
                         <ActionBar 

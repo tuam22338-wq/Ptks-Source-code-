@@ -16,9 +16,56 @@ export const applyMechanicalChanges = (
     let finalState = JSON.parse(JSON.stringify(currentState));
     let pc = finalState.playerCharacter;
 
+    // --- TRANSACTIONAL CHECK (for costs) ---
+    // First, verify if all costs can be paid before applying any changes.
+    let canAfford = true;
+    if (intent.currencyChanges) {
+        for (const change of intent.currencyChanges) {
+            if (change.change < 0) {
+                const currentAmount = pc.currencies[change.currencyName] || 0;
+                if (currentAmount < Math.abs(change.change)) {
+                    canAfford = false;
+                    showNotification(`Giao dịch thất bại! Không đủ ${change.currencyName}.`);
+                    break;
+                }
+            }
+        }
+    }
+    // More checks for itemsLost etc. can be added here.
+
+    if (!canAfford) {
+        // If any cost cannot be met, we reject the entire mechanical intent.
+        // The narrative will still proceed, but the player gets no items/stats.
+        showNotification("Hành động không thành công do không đủ tài nguyên.");
+        return currentState;
+    }
+
+
+    // --- APPLY CHANGES (if affordable) ---
+    
+    // Handle interaction states first, as they are mutually exclusive
+    if (intent.skillCheck) {
+        finalState.activeSkillCheck = intent.skillCheck;
+        finalState.dialogueChoices = null; // Clear other interaction types
+        return finalState; // Halt further processing until check is resolved
+    }
+    if (intent.dialogueChoices) {
+        finalState.dialogueChoices = intent.dialogueChoices;
+        finalState.activeSkillCheck = null; // Clear other interaction types
+        return finalState; // Halt further processing until choice is made
+    }
+    
     if (intent.locationChange && finalState.discoveredLocations.some(l => l.id === intent.locationChange)) {
         pc.currentLocationId = intent.locationChange;
         showNotification(`Đã đến: ${finalState.discoveredLocations.find(l => l.id === pc.currentLocationId)?.name || pc.currentLocationId}`);
+    }
+
+    if (intent.currencyChanges) {
+        intent.currencyChanges.forEach(change => {
+            const currentAmount = pc.currencies[change.currencyName] || 0;
+            pc.currencies[change.currencyName] = currentAmount + change.change;
+            showNotification(`${change.currencyName}: ${change.change > 0 ? '+' : ''}${change.change.toLocaleString()}`);
+        });
     }
 
     if (intent.itemsGained) {
@@ -54,7 +101,7 @@ export const applyMechanicalChanges = (
                 showNotification(`${attrDef?.name || attrId}: ${change > 0 ? '+' : ''}${change}`);
             } else if (attrId === 'spiritualQi') {
                  pc.cultivation.spiritualQi = Math.max(0, pc.cultivation.spiritualQi + change);
-                 showNotification(`Linh Khí: ${change > 0 ? '+' : ''}${change}`);
+                 showNotification(`Linh Khí: ${change > 0 ? '+' : ''}${change.toLocaleString()}`);
             } // ... handle other vitals like hunger, thirst
         });
     }

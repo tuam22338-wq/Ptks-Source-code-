@@ -1,9 +1,20 @@
 
 
 import React, { useState, useEffect, memo, useRef } from 'react';
-import { DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, AI_SYNC_MODES } from '../../constants';
+import { 
+    DEFAULT_SETTINGS, AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS, SAFETY_LEVELS, SAFETY_CATEGORIES, 
+    LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS, AI_SYNC_MODES,
+    AI_CREATIVITY_LEVELS, NARRATIVE_PACING_LEVELS, PLAYER_AGENCY_LEVELS, AI_MEMORY_DEPTH_LEVELS,
+    NPC_COMPLEXITY_LEVELS, WORLD_EVENT_FREQUENCY_LEVELS, WORLD_REACTIVITY_LEVELS,
+    DEATH_PENALTY_LEVELS, VALIDATION_CAP_LEVELS
+} from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
-import type { GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, RagEmbeddingModel, AssignableModel, AiSyncMode } from '../../types';
+import type { 
+    GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, 
+    RagEmbeddingModel, AssignableModel, AiSyncMode, AiCreativityLevel, NarrativePacing, 
+    PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, 
+    DeathPenalty, ValidationServiceCap
+} from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle, FaMusic, FaVolumeUp, FaFire, FaDownload, FaUpload, FaSearchPlus } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import * as db from '../../services/dbService';
@@ -47,6 +58,33 @@ const TabButton: React.FC<{
     <span className="label">{label}</span>
   </button>
 ));
+
+const LevelButtonGroup = <T extends string>({
+  options,
+  selectedValue,
+  onSelect,
+}: {
+  options: { value: T; label: string; description: string }[];
+  selectedValue: T;
+  onSelect: (value: T) => void;
+}) => (
+    <div className="flex flex-col gap-3">
+        {options.map(opt => (
+            <button
+                key={opt.value}
+                onClick={() => onSelect(opt.value)}
+                className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${
+                    selectedValue === opt.value
+                        ? 'border-teal-500 bg-teal-500/10'
+                        : 'bg-black/20 border-gray-700 hover:border-gray-500'
+                }`}
+            >
+                <div className="font-bold text-md text-white">{opt.label}</div>
+                <p className="text-sm text-gray-400 mt-1">{opt.description}</p>
+            </button>
+        ))}
+    </div>
+);
 
 const modelConfigs: { id: AssignableModel; label: string; description: string; modelType: 'text' | 'image' | 'rag' }[] = [
     { id: 'mainTaskModel', label: 'Model Chính (Kể chuyện)', description: 'Model mạnh nhất, dùng cho các tác vụ chính như kể chuyện.', modelType: 'text' },
@@ -242,6 +280,19 @@ export const SettingsPanel: React.FC = () => {
                                 ))}
                             </div>
                         </SettingsRow>
+                         <SettingsRow label="Chủ đề (Theme)" description="Thay đổi giao diện sáng/tối và bảng màu tổng thể.">
+                            <div className="themed-button-group">
+                                {THEME_OPTIONS.map(theme => (
+                                    <button
+                                        key={theme.value}
+                                        className={settings.theme === theme.value ? 'active' : ''}
+                                        onClick={() => handleSettingChange('theme', theme.value)}
+                                    >
+                                        {theme.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </SettingsRow>
                          <SettingsRow label="Font chữ" description="Thay đổi font chữ chính của trò chơi.">
                              <select className="themed-select" value={settings.fontFamily} onChange={(e) => handleSettingChange('fontFamily', e.target.value)}>
                                 {FONT_OPTIONS.map(font => (
@@ -420,42 +471,77 @@ export const SettingsPanel: React.FC = () => {
                     </SettingsSection>
                 )}
                 {activeTab === 'gameplay' && (
-                     <SettingsSection title="Lối Chơi">
-                         <SettingsRow label="Tốc độ game" description="Ảnh hưởng đến tốc độ hồi phục điểm hành động và các sự kiện trong game.">
-                             <div className="themed-button-group">
-                                {GAME_SPEEDS.map(speed => (
-                                    <button key={speed.value} className={settings.gameSpeed === speed.value ? 'active' : ''} onClick={() => handleSettingChange('gameSpeed', speed.value)}>{speed.label}</button>
-                                ))}
-                            </div>
+                    <>
+                    <SettingsSection title="AI & Tường Thuật">
+                        <SettingsRow label="Mức Độ Sáng Tạo của AI" description={AI_CREATIVITY_LEVELS.find(o => o.value === settings.aiCreativityLevel)?.description || ''}>
+                            <LevelButtonGroup options={AI_CREATIVITY_LEVELS} selectedValue={settings.aiCreativityLevel} onSelect={(v) => handleSettingChange('aiCreativityLevel', v as AiCreativityLevel)} />
                         </SettingsRow>
-                         <SettingsRow label="Văn phong tường thuật" description="Chọn phong cách viết của AI kể chuyện.">
-                             <div className="themed-button-group">
-                                {NARRATIVE_STYLES.map(style => (
-                                    <button key={style.value} className={settings.narrativeStyle === style.value ? 'active' : ''} onClick={() => handleSettingChange('narrativeStyle', style.value)}>{style.label}</button>
-                                ))}
-                            </div>
+                        <SettingsRow label="Nhịp Độ Tường Thuật" description={NARRATIVE_PACING_LEVELS.find(o => o.value === settings.narrativePacing)?.description || ''}>
+                             <LevelButtonGroup options={NARRATIVE_PACING_LEVELS} selectedValue={settings.narrativePacing} onSelect={(v) => handleSettingChange('narrativePacing', v as NarrativePacing)} />
                         </SettingsRow>
-                        <SettingsRow label="Chế độ Đồng Bộ AI" description="Thay đổi cách AI tương tác với cơ chế game. 'Thiên Cơ' được khuyến khích để có trải nghiệm tốt nhất.">
-                            <div className="flex flex-col gap-3">
-                                {AI_SYNC_MODES.map(mode => (
-                                    <button
-                                        key={mode.value}
-                                        onClick={() => handleSettingChange('aiSyncMode', mode.value)}
-                                        className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${settings.aiSyncMode === mode.value ? `border-teal-500 bg-teal-500/10` : 'bg-black/20 border-gray-700 hover:border-gray-500'}`}
-                                    >
-                                        <div className="font-bold text-md text-white">{mode.label}</div>
-                                        <p className="text-sm text-gray-400 mt-1">{mode.description}</p>
-                                    </button>
-                                ))}
-                            </div>
+                         <SettingsRow label="Quyền Tự Quyết của Người Chơi" description={PLAYER_AGENCY_LEVELS.find(o => o.value === settings.playerAgencyLevel)?.description || ''}>
+                             <LevelButtonGroup options={PLAYER_AGENCY_LEVELS} selectedValue={settings.playerAgencyLevel} onSelect={(v) => handleSettingChange('playerAgencyLevel', v as PlayerAgencyLevel)} />
                         </SettingsRow>
-                        <SettingsRow label="Độ dài phản hồi AI" description="Điều chỉnh độ dài mong muốn cho mỗi phản hồi của AI kể chuyện (tính bằng từ).">
-                            <div className="flex items-center gap-4">
-                               <input type="range" min="100" max="4000" step="50" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value))} className="themed-slider flex-grow" />
-                               <span className="themed-slider-value w-24 text-right">{settings.aiResponseWordCount} từ</span>
-                            </div>
+                         <SettingsRow label="Độ Sâu Ký Ức AI" description={AI_MEMORY_DEPTH_LEVELS.find(o => o.value === settings.aiMemoryDepth)?.description || ''}>
+                             <LevelButtonGroup options={AI_MEMORY_DEPTH_LEVELS} selectedValue={settings.aiMemoryDepth} onSelect={(v) => handleSettingChange('aiMemoryDepth', v as AiMemoryDepth)} />
                         </SettingsRow>
                     </SettingsSection>
+        
+                    <SettingsSection title="Mô Phỏng Thế Giới">
+                        <SettingsRow label="Độ Phức Tạp của NPC" description={NPC_COMPLEXITY_LEVELS.find(o => o.value === settings.npcComplexity)?.description || ''}>
+                            <LevelButtonGroup options={NPC_COMPLEXITY_LEVELS} selectedValue={settings.npcComplexity} onSelect={(v) => handleSettingChange('npcComplexity', v as NpcComplexity)} />
+                        </SettingsRow>
+                        <SettingsRow label="Tần Suất Sự Kiện Thế Giới" description="Điều chỉnh tần suất các sự kiện động ngẫu nhiên xảy ra.">
+                            <div className="themed-button-group">
+                                {WORLD_EVENT_FREQUENCY_LEVELS.map(level => (
+                                    <button key={level.value} className={settings.worldEventFrequency === level.value ? 'active' : ''} onClick={() => handleSettingChange('worldEventFrequency', level.value)}>{level.label}</button>
+                                ))}
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Mức Độ Phản Ứng của Thế Giới" description={WORLD_REACTIVITY_LEVELS.find(o => o.value === settings.worldReactivity)?.description || ''}>
+                            <LevelButtonGroup options={WORLD_REACTIVITY_LEVELS} selectedValue={settings.worldReactivity} onSelect={(v) => handleSettingChange('worldReactivity', v as WorldReactivity)} />
+                        </SettingsRow>
+                    </SettingsSection>
+
+                    <SettingsSection title="Cơ Chế Game & Nhân Vật">
+                        <SettingsRow label="Tỷ Lệ Tu Vi Nhận Được" description="Điều chỉnh lượng tu vi nhận được từ mọi nguồn.">
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="50" max="300" step="10" value={settings.cultivationRateMultiplier} onChange={(e) => handleSettingChange('cultivationRateMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                <span className="themed-slider-value">{settings.cultivationRateMultiplier}%</span>
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Tỷ Lệ Thu Thập Tài Nguyên" description="Điều chỉnh số lượng tài nguyên thu thập được.">
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="50" max="300" step="10" value={settings.resourceRateMultiplier} onChange={(e) => handleSettingChange('resourceRateMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                <span className="themed-slider-value">{settings.resourceRateMultiplier}%</span>
+                            </div>
+                        </SettingsRow>
+                         <SettingsRow label="Sát Thương Gây Ra" description="Điều chỉnh sát thương bạn gây ra cho kẻ địch.">
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="50" max="200" step="10" value={settings.damageDealtMultiplier} onChange={(e) => handleSettingChange('damageDealtMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                <span className="themed-slider-value">{settings.damageDealtMultiplier}%</span>
+                            </div>
+                        </SettingsRow>
+                         <SettingsRow label="Sát Thương Nhận Vào" description="Điều chỉnh sát thương bạn nhận vào từ kẻ địch.">
+                            <div className="flex items-center gap-4">
+                                <input type="range" min="50" max="200" step="10" value={settings.damageTakenMultiplier} onChange={(e) => handleSettingChange('damageTakenMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                <span className="themed-slider-value">{settings.damageTakenMultiplier}%</span>
+                            </div>
+                        </SettingsRow>
+                         <SettingsRow label="Bật Cơ Chế Sinh Tồn" description="Bật hoặc tắt hoàn toàn nhu cầu về đói, khát.">
+                            <label className="flex items-center cursor-pointer">
+                                <input type="checkbox" checked={settings.enableSurvivalMechanics} onChange={e => handleSettingChange('enableSurvivalMechanics', e.target.checked)} className="themed-checkbox" />
+                                <span className="ml-3 text-sm text-gray-300">Bật đói và khát</span>
+                            </label>
+                        </SettingsRow>
+                        <SettingsRow label="Hình Phạt Khi Tử Vong" description={DEATH_PENALTY_LEVELS.find(o => o.value === settings.deathPenalty)?.description || ''}>
+                             <LevelButtonGroup options={DEATH_PENALTY_LEVELS} selectedValue={settings.deathPenalty} onSelect={(v) => handleSettingChange('deathPenalty', v as DeathPenalty)} />
+                        </SettingsRow>
+                         <SettingsRow label="Giới Hạn của 'Thiên Đạo Giám Sát'" description={VALIDATION_CAP_LEVELS.find(o => o.value === settings.validationServiceCap)?.description || ''}>
+                             <LevelButtonGroup options={VALIDATION_CAP_LEVELS} selectedValue={settings.validationServiceCap} onSelect={(v) => handleSettingChange('validationServiceCap', v as ValidationServiceCap)} />
+                        </SettingsRow>
+                    </SettingsSection>
+                    </>
                 )}
                  {activeTab === 'advanced' && (
                     <SettingsSection title="Nâng Cao">

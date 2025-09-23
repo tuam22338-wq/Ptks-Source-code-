@@ -89,12 +89,13 @@ const dynamicEventSchema = {
             trigger: {
                 type: Type.OBJECT,
                 properties: {
-                    type: { type: Type.STRING, enum: ['ON_ENTER_LOCATION', 'ON_GAME_DATE'] as EventTriggerType[] },
+                    type: { type: Type.STRING, enum: ['ON_ENTER_LOCATION', 'ON_TALK_TO_NPC', 'ON_GAME_DATE'] as EventTriggerType[] },
                     details: { 
                         type: Type.OBJECT, 
                         description: "Chi tiết tác nhân. Vd: { locationId: 'id_cua_hang_dong' } hoặc { year: 1, day: 10 }.",
                         properties: {
                             locationId: { type: Type.STRING, description: "ID của địa điểm (chỉ dùng cho trigger ON_ENTER_LOCATION)." },
+                            npcId: { type: Type.STRING, description: "ID của NPC (chỉ dùng cho trigger ON_TALK_TO_NPC)." },
                             year: { type: Type.NUMBER, description: "Năm diễn ra sự kiện (chỉ dùng cho trigger ON_GAME_DATE)." },
                             day: { type: Type.NUMBER, description: "Ngày diễn ra sự kiện (chỉ dùng cho trigger ON_GAME_DATE)." },
                         }
@@ -107,17 +108,19 @@ const dynamicEventSchema = {
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        type: { type: Type.STRING, enum: ['GIVE_ITEM', 'CHANGE_STAT', 'ADD_RUMOR', 'UPDATE_REPUTATION'] as EventOutcomeType[] },
+                        type: { type: Type.STRING, enum: ['GIVE_ITEM', 'REMOVE_ITEM', 'CHANGE_STAT', 'ADD_RUMOR', 'START_EVENT', 'START_STORY', 'UPDATE_REPUTATION'] as EventOutcomeType[] },
                         details: { 
                             type: Type.OBJECT, 
                             description: "Chi tiết kết quả. Vd: { itemName: 'Chìa Khóa Cũ', quantity: 1 } hoặc { attribute: 'Cơ Duyên', change: 5 }.",
                             properties: {
-                                itemName: { type: Type.STRING, description: "Tên vật phẩm (cho outcome GIVE_ITEM)." },
-                                quantity: { type: Type.NUMBER, description: "Số lượng vật phẩm (cho outcome GIVE_ITEM)." },
+                                itemName: { type: Type.STRING, description: "Tên vật phẩm (cho outcome GIVE_ITEM/REMOVE_ITEM)." },
+                                quantity: { type: Type.NUMBER, description: "Số lượng vật phẩm (cho outcome GIVE_ITEM/REMOVE_ITEM)." },
                                 attribute: { type: Type.STRING, description: "Tên thuộc tính (cho outcome CHANGE_STAT)." },
                                 change: { type: Type.NUMBER, description: "Lượng thay đổi thuộc tính (cho outcome CHANGE_STAT)." },
                                 text: { type: Type.STRING, description: "Nội dung tin đồn (cho outcome ADD_RUMOR)." },
                                 factionName: { type: Type.STRING, description: "Tên phe phái (cho outcome UPDATE_REPUTATION)." },
+                                eventId: { type: Type.STRING, description: "ID của sự kiện khác để bắt đầu (cho outcome START_EVENT)." },
+                                storyId: { type: Type.STRING, description: "ID của hệ thống cốt truyện để bắt đầu (cho outcome START_STORY)." },
                             }
                         }
                     },

@@ -1,9 +1,10 @@
 
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes } from '../../types';
-import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS, CURRENCY_ITEMS } from "../../constants";
+import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { FaQuestionCircle } from "react-icons/fa";
@@ -95,7 +96,7 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
     **Yêu cầu chi tiết:**
     1.  **"Linh Hồn" NPC:** Dựa trên tính cách và xuất thân, hãy gán cho họ một trạng thái cảm xúc, động lực (motivation), và các mục tiêu (goals) hợp lý và có chiều sâu.
     2.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu mới.
-    3.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp.
+    3.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp. "Phàm Nhân" cho người thường.
     4.  **Ngũ Hành:** Gán một thuộc tính ngũ hành (element) cho mỗi NPC.
     5.  **Tiên Tư:** Tạo ra 1-2 tiên tư (talents) độc đáo và phù hợp cho mỗi NPC tu sĩ.
     6.  **Tài Sản:** Gán cho họ một lượng tiền tệ phù hợp.`;

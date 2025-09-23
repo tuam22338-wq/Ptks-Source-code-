@@ -1,6 +1,7 @@
+
 import React, { memo } from 'react';
-import type { PlayerCharacter, SpiritualRoot, AttributeDefinition, GameState } from '../../../../../types';
-import { SPIRITUAL_ROOT_CONFIG, UI_ICONS } from '../../../../../constants';
+import type { PlayerCharacter, SpiritualRoot, AttributeDefinition, GameState, Currency } from '../../../../../types';
+import { SPIRITUAL_ROOT_CONFIG, UI_ICONS, CURRENCY_DEFINITIONS } from '../../../../../constants';
 
 const AttributeDisplay: React.FC<{
     definition: AttributeDefinition;
@@ -40,6 +41,40 @@ const SpiritualRootDisplay: React.FC<{ root: SpiritualRoot | null }> = ({ root }
     );
 };
 
+const CurrencyDisplay: React.FC<{ currencies: Currency }> = ({ currencies }) => {
+    const ownedCurrencies = Object.entries(currencies)
+        // FIX: Operator '>' cannot be applied to types 'unknown' and 'number'. Add explicit undefined check.
+        .filter(([, amount]) => amount !== undefined && amount > 0)
+        .map(([name]) => name as keyof typeof CURRENCY_DEFINITIONS)
+        .sort((a, b) => {
+            const order = ['Phàm Tệ', 'Linh Tệ', 'Tiên Tệ', 'Đặc Biệt'];
+            return order.indexOf(CURRENCY_DEFINITIONS[a].category) - order.indexOf(CURRENCY_DEFINITIONS[b].category);
+        });
+
+    if (ownedCurrencies.length === 0) {
+        return <p className="text-sm text-gray-400">Không một xu dính túi.</p>;
+    }
+
+    return (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {ownedCurrencies.map(currencyName => {
+                const def = CURRENCY_DEFINITIONS[currencyName];
+                const amount = currencies[currencyName];
+                return (
+                    <div key={currencyName} className="flex justify-between items-baseline text-sm" title={def.category}>
+                        <span className="text-gray-300 flex items-center gap-2">
+                            {def.icon}
+                            {def.name}
+                        </span>
+                        <span className="font-bold text-gray-100 font-mono">{amount?.toLocaleString()}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+
 const InfoBlock: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
     <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
         <h4 className="font-bold text-amber-300 font-title">{title}</h4>
@@ -53,7 +88,7 @@ interface CharacterPanelProps {
 }
 
 const CharacterPanel: React.FC<CharacterPanelProps> = ({ playerCharacter, gameState }) => {
-    const { attributes, cultivation, spiritualRoot } = playerCharacter;
+    const { attributes, cultivation, spiritualRoot, currencies } = playerCharacter;
     const { attributeSystem } = gameState;
 
     if (!attributeSystem) {
@@ -63,6 +98,10 @@ const CharacterPanel: React.FC<CharacterPanelProps> = ({ playerCharacter, gameSt
     return (
         <div className="space-y-4 animate-fade-in" style={{ animationDuration: '300ms' }}>
             <SpiritualRootDisplay root={spiritualRoot} />
+
+            <InfoBlock title="Tài Sản">
+                <CurrencyDisplay currencies={currencies} />
+            </InfoBlock>
 
             {attributeSystem.groups.sort((a, b) => a.order - b.order).map(group => {
                 const groupAttributes = attributeSystem.definitions.filter(def => def.group === group.id);

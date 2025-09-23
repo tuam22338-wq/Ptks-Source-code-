@@ -1,6 +1,6 @@
 
 
-import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition, WorldlyBackground, TransmigratorLegacy, AiSyncMode } from './types';
+import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition, CharacterCreationChoice, AiSyncMode, CurrencyType, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap } from './types';
 import { UI_ICONS } from './data/uiIcons';
 
 // Re-export non-world-specific data
@@ -33,62 +33,20 @@ export const CURRENT_GAME_VERSION = "1.0.10";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
-// --- NEW CHARACTER CREATION DATA ---
-export const WORLDLY_BACKGROUNDS: WorldlyBackground[] = [
-    {
-        id: 'noble_child',
-        name: 'Con Cháu Dòng Dõi Quý Tộc',
-        description: 'Sinh ra trong nhung lụa, bạn có khởi đầu thuận lợi về tiền bạc và các mối quan hệ, nhưng cũng dễ vướng vào tranh đấu gia tộc.',
-        bonuses: [{ attribute: 'Mị Lực', value: 5 }, { attribute: 'Ngộ Tính', value: 2 }],
-        startingItems: [
-            { name: 'Ngọc Bội Gia Truyền', quantity: 1, description: 'Một miếng ngọc bội tinh xảo, có thể là vật tín.', type: 'Tạp Vật', quality: 'Bảo Phẩm', icon: '💎' },
-        ],
-    },
-    {
-        id: 'street_orphan',
-        name: 'Cô Nhi Đầu Đường',
-        description: 'Lớn lên trong sự thiếu thốn và hiểm nguy, bạn không có gì ngoài sự lanh lợi và ý chí sinh tồn mãnh liệt.',
-        bonuses: [{ attribute: 'Thân Pháp', value: 5 }, { attribute: 'Bền Bỉ', value: 2 }],
-        startingItems: [],
-    },
-    {
-        id: 'library_disciple',
-        name: 'Đệ Tử Thư Viện',
-        description: 'Dành cả tuổi thơ đắm mình trong sách vở, bạn có kiến thức uyên bác và khả năng lĩnh ngộ vượt trội.',
-        bonuses: [{ attribute: 'Ngộ Tính', value: 5 }, { attribute: 'Đạo Tâm', value: 2 }],
-        startingItems: [
-            { name: 'Sách Cổ Rách Nát', quantity: 1, description: 'Một cuốn sách cũ ghi lại những câu chuyện kỳ dị, có thể ẩn chứa bí mật.', type: 'Tạp Vật', quality: 'Phàm Phẩm', icon: '📖' },
-        ],
-    },
-    {
-        id: 'mountain_hunter',
-        name: 'Thợ Săn Vùng Sơn Cước',
-        description: 'Lớn lên giữa núi rừng hoang dã, bạn thông thạo địa hình và có kỹ năng sinh tồn tuyệt vời.',
-        bonuses: [{ attribute: 'Lực Lượng', value: 3 }, { attribute: 'Thân Pháp', value: 3 }, { attribute: 'Căn Cốt', value: 2 }],
-        startingItems: [
-            { name: 'Cung Gỗ Thô', quantity: 1, description: 'Một cây cung săn đơn giản nhưng hiệu quả.', type: 'Vũ Khí', quality: 'Phàm Phẩm', icon: '🏹' },
-        ],
-    }
+// --- NEW GENERIC CHARACTER CREATION CHOICES ---
+export const RACES: CharacterCreationChoice[] = [
+    { id: 'human', name: 'Con Người', description: 'Chủng tộc đông đảo nhất, có tiềm năng vô hạn nhưng tuổi thọ ngắn ngủi.', bonuses: [{ attribute: 'Ngộ Tính', value: 3 }, { attribute: 'Cơ Duyên', value: 2 }] },
+    { id: 'yao', name: 'Yêu Tộc', description: 'Hậu duệ của dị thú thượng cổ, có thân thể cường tráng và bản năng chiến đấu mạnh mẽ.', bonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },
+    { id: 'xian', name: 'Tiên Tộc', description: 'Sinh ra đã có tiên khí, gần gũi với đại đạo, tu luyện nhanh hơn các tộc khác.', bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 5 }, { attribute: 'Thần Thức', value: 3 }] },
 ];
 
-export const TRANSMIGRATOR_LEGACIES: TransmigratorLegacy[] = [
-    {
-        id: 'system_user',
-        name: 'Kiến Thức Dị Giới (Hệ Thống)',
-        description: 'Bạn mang theo một "Hệ Thống" bí ẩn, cung cấp nhiệm vụ, cửa hàng điểm thưởng và khả năng phân tích độc nhất.',
-        bonuses: [{ attribute: 'Ngộ Tính', value: 5 }],
-        isSystemUser: true,
-    },
-    {
-        id: 'engraved_skill',
-        name: 'Kỹ Năng Khắc Sâu',
-        description: 'Một kỹ năng từ kiếp trước đã khắc sâu vào linh hồn bạn, một kiến thức không thuộc về thế giới này.',
-        bonuses: [{ attribute: 'Ngự Khí Thuật', value: 10 }],
-        isSystemUser: false,
-    }
+export const BACKGROUNDS: CharacterCreationChoice[] = [
+    { id: 'noble', name: 'Quý Tộc', description: 'Xuất thân từ gia tộc quyền quý, có tài nguyên và mối quan hệ nhưng cũng đầy rẫy tranh đấu.', bonuses: [{ attribute: 'Mị Lực', value: 5 }], startingItems: [{ name: 'Ngọc Bội Gia Truyền', quantity: 1, description: 'Vật tín của gia tộc.', type: 'Tạp Vật', quality: 'Bảo Phẩm', icon: '💎' }] },
+    { id: 'commoner', name: 'Thường Dân', description: 'Lớn lên trong một gia đình bình thường, cuộc sống tuy vất vả nhưng tự do tự tại.', bonuses: [{ attribute: 'Bền Bỉ', value: 5 }], startingItems: [] },
+    { id: 'slave', name: 'Nô Lệ', description: 'Số phận nghiệt ngã từ khi sinh ra, phải trải qua vô vàn khổ cực để sinh tồn, ý chí kiên cường.', bonuses: [{ attribute: 'Đạo Tâm', value: 3 }, { attribute: 'Bền Bỉ', value: 3 }], startingItems: [] },
+    { id: 'nomad', name: 'Du Mục', description: 'Sống lang bạt khắp nơi, thích nghi với mọi hoàn cảnh, am hiểu tự nhiên.', bonuses: [{ attribute: 'Thân Pháp', value: 5 }], startingItems: [] },
 ];
-// --- END NEW CHARACTER CREATION DATA ---
-
+// --- END NEW GENERIC CHOICES ---
 
 export const SPIRITUAL_ROOT_CONFIG: Record<Element, { name: string, iconName: string, description: string, baseBonuses: StatBonus[] }> = {
     'Kim': { name: 'Kim', iconName: 'GiGoldBar', description: 'Chủ về sát伐, cương mãnh vô song. Tu sĩ Kim Linh Căn có lực công kích và phòng ngự vật lý vượt trội.', baseBonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },
@@ -109,12 +67,19 @@ export const SPIRITUAL_ROOT_QUALITY_CONFIG: Record<SpiritualRootQuality, { color
     'Thánh Căn': { color: 'text-amber-400', glow: 'talent-saint-glow', weight: 1, multiplier: 4.0 },
 };
 
-export const CURRENCY_ITEMS: Omit<InventoryItem, 'quantity'>[] = [
-    { id: 'currency_dong', name: 'Đồng', description: 'Tiền tệ cơ bản nhất của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 1, icon: '🪙' },
-    { id: 'currency_bac', name: 'Bạc', description: 'Tiền tệ phổ biến của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 100, icon: '⚪' },
-    { id: 'currency_vang', name: 'Vàng', description: 'Tiền tệ quý giá của phàm nhân.', type: 'Tạp Vật', weight: 0.01, quality: 'Phàm Phẩm', value: 10000, icon: '🟡' },
-    { id: 'currency_lthp', name: 'Linh thạch hạ phẩm', description: 'Đá chứa linh khí, tiền tệ của tu sĩ.', type: 'Tạp Vật', weight: 0.1, quality: 'Linh Phẩm', value: 10000, icon: '💎' },
-];
+export const CURRENCY_DEFINITIONS: Record<CurrencyType, { name: CurrencyType; icon: string; category: 'Phàm Tệ' | 'Linh Tệ' | 'Tiên Tệ' | 'Đặc Biệt' }> = {
+    'Đồng': { name: 'Đồng', icon: '🪙', category: 'Phàm Tệ' },
+    'Bạc': { name: 'Bạc', icon: '⚪', category: 'Phàm Tệ' },
+    'Vàng': { name: 'Vàng', icon: '🟡', category: 'Phàm Tệ' },
+    'Linh thạch hạ phẩm': { name: 'Linh thạch hạ phẩm', icon: '💎', category: 'Linh Tệ' },
+    'Linh thạch trung phẩm': { name: 'Linh thạch trung phẩm', icon: '💠', category: 'Linh Tệ' },
+    'Linh thạch thượng phẩm': { name: 'Linh thạch thượng phẩm', icon: '🔮', category: 'Linh Tệ' },
+    'Linh thạch cực phẩm': { name: 'Linh thạch cực phẩm', icon: '✨', category: 'Linh Tệ' },
+    'Tiên Ngọc': { name: 'Tiên Ngọc', icon: '💖', category: 'Tiên Tệ' },
+    'Điểm Cống Hiến Tông Môn': { name: 'Điểm Cống Hiến Tông Môn', icon: '📜', category: 'Đặc Biệt' },
+    'Điểm Danh Vọng': { name: 'Điểm Danh Vọng', icon: '🌟', category: 'Đặc Biệt' },
+    'Điểm Nguồn': { name: 'Điểm Nguồn', icon: '⚡', category: 'Đặc Biệt' },
+};
 
 export const SYSTEM_SHOP_ITEMS: SystemShopItem[] = [
     { id: 'sys_item_stat_boost', name: 'Dịch Cân Tẩy Tủy Dịch', description: 'Một liều thuốc từ thế giới khác, giúp cải thiện toàn bộ thuộc tính cơ bản vĩnh viễn.', cost: 250, effect: { type: 'CHANGE_STAT', details: { attribute: 'all_base', change: 1 } } },
@@ -154,12 +119,62 @@ export const FONT_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const THEME_OPTIONS: { value: Theme; label: string }[] = [
-    { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch' },
+    { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch (Tối)' },
+    { value: 'theme-sunrise-peak', label: 'Triêu Dương Đỉnh (Sáng)' },
 ];
 
 export const AI_SYNC_MODES: { value: AiSyncMode; label: string, description: string }[] = [
     { value: 'classic', label: 'Cổ Điển', description: 'AI chỉ trả về văn bản, hệ thống sẽ phân tích để cập nhật trạng thái. Nhanh hơn, nhưng có thể thiếu chính xác.' },
     { value: 'intent_driven', label: 'Thiên Cơ', description: 'AI trả về cả văn bản và ý định cơ chế. Đảm bảo đồng bộ 100% nhưng có thể chậm hơn một chút. (Khuyến khích)' },
+];
+
+// New constants for detailed gameplay settings
+export const AI_CREATIVITY_LEVELS: { value: AiCreativityLevel; label: string; description: string }[] = [
+    { value: 'grounded', label: 'Bám Sát Hiện Thực', description: 'AI hạn chế sự kiện kỳ ảo, kết quả rất thực tế.' },
+    { value: 'balanced', label: 'Cân Bằng', description: 'AI tạo kỳ ngộ, sự kiện bất ngờ nhưng vẫn logic.' },
+    { value: 'free', label: 'Hoàn Toàn Tự Do', description: 'AI có thể tạo sự kiện phi thường, thậm chí vô lý để bất ngờ.' },
+];
+export const NARRATIVE_PACING_LEVELS: { value: NarrativePacing; label: string; description: string }[] = [
+    { value: 'slow', label: 'Chậm rãi, Chi tiết', description: 'AI tập trung mô tả sâu về môi trường, nội tâm.' },
+    { value: 'medium', label: 'Vừa phải', description: 'Cân bằng giữa mô tả và tiến triển câu chuyện.' },
+    { value: 'fast', label: 'Nhanh, Tập trung vào Hành động', description: 'AI bỏ qua mô tả không cần thiết, đi thẳng vào kết quả.' },
+];
+export const PLAYER_AGENCY_LEVELS: { value: PlayerAgencyLevel; label: string; description: string }[] = [
+    { value: 'max', label: 'Tối Đa', description: 'AI không bao giờ mô tả suy nghĩ hay hành động bạn không ra lệnh.' },
+    { value: 'balanced', label: 'Cân Bằng', description: 'AI có thể mô tả phản ứng cảm xúc tự nhiên của bạn.' },
+    { value: 'full', label: 'Tường Thuật Toàn Diện', description: 'AI có thể mô tả nội tâm và hành động nhỏ để câu chuyện liền mạch.' },
+];
+export const AI_MEMORY_DEPTH_LEVELS: { value: AiMemoryDepth; label: string; description: string }[] = [
+    { value: 'short', label: 'Ngắn hạn', description: 'AI chủ yếu dựa vào 5-10 hành động gần nhất. (Hiệu suất cao)' },
+    { value: 'balanced', label: 'Cân bằng', description: 'Kết hợp hành động gần đây và tóm tắt dài hạn.' },
+    { value: 'full', label: 'Toàn cục', description: 'AI truy xuất toàn bộ lịch sử chơi. (Chất lượng cao nhất, có thể chậm)' },
+];
+export const NPC_COMPLEXITY_LEVELS: { value: NpcComplexity; label: string; description: string }[] = [
+    { value: 'basic', label: 'Cơ bản', description: 'NPC chỉ có các hành vi đơn giản (di chuyển, đứng yên).' },
+    { value: 'advanced', label: 'Nâng cao', description: 'NPC có mục tiêu và sẽ tự tạo kế hoạch để thực hiện.' },
+    { value: 'full_simulation', label: 'Mô Phỏng Toàn Diện', description: 'NPC tự phát triển quan hệ, tạo nhiệm vụ, phe phái. (Tốn tài nguyên AI)' },
+];
+export const WORLD_EVENT_FREQUENCY_LEVELS: { value: WorldEventFrequency; label: string }[] = [
+    { value: 'rare', label: 'Hiếm khi' },
+    { value: 'occasional', label: 'Thỉnh thoảng' },
+    { value: 'frequent', label: 'Thường xuyên' },
+    { value: 'chaotic', label: 'Hỗn Loạn' },
+];
+export const WORLD_REACTIVITY_LEVELS: { value: WorldReactivity; label: string; description: string }[] = [
+    { value: 'passive', label: 'Thụ động', description: 'Thế giới ít thay đổi, NPC chỉ phản ứng khi tương tác trực tiếp.' },
+    { value: 'dynamic', label: 'Năng động', description: 'NPC bàn tán về bạn, danh tiếng ảnh hưởng đến thái độ, giá cả.' },
+    { value: 'living', label: 'Sống', description: 'Hành động của bạn có thể gây hiệu ứng cánh bướm, thay đổi thế giới.' },
+];
+export const DEATH_PENALTY_LEVELS: { value: DeathPenalty; label: string; description: string }[] = [
+    { value: 'none', label: 'Không có', description: 'Hồi sinh tại chỗ, phù hợp trải nghiệm cốt truyện.' },
+    { value: 'resource_loss', label: 'Mất Tài nguyên', description: 'Mất một phần tiền và vật phẩm.' },
+    { value: 'realm_loss', label: 'Tụt Cảnh giới', description: 'Bị suy yếu tu vi, có thể rớt tiểu cảnh giới.' },
+    { value: 'permadeath', label: 'Xóa Vĩnh Viễn', description: 'File lưu sẽ bị xóa. Thử thách tối thượng.' },
+];
+export const VALIDATION_CAP_LEVELS: { value: ValidationServiceCap; label: string; description: string }[] = [
+    { value: 'strict', label: 'Nghiêm ngặt', description: 'Giới hạn vật phẩm và chỉ số chặt chẽ theo cảnh giới.' },
+    { value: 'relaxed', label: 'Nới lỏng', description: 'Cho phép nhận vật phẩm cao hơn 1-2 bậc so với cảnh giới.' },
+    { value: 'disabled', label: 'Vô hiệu hóa', description: 'Tắt bộ lọc. Có thể nhận Thần khí từ cấp 1 (phá vỡ trải nghiệm).' },
 ];
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -220,10 +235,31 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ttsPitch: 1,
     ttsVolume: 1,
     aiSyncMode: 'intent_driven',
+
+    // New Detailed Gameplay Settings Defaults
+    aiCreativityLevel: 'balanced',
+    narrativePacing: 'medium',
+    playerAgencyLevel: 'balanced',
+    aiMemoryDepth: 'balanced',
+    npcComplexity: 'advanced',
+    worldEventFrequency: 'occasional',
+    worldReactivity: 'dynamic',
+    cultivationRateMultiplier: 100,
+    resourceRateMultiplier: 100,
+    damageDealtMultiplier: 100,
+    damageTakenMultiplier: 100,
+    enableSurvivalMechanics: true,
+    deathPenalty: 'resource_loss',
+    validationServiceCap: 'strict',
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+    { value: 'gemini-2.5-flash-lite-preview-06-17', label: 'Gemini 2.5 Flash Lite (Preview 06-17)' },
+    { value: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash (Preview 05-20)' },
+    { value: 'gemini-2.5-flash-preview-04-17', label: 'Gemini 2.5 Flash (Preview 04-17)' },
 ];
 export const IMAGE_AI_MODELS: { value: ImageModel; label: string }[] = [
     { value: 'imagen-4.0-generate-001', label: 'Imagen 4.0 Generate' },

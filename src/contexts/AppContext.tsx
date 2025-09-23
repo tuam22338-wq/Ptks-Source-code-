@@ -1,7 +1,7 @@
 
 
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, GameMode, StatBonus, ItemType, ItemQuality, InventoryItem } from '../types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
@@ -15,7 +15,6 @@ export interface GameStartData {
     identity: Omit<PlayerCharacter['identity'], 'age'>;
     npcDensity: NpcDensity;
     difficulty: DifficultyLevel;
-    gameMode: GameMode;
     initialBonuses: StatBonus[];
     initialItems: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
     spiritualRoot: SpiritualRoot;
@@ -42,6 +41,8 @@ interface AppContextType {
     quitGame: () => void;
     speak: (text: string, force?: boolean) => void;
     cancelSpeech: () => void;
+    handleSkillCheckResult: (success: boolean) => void;
+    handleDialogueChoice: (choice: EventChoice) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -346,9 +347,12 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
     };
 
-    // FIX: Changed type from 'say' | 'act' | 'ask' to 'say' | 'act' to match processPlayerAction signature
     const handlePlayerAction = useCallback(async (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => {
         if (state.isLoading || !state.gameState || state.currentSlotId === null) return;
+        
+        // Clear any pending interactions before proceeding
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => gs ? { ...gs, activeSkillCheck: null, dialogueChoices: null } : null });
+        
         cancelSpeech();
         if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
@@ -356,8 +360,10 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Đạo đang suy diễn...' }});
 
         try {
+            // Need to get the fresh state after clearing interactions
+            const currentState = (stateRef as any).current.gameState;
             const finalState = await processPlayerAction(
-                state.gameState, 
+                currentState, 
                 text, 
                 type, 
                 apCost, 
@@ -385,6 +391,25 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         }
     }, [state.gameState, state.isLoading, state.settings, state.currentSlotId, cancelSpeech]);
 
+    // This is a bit of a hack to get the latest state inside async callbacks
+    const stateRef = useRef(state);
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
+
+    const handleSkillCheckResult = useCallback((success: boolean) => {
+        const skillCheck = stateRef.current.gameState?.activeSkillCheck;
+        if (!skillCheck) return;
+        const resultText = `[Hệ thống] Kết quả kiểm tra ${skillCheck.attribute}: ${success ? 'Thành Công' : 'Thất Bại'}.`;
+        // AP cost for a check result is 0
+        handlePlayerAction(resultText, 'act', 0, () => {}); 
+    }, [handlePlayerAction]);
+
+    const handleDialogueChoice = useCallback((choice: EventChoice) => {
+        // AP cost for a dialogue choice is 0
+        handlePlayerAction(choice.text, 'act', 0, () => {});
+    }, [handlePlayerAction]);
+
     const handleUpdatePlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
         dispatch({
             type: 'UPDATE_GAME_STATE',
@@ -399,7 +424,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         state, dispatch, handleNavigate, handleSettingChange, handleSettingsSave,
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
-        handlePlayerAction, handleUpdatePlayerCharacter
+        handlePlayerAction, handleUpdatePlayerCharacter, handleSkillCheckResult, handleDialogueChoice
     };
 
     return (

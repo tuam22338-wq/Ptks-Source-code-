@@ -1,16 +1,17 @@
 
 
+
 import { FaQuestionCircle } from 'react-icons/fa';
 import {
     REALM_SYSTEM, SECTS,
-    DEFAULT_WORLD_ID, CURRENCY_ITEMS,
+    DEFAULT_WORLD_ID,
     PT_FACTIONS, PT_WORLD_MAP, PT_NPC_LIST, PT_MAJOR_EVENTS,
     JTTW_FACTIONS, JTTW_WORLD_MAP, JTTW_NPC_LIST, JTTW_MAJOR_EVENTS,
     DEFAULT_ATTRIBUTE_DEFINITIONS,
     DEFAULT_ATTRIBUTE_GROUPS,
-    CURRENT_GAME_VERSION, DIFFICULTY_LEVELS, WORLDLY_BACKGROUNDS
+    CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
 } from "../constants";
-import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, GameMode, StatBonus } from "../types";
+import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus } from "../types";
 // FIX: Import `generateDynamicNpcs` to resolve 'Cannot find name' error.
 import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
 import * as db from '../services/dbService';
@@ -212,7 +213,7 @@ export const createNewGameState = async (
     activeWorldId: string,
     setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
-    const { identity, npcDensity, difficulty, gameMode, initialBonuses, initialItems, spiritualRoot, danhVong } = gameStartData;
+    const { identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong } = gameStartData;
 
     const worldMapToUse = PT_WORLD_MAP;
     const initialNpcsFromData = PT_NPC_LIST;
@@ -245,13 +246,7 @@ export const createNewGameState = async (
     });
 
     // Apply bonuses from character creation
-    initialBonuses.forEach(bonus => {
-        const attrDef = attributeSystemToUse.definitions.find(d => d.name === bonus.attribute);
-        if (attrDef && initialAttributes[attrDef.id]) {
-            initialAttributes[attrDef.id].value += bonus.value;
-        }
-    });
-    spiritualRoot.bonuses.forEach(bonus => {
+    [...initialBonuses, ...spiritualRoot.bonuses].forEach(bonus => {
         const attrDef = attributeSystemToUse.definitions.find(d => d.name === bonus.attribute);
         if (attrDef && initialAttributes[attrDef.id]) {
             initialAttributes[attrDef.id].value += bonus.value;
@@ -262,7 +257,6 @@ export const createNewGameState = async (
     const initialWeightCapacity = 20 + (canCotValue - 10) * 2;
     
     const initialCurrencies: Currency = { 'Bạc': 50, 'Linh thạch hạ phẩm': 20 };
-    if (gameMode === 'transmigrator') initialCurrencies['Điểm Nguồn'] = 100;
 
     const startingInventoryItems: InventoryItem[] = initialItems.map((item, index) => ({
         id: `start-item-${index}-${Date.now()}`,
@@ -297,7 +291,6 @@ export const createNewGameState = async (
         storageUpgradeLevel: 0,
         locationId: 'dong_phu'
     };
-    const initialSystemInfo: SystemInfo | undefined = gameMode === 'transmigrator' ? { unlockedFeatures: ['status', 'quests', 'store'] } : undefined;
 
     // Calculate derived stats for the first time
     const attributesWithDerived = calculateDerivedStats(initialAttributes, attributeSystemToUse.definitions);
@@ -328,15 +321,11 @@ export const createNewGameState = async (
         completedQuestIds: [],
         inventoryActionLog: [],
         element: spiritualRoot.elements.length === 1 ? spiritualRoot.elements[0].type : 'Hỗn Độn',
-        systemInfo: initialSystemInfo,
     };
     
     setLoadingMessage('Đang tạo ra gia đình và chúng sinh trong thế giới...');
-    const familyPromise = gameMode === 'transmigrator'
-        ? Promise.resolve({ npcs: [], relationships: [] })
-        : generateFamilyAndFriends(playerCharacter.identity, startingLocation.id);
     const [familyResult, generatedNpcs] = await Promise.all([
-        familyPromise,
+        generateFamilyAndFriends(playerCharacter.identity, startingLocation.id),
         generateDynamicNpcs(npcDensity, initialNpcsFromData.map(n => n.identity.name)),
     ]);
     const { npcs: familyNpcs, relationships: familyRelationships } = familyResult;
@@ -351,7 +340,6 @@ export const createNewGameState = async (
         playerCharacter,
         activeNpcs: allNpcs,
         discoveredLocations: [startingLocation],
-        gameMode: gameMode,
         attributeSystem: attributeSystemToUse,
         realmSystem: realmSystemToUse,
     };
@@ -395,7 +383,6 @@ export const createNewGameState = async (
         eventIllustrations: [],
         storySummary: '',
         difficulty: difficulty,
-        gameMode: gameMode,
         shopStates: {},
         playerStall: null,
         playerSect: null,

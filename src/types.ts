@@ -37,7 +37,7 @@ export interface SaveSlot {
 
 // --- Settings Types ---
 // Per Gemini guidelines, only 'gemini-2.5-flash' is permitted for general text tasks.
-export type AIModel = 'gemini-2.5-flash';
+export type AIModel = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-lite-preview-06-17' | 'gemini-2.5-flash-preview-05-20' | 'gemini-2.5-flash-preview-04-17';
 export type ImageModel = 'imagen-4.0-generate-001';
 export type RagEmbeddingModel = 'text-embedding-004';
 export type LayoutMode = 'auto' | 'desktop' | 'mobile';
@@ -45,9 +45,22 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
-export type Theme = 'theme-bamboo-forest';
+export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak';
 export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
 export type AiSyncMode = 'classic' | 'intent_driven';
+
+// New Detailed Gameplay Settings Types
+export type AiCreativityLevel = 'grounded' | 'balanced' | 'free';
+export type NarrativePacing = 'slow' | 'medium' | 'fast';
+export type PlayerAgencyLevel = 'max' | 'balanced' | 'full';
+export type AiMemoryDepth = 'short' | 'balanced' | 'full';
+
+export type NpcComplexity = 'basic' | 'advanced' | 'full_simulation';
+export type WorldEventFrequency = 'rare' | 'occasional' | 'frequent' | 'chaotic';
+export type WorldReactivity = 'passive' | 'dynamic' | 'living';
+
+export type DeathPenalty = 'none' | 'resource_loss' | 'realm_loss' | 'permadeath';
+export type ValidationServiceCap = 'strict' | 'relaxed' | 'disabled';
 
 
 export interface SafetySettings {
@@ -118,36 +131,31 @@ export interface GameSettings {
     ttsPitch: number;
     ttsVolume: number;
     aiSyncMode: AiSyncMode;
+
+    // New Detailed Gameplay Settings
+    aiCreativityLevel: AiCreativityLevel;
+    narrativePacing: NarrativePacing;
+    playerAgencyLevel: PlayerAgencyLevel;
+    aiMemoryDepth: AiMemoryDepth;
+    npcComplexity: NpcComplexity;
+    worldEventFrequency: WorldEventFrequency;
+    worldReactivity: WorldReactivity;
+    cultivationRateMultiplier: number;
+    resourceRateMultiplier: number;
+    damageDealtMultiplier: number;
+    damageTakenMultiplier: number;
+    enableSurvivalMechanics: boolean;
+    deathPenalty: DeathPenalty;
+    validationServiceCap: ValidationServiceCap;
 }
 
 // --- Character Creation & Stats Types ---
-export type GameMode = 'classic' | 'transmigrator';
-
-export interface WorldlyBackground {
+export interface CharacterCreationChoice {
   id: string;
   name: string;
   description: string;
   bonuses: StatBonus[];
-  startingItems: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
-}
-
-export interface TransmigratorLegacy {
-  id: string;
-  name: string;
-  description: string;
-  bonuses: StatBonus[];
-  isSystemUser: boolean;
-}
-
-export interface FormativeEventChoice {
-    text: string;
-    outcome: StatBonus;
-    narrative: string;
-}
-
-export interface FormativeEvent {
-    scenario: string;
-    choices: FormativeEventChoice[];
+  startingItems?: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
 }
 
 // NEW: Universal Attribute Framework
@@ -198,10 +206,6 @@ export interface CharacterIdentity {
   personality: string;
   age: number;
   familyName?: string;
-  suggestedElement?: Element;
-  backgroundId?: string;
-  legacyId?: string;
-  incarnationId?: string;
 }
 
 // --- Timeline Types ---
@@ -547,26 +551,13 @@ export interface ActiveEffect {
     };
 }
 
-export interface Currency {
-  /**
-   * Phàm Tệ (Mundane Currency):
-   * - Đồng: Copper coins
-   * - Bạc: Silver coins
-   * - Vàng: Gold coins
-   * Linh Tệ (Spiritual Currency):
-   * - Linh thạch hạ phẩm: Low-grade spirit stones
-   * - Linh thạch trung phẩm: Mid-grade spirit stones
-   * - Linh thạch thượng phẩm: High-grade spirit stones
-   * - Linh thạch cực phẩm: Peak-grade spirit stones
-   * Tiên Tệ (Immortal Currency):
-   * - Tiên Ngọc: Immortal Jade
-   * Đặc Biệt (Special Currency):
-   * - Điểm Cống Hiến Tông Môn: Sect Contribution Points
-   * - Điểm Danh Vọng: Reputation Points
-   * - Điểm Nguồn: Origin Points (for Transmigrator System)
-   */
-  [key: string]: number;
-}
+export type CurrencyType = 
+    | 'Đồng' | 'Bạc' | 'Vàng' 
+    | 'Linh thạch hạ phẩm' | 'Linh thạch trung phẩm' | 'Linh thạch thượng phẩm' | 'Linh thạch cực phẩm'
+    | 'Tiên Ngọc'
+    | 'Điểm Cống Hiến Tông Môn' | 'Điểm Danh Vọng' | 'Điểm Nguồn';
+
+export type Currency = Partial<Record<CurrencyType, number>>;
 
 export interface ResourceNode {
     id: string;
@@ -628,7 +619,7 @@ export interface NPC {
     cultivation: CultivationState;
     techniques: CultivationTechnique[];
     inventory: Inventory;
-    currencies: Partial<Currency>;
+    currencies: Currency;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     faction?: string;
     isHostile?: boolean;
@@ -758,7 +749,7 @@ export interface QuestObjective {
 
 export interface QuestReward {
     spiritualQi?: number;
-    currencies?: Partial<Currency>;
+    currencies?: Currency;
     items?: { name: string; quantity: number }[];
     danhVong?: number;
     reputation?: { factionName: string; change: number; }[];
@@ -914,7 +905,7 @@ export interface PlayerSect {
   reputation: number;
   members: PlayerSectMember[];
   ranks: SectRank[];
-  treasury: Partial<Currency>;
+  treasury: Currency;
   buildings: SectBuilding[];
 }
 // --- End Player-managed Sect Types ---
@@ -939,14 +930,14 @@ export interface GameState {
     activeStory: ActiveStoryState | null;
     combatState: CombatState | null;
     dialogueWithNpcId: string | null;
-    dialogueChoices: string[] | null;
+    dialogueChoices: EventChoice[] | null;
     worldSects?: Sect[];
     eventIllustrations?: { eventId: string; imageUrl: string; narrative: string }[];
     storySummary?: string;
-    gameMode?: GameMode;
     shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
     playerStall: PlayerStall | null;
     playerSect: PlayerSect | null;
+    activeSkillCheck?: SkillCheck | null;
 }
 
 // --- Gameplay Event Types ---
@@ -970,7 +961,7 @@ export interface GameEvent {
 // --- Shop Types ---
 export interface ShopItem extends Omit<InventoryItem, 'id' | 'quantity'> {
     price: {
-        currencyName: string;
+        currencyName: CurrencyType;
         amount: number;
     };
     stock: number | 'infinite';
@@ -980,7 +971,7 @@ export interface PlayerStall {
     locationId: string;
     name: string;
     items: ShopItem[];
-    earnings: Partial<Currency>;
+    earnings: Currency;
 }
 
 export interface Shop {
@@ -1088,6 +1079,7 @@ export interface RagEmbedding {
 // --- Thien Co Luan Hoi (State Sync) Types ---
 export interface MechanicalIntent {
     statChanges?: { attribute: string; change: number; }[];
+    currencyChanges?: { currencyName: CurrencyType; change: number; }[];
     itemsGained?: Omit<InventoryItem, 'id' | 'quantity' | 'isEquipped'> & { quantity?: number }[];
     itemsLost?: { name: string; quantity: number; }[];
     newTechniques?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel' | 'effects'>[];
@@ -1098,6 +1090,8 @@ export interface MechanicalIntent {
     timeJump?: { years?: number; seasons?: number; days?: number; };
     emotionChanges?: { npcName: string; emotion: 'trust' | 'fear' | 'anger'; change: number; reason: string; }[];
     systemActions?: { actionType: string; details: Record<string, any>; }[];
+    skillCheck?: SkillCheck;
+    dialogueChoices?: EventChoice[];
 }
 
 export interface AIResponsePayload {

@@ -1,8 +1,8 @@
 
 
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus, MemoryFragment, CharacterAttributes, PlayerCharacter, GameSettings, AIResponsePayload, MechanicalIntent } from '../../types';
-import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS, PT_WORLD_MAP, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
+import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus, MemoryFragment, CharacterAttributes, PlayerCharacter, GameSettings, AIResponsePayload, MechanicalIntent, SkillCheck, EventChoice } from '../../types';
+import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS, PT_WORLD_MAP, DEFAULT_ATTRIBUTE_DEFINITIONS, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 import { createModContextSummary, createAiHooksInstruction } from '../../utils/modManager';
@@ -15,7 +15,11 @@ const createFullGameStateContext = (gameState: GameState, instantMemoryReport?: 
 
   const modContext = createModContextSummary(activeMods);
 
-  // Simplify complex objects for the prompt
+  const currencySummary = Object.entries(playerCharacter.currencies)
+    .filter(([, amount]) => amount && amount > 0)
+    .map(([name, amount]) => `${name}: ${amount.toLocaleString()}`)
+    .join(', ');
+
   const equipmentSummary = Object.entries(playerCharacter.equipment)
     .filter(([, item]) => item)
     .map(([slot, item]) => `${slot}: ${item!.name}`)
@@ -84,7 +88,8 @@ ${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
 Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
 
 **1. Nhân Vật Chính: ${playerCharacter.identity.name}**
-- **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi}.
+- **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.
+- **Tài Sản (QUAN TRỌNG):** ${currencySummary || 'Không một xu dính túi.'}
 - **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
 - **Công Pháp Chủ Đạo:** ${playerCharacter.mainCultivationTechniqueInfo ? `${playerCharacter.mainCultivationTechniqueInfo.name} - ${playerCharacter.mainCultivationTechniqueInfo.description}` : 'Chưa có'}.
 - **Thần Thông/Kỹ Năng:** ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa có'}.
@@ -150,8 +155,11 @@ Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Th
 ### QUY TẮC TỐI THƯỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **"Ý-HÌNH SONG SINH":** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game).
 2.  **ĐỒNG BỘ TUYỆT ĐỐI:** Mọi sự kiện, vật phẩm, thay đổi chỉ số xảy ra trong \`narrative\` PHẢI được phản ánh chính xác trong \`mechanicalIntent\`, và ngược lại.
-3.  **LUẬT PHÂN TÁCH Ý ĐỊNH VÀ KẾT QUẢ:** Input của người chơi chỉ là **Ý ĐỊNH**. Nhiệm vụ của bạn là quyết định kết quả của hành động đó và phản ánh nó trong cả \`narrative\` và \`mechanicalIntent\`.
+3.  **LUẬT TƯƠNG TÁC THUỘC TÍNH (CỰC KỲ QUAN TRỌNG):**
+    -   **Kiểm Tra Thuộc Tính (\`skillCheck\`):** Khi người chơi thực hiện một hành động có tính rủi ro (vd: "nhảy qua vực sâu", "phá khóa", "thuyết phục lính canh"), **KHÔNG** được tự quyết định kết quả. Thay vào đó, hãy tạm dừng câu chuyện và yêu cầu một \`skillCheck\`. Ví dụ: \`"skillCheck": {"attribute": "Thân Pháp", "difficulty": 50}\`. Trò chơi sẽ xử lý việc tung xúc xắc và thông báo kết quả cho bạn ở lượt sau.
+    -   **Lựa Chọn Theo Tình Huống (\`dialogueChoices\`):** Khi người chơi đối mặt với một tình huống phức tạp hoặc một NPC quan trọng, hãy cung cấp cho họ một danh sách các lựa chọn hành động/đối thoại (\`dialogueChoices\`). Một vài lựa chọn có thể yêu cầu chỉ số cao mới xuất hiện (ví dụ: \`"check": {"attribute": "Mị Lực", "difficulty": 60}\`).
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
+5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động (mua thông tin, thuê động phủ, học kỹ năng từ NPC) sẽ tiêu tốn tiền tệ. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\`). Nếu người chơi không đủ tiền, hãy để NPC từ chối một cách hợp lý.
 ${nsfwInstruction}
 ${lengthInstruction}
 - **Giọng văn:** ${narrativeStyle}.
@@ -168,7 +176,6 @@ ${context}
 Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối cảnh, hãy tạo ra một đối tượng JSON chứa cả \`narrative\` và \`mechanicalIntent\` để tiếp tục câu chuyện.
     `;
     
-    // This is a simplified schema for demonstration. The actual implementation would be much more detailed.
     const responseSchema = {
       type: Type.OBJECT,
       properties: {
@@ -176,9 +183,45 @@ Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối
         mechanicalIntent: {
           type: Type.OBJECT,
           properties: {
-            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, change: { type: Type.NUMBER } } } },
+            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, change: { type: Type.NUMBER } } } },
+            currencyChanges: {
+                type: Type.ARRAY,
+                description: "List of direct changes to the player's currencies. Use negative numbers for costs.",
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        currencyName: { type: Type.STRING, enum: Object.keys(CURRENCY_DEFINITIONS) },
+                        change: { type: Type.NUMBER }
+                    },
+                    required: ['currencyName', 'change']
+                }
+            },
             itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING } } } },
-            // ... other mechanical change types
+            skillCheck: {
+                type: Type.OBJECT,
+                properties: {
+                    attribute: { type: Type.STRING, enum: DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name) },
+                    difficulty: { type: Type.NUMBER }
+                }
+            },
+            dialogueChoices: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        id: { type: Type.STRING },
+                        text: { type: Type.STRING },
+                        check: {
+                            type: Type.OBJECT,
+                            properties: {
+                                attribute: { type: Type.STRING, enum: DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name) },
+                                difficulty: { type: Type.NUMBER }
+                            }
+                        }
+                    },
+                     required: ['id', 'text']
+                }
+            }
           }
         }
       },
