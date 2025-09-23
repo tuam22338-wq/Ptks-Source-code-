@@ -6,14 +6,14 @@ import {
     LAYOUT_MODES, GAME_SPEEDS, NARRATIVE_STYLES, FONT_OPTIONS, THEME_OPTIONS, AI_SYNC_MODES,
     AI_CREATIVITY_LEVELS, NARRATIVE_PACING_LEVELS, PLAYER_AGENCY_LEVELS, AI_MEMORY_DEPTH_LEVELS,
     NPC_COMPLEXITY_LEVELS, WORLD_EVENT_FREQUENCY_LEVELS, WORLD_REACTIVITY_LEVELS,
-    DEATH_PENALTY_LEVELS, VALIDATION_CAP_LEVELS
+    DEATH_PENALTY_LEVELS, VALIDATION_CAP_LEVELS, WALLPAPER_OPTIONS
 } from '../../constants';
 import { generateBackgroundImage } from '../../services/geminiService';
 import type { 
     GameSettings, AIModel, ImageModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, 
     RagEmbeddingModel, AssignableModel, AiSyncMode, AiCreativityLevel, NarrativePacing, 
     PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, 
-    DeathPenalty, ValidationServiceCap
+    DeathPenalty, ValidationServiceCap, BackgroundImageFilters
 } from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaExpand, FaTrash, FaKey, FaPlus, FaExclamationTriangle, FaMusic, FaVolumeUp, FaFire, FaDownload, FaUpload, FaSearchPlus } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -148,6 +148,13 @@ export const SettingsPanel: React.FC = () => {
         }
     };
 
+    const handleFilterChange = (filter: keyof BackgroundImageFilters, value: number) => {
+        handleSettingChange('backgroundImageFilters', {
+            ...settings.backgroundImageFilters,
+            [filter]: value,
+        });
+    };
+
     const handleMusicFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -250,7 +257,7 @@ export const SettingsPanel: React.FC = () => {
     };
 
     return (
-        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 flex flex-col h-full max-h-[85vh]">
+        <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8 flex flex-col h-full max-h-[85vh]">
             {isRagManagerOpen && <RagSourceManagerModal onClose={() => setIsRagManagerOpen(false)} />}
             <div className="settings-header">
                 <button onClick={() => handleNavigate('mainMenu')} className="settings-back-button" title="Quay Lại Menu">
@@ -272,6 +279,7 @@ export const SettingsPanel: React.FC = () => {
 
             <div className="settings-content">
                 {activeTab === 'interface' && (
+                    <>
                     <SettingsSection title="Giao Diện & Hiển Thị">
                         <SettingsRow label="Chế độ hiển thị" description="Tự động phát hiện hoặc ép hiển thị theo giao diện máy tính/di động.">
                             <div className="themed-button-group">
@@ -281,17 +289,11 @@ export const SettingsPanel: React.FC = () => {
                             </div>
                         </SettingsRow>
                          <SettingsRow label="Chủ đề (Theme)" description="Thay đổi giao diện sáng/tối và bảng màu tổng thể.">
-                            <div className="themed-button-group">
+                            <select className="themed-select" value={settings.theme} onChange={(e) => handleSettingChange('theme', e.target.value)}>
                                 {THEME_OPTIONS.map(theme => (
-                                    <button
-                                        key={theme.value}
-                                        className={settings.theme === theme.value ? 'active' : ''}
-                                        onClick={() => handleSettingChange('theme', theme.value)}
-                                    >
-                                        {theme.label}
-                                    </button>
+                                    <option key={theme.value} value={theme.value}>{theme.label}</option>
                                 ))}
-                            </div>
+                            </select>
                         </SettingsRow>
                          <SettingsRow label="Font chữ" description="Thay đổi font chữ chính của trò chơi.">
                              <select className="themed-select" value={settings.fontFamily} onChange={(e) => handleSettingChange('fontFamily', e.target.value)}>
@@ -309,16 +311,56 @@ export const SettingsPanel: React.FC = () => {
                          <SettingsRow label="Màu chữ chính" description="Chọn màu sắc cho các đoạn văn tường thuật chính.">
                             <input type="color" value={settings.textColor} onChange={(e) => handleSettingChange('textColor', e.target.value)} className="themed-color-input" />
                         </SettingsRow>
-                        <SettingsRow label="Ảnh nền tùy chỉnh (AI)" description="Dùng AI để tạo ảnh nền cho game. Yêu cầu API Key có quyền truy cập model tạo ảnh.">
+                    </SettingsSection>
+                    <SettingsSection title="Hình Nền">
+                        <SettingsRow label="Chọn hình nền" description="Chọn một hình nền có sẵn từ thư viện.">
+                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                {WALLPAPER_OPTIONS.map(wp => (
+                                    <button 
+                                        key={wp.value} 
+                                        onClick={() => handleSettingChange('backgroundImage', wp.value)}
+                                        className={`aspect-video rounded-md overflow-hidden border-2 transition-all duration-200 ${settings.backgroundImage === wp.value ? 'border-amber-400 ring-2 ring-amber-400/50' : 'border-transparent hover:border-amber-400/50'}`}
+                                    >
+                                        <img src={wp.thumbnailUrl} alt={wp.label} className="w-full h-full object-cover" loading="lazy" />
+                                    </button>
+                                ))}
+                            </div>
+                        </SettingsRow>
+                        <SettingsRow label="Tùy chỉnh hình nền" description="Điều chỉnh màu sắc và độ sáng của hình nền đã chọn." disabled={!settings.backgroundImage}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm text-gray-400">Tông màu (Hue)</label>
+                                    <div className="flex items-center gap-4">
+                                        <input type="range" min="0" max="360" step="1" value={settings.backgroundImageFilters.hue} onChange={(e) => handleFilterChange('hue', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                        <span className="themed-slider-value w-16">{settings.backgroundImageFilters.hue}°</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-sm text-gray-400">Độ sáng (Brightness)</label>
+                                    <div className="flex items-center gap-4">
+                                        <input type="range" min="0" max="200" step="1" value={settings.backgroundImageFilters.brightness} onChange={(e) => handleFilterChange('brightness', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                        <span className="themed-slider-value w-16">{settings.backgroundImageFilters.brightness}%</span>
+                                    </div>
+                                </div>
+                                 <div>
+                                    <label className="text-sm text-gray-400">Độ bão hòa (Saturation)</label>
+                                    <div className="flex items-center gap-4">
+                                        <input type="range" min="0" max="200" step="1" value={settings.backgroundImageFilters.saturate} onChange={(e) => handleFilterChange('saturate', parseInt(e.target.value))} className="themed-slider flex-grow" />
+                                        <span className="themed-slider-value w-16">{settings.backgroundImageFilters.saturate}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </SettingsRow>
+                         <SettingsRow label="Tạo hình nền bằng AI" description="Dùng AI để tạo ảnh nền cho game. Yêu cầu API Key có quyền truy cập model tạo ảnh.">
                             <div className="flex gap-2">
                                 <input type="text" value={bgPrompt} onChange={(e) => setBgPrompt(e.target.value)} placeholder="Mô tả ảnh nền..." className="themed-input flex-grow" disabled={isGeneratingBg}/>
                                 <button onClick={handleGenerateBg} disabled={isGeneratingBg} className="settings-button-primary w-28 flex items-center justify-center">
                                     {isGeneratingBg ? <LoadingSpinner size="sm"/> : 'Tạo'}
                                 </button>
                             </div>
-                            {settings.backgroundImage && <button onClick={() => handleSettingChange('backgroundImage', '')} className="text-xs text-red-400 hover:text-red-300">Xóa ảnh nền hiện tại</button>}
                         </SettingsRow>
                     </SettingsSection>
+                    </>
                 )}
                  {activeTab === 'sound' && (
                     <SettingsSection title="Âm thanh">

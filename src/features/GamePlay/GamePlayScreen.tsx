@@ -66,7 +66,7 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpda
 };
 
 const GamePlayScreenContent: React.FC = memo(() => {
-    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleSkillCheckResult, handleDialogueChoice } = useAppContext();
+    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleDialogueChoice } = useAppContext();
     const { gameState, settings } = state;
     const { 
         notifications, dismissNotification, availablePaths,
@@ -272,13 +272,13 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
-    const { playerCharacter, combatState, activeStory, discoveredLocations, worldState, activeSkillCheck, dialogueChoices } = gameState;
+    const { playerCharacter, combatState, activeStory, discoveredLocations, worldState, dialogueChoices } = gameState;
     const currentLocation = useMemo(() => {
         if (!discoveredLocations || discoveredLocations.length === 0) return null;
         return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
     }, [discoveredLocations, playerCharacter.currentLocationId]);
     
-    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory || activeSkillCheck || dialogueChoices);
+    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory || dialogueChoices);
     const isOnLastPage = currentPage === storyPages.length - 1;
 
     if (!currentLocation) {
@@ -335,12 +335,10 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             {combatState && <CombatScreen />}
                             {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes} />}
                             {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
-                            {(activeSkillCheck || dialogueChoices) && (
+                            {dialogueChoices && (
                                 <InteractionOverlay 
-                                    skillCheck={activeSkillCheck}
                                     choices={dialogueChoices}
                                     playerAttributes={playerCharacter.attributes}
-                                    onSkillCheckResult={handleSkillCheckResult}
                                     onChoiceSelect={handleDialogueChoice}
                                 />
                             )}

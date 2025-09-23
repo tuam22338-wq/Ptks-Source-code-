@@ -1,5 +1,6 @@
 
 
+
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload } from '../types';
 import { generateDualResponseStream, harmonizeNarrative, summarizeStory } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';

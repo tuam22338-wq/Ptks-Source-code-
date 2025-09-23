@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
     FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch, FaBrain
@@ -341,7 +342,7 @@ const ModsScreen: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-full max-h-[85vh] animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8 flex flex-col">
+        <div className="w-full h-full max-h-[85vh] animate-fade-in themed-panel p-4 sm:p-6 lg:p-8 flex flex-col">
             <div className="flex justify-between items-center mb-6 flex-shrink-0">
                 <h2 className="text-3xl font-bold font-title">Quản lý Mods</h2>
                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">

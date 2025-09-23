@@ -9,8 +9,8 @@ import { CURRENT_GAME_VERSION } from '../../constants';
 
 const DonateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-md m-4 p-6 flex flex-col relative text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" style={{ animationDuration: '300ms' }}>
+            <div className="themed-modal w-full max-w-md m-4 p-6 flex flex-col relative text-center">
                 <div className="mb-4">
                     <FaHeart className="text-4xl text-red-400 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-red-300">Ủng Hộ Tác Giả</h2>

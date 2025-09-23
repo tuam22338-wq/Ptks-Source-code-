@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { InnerDemonTrial } from '../../../types';
 import LoadingSpinner from '../../../components/LoadingSpinner';
@@ -12,8 +13,8 @@ const InnerDemonTrialModal: React.FC<InnerDemonTrialModalProps> = ({ isOpen, tri
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl m-4 p-6 flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fade-in" style={{ animationDuration: '300ms' }}>
+            <div className="themed-modal w-full max-w-2xl m-4 p-6 flex flex-col">
                 <h2 className="text-3xl font-bold font-title text-center text-red-400">Thí Luyện Tâm Ma</h2>
                 
                 {trial ? (

@@ -1,5 +1,6 @@
 
 
+
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus, MemoryFragment, CharacterAttributes, PlayerCharacter, GameSettings, AIResponsePayload, MechanicalIntent, SkillCheck, EventChoice } from '../../types';
 import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS, PT_WORLD_MAP, DEFAULT_ATTRIBUTE_DEFINITIONS, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -156,8 +157,10 @@ Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Th
 1.  **"Ý-HÌNH SONG SINH":** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game).
 2.  **ĐỒNG BỘ TUYỆT ĐỐI:** Mọi sự kiện, vật phẩm, thay đổi chỉ số xảy ra trong \`narrative\` PHẢI được phản ánh chính xác trong \`mechanicalIntent\`, và ngược lại.
 3.  **LUẬT TƯƠNG TÁC THUỘC TÍNH (CỰC KỲ QUAN TRỌNG):**
-    -   **Kiểm Tra Thuộc Tính (\`skillCheck\`):** Khi người chơi thực hiện một hành động có tính rủi ro (vd: "nhảy qua vực sâu", "phá khóa", "thuyết phục lính canh"), **KHÔNG** được tự quyết định kết quả. Thay vào đó, hãy tạm dừng câu chuyện và yêu cầu một \`skillCheck\`. Ví dụ: \`"skillCheck": {"attribute": "Thân Pháp", "difficulty": 50}\`. Trò chơi sẽ xử lý việc tung xúc xắc và thông báo kết quả cho bạn ở lượt sau.
-    -   **Lựa Chọn Theo Tình Huống (\`dialogueChoices\`):** Khi người chơi đối mặt với một tình huống phức tạp hoặc một NPC quan trọng, hãy cung cấp cho họ một danh sách các lựa chọn hành động/đối thoại (\`dialogueChoices\`). Một vài lựa chọn có thể yêu cầu chỉ số cao mới xuất hiện (ví dụ: \`"check": {"attribute": "Mị Lực", "difficulty": 60}\`).
+    -   **KHÔNG SỬ DỤNG \`skillCheck\`:** Hệ thống roll xúc xắc đã bị loại bỏ. **TUYỆT ĐỐI KHÔNG** được yêu cầu một \`skillCheck\`.
+    -   **SỬ DỤNG \`dialogueChoices\` THAY THẾ:** Khi người chơi thực hiện một hành động có tính rủi ro (vd: "nhảy qua vực sâu", "thuyết phục lính canh"), thay vì quyết định kết quả, hãy tạm dừng câu chuyện và cung cấp một danh sách các lựa chọn trong \`dialogueChoices\`.
+    -   **Lựa chọn có điều kiện:** Một vài lựa chọn có thể yêu cầu chỉ số cao mới thực hiện được. Hãy thêm một điều kiện \`"check": {"attribute": "Mị Lực", "difficulty": 60}\` vào lựa chọn đó. Game sẽ tự động hiển thị và vô hiệu hóa nếu người chơi không đủ điểu kiện.
+    -   **Luôn có lựa chọn an toàn:** Phải luôn cung cấp ít nhất một lựa chọn không có "check" để người chơi không bị kẹt.
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động (mua thông tin, thuê động phủ, học kỹ năng từ NPC) sẽ tiêu tốn tiền tệ. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\`). Nếu người chơi không đủ tiền, hãy để NPC từ chối một cách hợp lý.
 ${nsfwInstruction}
@@ -197,13 +200,6 @@ Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối
                 }
             },
             itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING } } } },
-            skillCheck: {
-                type: Type.OBJECT,
-                properties: {
-                    attribute: { type: Type.STRING, enum: DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name) },
-                    difficulty: { type: Type.NUMBER }
-                }
-            },
             dialogueChoices: {
                 type: Type.ARRAY,
                 items: {

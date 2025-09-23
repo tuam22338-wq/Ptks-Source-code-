@@ -1,5 +1,6 @@
 
 
+
 // FIX: Import ElementType for local use and re-export it for other modules, resolving multiple 'Cannot find name' errors.
 import type { ElementType } from 'react';
 export type { ElementType };
@@ -45,7 +46,7 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
-export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak';
+export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa';
 export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
 export type AiSyncMode = 'classic' | 'intent_driven';
 
@@ -78,6 +79,12 @@ export type AssignableModel =
     | 'memorySynthesisModel'
     | 'narrativeHarmonizerModel';
 
+export interface BackgroundImageFilters {
+  hue: number; // 0-360
+  brightness: number; // 0-200
+  saturate: number; // 0-200
+}
+
 export interface GameSettings {
     layoutMode: LayoutMode;
     gameSpeed: GameSpeed;
@@ -85,6 +92,7 @@ export interface GameSettings {
     fontFamily: string;
     theme: Theme;
     backgroundImage: string;
+    backgroundImageFilters: BackgroundImageFilters;
     zoomLevel: number;
     textColor: string;
     mainTaskModel: AIModel;
@@ -150,13 +158,6 @@ export interface GameSettings {
 }
 
 // --- Character Creation & Stats Types ---
-export interface CharacterCreationChoice {
-  id: string;
-  name: string;
-  description: string;
-  bonuses: StatBonus[];
-  startingItems?: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
-}
 
 // NEW: Universal Attribute Framework
 export interface AttributeDefinition {
@@ -937,7 +938,6 @@ export interface GameState {
     shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
     playerStall: PlayerStall | null;
     playerSect: PlayerSect | null;
-    activeSkillCheck?: SkillCheck | null;
 }
 
 // --- Gameplay Event Types ---
@@ -1090,7 +1090,6 @@ export interface MechanicalIntent {
     timeJump?: { years?: number; seasons?: number; days?: number; };
     emotionChanges?: { npcName: string; emotion: 'trust' | 'fear' | 'anger'; change: number; reason: string; }[];
     systemActions?: { actionType: string; details: Record<string, any>; }[];
-    skillCheck?: SkillCheck;
     dialogueChoices?: EventChoice[];
 }
 

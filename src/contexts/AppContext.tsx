@@ -1,5 +1,6 @@
 
 
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from '../constants';
@@ -41,7 +42,6 @@ interface AppContextType {
     quitGame: () => void;
     speak: (text: string, force?: boolean) => void;
     cancelSpeech: () => void;
-    handleSkillCheckResult: (success: boolean) => void;
     handleDialogueChoice: (choice: EventChoice) => void;
 }
 
@@ -227,7 +227,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, [state.gameState, state.view, state.currentSlotId, updateStorageUsage]);
     
     useEffect(() => {
-        const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, backgroundImage, layoutMode, enablePerformanceMode } = state.settings;
+        const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, layoutMode, enablePerformanceMode } = state.settings;
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
@@ -243,7 +243,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         document.documentElement.style.setProperty('--text-color', textColor || '#d1d5db');
         THEME_OPTIONS.forEach(t => document.body.classList.remove(t.value));
         if (theme) document.body.classList.add(theme);
-        document.body.style.backgroundImage = backgroundImage ? `url("${backgroundImage}")` : 'none';
         document.body.classList.toggle('force-desktop', layoutMode === 'desktop');
         document.body.classList.toggle('force-mobile', layoutMode === 'mobile');
         document.body.classList.toggle('performance-mode', enablePerformanceMode);
@@ -351,7 +350,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         if (state.isLoading || !state.gameState || state.currentSlotId === null) return;
         
         // Clear any pending interactions before proceeding
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => gs ? { ...gs, activeSkillCheck: null, dialogueChoices: null } : null });
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => gs ? { ...gs, dialogueChoices: null } : null });
         
         cancelSpeech();
         if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -397,14 +396,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         stateRef.current = state;
     }, [state]);
 
-    const handleSkillCheckResult = useCallback((success: boolean) => {
-        const skillCheck = stateRef.current.gameState?.activeSkillCheck;
-        if (!skillCheck) return;
-        const resultText = `[Hệ thống] Kết quả kiểm tra ${skillCheck.attribute}: ${success ? 'Thành Công' : 'Thất Bại'}.`;
-        // AP cost for a check result is 0
-        handlePlayerAction(resultText, 'act', 0, () => {}); 
-    }, [handlePlayerAction]);
-
     const handleDialogueChoice = useCallback((choice: EventChoice) => {
         // AP cost for a dialogue choice is 0
         handlePlayerAction(choice.text, 'act', 0, () => {});
@@ -424,7 +415,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         state, dispatch, handleNavigate, handleSettingChange, handleSettingsSave,
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
-        handlePlayerAction, handleUpdatePlayerCharacter, handleSkillCheckResult, handleDialogueChoice
+        handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice
     };
 
     return (

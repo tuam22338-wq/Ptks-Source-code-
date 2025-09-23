@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { FaTimes, FaBell } from 'react-icons/fa';
 import { CURRENT_GAME_VERSION } from '../../constants';
@@ -9,8 +10,8 @@ interface UpdateModalProps {
 
 const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently }) => {
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-2xl m-4 p-6 flex flex-col relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" style={{ animationDuration: '300ms' }}>
+            <div className="themed-modal w-full max-w-2xl m-4 p-6 flex flex-col relative">
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>

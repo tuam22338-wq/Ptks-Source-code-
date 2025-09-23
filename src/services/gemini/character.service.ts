@@ -2,20 +2,36 @@
 
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, CharacterCreationChoice } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
-export const generatePowerSource = async (context: { raceName: string, backgroundName: string, playerInput?: string }): Promise<SpiritualRoot> => {
-    const powerSourceSchema = {
+export const generateCharacterFromPrompts = async (
+    context: {
+        draftIdentity: Omit<CharacterIdentity, 'origin' | 'age'>;
+        raceInput: string;
+        backgroundInput: string;
+    }
+): Promise<{ identity: CharacterIdentity; spiritualRoot: SpiritualRoot; initialBonuses: StatBonus[], initialItems: any[] }> => {
+
+    const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            name: { type: Type.STRING, description: "Một cái tên độc đáo và thi vị cho nguồn gốc sức mạnh này. Ví dụ: 'Huyết Mạch Cổ Long', 'Dị Bảo Thôn Phệ', 'Trái Tim Máy Móc'." },
-            description: { type: Type.STRING, description: "Mô tả chi tiết về nguồn gốc sức mạnh, giải thích nó hoạt động như thế nào và ảnh hưởng đến nhân vật ra sao." },
+            refined_appearance: { type: Type.STRING, description: `Một mô tả ngoại hình chi tiết hơn (2-3 câu), kết hợp ý tưởng của người chơi ('${context.draftIdentity.appearance}') với huyết mạch và xuất thân.` },
+            origin_story: { type: Type.STRING, description: 'VIẾT MỘT CÂU TRUYỆN NỀN (backstory) HOÀN CHỈNH, có chiều sâu (khoảng 4-6 câu), kết nối tất cả các yếu tố (huyết mạch, xuất thân, tính cách) thành một câu chuyện logic và hấp dẫn.' },
+            power_source: {
+                type: Type.OBJECT,
+                description: "Một 'Nguồn Gốc Sức Mạnh' độc đáo dựa trên toàn bộ thông tin.",
+                properties: {
+                    name: { type: Type.STRING, description: "Tên gọi độc đáo, thi vị cho nguồn sức mạnh. Ví dụ: 'Huyết Mạch Cổ Long', 'Dị Bảo Thôn Phệ', 'Trái Tim Máy Móc'." },
+                    description: { type: Type.STRING, description: "Mô tả chi tiết về nguồn gốc sức mạnh, giải thích nó hoạt động như thế nào." },
+                },
+                required: ['name', 'description']
+            },
             bonuses: {
                 type: Type.ARRAY,
-                description: "Một danh sách từ 2-4 bonus thuộc tính phù hợp với bản chất của nguồn sức mạnh.",
+                description: "Một danh sách từ 2-4 bonus thuộc tính phù hợp với bản chất của câu chuyện và nguồn sức mạnh.",
                 items: {
                     type: Type.OBJECT,
                     properties: {
@@ -24,85 +40,44 @@ export const generatePowerSource = async (context: { raceName: string, backgroun
                     },
                     required: ['attribute', 'value']
                 }
+            },
+            starting_items: {
+                type: Type.ARRAY,
+                description: "Danh sách 0-2 vật phẩm khởi đầu phù hợp với xuất thân.",
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING },
+                        quantity: { type: Type.NUMBER },
+                        description: { type: Type.STRING },
+                        type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật'] as ItemType[] },
+                        quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm'] as ItemQuality[] },
+                        icon: { type: Type.STRING, description: "Một emoji phù hợp."}
+                    },
+                    required: ['name', 'quantity', 'description', 'type', 'quality', 'icon']
+                }
             }
         },
-        required: ['name', 'description', 'bonuses']
+        required: ['refined_appearance', 'origin_story', 'power_source', 'bonuses'],
     };
 
-    const prompt = `Bạn là một Game Master AI. Hãy tạo ra một "Nguồn Gốc Sức Mạnh" (Power Source) cho nhân vật dựa trên các thông tin sau.
+    const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game tu tiên. Dựa trên các ý tưởng của người chơi, hãy diễn giải và kiến tạo nên một nhân vật hoàn chỉnh.
 
-    **Bối cảnh nhân vật:**
-    - **Chủng tộc:** ${context.raceName}
-    - **Xuất thân:** ${context.backgroundName}
-    ${context.playerInput ? `- **Mô tả của người chơi:** "${context.playerInput}"` : ''}
-
-    **Nhiệm vụ:**
-    1.  **Phân tích:** Dựa vào các thông tin trên, hãy hình dung ra một nguồn sức mạnh độc đáo.
-        -   Nếu có mô tả của người chơi, hãy dựa vào đó làm ý tưởng chính.
-        -   Nếu không có, hãy tự do sáng tạo dựa trên chủng tộc và xuất thân.
-    2.  **Sáng tạo:** Tạo ra Tên, Mô tả, và các Bonus thuộc tính phù hợp.
-        -   Bonus phải phản ánh đúng bản chất của sức mạnh. Ví dụ: Huyết Mạch Rồng thì tăng Lực Lượng, Căn Cốt. Trái tim máy móc có thể tăng Bền Bỉ nhưng giảm Đạo Tâm.
-
-    Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
-    
-    const settings = await db.getSettings();
-    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
-    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
-
-    const response = await generateWithRetry({
-        model,
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: powerSourceSchema
-        }
-    }, specificApiKey);
-    
-    const result = JSON.parse(response.text);
-
-    // Make it compatible with SpiritualRoot type
-    return {
-        ...result,
-        elements: [], // Can be enhanced later to derive elements
-        quality: 'Thánh Căn', // Custom power sources are always unique
-    } as SpiritualRoot;
-};
-
-export const generateCharacterDetails = async (
-    context: {
-        race: CharacterCreationChoice;
-        background: CharacterCreationChoice;
-        powerSource: SpiritualRoot;
-        draftIdentity: Omit<CharacterIdentity, 'origin' | 'age'>;
-    }
-): Promise<CharacterIdentity> => {
-    const identitySchema = {
-        type: Type.OBJECT,
-        properties: {
-            name: { type: Type.STRING, description: `Tên Hán Việt, phù hợp bối cảnh. Có thể giữ nguyên hoặc cải tiến từ tên người chơi nhập: '${context.draftIdentity.name}'.` },
-            familyName: { type: Type.STRING, description: `Họ của nhân vật. Có thể giữ nguyên hoặc cải tiến từ họ người chơi nhập: '${context.draftIdentity.familyName}'.` },
-            appearance: { type: Type.STRING, description: `Mô tả ngoại hình chi tiết hơn, kết hợp ý tưởng của người chơi ('${context.draftIdentity.appearance}') với các yếu tố từ chủng tộc, xuất thân và sức mạnh.` },
-            origin: { type: Type.STRING, description: 'VIẾT MỘT CÂU TRUYỆN NỀN (backstory) HOÀN CHỈNH, có chiều sâu, kết nối tất cả các yếu tố (chủng tộc, xuất thân, sức mạnh) thành một câu chuyện logic, mạch lạc và hấp dẫn.' },
-        },
-        required: ['name', 'familyName', 'appearance', 'origin'],
-    };
-
-    const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game tu tiên. Dựa trên các lựa chọn của người chơi, hãy hoàn thiện chi tiết và viết nên một câu chuyện nền hấp dẫn cho nhân vật của họ.
-
-    **Các Lựa Chọn Của Người Chơi:**
-    - **Thông tin cơ bản (Bản nháp):**
+    **Ý Tưởng Cốt Lõi Của Người Chơi:**
+    - **Thông tin cơ bản:**
         - Tên: ${context.draftIdentity.name || '(chưa có)'}, Họ: ${context.draftIdentity.familyName || '(chưa có)'}
         - Giới tính: ${context.draftIdentity.gender}
         - Ngoại hình (ý tưởng): "${context.draftIdentity.appearance || '(không có mô tả)'}"
-        - Tính cách: ${context.draftIdentity.personality}
-    - **Chủng tộc:** ${context.race.name} (${context.race.description})
-    - **Xuất thân:** ${context.background.name} (${context.background.description})
-    - **Nguồn gốc sức mạnh:** ${context.powerSource.name} (${context.powerSource.description})
+        - Thiên hướng tính cách: ${context.draftIdentity.personality}
+    - **Huyết Mạch / Chủng Tộc (ý tưởng):** "${context.raceInput}"
+    - **Xuất Thân / Trưởng Thành (ý tưởng):** "${context.backgroundInput}"
 
     **Nhiệm vụ:**
-    1.  **Tổng hợp:** Kết hợp tất cả các yếu tố trên một cách sáng tạo.
-    2.  **Hoàn thiện Tên & Ngoại hình:** Dựa trên bản nháp của người chơi, hãy đề xuất một phiên bản hoàn thiện hơn nếu cần. Tên phải Hán Việt. Ngoại hình nên phản ánh cả chủng tộc và sức mạnh.
-    3.  **Viết nên "Xuất Thân" (origin):** Đây là phần quan trọng nhất. Hãy viết một đoạn văn (khoảng 4-6 câu) kể về câu chuyện nền của nhân vật, giải thích cách các yếu tố trên kết nối với nhau. Ví dụ: một Tiên Tộc (chủng tộc) vì sao lại có xuất thân Nô Lệ? Nguồn sức mạnh của họ đã thức tỉnh như thế nào trong hoàn cảnh đó?
+    1.  **Tổng hợp & Sáng tạo:** Kết hợp tất cả các ý tưởng trên một cách sáng tạo để tạo ra một nhân vật độc đáo.
+    2.  **Viết nên "origin_story":** Đây là phần quan trọng nhất. Hãy viết một đoạn văn kể về câu chuyện nền của nhân vật, giải thích cách các yếu tố trên kết nối với nhau.
+    3.  **Hoàn thiện "refined_appearance":** Dựa trên ý tưởng của người chơi, hãy viết một mô tả ngoại hình hoàn chỉnh hơn.
+    4.  **Tạo "power_source":** Dựa vào câu chuyện, hãy tạo ra một nguồn gốc sức mạnh độc đáo.
+    5.  **Gán "bonuses" & "starting_items":** Dựa trên toàn bộ câu chuyện, hãy chọn ra các chỉ số thưởng và vật phẩm khởi đầu hợp lý.
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
     
@@ -112,17 +87,11 @@ export const generateCharacterDetails = async (
     
     const generationConfig: any = {
         responseMimeType: "application/json",
-        responseSchema: identitySchema,
-        temperature: settings?.temperature,
+        responseSchema: responseSchema,
+        temperature: 1.1, // Higher temperature for more creative character generation
         topK: settings?.topK,
         topP: settings?.topP,
     };
-
-    if (model === 'gemini-2.5-flash') {
-        generationConfig.thinkingConfig = {
-            thinkingBudget: settings?.enableThinking ? settings.thinkingBudget : 0,
-        };
-    }
     
     const response = await generateWithRetry({
         model,
@@ -131,11 +100,29 @@ export const generateCharacterDetails = async (
     }, specificApiKey);
 
     const json = JSON.parse(response.text);
+
+    const finalIdentity: CharacterIdentity = {
+        ...context.draftIdentity,
+        name: context.draftIdentity.name, // Keep player's name
+        familyName: context.draftIdentity.familyName,
+        appearance: json.refined_appearance,
+        origin: json.origin_story,
+        age: 18,
+    };
+
+    const spiritualRoot: SpiritualRoot = {
+        ...json.power_source,
+        elements: [],
+        quality: 'Thánh Căn', // Custom power sources are always unique
+        bonuses: json.bonuses || [],
+    };
+    
     return {
-        ...context.draftIdentity, // Keep gender and personality from player's choice
-        ...json,
-        age: 18, // Default starting age
-    } as CharacterIdentity;
+        identity: finalIdentity,
+        spiritualRoot: spiritualRoot,
+        initialBonuses: json.bonuses || [],
+        initialItems: json.starting_items || [],
+    };
 };
 
 export const generateFamilyAndFriends = async (identity: CharacterIdentity, locationId: string): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[] }> => {

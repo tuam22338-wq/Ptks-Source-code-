@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, memo } from 'react';
 import { FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
 import type { FullMod, ModWorldData } from '../../types';
@@ -83,7 +84,7 @@ const WorldSelectionScreen: React.FC = () => {
     };
 
     return (
-        <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
+        <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-bold font-title">Lựa Chọn Thế Giới</h2>
                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">

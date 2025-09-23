@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { CultivationPath } from '../../../types';
 
@@ -11,8 +12,8 @@ const CultivationPathModal: React.FC<CultivationPathModalProps> = ({ isOpen, pat
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl m-4 p-6 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fade-in" style={{ animationDuration: '300ms' }}>
+            <div className="themed-modal w-full max-w-4xl m-4 p-6 max-h-[90vh] flex flex-col">
                 <h2 className="text-3xl font-bold font-title text-center text-amber-300">Thiên Mệnh Rẽ Lối</h2>
                 <p className="text-center text-gray-400 mt-2 mb-6">Bạn đã đột phá thành công, một con đường mới đã mở ra. Hãy lựa chọn hướng đi cho mình.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto pr-2">

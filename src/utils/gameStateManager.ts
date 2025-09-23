@@ -1,6 +1,7 @@
 
 
 
+
 import { FaQuestionCircle } from 'react-icons/fa';
 import {
     REALM_SYSTEM, SECTS,
@@ -245,8 +246,8 @@ export const createNewGameState = async (
         }
     });
 
-    // Apply bonuses from character creation
-    [...initialBonuses, ...spiritualRoot.bonuses].forEach(bonus => {
+    // Apply bonuses from character creation (race, background, spiritual root)
+    [...initialBonuses].forEach(bonus => {
         const attrDef = attributeSystemToUse.definitions.find(d => d.name === bonus.attribute);
         if (attrDef && initialAttributes[attrDef.id]) {
             initialAttributes[attrDef.id].value += bonus.value;
@@ -295,8 +296,12 @@ export const createNewGameState = async (
     // Calculate derived stats for the first time
     const attributesWithDerived = calculateDerivedStats(initialAttributes, attributeSystemToUse.definitions);
 
+    // FIX: Add a default `age` property to the character identity to resolve the type error.
     let playerCharacter: PlayerCharacter = {
-        identity: { ...identity, age: 18 },
+        identity: {
+            ...identity,
+            age: (identity as PlayerCharacter['identity']).age || 18,
+        },
         attributes: attributesWithDerived,
         spiritualRoot: spiritualRoot,
         inventory: initialInventory,

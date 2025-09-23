@@ -1,5 +1,6 @@
 
 
+
 import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
@@ -44,14 +45,8 @@ export const applyMechanicalChanges = (
     // --- APPLY CHANGES (if affordable) ---
     
     // Handle interaction states first, as they are mutually exclusive
-    if (intent.skillCheck) {
-        finalState.activeSkillCheck = intent.skillCheck;
-        finalState.dialogueChoices = null; // Clear other interaction types
-        return finalState; // Halt further processing until check is resolved
-    }
     if (intent.dialogueChoices) {
         finalState.dialogueChoices = intent.dialogueChoices;
-        finalState.activeSkillCheck = null; // Clear other interaction types
         return finalState; // Halt further processing until choice is made
     }
     

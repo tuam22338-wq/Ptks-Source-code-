@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { GameState, ShopItem, InventoryItem } from '../../../types';
 import { SHOPS, ITEM_QUALITY_STYLES } from '../../../constants';
@@ -85,8 +86,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
     const sellableItems = playerCharacter.inventory.items.filter(i => !i.isEquipped && i.value);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in" style={{ animationDuration: '300ms' }} onClick={closeShopModal}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fade-in" style={{ animationDuration: '300ms' }} onClick={closeShopModal}>
+            <div className="themed-modal w-full max-w-4xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <div>
                         <h2 className="text-3xl font-bold font-title text-amber-300">{shop.name}</h2>

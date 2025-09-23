@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -235,8 +236,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 
     return (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={handleClose}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-4xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 animate-fade-in" style={{ animationDuration: '200ms' }} onClick={handleClose}>
+            <div className="themed-modal w-full max-w-4xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
                     <h3 className="text-2xl text-[var(--primary-accent-color)] font-bold font-title">Túi Càn Khôn</h3>
                     <button onClick={handleClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>

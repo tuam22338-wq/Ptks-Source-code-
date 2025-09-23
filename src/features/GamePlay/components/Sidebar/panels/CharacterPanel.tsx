@@ -1,4 +1,6 @@
 
+
+
 import React, { memo } from 'react';
 import type { PlayerCharacter, SpiritualRoot, AttributeDefinition, GameState, Currency } from '../../../../../types';
 import { SPIRITUAL_ROOT_CONFIG, UI_ICONS, CURRENCY_DEFINITIONS } from '../../../../../constants';
@@ -43,8 +45,8 @@ const SpiritualRootDisplay: React.FC<{ root: SpiritualRoot | null }> = ({ root }
 
 const CurrencyDisplay: React.FC<{ currencies: Currency }> = ({ currencies }) => {
     const ownedCurrencies = Object.entries(currencies)
-        // FIX: Operator '>' cannot be applied to types 'unknown' and 'number'. Add explicit undefined check.
-        .filter(([, amount]) => amount !== undefined && amount > 0)
+        // FIX: Operator '>' cannot be applied to types 'unknown' and 'number'. Changed to a robust type check.
+        .filter(([, amount]) => typeof amount === 'number' && amount > 0)
         .map(([name]) => name as keyof typeof CURRENCY_DEFINITIONS)
         .sort((a, b) => {
             const order = ['Phàm Tệ', 'Linh Tệ', 'Tiên Tệ', 'Đặc Biệt'];

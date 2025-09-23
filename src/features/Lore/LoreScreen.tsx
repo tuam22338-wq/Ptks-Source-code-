@@ -1,5 +1,6 @@
 
 
+
 import React, { memo, useMemo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS } from '../../constants';
@@ -25,7 +26,7 @@ const ThoiTheScreen: React.FC = () => {
   }, [state.activeWorldId]);
 
   return (
-    <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold font-title">{title}</h2>
         <button

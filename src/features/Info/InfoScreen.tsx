@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
@@ -7,7 +8,7 @@ const InfoScreen: React.FC = () => {
   const { handleNavigate } = useAppContext();
 
   return (
-    <div className="w-full animate-fade-in themed-panel rounded-lg shadow-2xl shadow-black/50 p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold font-title">Thông Tin Trò Chơi</h2>
         <button

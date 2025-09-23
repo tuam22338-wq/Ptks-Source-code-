@@ -1,6 +1,7 @@
 
 
-import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition, CharacterCreationChoice, AiSyncMode, CurrencyType, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap } from './types';
+// FIX: Removed unused `CharacterCreationChoice` type from import to resolve 'has no exported member' error.
+import type { GameSettings, InnateTalentRank, PhapBaoRank, StatBonus, GameSpeed, Season, Weather, TimeOfDay, NpcDensity, RealmConfig, SafetyLevel, AIModel, ImageModel, RagEmbeddingModel, LayoutMode, ItemQuality, EquipmentSlot, NarrativeStyle, InnateTalent, Theme, CultivationPath, AlchemyRecipe, FactionReputationStatus, Sect, CaveAbode, CharacterStatus, InventoryItem, DifficultyLevel, SystemShopItem, Element, SpiritualRootQuality, AttributeDefinition, AiSyncMode, CurrencyType, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap } from './types';
 import { UI_ICONS } from './data/uiIcons';
 
 // Re-export non-world-specific data
@@ -33,20 +34,7 @@ export const CURRENT_GAME_VERSION = "1.0.10";
 
 export const INVENTORY_ACTION_LOG_PREFIX = "[System Note: Trong lúc kiểm tra túi đồ, người chơi đã:\n";
 
-// --- NEW GENERIC CHARACTER CREATION CHOICES ---
-export const RACES: CharacterCreationChoice[] = [
-    { id: 'human', name: 'Con Người', description: 'Chủng tộc đông đảo nhất, có tiềm năng vô hạn nhưng tuổi thọ ngắn ngủi.', bonuses: [{ attribute: 'Ngộ Tính', value: 3 }, { attribute: 'Cơ Duyên', value: 2 }] },
-    { id: 'yao', name: 'Yêu Tộc', description: 'Hậu duệ của dị thú thượng cổ, có thân thể cường tráng và bản năng chiến đấu mạnh mẽ.', bonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },
-    { id: 'xian', name: 'Tiên Tộc', description: 'Sinh ra đã có tiên khí, gần gũi với đại đạo, tu luyện nhanh hơn các tộc khác.', bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 5 }, { attribute: 'Thần Thức', value: 3 }] },
-];
-
-export const BACKGROUNDS: CharacterCreationChoice[] = [
-    { id: 'noble', name: 'Quý Tộc', description: 'Xuất thân từ gia tộc quyền quý, có tài nguyên và mối quan hệ nhưng cũng đầy rẫy tranh đấu.', bonuses: [{ attribute: 'Mị Lực', value: 5 }], startingItems: [{ name: 'Ngọc Bội Gia Truyền', quantity: 1, description: 'Vật tín của gia tộc.', type: 'Tạp Vật', quality: 'Bảo Phẩm', icon: '💎' }] },
-    { id: 'commoner', name: 'Thường Dân', description: 'Lớn lên trong một gia đình bình thường, cuộc sống tuy vất vả nhưng tự do tự tại.', bonuses: [{ attribute: 'Bền Bỉ', value: 5 }], startingItems: [] },
-    { id: 'slave', name: 'Nô Lệ', description: 'Số phận nghiệt ngã từ khi sinh ra, phải trải qua vô vàn khổ cực để sinh tồn, ý chí kiên cường.', bonuses: [{ attribute: 'Đạo Tâm', value: 3 }, { attribute: 'Bền Bỉ', value: 3 }], startingItems: [] },
-    { id: 'nomad', name: 'Du Mục', description: 'Sống lang bạt khắp nơi, thích nghi với mọi hoàn cảnh, am hiểu tự nhiên.', bonuses: [{ attribute: 'Thân Pháp', value: 5 }], startingItems: [] },
-];
-// --- END NEW GENERIC CHOICES ---
+// --- Generic character creation choices removed for dynamic AI generation ---
 
 export const SPIRITUAL_ROOT_CONFIG: Record<Element, { name: string, iconName: string, description: string, baseBonuses: StatBonus[] }> = {
     'Kim': { name: 'Kim', iconName: 'GiGoldBar', description: 'Chủ về sát伐, cương mãnh vô song. Tu sĩ Kim Linh Căn có lực công kích và phòng ngự vật lý vượt trội.', baseBonuses: [{ attribute: 'Lực Lượng', value: 5 }, { attribute: 'Căn Cốt', value: 3 }] },
@@ -121,6 +109,20 @@ export const FONT_OPTIONS: { value: string; label: string }[] = [
 export const THEME_OPTIONS: { value: Theme; label: string }[] = [
     { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch (Tối)' },
     { value: 'theme-sunrise-peak', label: 'Triêu Dương Đỉnh (Sáng)' },
+    { value: 'theme-bich-du-cung', label: 'Bích Du Cung (Huyền ảo)' },
+    { value: 'theme-ngoc-hu-cung', label: 'Ngọc Hư Cung (Trang nghiêm)' },
+    { value: 'theme-huyet-sat-ma-dien', label: 'Huyết Sát Ma Điện (Hắc ám)' },
+    { value: 'theme-thuy-mac-hoa', label: 'Thủy Mặc Họa (Tối giản)' },
+];
+
+export const WALLPAPER_OPTIONS: { value: string; label: string; thumbnailUrl: string }[] = [
+    { value: '', label: 'Không có', thumbnailUrl: 'https://via.placeholder.com/150/1c1c1c/808080?text=Trống' },
+    { value: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', label: 'Rừng Mơ', thumbnailUrl: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=200&auto=format&fit=crop' },
+    { value: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=2560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', label: 'Đỉnh Mây', thumbnailUrl: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=200&auto=format&fit=crop' },
+    { value: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', label: 'Đêm Sao', thumbnailUrl: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=200&auto=format&fit=crop' },
+    { value: 'https://images.unsplash.com/photo-1583594243683-02683a6a1040?q=80&w=2560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', label: 'Cổ Tự', thumbnailUrl: 'https://images.unsplash.com/photo-1583594243683-02683a6a1040?q=80&w=200&auto=format&fit=crop' },
+    { value: 'https://images.unsplash.com/photo-1507208773393-40d9fc670acf?q=80&w=2560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', label: 'Hồ Tịnh', thumbnailUrl: 'https://images.unsplash.com/photo-1507208773393-40d9fc670acf?q=80&w=200&auto=format&fit=crop' },
+    { value: 'https://images.unsplash.com/photo-1543323413-7d3c054c3300?q=80&w=2560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', label: 'Cổng Trời', thumbnailUrl: 'https://images.unsplash.com/photo-1543323413-7d3c054c3300?q=80&w=200&auto=format&fit=crop' },
 ];
 
 export const AI_SYNC_MODES: { value: AiSyncMode; label: string, description: string }[] = [
@@ -184,6 +186,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     fontFamily: "'Noto Serif', serif",
     theme: 'theme-bamboo-forest',
     backgroundImage: '',
+    backgroundImageFilters: { hue: 0, brightness: 100, saturate: 100 },
     zoomLevel: 50,
     textColor: '#d1d5db',
     mainTaskModel: 'gemini-2.5-flash',
