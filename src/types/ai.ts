@@ -1,4 +1,4 @@
-import type { GameDate, StoryEntry, CurrencyType, ItemType, ItemQuality, CultivationTechnique, ActiveEffect, ActiveQuest, EventChoice } from './';
+import type { GameDate, StoryEntry, CurrencyType, ItemType, ItemQuality, CultivationTechnique, ActiveEffect, ActiveQuest, EventChoice, StatBonus } from './';
 
 // --- AI Memory System Types ---
 export interface EntityReference {
