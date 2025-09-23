@@ -19,7 +19,7 @@ export const orchestrateRagQuery = async (
 ): Promise<string> => {
     
     // Simple heuristic: 'ask' tab always triggers RAG, 'act' and 'say' only if they contain question marks.
-    // FIX: Removed the `inputType !== 'ask'` check as it was always true, causing a TypeScript error.
+    // FIX: Removed the `inputType !== 'ask'` check as it was always true, simplifying the condition.
     if (!playerInput.includes('?')) {
         // For non-questions, we might still want to fetch memory about mentioned entities.
         // This is a simpler path that bypasses the orchestrator AI call.

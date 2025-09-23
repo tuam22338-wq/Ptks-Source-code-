@@ -2,6 +2,7 @@
 
 
 
+
 import { FaQuestionCircle } from 'react-icons/fa';
 import {
     REALM_SYSTEM, SECTS,
@@ -13,7 +14,7 @@ import {
     CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
 } from "../constants";
 import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus } from "../types";
-// FIX: Import `generateDynamicNpcs` to resolve 'Cannot find name' error.
+// FIX: Import `generateDynamicNpcs` from the correct service file to resolve 'Cannot find name' error.
 import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
@@ -42,6 +43,8 @@ const ATTRIBUTE_NAME_TO_ID_MAP: Record<string, string> = {
     'Tuổi Thọ': 'tuoi_tho',
     'Chính Đạo': 'chinh_dao',
     'Ma Đạo': 'ma_dao',
+    'Độ No': 'hunger',
+    'Độ Khát': 'thirst',
 };
 
 
@@ -55,11 +58,6 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
     let version = dataToProcess.version || "1.0.0";
 
     // ... [existing version migrations up to 1.0.8] ...
-
-    if (version < "1.0.8") {
-        // ... (previous migration logic)
-        version = "1.0.8";
-    }
 
     if (version < "1.0.9") {
         console.log(`Migrating save from v${version} to v1.0.9 (Data-Driven Attributes & NPC Mind)...`);
@@ -119,6 +117,25 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
                 return updatedNpc;
             });
         }
+        version = "1.0.9";
+    }
+
+    if (version < "1.0.11") {
+        console.log(`Migrating save from v${version} to v1.0.11 (Vitals to Attributes)...`);
+        const pc = dataToProcess.playerCharacter;
+        if (pc && pc.vitals && (pc.vitals as any).hunger !== undefined) {
+            const oldVitals = pc.vitals as any;
+            if (!pc.attributes) {
+                pc.attributes = {};
+            }
+            pc.attributes.hunger = { value: oldVitals.hunger, maxValue: oldVitals.maxHunger || 100 };
+            pc.attributes.thirst = { value: oldVitals.thirst, maxValue: oldVitals.maxThirst || 100 };
+            delete oldVitals.hunger;
+            delete oldVitals.maxHunger;
+            delete oldVitals.thirst;
+            delete oldVitals.maxThirst;
+        }
+        version = "1.0.11";
     }
 
 
@@ -278,8 +295,6 @@ export const createNewGameState = async (
         hasConqueredInnerDemon: false,
     };
     const initialVitals: PlayerVitals = {
-        hunger: 100, maxHunger: 100,
-        thirst: 100, maxThirst: 100,
         temperature: 37,
     };
     const startingLocation = worldMapToUse[0];

@@ -44,16 +44,11 @@ export const advanceGameTime = (
     }
 
     if (dotDamage > 0) {
-        const sinhMenhAttr = playerCharacter.attributes.flatMap(g => g.attributes).find(a => a.name === 'Sinh Mệnh');
+        const sinhMenhAttr = playerCharacter.attributes['sinh_menh'];
         if (sinhMenhAttr) {
-            const newSinhMenhValue = (sinhMenhAttr.value as number) - dotDamage;
+            const newSinhMenhValue = sinhMenhAttr.value - dotDamage;
             notifications.push(`Bạn mất ${dotDamage} Sinh Mệnh vì hiệu ứng bất lợi.`);
-            playerCharacter.attributes = playerCharacter.attributes.map(group => ({
-                ...group,
-                attributes: group.attributes.map(attr => 
-                    attr.name === 'Sinh Mệnh' ? { ...attr, value: Math.max(0, newSinhMenhValue) } : attr
-                )
-            }));
+            playerCharacter.attributes['sinh_menh'].value = Math.max(0, newSinhMenhValue);
         }
     }
     

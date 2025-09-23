@@ -4,6 +4,8 @@ import { GiSprout } from 'react-icons/gi';
 import type { Location, GameState } from '../../../types';
 // FIX: Corrected import path as generateActionSuggestions is now in a specific service file.
 import { generateActionSuggestions } from '../../../services/gemini/gameplay.service';
+// FIX: Import 'UI_ICONS' from constants to resolve 'Cannot find name' error.
+import { UI_ICONS } from '../../../constants';
 
 type ActionType = 'say' | 'act' | 'ask';
 
@@ -68,7 +70,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                     <p className="text-xs text-[var(--text-muted-color)] mb-1 text-center">Hành động đặc biệt tại {currentLocation.name}</p>
                     <div className="flex flex-wrap gap-2 justify-center">
                         {currentLocation.contextualActions.map(action => {
-                            const Icon = action.icon;
+                            const Icon = UI_ICONS[action.iconName as keyof typeof UI_ICONS];
                             return (
                                 <button
                                     key={action.id}

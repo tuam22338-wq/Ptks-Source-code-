@@ -1,6 +1,7 @@
 
 
 
+
 import React, { memo } from 'react';
 import type { PlayerCharacter, SpiritualRoot, AttributeDefinition, GameState, Currency } from '../../../../../types';
 import { SPIRITUAL_ROOT_CONFIG, UI_ICONS, CURRENCY_DEFINITIONS } from '../../../../../constants';

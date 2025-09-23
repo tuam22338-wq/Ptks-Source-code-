@@ -7,7 +7,7 @@ import {
   GiSpinalCoil, GiMuscularTorso, GiSoulVessel, GiBoltSpellCast, GiHeartTower, GiScales,
   GiMountainCave, GiDoubleDragon, GiTalk, GiBed, GiSprout, GiStoneBlock, GiHerbsBundle,
   GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire, GiGroundbreaker,
-  GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace
+  GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace, GiMeal
 } from 'react-icons/gi';
 import { FaSun, FaMoon, FaShieldAlt, FaStore } from 'react-icons/fa';
 
@@ -19,5 +19,6 @@ export const UI_ICONS: { [key: string]: React.ElementType } = {
   GiMountainCave, GiDoubleDragon, GiTalk, GiBed, GiSprout, GiStoneBlock,
   GiHerbsBundle, GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire,
   GiGroundbreaker, GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace,
+  GiMeal,
   FaSun, FaMoon, FaShieldAlt, FaStore
 };

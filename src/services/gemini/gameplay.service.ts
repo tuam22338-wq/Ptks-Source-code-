@@ -1,126 +1,10 @@
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus, MemoryFragment, CharacterAttributes, PlayerCharacter, GameSettings, AIResponsePayload, MechanicalIntent, SkillCheck, EventChoice } from '../../types';
-import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS, PT_WORLD_MAP, DEFAULT_ATTRIBUTE_DEFINITIONS, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
+import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent } from '../../types';
+import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
-import { createModContextSummary, createAiHooksInstruction } from '../../utils/modManager';
-
-const createFullGameStateContext = (gameState: GameState, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
-  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds } = gameState;
-  const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
-  const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
-  const neighbors = currentLocation?.neighbors.map(id => discoveredLocations.find(l => l.id === id)?.name).filter(Boolean) || [];
-
-  const modContext = createModContextSummary(activeMods);
-
-  const currencySummary = Object.entries(playerCharacter.currencies)
-    .filter(([, amount]) => amount && amount > 0)
-    .map(([name, amount]) => `${name}: ${amount.toLocaleString()}`)
-    .join(', ');
-
-  const equipmentSummary = Object.entries(playerCharacter.equipment)
-    .filter(([, item]) => item)
-    .map(([slot, item]) => `${slot}: ${item!.name}`)
-    .join(', ');
-  
-  const questSummary = playerCharacter.activeQuests.length > 0
-    ? playerCharacter.activeQuests.map(q => `- ${q.title}: ${q.objectives.find(o => !o.isCompleted)?.description || 'Sắp hoàn thành'}`).join('\n')
-    : 'Không có nhiệm vụ nào.';
-  
-  const reputationSummary = playerCharacter.reputation.map(r => `${r.factionName}: ${r.status} (${r.value})`).join('; ');
-  
-  const keyAttributes = DEFAULT_ATTRIBUTE_DEFINITIONS
-    .filter(def => ['luc_luong', 'than_phap', 'ngo_tinh', 'co_duyen', 'can_cot', 'sinh_menh', 'linh_luc'].includes(def.id))
-    .map(def => {
-        const attr = playerCharacter.attributes[def.id];
-        if (!attr) return null;
-        return `${def.name}: ${attr.value}${attr.maxValue ? `/${attr.maxValue}` : ''}`;
-    })
-    .filter(Boolean)
-    .join(', ');
-
-  const activeEffectsSummary = playerCharacter.activeEffects.length > 0
-    ? `Hiệu ứng: ${playerCharacter.activeEffects.map(e => e.name).join(', ')}.`
-    : 'Không có hiệu ứng đặc biệt.';
-
-  const vitalsSummary = `Tình trạng Sinh Tồn: No ${playerCharacter.vitals.hunger}/${playerCharacter.vitals.maxHunger}, Khát ${playerCharacter.vitals.thirst}/${playerCharacter.vitals.maxThirst}. ${activeEffectsSummary}`;
-  
-  const npcsHereWithMindState = npcsHere.length > 0
-    ? npcsHere.map(n => {
-        const emotions = `[Tâm trạng: Tin tưởng(${n.emotions.trust}), Sợ hãi(${n.emotions.fear}), Tức giận(${n.emotions.anger})]`;
-        const memories = n.memory.shortTerm.length > 0 ? ` [Ký ức gần đây: ${n.memory.shortTerm.join('; ')}]` : '';
-        const willpower = ` [Động lực: ${n.motivation}] [Mục tiêu: ${n.goals.join(', ')}] [Kế hoạch: ${n.currentPlan ? n.currentPlan[0] : 'Chưa có'}]`;
-        return `${n.identity.name} (${n.status}) ${emotions}${memories}${willpower}`;
-      }).join('\n')
-    : 'Không có ai.';
-
-  let assistantContext = '';
-  if (forAssistant) {
-      const encounteredNpcsDetails = activeNpcs.filter(npc => encounteredNpcIds.includes(npc.id)).map(npc => `- ${npc.identity.name}: ${npc.identity.origin}. ${npc.status}`).join('\n');
-      assistantContext = `
-**4. Bách Khoa Toàn Thư (Thông tin đã biết)**
-- **Nhân vật đã gặp:**
-${encounteredNpcsDetails || 'Chưa gặp ai.'}
-- **Địa danh đã khám phá:**
-${discoveredLocations.map(l => `- ${l.name}: ${l.description}`).join('\n')}
-- **Thiên Mệnh Niên Biểu (Sự kiện lịch sử):**
-${majorEvents.map(e => `- Năm ${e.year}, ${e.title}: ${e.summary}`).join('\n')}
-      `;
-  }
-
-  const memoryReportContext = instantMemoryReport
-    ? `
-**Ký Ức Liên Quan Gần Đây (TRỌNG TÂM):**
-${instantMemoryReport}`
-    : '';
-    
-  const thoughtBubbleContext = thoughtBubble
-    ? `
-**SUY NGHĨ NỘI TÂM CỦA NPC (ƯU TIÊN TUYỆT ĐỐI):**
-NPC mà người chơi đang tương tác có suy nghĩ nội tâm sau: "${thoughtBubble}"
-`
-    : '';
-
-  const context = `
-${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
-Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
-
-**1. Nhân Vật Chính: ${playerCharacter.identity.name}**
-- **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.
-- **Tài Sản (QUAN TRỌNG):** ${currencySummary || 'Không một xu dính túi.'}
-- **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
-- **Công Pháp Chủ Đạo:** ${playerCharacter.mainCultivationTechniqueInfo ? `${playerCharacter.mainCultivationTechniqueInfo.name} - ${playerCharacter.mainCultivationTechniqueInfo.description}` : 'Chưa có'}.
-- **Thần Thông/Kỹ Năng:** ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa có'}.
-- **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: **${playerCharacter.identity.personality}**.
-- **Trang Bị:** ${equipmentSummary || 'Không có'}.
-- **Chỉ Số Chính:** ${keyAttributes}.
-- **${vitalsSummary}**
-- **Danh Vọng & Quan Hệ:** Danh vọng ${playerCharacter.danhVong.status}. Các phe phái: ${reputationSummary}.
-- **Thông tin Tông Môn:** ${playerCharacter.sect ? `Là đệ tử của ${playerCharacter.sect.sectId}, chức vị ${playerCharacter.sect.rank}.` : 'Hiện là tán tu.'}
-- **Vật phẩm trong túi đồ:** ${playerCharacter.inventory.items.map(i => `${i.name} (x${i.quantity})`).join(', ') || 'Trống rỗng.'}
-
-**2. Thế Giới Hiện Tại**
-- **Thời Gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, giờ ${gameDate.shichen}.
-- **Vị Trí Hiện Tại (CỰC KỲ QUAN TRỌNG):** Bạn đang ở '${currentLocation?.name}'. Mô tả: ${currentLocation?.description}.
-- **Các lối đi có thể đến:** ${neighbors.join(', ') || 'Không có'}.
-- **NPCs Tại Đây:** 
-${npcsHereWithMindState}
-- **Sự Kiện Thế Giới Đang Diễn Ra:** ${worldState.dynamicEvents?.map(e => e.title).join(', ') || 'Bình yên.'}
-
-**3. Nhiệm Vụ & Cốt Truyện**
-- **Nhiệm Vụ Đang Làm:**
-${questSummary}
-- **Tóm Tắt Cốt Truyện (Ký ức dài hạn):**
-${storySummary || 'Hành trình vừa bắt đầu.'}
-${memoryReportContext}
-${thoughtBubbleContext}
-- **Nhật Ký Gần Đây (Ký ức ngắn hạn):**
-${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}
-${assistantContext}
-#############################
-  `;
-  return context;
-};
+import { createAiHooksInstruction } from '../../utils/modManager';
+import { createFullGameStateContext } from './promptContextBuilder';
 
 export async function* generateDualResponseStream(
     gameState: GameState, 
@@ -145,25 +29,50 @@ export async function* generateDualResponseStream(
     const context = createFullGameStateContext(gameState, instantMemoryReport, thoughtBubble);
     const playerActionText = inputType === 'say' ? `Nhân vật của bạn nói: "${userInput}"` : `Hành động của nhân vật: "${userInput}"`;
 
-    const masterSchema = { /* Define the combined schema for AIResponsePayload */ }; // Placeholder for the actual extensive schema definition.
+    const masterSchema = {
+      type: Type.OBJECT,
+      properties: {
+        narrative: { type: Type.STRING, description: "Đoạn văn tường thuật câu chuyện." },
+        mechanicalIntent: {
+          type: Type.OBJECT,
+          description: "Tất cả các thay đổi cơ chế game được suy ra từ đoạn tường thuật.",
+          properties: {
+            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, change: { type: Type.NUMBER } }, required: ['attribute', 'change'] } },
+            currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING, enum: Object.keys(CURRENCY_DEFINITIONS) }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
+            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." } }, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
+            itemsLost: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
+            newTechniques: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] } }, required: ['name', 'description', 'type', 'rank'] } },
+            newQuests: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, source: { type: Type.STRING }, objectives: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] }, description: { type: Type.STRING }, target: { type: Type.STRING }, required: { type: Type.NUMBER } }, required: ['type', 'description', 'target', 'required'] } } }, required: ['title', 'description', 'source', 'objectives'] } },
+            newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
+            npcEncounters: { type: Type.ARRAY, items: { type: Type.STRING } },
+            locationChange: { type: Type.STRING, description: "ID của địa điểm mới nếu người chơi di chuyển thành công." },
+            timeJump: { type: Type.OBJECT, properties: { years: { type: Type.NUMBER }, seasons: { type: Type.NUMBER }, days: { type: Type.NUMBER } } },
+            emotionChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { npcName: { type: Type.STRING }, emotion: { type: Type.STRING, enum: ['trust', 'fear', 'anger'] }, change: { type: Type.NUMBER }, reason: { type: Type.STRING } }, required: ['npcName', 'emotion', 'change', 'reason'] } },
+            systemActions: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { actionType: { type: Type.STRING, enum: ['JOIN_SECT', 'CRAFT_ITEM', 'UPGRADE_CAVE'] }, details: { type: Type.OBJECT, properties: { sectId: { type: Type.STRING }, recipeId: { type: Type.STRING }, facilityId: { type: Type.STRING } } } }, required: ['actionType', 'details'] } },
+            dialogueChoices: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { id: { type: Type.STRING }, text: { type: Type.STRING } }, required: ['id', 'text'] } }
+          }
+        }
+      },
+      required: ['narrative', 'mechanicalIntent']
+    };
 
     const prompt = `
 Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Nhiệm vụ của bạn là tiếp nối câu chuyện một cách hấp dẫn, logic và tạo ra các thay đổi cơ chế game tương ứng.
 
 ### QUY TẮC TỐI THƯỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **"Ý-HÌNH SONG SINH":** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game).
-2.  **ĐỒNG BỘ TUYỆT ĐỐI:** Mọi sự kiện, vật phẩm, thay đổi chỉ số xảy ra trong \`narrative\` PHẢI được phản ánh chính xác trong \`mechanicalIntent\`, và ngược lại.
+2.  **ĐỒNG BỘ TUYỆT ĐỐI:** Mọi sự kiện, vật phẩm, thay đổi chỉ số xảy ra trong \`narrative\` PHẢI được phản ánh chính xác trong \`mechanicalIntent\`, và ngược lại. Nếu không có thay đổi nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
 3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (CỰC KỲ QUAN TRỌNG):**
     -   **BẠN LÀ TRỌNG TÀI:** Khi người chơi thực hiện một hành động, bạn phải đóng vai trò là Game Master để quyết định kết quả.
     -   **DỰA VÀO THUỘC TÍNH:** Phân tích các chỉ số của người chơi được cung cấp trong Bối Cảnh (ví dụ: Lực Lượng, Thân Pháp, Ngộ Tính, Mị Lực).
     -   **QUYẾT ĐỊNH KẾT QUẢ:** Dựa trên các chỉ số đó, hãy quyết định một cách logic xem hành động đó thành công, thất bại, hay thành công một phần.
-    -   **TƯỜNG THUẬT KẾT QUẢ:** Tường thuật lại kết quả một cách hợp lý và hấp dẫn.
-        -   **Ví dụ 1 (Thất bại):** Nếu người chơi có Lực Lượng thấp và hành động là "phá tung cánh cửa gỗ", hãy tường thuật rằng họ cố gắng nhưng cánh cửa không hề suy suyển.
-        -   **Ví dụ 2 (Thành công):** Nếu người chơi có Mị Lực cao và hành động là "thuyết phục lính canh cho qua", hãy tường thuật rằng lính canh bị lời nói của họ thuyết phục và đồng ý.
-        -   **Ví dụ 3 (Thành công một phần):** Nếu người chơi có Thân Pháp vừa phải và hành động là "nhảy qua vực sâu", họ có thể nhảy qua được nhưng bị trượt chân và bị thương nhẹ (phản ánh trong \`mechanicalIntent\` với \`statChanges\`).
-    -   **LỰA CHỌN TRONG HỘI THOẠI:** Bạn VẪN CÓ THỂ sử dụng \`dialogueChoices\` khi một NPC đưa ra các lựa chọn rõ ràng trong cuộc trò chuyện, nhưng **TUYỆT ĐỐI KHÔNG** được đính kèm điều kiện \`check\` vào các lựa chọn đó nữa.
+    -   **TƯỜNG THUẬT KẾT QUẢ:** Tường thuật lại kết quả một cách hợp lý và hấp dẫn, đồng thời điền chính xác kết quả đó vào \`mechanicalIntent\`.
+        -   **Ví dụ 1 (Thất bại):** Nếu người chơi có Lực Lượng thấp và hành động là "phá tung cánh cửa gỗ", hãy tường thuật rằng họ cố gắng nhưng cánh cửa không hề suy suyển và \`mechanicalIntent\` rỗng.
+        -   **Ví dụ 2 (Thành công):** Nếu người chơi có Mị Lực cao và hành động là "thuyết phục lính canh cho qua", hãy tường thuật rằng lính canh bị thuyết phục. Nếu có thay đổi cảm xúc, hãy điền vào \`emotionChanges\`.
+        -   **Ví dụ 3 (Thành công một phần):** Nếu người chơi có Thân Pháp vừa phải và hành động là "nhảy qua vực sâu", họ có thể nhảy qua được nhưng bị trượt chân và bị thương nhẹ. Hãy tường thuật điều này và điền vào \`mechanicalIntent\` với \`statChanges: [{ attribute: 'sinh_menh', change: -10 }]\`.
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
-5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động (mua thông tin, thuê động phủ, học kỹ năng từ NPC) sẽ tiêu tốn tiền tệ. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\`). Nếu người chơi không đủ tiền, hãy để NPC từ chối một cách hợp lý.
+5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
+6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
 ${nsfwInstruction}
 ${lengthInstruction}
 - **Giọng văn:** ${narrativeStyle}.
@@ -180,58 +89,17 @@ ${context}
 Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối cảnh, hãy tạo ra một đối tượng JSON chứa cả \`narrative\` và \`mechanicalIntent\` để tiếp tục câu chuyện.
     `;
     
-    const responseSchema = {
-      type: Type.OBJECT,
-      properties: {
-        narrative: { type: Type.STRING, description: "Đoạn văn tường thuật câu chuyện." },
-        mechanicalIntent: {
-          type: Type.OBJECT,
-          properties: {
-            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, change: { type: Type.NUMBER } } } },
-            currencyChanges: {
-                type: Type.ARRAY,
-                description: "List of direct changes to the player's currencies. Use negative numbers for costs.",
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        currencyName: { type: Type.STRING, enum: Object.keys(CURRENCY_DEFINITIONS) },
-                        change: { type: Type.NUMBER }
-                    },
-                    required: ['currencyName', 'change']
-                }
-            },
-            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING } } } },
-            dialogueChoices: {
-                type: Type.ARRAY,
-                description: "Sử dụng cho các lựa chọn hội thoại rõ ràng do NPC đưa ra. KHÔNG dùng cho kiểm tra kỹ năng.",
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        id: { type: Type.STRING },
-                        text: { type: Type.STRING }
-                    },
-                     required: ['id', 'text']
-                }
-            }
-          }
-        }
-      },
-      required: ['narrative', 'mechanicalIntent']
-    };
-
-
     const model = settings?.mainTaskModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.mainTaskModel;
     const generationConfig: any = {
         responseMimeType: "application/json",
-        responseSchema: responseSchema, // Using the detailed master schema here
+        responseSchema: masterSchema,
         temperature: settings?.temperature,
         topK: settings?.topK,
         topP: settings?.topP,
     };
     
     if (model === 'gemini-2.5-flash') {
-        // Complex schemas require more thinking
         generationConfig.thinkingConfig = { thinkingBudget: settings.enableThinking ? (settings.thinkingBudget + 500) : 0 };
     }
     
@@ -280,9 +148,7 @@ export const harmonizeNarrative = async (
     return response.text.trim();
 };
 
-// Existing functions (summarizeStory, generateActionSuggestions, etc.) remain largely the same, but might be simplified as the main logic is now handled by the dual response.
-
-export const summarizeStory = async (storyLog: StoryEntry[], playerCharacter: PlayerCharacter): Promise<string> => {
+export const summarizeStory = async (storyLog: StoryEntry[], playerCharacter: GameState['playerCharacter']): Promise<string> => {
     const recentHistory = storyLog.slice(-50).map(entry => `[${entry.type}] ${entry.content}`).join('\n');
     
     const prompt = `Summarize the following recent game history into a concise, 1-2 paragraph summary from the perspective of the player, ${playerCharacter.identity.name}. This will be used as long-term memory for the AI.
@@ -304,7 +170,7 @@ export const summarizeStory = async (storyLog: StoryEntry[], playerCharacter: Pl
 };
 
 export const synthesizeMemoriesForPrompt = async (
-    memories: MemoryFragment[],
+    memories: any[], // MemoryFragment[]
     playerAction: string,
     playerName: string
 ): Promise<string> => {
@@ -336,8 +202,8 @@ export const synthesizeMemoriesForPrompt = async (
 
 export const generateFactionEvent = async (gameState: GameState): Promise<Omit<DynamicWorldEvent, 'id' | 'turnStart'> | null> => {
     const { worldState, gameDate, activeMods } = gameState;
-    const factions = PT_FACTIONS.map(f => f.name); // Simplified for now
-    const locationIds = PT_WORLD_MAP.map(l => l.id);
+    const factions = ['Xiển Giáo', 'Triệt Giáo', 'Nhà Thương']; // Simplified
+    const locationIds = ['trieu_ca', 'tay_ky']; // Simplified
 
     const schema = {
         type: Type.OBJECT,
@@ -405,7 +271,6 @@ export const askAiAssistant = async (query: string, gameState: GameState): Promi
     return response.text.trim();
 };
 
-// FIX: Add missing generateInnerDemonTrial function
 export const generateInnerDemonTrial = async (gameState: GameState, targetRealm: RealmConfig, targetStageName: string): Promise<InnerDemonTrial> => {
     const { playerCharacter } = gameState;
 
@@ -464,7 +329,6 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealm:
     return JSON.parse(response.text) as InnerDemonTrial;
 };
 
-// FIX: Add missing generateActionSuggestions function to resolve import error.
 export const generateActionSuggestions = async (gameState: GameState): Promise<string[]> => {
     const context = createFullGameStateContext(gameState);
     

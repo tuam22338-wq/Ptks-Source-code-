@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -175,13 +176,12 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             let pc = { ...pcState.playerCharacter };
             
             if (itemToUse.vitalEffects) {
-                let newVitals: PlayerVitals = { ...pc.vitals };
                 itemToUse.vitalEffects.forEach(effect => {
-                    const maxVitalKey = `max${effect.vital.charAt(0).toUpperCase() + effect.vital.slice(1)}` as keyof PlayerVitals;
-                    const maxVitalValue = (newVitals[maxVitalKey] as number) || 100;
-                    newVitals[effect.vital] = Math.min(maxVitalValue, newVitals[effect.vital] + effect.value);
+                    const attr = pc.attributes[effect.vital]; // effect.vital is an attribute ID like 'hunger'
+                    if (attr && attr.maxValue !== undefined) {
+                        attr.value = Math.min(attr.maxValue, (attr.value || 0) + effect.value);
+                    }
                 });
-                pc = {...pc, vitals: newVitals};
             }
 
             if (itemToUse.type === 'Đan Phương' && itemToUse.recipeId) {
@@ -245,7 +245,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 
                 <div className="flex-grow p-4 flex flex-col gap-4 min-h-0">
                     {/* TOP: Equipment Doll */}
-                    <div className="flex-shrink-0 bg-[var(--bg-subtle)] p-3 rounded-lg border border-[var(--border-subtle)]">
+                    <div className="flex-shrink-0 p-3 rounded-lg border border-[var(--border-subtle)]">
                         <h4 className="text-lg font-bold font-title text-center mb-2">{playerCharacter.identity.name} - Trang Bị</h4>
                         <div className="relative h-48 w-full flex items-center justify-center">
                              <GiPerson className="text-9xl text-gray-800" />
@@ -262,7 +262,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     </div>
 
                     {/* BOTTOM: Inventory Grid & Details */}
-                    <div className="flex-grow flex flex-col bg-[var(--bg-subtle)] p-3 rounded-lg border border-[var(--border-subtle)] min-h-0">
+                    <div className="flex-grow flex flex-col p-3 rounded-lg border border-[var(--border-subtle)] min-h-0">
                          <div className="w-full bg-[var(--bg-interactive)] p-2 rounded-lg border border-[var(--border-subtle)] space-y-1 mb-3 flex-shrink-0">
                              <div className="flex justify-between items-baseline text-xs">
                                  <div className="flex items-center gap-1 text-gray-300"><GiWeight /> <span>Tải trọng</span></div>
@@ -298,7 +298,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                         )}
                     </div>
                     
-                    <div className="flex-shrink-0 h-36 bg-[var(--bg-subtle)] p-3 rounded-lg border border-[var(--border-subtle)]">
+                    <div className="flex-shrink-0 h-36 p-3 rounded-lg border border-[var(--border-subtle)]">
                         {selectedItem ? (
                              <div className="h-full flex flex-col justify-between animate-fade-in" style={{animationDuration: '200ms'}}>
                                  <div>

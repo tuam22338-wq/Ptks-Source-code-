@@ -1,6 +1,3 @@
-
-
-
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload } from '../types';
 import { generateDualResponseStream, harmonizeNarrative, summarizeStory } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
@@ -57,12 +54,14 @@ export const processPlayerAction = async (
         console.error("Lỗi phân tích JSON từ AI:", e, "\nNội dung JSON:", fullResponseJsonString);
         throw new Error("AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
     }
-
+    
     // --- GIAI ĐOẠN 2: "THIÊN ĐẠO GIÁM SÁT" ---
+    // The AI's proposed mechanical changes are now validated.
     const { validatedIntent, validationNotifications } = validateMechanicalChanges(aiPayload.mechanicalIntent, stateAfterSim);
     validationNotifications.forEach(showNotification);
 
     // --- GIAI ĐOẠN 3: "NGÔN-THỰC HỢP NHẤT" ---
+    // The validated mechanical changes are applied to the state.
     let finalState = applyMechanicalChanges(stateAfterSim, validatedIntent, showNotification);
     
     let finalNarrative = aiPayload.narrative;

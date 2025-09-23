@@ -1,0 +1,78 @@
+import React, { memo } from 'react';
+import type { GameSettings, SafetyLevel } from '../../../types';
+import { SAFETY_LEVELS, SAFETY_CATEGORIES } from '../../../constants';
+import { FaFire } from 'react-icons/fa';
+
+interface SettingsSectionProps {
+    title: string;
+    children: React.ReactNode;
+}
+const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
+  <section className="settings-section">
+    <h3 className="settings-section-title">{title}</h3>
+    <div className="space-y-6">{children}</div>
+  </section>
+);
+
+interface SettingsRowProps {
+    label: string;
+    description: string;
+    children: React.ReactNode;
+    disabled?: boolean;
+}
+const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
+  <div className={`settings-row ${disabled ? 'opacity-50' : ''}`}>
+    <div className="settings-row-label">
+      <label>{label}</label>
+      <p>{description}</p>
+    </div>
+    <div className="settings-row-control">{children}</div>
+  </div>
+);
+
+interface SafetySettingsProps {
+    settings: GameSettings;
+    handleSettingChange: (key: keyof GameSettings, value: any) => void;
+}
+
+const SafetySettingsTab: React.FC<SafetySettingsProps> = ({ settings, handleSettingChange }) => {
+    return (
+        <SettingsSection title="Cài Đặt An Toàn AI">
+            <SettingsRow label="Bật Chế Độ NSFW (18+)" description="Kích hoạt chế độ NSFW. Khi bật, AI sẽ tạo ra nội dung người lớn chi tiết, không che đậy và bỏ qua tất cả các bộ lọc an toàn khác.">
+                <div className="flex flex-col">
+                    <label className="flex items-center cursor-pointer">
+                        <input type="checkbox" checked={settings.enableNsfwMode} onChange={e => handleSettingChange('enableNsfwMode', e.target.checked)} className="themed-checkbox" />
+                        <span className="ml-3 text-sm font-bold text-red-400 flex items-center gap-2"><FaFire /> Bật chế độ 18+</span>
+                    </label>
+                    {settings.enableNsfwMode && (
+                         <p className="mt-2 text-xs text-red-400 bg-red-900/30 border border-red-500/50 p-2 rounded-md">
+                            <strong>CẢNH BÁO:</strong> Bạn đã bật chế độ NSFW. AI sẽ tạo ra các nội dung người lớn, tình dục một cách chi tiết và trần trụi. Các bộ lọc an toàn khác đã bị vô hiệu hóa.
+                        </p>
+                    )}
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Công tắc an toàn chính" description="Tắt tùy chọn này sẽ bỏ qua tất cả các bộ lọc an toàn. Chỉ nên tắt nếu bạn hiểu rõ rủi ro." disabled={settings.enableNsfwMode}>
+                <label className="flex items-center cursor-pointer">
+                    <input type="checkbox" checked={settings.masterSafetySwitch} onChange={e => handleSettingChange('masterSafetySwitch', e.target.checked)} className="themed-checkbox" disabled={settings.enableNsfwMode}/>
+                    <span className="ml-3 text-sm text-gray-300">Bật bộ lọc an toàn</span>
+                </label>
+            </SettingsRow>
+            {settings.masterSafetySwitch && SAFETY_CATEGORIES.map(category => (
+                <SettingsRow key={category.id} label={category.name} description={`Chặn các nội dung liên quan đến ${category.name.toLowerCase()}.`} disabled={settings.enableNsfwMode}>
+                     <select 
+                        className="themed-select" 
+                        value={settings.safetyLevels[category.id as keyof typeof settings.safetyLevels]}
+                        onChange={e => handleSettingChange('safetyLevels', { ...settings.safetyLevels, [category.id]: e.target.value as SafetyLevel })}
+                        disabled={settings.enableNsfwMode}
+                    >
+                        {SAFETY_LEVELS.map(level => (
+                            <option key={level.value} value={level.value}>{level.label}</option>
+                        ))}
+                    </select>
+                </SettingsRow>
+            ))}
+        </SettingsSection>
+    );
+};
+
+export default memo(SafetySettingsTab);

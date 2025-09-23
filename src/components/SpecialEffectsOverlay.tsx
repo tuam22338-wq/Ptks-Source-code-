@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import type { ItemQuality } from '../types';
+import type { ItemQuality, InventoryItem } from '../types';
 import { ITEM_QUALITY_STYLES } from '../constants';
 import { GiStarsStack } from 'react-icons/gi';
 
@@ -17,33 +17,35 @@ const SpecialEffectsOverlay: React.FC = () => {
     const prevInventory = useRef<Map<string, number>>(new Map());
     const isInitialMount = useRef(true);
 
+    // This single, more precise useEffect handles all logic to prevent stale state.
     useEffect(() => {
-        const currentItems = gameState?.playerCharacter.inventory.items || [];
-        const initialMap = new Map<string, number>();
-        currentItems.forEach(item => {
-            initialMap.set(item.name, (initialMap.get(item.name) || 0) + item.quantity);
-        });
-        prevInventory.current = initialMap;
-    }, []);
+        if (!gameState) return;
 
-    useEffect(() => {
+        const { playerCharacter } = gameState;
+        const currentRealmId = playerCharacter.cultivation.currentRealmId;
+        const currentItems = playerCharacter.inventory.items;
+
         if (isInitialMount.current) {
+            // Initialize refs on first render
             isInitialMount.current = false;
+            prevRealmId.current = currentRealmId;
+            const initialMap = new Map<string, number>();
+            currentItems.forEach(item => {
+                initialMap.set(item.name, (initialMap.get(item.name) || 0) + item.quantity);
+            });
+            prevInventory.current = initialMap;
             return;
         }
 
-        const currentRealmId = gameState?.playerCharacter.cultivation.currentRealmId;
+        // Check for breakthrough
         if (currentRealmId && prevRealmId.current && currentRealmId !== prevRealmId.current) {
             setActiveEffect('breakthrough');
             const timer = setTimeout(() => setActiveEffect(null), 4000);
-            prevRealmId.current = currentRealmId;
+            prevRealmId.current = currentRealmId; // Update ref for next change
             return () => clearTimeout(timer);
         }
-        if (currentRealmId) {
-            prevRealmId.current = currentRealmId;
-        }
-
-        const currentItems = gameState?.playerCharacter.inventory.items || [];
+        
+        // Check for new rare items
         const currentInventoryMap = new Map<string, number>();
         currentItems.forEach(item => {
             currentInventoryMap.set(item.name, (currentInventoryMap.get(item.name) || 0) + item.quantity);
@@ -57,14 +59,19 @@ const SpecialEffectsOverlay: React.FC = () => {
                     setRareItemData({ name: newItem.name, icon: newItem.icon || '💎', quality: newItem.quality });
                     setActiveEffect('rareItem');
                     const timer = setTimeout(() => setActiveEffect(null), 5000);
-                    prevInventory.current = currentInventoryMap;
+                    
+                    prevInventory.current = currentInventoryMap; // Update ref after finding a new item
                     return () => clearTimeout(timer);
                 }
             }
         }
+        
+        // Update refs if no effect was triggered
+        prevRealmId.current = currentRealmId;
         prevInventory.current = currentInventoryMap;
 
-    }, [gameState]);
+    }, [gameState?.playerCharacter.cultivation.currentRealmId, gameState?.playerCharacter.inventory.items, gameState]);
+
 
     if (!activeEffect || state.settings.enablePerformanceMode) return null;
 

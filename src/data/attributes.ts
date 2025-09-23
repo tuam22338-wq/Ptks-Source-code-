@@ -39,6 +39,8 @@ export const DEFAULT_ATTRIBUTE_DEFINITIONS: AttributeDefinition[] = [
     // Vitals Group
     { id: 'sinh_menh', name: 'Sinh Mệnh', description: 'Thể lực của nhân vật. Về 0 sẽ tử vong.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 100, group: 'vitals' },
     { id: 'linh_luc', name: 'Linh Lực', description: 'Năng lượng để thi triển pháp thuật và kỹ năng.', iconName: 'GiMagicSwirl', type: 'VITAL', baseValue: 50, group: 'vitals' },
+    { id: 'hunger', name: 'Độ No', description: 'Mức độ no bụng của nhân vật. Về 0 sẽ bắt đầu bị đói.', iconName: 'GiMeal', type: 'VITAL', baseValue: 100, group: 'vitals' },
+    { id: 'thirst', name: 'Độ Khát', description: 'Mức độ đủ nước của nhân vật. Về 0 sẽ bắt đầu bị khát.', iconName: 'GiWaterDrop', type: 'VITAL', baseValue: 100, group: 'vitals' },
 
     // Cultivation Group
     { id: 'canh_gioi', name: 'Cảnh Giới', description: 'Cấp độ tu vi hiện tại.', iconName: 'GiStairsGoal', type: 'INFORMATIONAL', group: 'cultivation' },

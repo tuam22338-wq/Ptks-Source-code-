@@ -66,6 +66,7 @@ const SummaryPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
     const vitalAttributes = attributeSystem.definitions.filter(def => def.type === 'VITAL' && attributes[def.id]?.maxValue);
     const coreAttributeDefs = attributeSystem.definitions.filter(def => ['luc_luong', 'than_phap', 'can_cot', 'nguyen_than', 'ngo_tinh', 'co_duyen'].includes(def.id));
     
+    // FIX: Added hunger and thirst to the color maps to ensure they render.
     const VITAL_COLORS: Record<string, string> = {
         'sinh_menh': 'bg-red-500',
         'linh_luc': 'bg-blue-500',
@@ -88,6 +89,7 @@ const SummaryPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
             <div className="summary-panel-vitals">
                 {vitalAttributes.map(def => {
                     const attr = attributes[def.id];
+                    if (!attr || attr.maxValue === undefined) return null;
                     const Icon = UI_ICONS[def.iconName];
                     const color = VITAL_COLORS[def.id] || VITAL_COLORS['default'];
                     const iconColor = VITAL_ICON_COLORS[def.id] || VITAL_ICON_COLORS['default'];
@@ -96,7 +98,7 @@ const SummaryPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                             key={def.id}
                             label={def.name}
                             current={attr.value}
-                            max={attr.maxValue!}
+                            max={attr.maxValue}
                             colorClass={color}
                             icon={() => <Icon className={iconColor} />}
                         />

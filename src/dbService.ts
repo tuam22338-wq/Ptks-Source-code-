@@ -1,6 +1,7 @@
 
+
 import Dexie, { type Table } from 'dexie';
-import { REALM_SYSTEM } from '../constants';
+import { REALM_SYSTEM } from './constants';
 import type { 
     GameState, 
     GameSettings, 
@@ -12,8 +13,10 @@ import type {
     Sect, 
     Location,
     MemoryFragment,
-    GraphEdge
-} from '../types';
+    GraphEdge,
+    RagSource,
+    RagEmbedding
+} from './types';
 
 export interface DbSaveSlot {
   id: number;
@@ -44,12 +47,13 @@ export class MyDatabase extends Dexie {
   misc!: Table<{key: string, value: any}, string>;
   memoryFragments!: Table<MemoryFragment, number>;
   graphEdges!: Table<GraphEdge, number>;
+  ragSources!: Table<RagSource, string>; // primary key is id
+  ragEmbeddings!: Table<RagEmbedding, number>; // auto-incrementing primary key
 
   constructor() {
     super('PhongThanKySuDB');
-    // Version 3 adds the graphEdges table for the Entity Graph system.
-    // FIX: Cast 'this' to Dexie to resolve typing issue with subclassing.
-    (this as Dexie).version(3).stores({
+    // Version 4 adds RAG tables
+    (this as Dexie).version(4).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
@@ -58,9 +62,10 @@ export class MyDatabase extends Dexie {
       misc: 'key',
       memoryFragments: '++id, slotId, [slotId+gameDate.year], *entities.id',
       graphEdges: '++id, slotId, [source.id+target.id], type, memoryFragmentId',
+      ragSources: 'id, type, isEnabled',
+      ragEmbeddings: '++id, sourceId',
     });
-    // Migrate from v2 to v3 if needed (no specific migration action required, just table creation)
-    // FIX: Cast 'this' to Dexie to resolve typing issue with subclassing.
+    // This will upgrade from version 3 to 4, creating the new tables.
     (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });

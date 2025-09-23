@@ -283,7 +283,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
         return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
     }, [discoveredLocations, playerCharacter.currentLocationId]);
     
-    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory || dialogueChoices);
+    // FIX: Make condition for special panels more specific to avoid hiding the action bar.
+    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory || (dialogueChoices && dialogueChoices.length > 0));
     const isOnLastPage = currentPage === storyPages.length - 1;
 
     if (!currentLocation) {
@@ -340,7 +341,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             {combatState && <CombatScreen />}
                             {activeEvent && <EventPanel event={activeEvent} onChoice={handleEventChoice} playerAttributes={gameState.playerCharacter.attributes} />}
                             {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
-                            {dialogueChoices && (
+                            {dialogueChoices && dialogueChoices.length > 0 && (
                                 <InteractionOverlay 
                                     choices={dialogueChoices}
                                     playerAttributes={playerCharacter.attributes}

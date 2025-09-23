@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import type { GameState, ShopItem, InventoryItem } from '../../../types';
 import { SHOPS, ITEM_QUALITY_STYLES } from '../../../constants';

@@ -32,32 +32,6 @@
       .text-text-muted {
         color: var(--text-muted-color);
       }
-
-      /* Background & Animations */
-      .ink-background-container {
-        position: absolute; inset: 0; overflow: hidden; background-color: #212020; z-index: 1;
-      }
-      .ink-layer {
-        position: absolute; inset: 0; background-repeat: repeat-x; background-position: center bottom;
-        animation: parallax-move linear infinite; mix-blend-mode: soft-light;
-      }
-      .ink-layer-1 {
-        background-image: linear-gradient(to top, rgba(23, 22, 22, 0) 0%, rgba(30, 28, 28, 0.8) 20%, #1e1c1c 40%);
-        z-index: 4; animation-duration: 120s; opacity: 1; mix-blend-mode: normal;
-      }
-      .ink-layer-2 {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%236b21a8' d='M0 400 L0 250 Q 100 220, 200 250 T 400 240 T 600 260 T 800 250 L800 400 Z' /%3E%3C/svg%3E");
-        background-size: auto 50%; z-index: 3; animation-duration: 90s; opacity: 0.15;
-      }
-      .ink-layer-3 {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%230d9488' d='M0 400 L0 300 Q 80 250, 160 300 T 320 280 T 480 310 T 640 290 T 800 300 L800 400 Z' /%3E%3C/svg%3E");
-        background-size: auto 60%; z-index: 2; animation-duration: 60s; opacity: 0.25;
-      }
-      .ink-layer-4 {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 400'%3E%3Cpath fill='%23f59e0b' d='M0 400 L0 350 Q 120 300, 240 350 T 480 330 T 720 360 L800 350 L800 400 Z' /%3E%3C/svg%3E");
-        background-size: auto 45%; z-index: 1; animation-duration: 40s; opacity: 0.2;
-      }
-      @keyframes parallax-move { from { background-position-x: 0; } to { background-position-x: -2000px; } }
       
       .main-menu-title {
         font-size: clamp(4.5rem, 18vw, 11rem); line-height: 0.9; font-weight: 700;
@@ -113,11 +87,11 @@
 </script>
 </head>
   <body>
-    <div class="ink-background-container">
-      <div class="ink-layer ink-layer-1"></div>
-      <div class="ink-layer ink-layer-2"></div>
-      <div class="ink-layer ink-layer-3"></div>
-      <div class="ink-layer ink-layer-4"></div>
+    <div class="dynamic-bg-container dynamic-bg-ink_wash">
+      <div class="dynamic-bg-layer layer-1"></div>
+      <div class="dynamic-bg-layer layer-2"></div>
+      <div class="dynamic-bg-layer layer-3"></div>
+      <div class="dynamic-bg-layer layer-4"></div>
     </div>
     <div id="launch-container">
       <div class="w-full max-w-7xl px-4 flex flex-col items-center justify-center space-y-8 md:space-y-12 animate-fade-in-menu">

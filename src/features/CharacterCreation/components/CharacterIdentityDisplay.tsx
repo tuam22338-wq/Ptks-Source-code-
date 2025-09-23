@@ -1,4 +1,5 @@
 
+
 import React, { useState, memo, useEffect, useRef } from 'react';
 import type { CharacterIdentity, Gender } from '../../../types';
 import { PERSONALITY_TRAITS } from '../../../constants';
@@ -12,28 +13,10 @@ interface CharacterIdentityDisplayProps {
 
 const GENDERS: Gender[] = ['Nam', 'Nữ'];
 
-const getPersonalityFromValue = (value: number): CharacterIdentity['personality'] => {
-    if (value < -50) return 'Tà Ác';
-    if (value < -15) return 'Hỗn Loạn';
-    if (value > 50) return 'Chính Trực';
-    return 'Trung Lập';
-};
-
-const getValueFromPersonality = (personality: CharacterIdentity['personality']): number => {
-    switch (personality) {
-        case 'Tà Ác': return -85;
-        case 'Hỗn Loạn': return -35;
-        case 'Chính Trực': return 85;
-        case 'Trung Lập':
-        default: return 0;
-    }
-};
-
 const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ identity, onIdentityChange, isFinal = false }) => {
     const [name, setName] = useState(identity.name);
     const [familyName, setFamilyName] = useState(identity.familyName);
     const [appearance, setAppearance] = useState(identity.appearance);
-    const [alignmentValue, setAlignmentValue] = useState(() => getValueFromPersonality(identity.personality));
     const isMounted = useRef(false);
 
     useEffect(() => {
@@ -45,7 +28,6 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
         setName(identity.name);
         setFamilyName(identity.familyName);
         setAppearance(identity.appearance);
-        setAlignmentValue(getValueFromPersonality(identity.personality));
     }, [identity]);
 
     const handleBlur = () => {
@@ -53,18 +35,7 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
             onIdentityChange({ name, familyName, appearance });
         }
     };
-
-    const handleAlignmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseInt(e.target.value, 10);
-        setAlignmentValue(value);
-        const newPersonality = getPersonalityFromValue(value);
-        if (newPersonality !== identity.personality) {
-            onIdentityChange({ personality: newPersonality });
-        }
-    };
     
-    const alignmentColor = alignmentValue < -50 ? 'text-red-400' : alignmentValue > 50 ? 'text-sky-400' : 'text-gray-300';
-
     return (
         <div className="bg-black/20 p-4 rounded-lg flex flex-col sm:flex-row gap-4 md:gap-6">
             <div className="w-full sm:w-24 flex-shrink-0 flex flex-col items-center justify-center p-2 bg-black/20 rounded-lg border border-gray-700/40 aspect-square sm:aspect-[9/16]">
@@ -134,20 +105,19 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                             />
                         </div>
                          <div>
-                            <label className="block text-xs text-gray-400 mb-1">Thiên Hướng</label>
-                             <div className="flex items-center gap-3 bg-black/20 p-2 rounded-lg">
-                                <span className="text-sm font-bold text-red-500">Tà Đạo</span>
-                                <input
-                                    type="range"
-                                    min="-100"
-                                    max="100"
-                                    value={alignmentValue}
-                                    onChange={handleAlignmentChange}
-                                    className="themed-slider flex-grow"
-                                />
-                                <span className="text-sm font-bold text-sky-500">Chính Đạo</span>
+                            <p className="text-xs text-gray-400 mb-1">Thiên Hướng</p>
+                             <div className="themed-button-group">
+                                {PERSONALITY_TRAITS.map(trait => (
+                                    <button
+                                        key={trait.name}
+                                        onClick={() => onIdentityChange({ personality: trait.name })}
+                                        title={trait.description}
+                                        className={`${identity.personality === trait.name ? 'active' : ''}`}
+                                    >
+                                        {trait.name}
+                                    </button>
+                                ))}
                             </div>
-                            <p className={`text-center text-sm font-bold mt-1 ${alignmentColor}`}>{identity.personality}</p>
                         </div>
                     </>
                 )}

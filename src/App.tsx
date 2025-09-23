@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useMemo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -20,26 +16,21 @@ import { AppProvider, useAppContext } from './contexts/AppContext';
 
 const BackgroundOverlay: React.FC = () => {
     const { state } = useAppContext();
-    const { backgroundImage, backgroundImageFilters } = state.settings;
+    const { dynamicBackground } = state.settings;
 
-    if (!backgroundImage) {
+    if (!dynamicBackground || dynamicBackground === 'none') {
         return null;
     }
     
-    const filterStyle: React.CSSProperties = {
-        filter: `
-            hue-rotate(${backgroundImageFilters.hue}deg) 
-            brightness(${backgroundImageFilters.brightness}%) 
-            saturate(${backgroundImageFilters.saturate}%)
-        `,
-        backgroundImage: `url("${backgroundImage}")`,
-    };
+    const backgroundClass = `dynamic-bg-${dynamicBackground}`;
 
     return (
-        <div 
-            className="fixed inset-0 -z-10 bg-cover bg-center transition-all duration-500"
-            style={filterStyle}
-        ></div>
+        <div className={`dynamic-bg-container ${backgroundClass}`}>
+            <div className="dynamic-bg-layer layer-1"></div>
+            <div className="dynamic-bg-layer layer-2"></div>
+            <div className="dynamic-bg-layer layer-3"></div>
+            <div className="dynamic-bg-layer layer-4"></div>
+        </div>
     );
 };
 
@@ -173,15 +164,16 @@ const AppContent: React.FC = () => {
     };
     
     const showHeader = view !== 'mainMenu' && view !== 'gamePlay' && !isLoading && !isMigratingData;
+    const hasDynamicBackground = settings.dynamicBackground && settings.dynamicBackground !== 'none';
 
     return (
-        <div className="relative w-full min-h-[calc(var(--vh,1vh)*100)]">
+        <div className="relative w-full min-h-[calc(var(--vh,1vh)*100)] bg-[var(--bg-color)]">
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
             {gameState && <WeatherOverlay />}
             {gameState && <SpecialEffectsOverlay />}
 
-            <div className={`relative z-10 w-full min-h-[calc(var(--vh,1vh)*100)] flex flex-col items-center justify-center transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'} ${settings.backgroundImage ? 'backdrop-blur-lg bg-[var(--glass-bg-color)] rounded-2xl' : ''}`}>
+            <div className={`relative z-10 w-full min-h-[calc(var(--vh,1vh)*100)] flex flex-col items-center justify-center transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'} ${hasDynamicBackground ? 'backdrop-blur-lg bg-[var(--glass-bg-color)] rounded-2xl' : ''}`}>
               <div className={`w-full max-w-7xl transition-opacity duration-700 ${!showHeader ? 'opacity-0 h-0 invisible' : 'opacity-100'}`}>
                 {showHeader && <Header />}
               </div>
