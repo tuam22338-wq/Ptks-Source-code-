@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -178,8 +179,9 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             const existingStack = pc.inventory.items.find(i => i.name === itemToUnequip.name && !i.isEquipped);
             let newInventoryItems;
             if (existingStack) {
-                // FIX: The type of `quantity` is `number`, so `|| 0` is redundant. Removing it may resolve a complex type inference issue.
-                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: i.quantity + 1} : i);
+                // FIX: Although the type of `quantity` is `number`, it could be undefined at runtime.
+                // Using a fallback to 0 ensures the arithmetic operation does not fail.
+                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (i.quantity || 0) + 1} : i);
             } else {
                 newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];
             }
