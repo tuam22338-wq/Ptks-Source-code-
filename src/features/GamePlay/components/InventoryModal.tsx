@@ -179,6 +179,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             const existingStack = pc.inventory.items.find(i => i.name === itemToUnequip.name && !i.isEquipped);
             let newInventoryItems;
             if (existingStack) {
+// FIX: Added fallback to 0 for quantity to prevent runtime errors if the value is missing.
                 newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (i.quantity || 0) + 1} : i);
             } else {
                 newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];

@@ -225,19 +225,19 @@ html, body {
 }
 .gameplay-story-panel { @apply flex-1; }
 .sidebar-container {
-    @apply fixed top-0 left-0 h-full w-full max-w-xs sm:max-w-sm z-40 bg-[var(--bg-subtle)] backdrop-blur-md border-r border-[var(--border-subtle)] transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col;
+    @apply fixed top-0 left-0 h-full w-full max-w-xs sm:max-w-sm z-40 bg-[var(--bg-subtle)] backdrop-blur-md border-r border-[var(--border-subtle)] transform -translate-x-full transition-transform duration-300 ease-in-out flex;
 }
 .gameplay-main-content.sidebar-open {
-    @apply md:pl-96; /* 96 = 24rem = max-w-sm */
+    @apply md:ml-96; /* 96 = 24rem = max-w-sm */
 }
 .sidebar-container.open { @apply translate-x-0; }
 .sidebar-tabs { @apply flex-shrink-0 flex flex-col items-center gap-2 p-2 bg-black/20; }
 .sidebar-tab-button { @apply w-14 h-14 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-700/50 hover:text-white transition-colors; }
 .sidebar-tab-button.active { @apply bg-amber-500/20 text-amber-300; }
-.sidebar-content { @apply flex-grow p-4 min-h-0; }
+.sidebar-content { @apply flex-grow p-4 min-h-0 flex flex-col; }
 
 .summary-panel {
-    @apply absolute top-0 right-0 w-72 p-2 bg-black/50 backdrop-blur-sm border-b border-l border-[var(--border-subtle)]/50 rounded-bl-lg z-20;
+    @apply hidden md:block absolute top-0 right-0 w-72 p-2 bg-black/50 backdrop-blur-sm border-b border-l border-[var(--border-subtle)]/50 rounded-bl-lg z-20;
 }
 .summary-panel-vitals { @apply space-y-2; }
 .stat-bar-container { @apply flex items-center gap-2 p-1 rounded-md transition-all duration-300; }
