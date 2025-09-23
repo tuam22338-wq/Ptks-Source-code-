@@ -37,7 +37,7 @@ export const SettingsPanel: React.FC = () => {
     const [isRagManagerOpen, setIsRagManagerOpen] = useState(false);
 
     return (
-        <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8 flex flex-col h-full max-h-[85vh]">
+        <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8 flex flex-col max-h-[85vh]">
             {isRagManagerOpen && <RagSourceManagerModal onClose={() => setIsRagManagerOpen(false)} />}
             <div className="settings-header">
                 <button onClick={() => handleNavigate('mainMenu')} className="settings-back-button" title="Quay Lại Menu">

@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -19,7 +20,8 @@ const BackgroundOverlay: React.FC = () => {
     const { dynamicBackground } = state.settings;
 
     if (!dynamicBackground || dynamicBackground === 'none') {
-        return null;
+        // Render a static background div if dynamic is off, ensuring there's always a background
+        return <div className="fixed inset-0 -z-10 bg-[var(--bg-color)]" />;
     }
     
     const backgroundClass = `dynamic-bg-${dynamicBackground}`;
@@ -167,13 +169,13 @@ const AppContent: React.FC = () => {
     const hasDynamicBackground = settings.dynamicBackground && settings.dynamicBackground !== 'none';
 
     return (
-        <div className="relative w-full min-h-[calc(var(--vh,1vh)*100)] bg-[var(--bg-color)]">
+        <div className="relative w-full min-h-[calc(var(--vh,1vh)*100)]">
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
             {gameState && <WeatherOverlay />}
             {gameState && <SpecialEffectsOverlay />}
 
-            <div className={`relative z-10 w-full min-h-[calc(var(--vh,1vh)*100)] flex flex-col items-center justify-center transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'} ${hasDynamicBackground ? 'backdrop-blur-lg bg-[var(--glass-bg-color)] rounded-2xl' : ''}`}>
+            <div className={`relative z-10 w-full min-h-[calc(var(--vh,1vh)*100)] flex flex-col items-center justify-start transition-all duration-500 ${view === 'gamePlay' ? '' : 'p-4 sm:p-6 lg:p-8'} ${hasDynamicBackground ? 'backdrop-blur-lg bg-[var(--glass-bg-color)] rounded-2xl' : ''}`}>
               <div className={`w-full max-w-7xl transition-opacity duration-700 ${!showHeader ? 'opacity-0 h-0 invisible' : 'opacity-100'}`}>
                 {showHeader && <Header />}
               </div>

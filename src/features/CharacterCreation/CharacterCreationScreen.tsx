@@ -6,7 +6,7 @@ import { GiGalaxy, GiPerson, GiScrollQuill, GiStairsGoal, GiSparkles, GiFamilyTr
 import Timeline from '../../components/Timeline';
 import { generateCharacterFromPrompts } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import CharacterIdentityDisplay from './components/CharacterIdentityDisplay';
+import CharacterIdentityDisplay from './CharacterIdentityDisplay';
 import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS, NPC_DENSITY_LEVELS } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -44,7 +44,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const [step, setStep] = useState<CreationStep>('identity');
     
     // State for user text inputs
-    const [draftIdentity, setDraftIdentity] = useState<Omit<CharacterIdentity, 'origin' | 'age'>>({ name: '', familyName: '', gender: 'Nam', appearance: '', personality: 'Trung Lập' });
+    const [draftIdentity, setDraftIdentity] = useState<CharacterIdentity>({ name: '', familyName: '', gender: 'Nam', appearance: '', personality: 'Trung Lập', origin: '', age: 18 });
     const [raceInput, setRaceInput] = useState('');
     const [backgroundInput, setBackgroundInput] = useState('');
     
@@ -124,7 +124,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                         </div>
                          {generationError && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4">{generationError}</p>}
                         <div className="p-4 bg-black/20 rounded-lg border border-gray-700/60">
-                             <CharacterIdentityDisplay identity={draftIdentity} onIdentityChange={handleIdentityChange} />
+                             <CharacterIdentityDisplay identity={draftIdentity} onIdentityChange={handleIdentityChange} isFinal={false} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black/20 rounded-lg border border-gray-700/60">
                            <div>

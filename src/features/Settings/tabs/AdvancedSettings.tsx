@@ -2,6 +2,7 @@ import React, { memo, useRef } from 'react';
 import type { GameSettings } from '../../../types';
 import { FaDownload, FaUpload, FaExclamationTriangle } from 'react-icons/fa';
 import * as db from '../../../services/dbService';
+import { AI_SYNC_MODES } from '../../../constants';
 
 interface SettingsSectionProps {
     title: string;
@@ -135,6 +136,20 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                 <div className="flex items-center gap-4">
                     <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={(e) => handleSettingChange('topP', parseFloat(e.target.value))} className="themed-slider flex-grow" />
                     <span className="themed-slider-value">{settings.topP.toFixed(2)}</span>
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Chế độ Đồng bộ AI" description="Chọn cách AI đồng bộ hóa trạng thái game. 'Thiên Cơ' được khuyến khích để đảm bảo tính nhất quán.">
+                <div className="themed-button-group">
+                    {AI_SYNC_MODES.map(mode => (
+                        <button 
+                            key={mode.value} 
+                            className={settings.aiSyncMode === mode.value ? 'active' : ''} 
+                            onClick={() => handleSettingChange('aiSyncMode', mode.value)}
+                            title={mode.description}
+                        >
+                            {mode.label}
+                        </button>
+                    ))}
                 </div>
             </SettingsRow>
             <SettingsRow label="Bật 'Suy Nghĩ' (Thinking)" description="Cho phép model suy nghĩ trước khi trả lời để có chất lượng cao hơn (chỉ cho gemini-2.5-flash). Tắt có thể giảm độ trễ.">
