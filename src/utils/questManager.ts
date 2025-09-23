@@ -127,8 +127,10 @@ const updateQuestProgress = (currentState: GameState): QuestUpdateResult => {
                     }
                     break;
                 case 'GATHER':
-                    const item = playerCharacter.inventory.items.find(i => i.name === obj.target);
-                    obj.current = item ? item.quantity : 0;
+                    // FIX: The progress for GATHER quests is now updated cumulatively in stateUpdateService
+                    // when items are gained. This switch case is now intentionally left blank to prevent
+                    // the old logic from resetting the progress based on current inventory quantity.
+                    // The completion check after the switch statement will handle the rest.
                     break;
                 case 'TALK': // This needs to be triggered explicitly
                     break;

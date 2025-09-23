@@ -1,10 +1,12 @@
 
 
+
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
 import { GiWeight, GiPerson } from "react-icons/gi";
-import { FaTimes, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
+import { FaTimes, FaArrowLeft, FaArrowRight, FaSearch } from 'react-icons/fa';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 
@@ -78,6 +80,39 @@ const EquipmentSlotComponent: React.FC<{
     );
 };
 
+const ItemComparison: React.FC<{ item: InventoryItem; equipped: InventoryItem | null }> = ({ item, equipped }) => {
+    const itemBonuses = new Map((item.bonuses || []).map(b => [b.attribute, b.value]));
+    const equippedBonuses = new Map((equipped?.bonuses || []).map(b => [b.attribute, b.value]));
+    const allAttributes = new Set([...itemBonuses.keys(), ...equippedBonuses.keys()]);
+
+    if (allAttributes.size === 0) return null;
+
+    return (
+        <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]/50">
+            {Array.from(allAttributes).map(attr => {
+                const itemValue = itemBonuses.get(attr) || 0;
+                const equippedValue = equippedBonuses.get(attr) || 0;
+                const diff = itemValue - equippedValue;
+                let diffColor = 'text-gray-400';
+                if (diff > 0) diffColor = 'text-green-400';
+                if (diff < 0) diffColor = 'text-red-400';
+
+                return (
+                    <div key={attr} className="flex justify-between items-center text-xs">
+                        <span className="text-gray-300">{attr}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono w-8 text-right">{itemValue}</span>
+                            <span className={`font-mono font-bold w-10 text-center ${diffColor}`}>
+                                ({diff > 0 ? '+' : ''}{diff})
+                            </span>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     const { state, dispatch } = useAppContext();
     const { gameState } = state;
@@ -87,10 +122,12 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     const [filter, setFilter] = useState<ItemFilter>('all');
     const [sort, setSort] = useState<SortOrder>('quality_desc');
     const [currentPage, setCurrentPage] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleClose = useCallback(() => {
         setSelectedItem(null);
         setCurrentPage(0);
+        setSearchTerm('');
         closeInventoryModal();
     }, [closeInventoryModal]);
 
@@ -144,7 +181,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             const existingStack = pc.inventory.items.find(i => i.name === itemToUnequip.name && !i.isEquipped);
             let newInventoryItems;
             if (existingStack) {
-                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: i.quantity + 1} : i);
+                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (i.quantity || 0) + 1} : i);
             } else {
                 newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];
             }
@@ -206,34 +243,44 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
         setSelectedItem(null);
     }, [playerCharacter, dispatch, showNotification]);
 
-    const sortedItems = useMemo(() => {
+    const sortedAndFilteredItems = useMemo(() => {
         if (!playerCharacter) return [];
         const qualityOrder = ['Tuyệt Phẩm', 'Tiên Phẩm', 'Bảo Phẩm', 'Pháp Phẩm', 'Linh Phẩm', 'Phàm Phẩm'];
-        return playerCharacter.inventory.items
-            .filter(item => filter === 'all' || item.type === filter)
-            .sort((a, b) => {
-                switch (sort) {
-                    case 'name_asc': return a.name.localeCompare(b.name);
-                    case 'name_desc': return b.name.localeCompare(a.name);
-                    case 'weight_desc': return b.weight - a.weight;
-                    case 'quality_desc':
-                    default:
-                        return qualityOrder.indexOf(a.quality) - qualityOrder.indexOf(b.quality);
-                }
+        
+        const filtered = playerCharacter.inventory.items
+            .filter(item => {
+                const matchesFilter = filter === 'all' || item.type === filter;
+                if (!searchTerm.trim()) return matchesFilter;
+                const lowerSearch = searchTerm.toLowerCase();
+                const matchesSearch = item.name.toLowerCase().includes(lowerSearch) || item.description.toLowerCase().includes(lowerSearch);
+                return matchesFilter && matchesSearch;
             });
-    }, [playerCharacter, filter, sort]);
 
-    const totalPages = Math.ceil(sortedItems.length / ITEMS_PER_PAGE);
+        return filtered.sort((a, b) => {
+            switch (sort) {
+                case 'name_asc': return a.name.localeCompare(b.name);
+                case 'name_desc': return b.name.localeCompare(a.name);
+                case 'weight_desc': return b.weight - a.weight;
+                case 'quality_desc':
+                default:
+                    return qualityOrder.indexOf(a.quality) - qualityOrder.indexOf(b.quality);
+            }
+        });
+    }, [playerCharacter, filter, sort, searchTerm]);
+
+    const totalPages = Math.ceil(sortedAndFilteredItems.length / ITEMS_PER_PAGE);
     const paginatedItems = useMemo(() => {
         const start = currentPage * ITEMS_PER_PAGE;
         const end = start + ITEMS_PER_PAGE;
-        return sortedItems.slice(start, end);
-    }, [sortedItems, currentPage]);
+        return sortedAndFilteredItems.slice(start, end);
+    }, [sortedAndFilteredItems, currentPage]);
 
     if (!isOpen || !playerCharacter) return null;
     
     const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + (item.weight * item.quantity), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
+
+    const equippedItemForComparison = selectedItem?.slot ? playerCharacter.equipment[selectedItem.slot] : null;
 
     return (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 animate-fade-in" style={{ animationDuration: '200ms' }} onClick={handleClose}>
@@ -243,25 +290,49 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     <button onClick={handleClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
                 </div>
                 
-                <div className="flex-grow p-4 flex flex-col gap-4 min-h-0">
-                    {/* TOP: Equipment Doll */}
-                    <div className="flex-shrink-0 p-3 rounded-lg border border-[var(--border-subtle)]">
-                        <h4 className="text-lg font-bold font-title text-center mb-2">{playerCharacter.identity.name} - Trang Bị</h4>
-                        <div className="relative h-48 w-full flex items-center justify-center">
-                             <GiPerson className="text-9xl text-gray-800" />
-                             {(Object.keys(EQUIPMENT_SLOTS) as EquipmentSlot[]).map(slot => (
-                                <EquipmentSlotComponent 
-                                    key={slot}
-                                    slot={slot}
-                                    item={playerCharacter.equipment[slot] || null}
-                                    onUnequip={handleUnequip}
-                                    onSelect={setSelectedItem}
-                                />
-                             ))}
+                <div className="flex-grow p-4 flex flex-col lg:flex-row gap-4 min-h-0">
+                    {/* LEFT/TOP: Equipment Doll & Details */}
+                    <div className="w-full lg:w-1/3 flex flex-col gap-4 flex-shrink-0">
+                        <div className="p-3 rounded-lg border border-[var(--border-subtle)]">
+                            <h4 className="text-lg font-bold font-title text-center mb-2">{playerCharacter.identity.name} - Trang Bị</h4>
+                            <div className="relative h-48 w-full flex items-center justify-center">
+                                <GiPerson className="text-9xl text-gray-800" />
+                                {(Object.keys(EQUIPMENT_SLOTS) as EquipmentSlot[]).map(slot => (
+                                    <EquipmentSlotComponent 
+                                        key={slot}
+                                        slot={slot}
+                                        item={playerCharacter.equipment[slot] || null}
+                                        onUnequip={handleUnequip}
+                                        onSelect={setSelectedItem}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                         <div className="flex-grow p-3 rounded-lg border border-[var(--border-subtle)] min-h-[14rem]">
+                            {selectedItem ? (
+                                <div className="h-full flex flex-col justify-between animate-fade-in" style={{animationDuration: '200ms'}}>
+                                    <div>
+                                        <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[selectedItem.quality].color}`}>{selectedItem.name}</h4>
+                                        <p className="text-xs text-gray-400 italic truncate">{selectedItem.description}</p>
+                                        {selectedItem.vitalEffects && selectedItem.vitalEffects.length > 0 && <div className="mt-1 text-xs text-yellow-300">{selectedItem.vitalEffects.map(b => `${b.vital === 'hunger' ? 'No bụng' : 'Nước uống'} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
+                                        
+                                        {selectedItem.slot && !selectedItem.isEquipped && <ItemComparison item={selectedItem} equipped={equippedItemForComparison} />}
+
+                                    </div>
+                                    <div className="flex justify-end items-center gap-2 mt-2">
+                                        {selectedItem.isEquipped && selectedItem.slot && <button onClick={() => handleUnequip(selectedItem.slot!)} className="themed-button-primary text-sm font-bold px-3 py-1 rounded">Tháo Ra</button>}
+                                        {selectedItem.slot && !selectedItem.isEquipped && <button onClick={() => handleEquip(selectedItem)} className="bg-green-700/80 hover:bg-green-600/80 text-white text-sm font-bold px-3 py-1 rounded">Trang Bị</button>}
+                                        {(selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương') && <button onClick={() => handleUse(selectedItem)} className="bg-blue-700/80 hover:bg-blue-600/80 text-white text-sm font-bold px-3 py-1 rounded">{selectedItem.type === 'Đan Phương' ? 'Học' : 'Sử Dụng'}</button>}
+                                        <button onClick={() => handleDrop(selectedItem)} className="bg-red-800/80 hover:bg-red-700 text-white text-sm font-bold px-3 py-1 rounded">Vứt Bỏ</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-gray-500">Di chuột qua vật phẩm để xem chi tiết.</div>
+                            )}
                         </div>
                     </div>
 
-                    {/* BOTTOM: Inventory Grid & Details */}
+                    {/* RIGHT/BOTTOM: Inventory Grid */}
                     <div className="flex-grow flex flex-col p-3 rounded-lg border border-[var(--border-subtle)] min-h-0">
                          <div className="w-full bg-[var(--bg-interactive)] p-2 rounded-lg border border-[var(--border-subtle)] space-y-1 mb-3 flex-shrink-0">
                              <div className="flex justify-between items-baseline text-xs">
@@ -270,6 +341,10 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                              </div>
                              <div className="w-full bg-black/40 rounded-full h-1.5 border border-gray-800">
                                  <div className={`h-1 rounded-full transition-all duration-300 ${weightPercentage > 90 ? 'bg-red-500' : 'bg-[var(--primary-accent-color)]'}`} style={{ width: `${weightPercentage}%` }}></div>
+                             </div>
+                             <div className="relative pt-2">
+                                <FaSearch className="absolute left-3 top-1/2 text-gray-500" />
+                                <input type="text" placeholder="Tìm vật phẩm..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="themed-input w-full !py-1.5 pl-9" />
                              </div>
                         </div>
 
@@ -296,27 +371,6 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                 <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage >= totalPages - 1} className="p-2 disabled:opacity-50"><FaArrowRight /></button>
                             </div>
                         )}
-                    </div>
-                    
-                    <div className="flex-shrink-0 h-36 p-3 rounded-lg border border-[var(--border-subtle)]">
-                        {selectedItem ? (
-                             <div className="h-full flex flex-col justify-between animate-fade-in" style={{animationDuration: '200ms'}}>
-                                 <div>
-                                    <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[selectedItem.quality].color}`}>{selectedItem.name}</h4>
-                                    <p className="text-xs text-gray-400 italic truncate">{selectedItem.description}</p>
-                                    {selectedItem.bonuses && selectedItem.bonuses.length > 0 && <div className="mt-1 text-xs text-teal-300">{selectedItem.bonuses.map(b => `${b.attribute} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
-                                    {selectedItem.vitalEffects && selectedItem.vitalEffects.length > 0 && <div className="mt-1 text-xs text-yellow-300">{selectedItem.vitalEffects.map(b => `${b.vital === 'hunger' ? 'No bụng' : 'Nước uống'} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
-                                 </div>
-                                  <div className="flex justify-end items-center gap-2">
-                                    {selectedItem.isEquipped && selectedItem.slot && <button onClick={() => handleUnequip(selectedItem.slot!)} className="themed-button-primary text-sm font-bold px-3 py-1 rounded">Tháo Ra</button>}
-                                    {selectedItem.slot && !selectedItem.isEquipped && <button onClick={() => handleEquip(selectedItem)} className="bg-green-700/80 hover:bg-green-600/80 text-white text-sm font-bold px-3 py-1 rounded">Trang Bị</button>}
-                                    {(selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương') && <button onClick={() => handleUse(selectedItem)} className="bg-blue-700/80 hover:bg-blue-600/80 text-white text-sm font-bold px-3 py-1 rounded">{selectedItem.type === 'Đan Phương' ? 'Học' : 'Sử Dụng'}</button>}
-                                    <button onClick={() => handleDrop(selectedItem)} className="bg-red-800/80 hover:bg-red-700 text-white text-sm font-bold px-3 py-1 rounded">Vứt Bỏ</button>
-                                 </div>
-                             </div>
-                         ) : (
-                             <div className="h-full flex items-center justify-center text-gray-500">Di chuột qua vật phẩm để xem chi tiết.</div>
-                         )}
                     </div>
                 </div>
             </div>

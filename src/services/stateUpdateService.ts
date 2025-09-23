@@ -95,6 +95,7 @@ export const applyMechanicalChanges = (
     }
 
     if (intent.itemsGained) {
+        let newQuests = [...pc.activeQuests];
         let newItems = [...pc.inventory.items];
         intent.itemsGained.forEach(itemData => {
             const existingItemIndex = newItems.findIndex((i: InventoryItem) => i.name === itemData.name);
@@ -112,8 +113,21 @@ export const applyMechanicalChanges = (
                 } as InventoryItem);
             }
             showNotification(`Nhận được: [${itemData.name} x${itemData.quantity || 1}]`);
+
+            // Update GATHER quest progress cumulatively
+            newQuests = newQuests.map(quest => {
+                const updatedObjectives = quest.objectives.map(obj => {
+                    if (obj.type === 'GATHER' && !obj.isCompleted && obj.target === itemData.name) {
+                        const newCurrent = obj.current + (itemData.quantity || 1);
+                        showNotification(`Nhiệm vụ cập nhật: ${obj.description} (${Math.min(newCurrent, obj.required)}/${obj.required})`);
+                        return { ...obj, current: newCurrent };
+                    }
+                    return obj;
+                });
+                return { ...quest, objectives: updatedObjectives };
+            });
         });
-        pc = { ...pc, inventory: { ...pc.inventory, items: newItems }};
+        pc = { ...pc, inventory: { ...pc.inventory, items: newItems }, activeQuests: newQuests};
     }
     
     if (intent.newTechniques) {

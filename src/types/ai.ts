@@ -62,7 +62,7 @@ export interface MechanicalIntent {
     statChanges?: { attribute: string; change: number; }[];
     currencyChanges?: { currencyName: CurrencyType; change: number; }[];
     // FIX: Corrected the type definition for itemsGained to be a proper array of objects, resolving a critical type inference error. Also added `weight` to ensure type compatibility with InventoryItem.
-    itemsGained?: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; weight: number; }[];
+    itemsGained?: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; weight: number; bonuses?: StatBonus[] }[];
     itemsLost?: { name: string; quantity: number; }[];
     newTechniques?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel' | 'effects'>[];
     newQuests?: Partial<ActiveQuest>[];

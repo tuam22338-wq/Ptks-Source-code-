@@ -1,4 +1,5 @@
 
+
 import type { GameState, MechanicalIntent } from '../types';
 import { RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 
@@ -67,8 +68,22 @@ export const validateMechanicalChanges = (
                 const originalChange = change.change;
                 change.change = 3;
                 validationNotifications.push(`Cơ thể bạn được một luồng năng lượng kỳ lạ gột rửa, ${attrDef.name} tăng lên. Tuy nhiên, do căn cơ chưa vững, bạn chỉ hấp thụ được ${change.change} điểm (nguyên gốc ${originalChange}).`);
+            } else if (attrDef && attrDef.type !== 'PRIMARY' && change.attribute !== 'spiritualQi' && change.change > 10) {
+                const originalChange = change.change;
+                change.change = 10;
+                validationNotifications.push(`Một luồng năng lượng kỳ lạ gột rửa cơ thể, ${attrDef.name} tăng lên. Do căn cơ chưa vững, bạn chỉ hấp thụ được ${change.change} điểm (nguyên gốc ${originalChange}).`);
             }
         });
+    }
+
+    if (validatedIntent.timeJump) {
+        const { years = 0, seasons = 0, days = 0 } = validatedIntent.timeJump;
+        const totalDaysJump = (years * 120) + (seasons * 30) + days; // Using simplified days per season/year
+        const oneYearInDays = 120;
+        if (totalDaysJump > oneYearInDays) {
+            validatedIntent.timeJump = { years: 1, seasons: 0, days: 0 };
+            validationNotifications.push(`Dòng thời gian hỗn loạn, bạn cảm thấy mình đã trải qua một thời gian dài, nhưng khi định thần lại, dường như chỉ mới một năm trôi qua.`);
+        }
     }
 
     return { validatedIntent, validationNotifications };

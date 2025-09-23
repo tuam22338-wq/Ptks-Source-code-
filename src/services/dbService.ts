@@ -252,6 +252,23 @@ export const exportAllData = async (): Promise<Record<string, any>> => {
  * @param data A record object where keys are table names and values are arrays of records.
  */
 export const importAllData = async (data: Record<string, any>): Promise<void> => {
+  // Validate the basic structure of the imported data before wiping anything.
+  if (!data || typeof data !== 'object' || !Array.isArray(data.saveSlots) || !Array.isArray(data.settings)) {
+    throw new Error("Tệp sao lưu không hợp lệ hoặc bị hỏng. Thiếu các bảng dữ liệu chính (saveSlots, settings).");
+  }
+  if (data.saveSlots.length > 0) {
+      const firstSlot = data.saveSlots[0];
+      if (typeof firstSlot.id !== 'number' || (firstSlot.data !== null && typeof firstSlot.data !== 'object')) {
+           throw new Error("Dữ liệu 'saveSlots' trong tệp sao lưu không hợp lệ.");
+      }
+  }
+  if (data.settings.length > 0) {
+      const firstSetting = data.settings[0];
+      if (typeof firstSetting.key !== 'string' || (firstSetting.value !== null && typeof firstSetting.value !== 'object')) {
+           throw new Error("Dữ liệu 'settings' trong tệp sao lưu không hợp lệ.");
+      }
+  }
+
   // FIX: Cast `db` to `Dexie` to access the `tables` property.
   await (db as Dexie).transaction('rw', (db as Dexie).tables, async () => {
     // Clear all tables first for a clean import

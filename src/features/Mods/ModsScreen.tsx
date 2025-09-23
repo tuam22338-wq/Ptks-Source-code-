@@ -70,7 +70,7 @@ const ModLibrary: React.FC<{ onBack: () => void, installedMods: ModInLibrary[], 
             return;
         }
         if (installedMods.some(m => m.modInfo.id === newModData.modInfo.id)) {
-            alert(`Mod có ID "${newModData.modInfo.id}" đã tồn tại.`);
+            alert(`Mod có ID "${newModData.modInfo.id}" đã được cài đặt.`);
             return;
         }
 
@@ -342,7 +342,7 @@ const ModsScreen: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-full max-h-[85vh] animate-fade-in themed-panel p-4 sm:p-6 lg:p-8 flex flex-col">
+        <div className="w-full h-full animate-fade-in flex flex-col">
             <div className="flex justify-between items-center mb-6 flex-shrink-0">
                 <h2 className="text-3xl font-bold font-title">Quản lý Mods</h2>
                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">

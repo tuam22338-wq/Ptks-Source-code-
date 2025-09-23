@@ -388,7 +388,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
-    }, [state.gameState, state.isLoading, state.settings, state.currentSlotId, cancelSpeech]);
+    }, [state.isLoading, state.settings, state.currentSlotId, cancelSpeech]);
 
     // This is a bit of a hack to get the latest state inside async callbacks
     const stateRef = useRef(state);

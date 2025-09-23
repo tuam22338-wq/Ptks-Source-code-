@@ -1,4 +1,5 @@
 
+
 import React, { memo } from 'react';
 import type { SaveSlot } from '../../types';
 import { REALM_SYSTEM, CURRENT_GAME_VERSION } from '../../constants';
@@ -110,7 +111,7 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
 const SaveSlotScreen: React.FC = () => {
   const { state, handleSlotSelection, handleNavigate, handleDeleteGame, handleVerifyAndRepairSlot } = useAppContext();
   return (
-    <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8">
+    <div className="w-full animate-fade-in">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-3xl font-bold font-title">Thiên Mệnh Thư</h2>
          <button 

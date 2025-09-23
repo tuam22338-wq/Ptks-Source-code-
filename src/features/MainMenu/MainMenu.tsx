@@ -1,4 +1,5 @@
 
+
 import React, { memo, useState, useEffect } from 'react';
 import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
@@ -82,7 +83,7 @@ const MainMenu: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(var(--vh,1vh)*100)] w-full flex items-center justify-center overflow-hidden">
+    <div className="w-full flex flex-col items-center justify-center overflow-hidden">
         {isUpdateModalOpen && <UpdateModal onClose={handleCloseUpdateModal} onDismissPermanently={handleDismissUpdatePermanently} />}
         {isDonateModalOpen && <DonateModal onClose={() => setIsDonateModalOpen(false)} />}
         <div className="relative z-10 w-full max-w-7xl px-4 flex flex-col items-center justify-center space-y-8 md:space-y-12 animate-fade-in-menu">

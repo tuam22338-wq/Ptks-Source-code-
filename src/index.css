@@ -1,4 +1,8 @@
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .theme-bamboo-forest {
   --bg-color: #1a2e29;
   --text-color: #f0ead6;
@@ -145,10 +149,106 @@
 body {
   color: var(--text-color);
   font-family: 'Noto Serif', serif;
+  background-color: var(--bg-color);
 }
 
 #root {
   isolation: isolate;
   height: 100%;
   width: 100%;
+}
+
+@layer components {
+  .themed-panel {
+    @apply bg-[var(--panel-bg-color)] backdrop-blur-md border border-[var(--panel-border-color)] rounded-2xl shadow-2xl shadow-black/30;
+  }
+  .themed-modal {
+    @apply bg-[var(--panel-bg-color)] backdrop-blur-xl border-2 border-[var(--panel-border-color)] rounded-2xl shadow-2xl shadow-black/50;
+  }
+  .themed-button-primary {
+    @apply bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] hover:bg-[var(--button-primary-hover-bg)] transition-colors;
+  }
+  .themed-input, .themed-textarea, .themed-select {
+    @apply bg-[var(--bg-interactive)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-color)] w-full focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/70 transition-colors;
+  }
+  .themed-button-group {
+    @apply flex items-center p-1 bg-[var(--bg-interactive)] rounded-lg border border-[var(--border-subtle)];
+  }
+  .themed-button-group > button {
+    @apply w-full px-3 py-1.5 text-sm rounded-md border border-transparent transition-all duration-200 text-[var(--text-muted-color)] hover:bg-[var(--bg-interactive-hover)] hover:text-[var(--text-color)];
+  }
+  .themed-button-group > button.active {
+    @apply bg-[var(--bg-interactive-hover)] border-[var(--border-subtle)] text-[var(--text-color)] font-semibold;
+  }
+  .settings-button {
+    @apply px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] font-bold rounded-lg hover:bg-[var(--bg-interactive-hover)] transition-colors;
+  }
+  .settings-button-primary {
+    @apply px-6 py-2 bg-[var(--primary-accent-color)] text-[var(--primary-accent-text-color)] font-bold rounded-lg hover:bg-[var(--button-primary-hover-bg)] transition-colors;
+  }
+  .settings-button-danger {
+    @apply px-4 py-2 bg-red-800/80 text-white font-bold rounded-lg hover:bg-red-700/80 transition-colors;
+  }
+  .themed-checkbox {
+    @apply h-5 w-5 rounded bg-gray-600 border-gray-500 text-[var(--primary-accent-color)] focus:ring-[var(--primary-accent-color)]/50;
+  }
+  .themed-slider {
+    @apply w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer;
+  }
+  .themed-slider-value {
+    @apply text-sm font-mono bg-gray-800/50 px-2 py-1 rounded-md w-16 text-center;
+  }
+  .themed-color-input {
+    @apply p-1 h-10 w-16 block bg-gray-700 border border-gray-600 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Settings Panel Layout */
+  .settings-header { @apply flex justify-between items-center mb-6 flex-shrink-0; }
+  .settings-main-title { @apply text-3xl font-bold font-title; }
+  .settings-back-button { @apply p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors; }
+  .settings-tab-nav { @apply flex-shrink-0 flex items-center justify-center gap-2 mb-6 p-2 bg-black/20 rounded-xl border border-[var(--border-subtle)]; }
+  .settings-tab-button { @apply flex-1 sm:flex-none flex flex-col sm:flex-row items-center justify-center gap-2 px-4 py-2 rounded-lg text-gray-400 hover:bg-gray-700/50 hover:text-white transition-colors text-sm; }
+  .settings-tab-button .icon { @apply w-5 h-5 mb-1 sm:mb-0; }
+  .settings-tab-button .label { @apply hidden sm:inline; }
+  .settings-tab-button.active { @apply bg-gray-700 text-white font-semibold; }
+  .settings-content { @apply flex-grow overflow-y-auto pr-2; }
+  .settings-footer { @apply flex-shrink-0 flex justify-end pt-4 mt-4 border-t border-[var(--border-subtle)]; }
+
+  /* Settings Section Layout */
+  .settings-section { @apply mb-8; }
+  .settings-section-title { @apply text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300; }
+  .settings-row { @apply flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4; }
+  .settings-row-label { @apply lg:w-1/2; }
+  .settings-row-label label { @apply block font-semibold text-gray-200; }
+  .settings-row-label p { @apply text-xs text-gray-500 mt-1; }
+  .settings-row-control { @apply lg:w-1/2; }
+
+  /* Main Menu */
+  .main-menu-item-new {
+    @apply relative w-64 text-center px-6 py-3 bg-black/20 border-2 border-transparent rounded-lg font-title font-semibold text-xl tracking-wider text-[var(--text-muted-color)] transition-all duration-300 overflow-hidden;
+    animation: menu-item-appear 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+  }
+  .main-menu-item-new:before {
+    content: '';
+    @apply absolute top-0 left-0 w-0 h-full bg-[var(--primary-accent-color)]/20 transition-all duration-500 ease-in-out;
+  }
+  .main-menu-item-new:hover {
+    @apply text-white;
+  }
+  .main-menu-item-new:hover:before {
+    @apply w-full;
+  }
+  .main-menu-item-new .icon {
+    @apply absolute left-4 top-1/2 -translate-y-1/2 text-2xl opacity-0 transition-all duration-300 -translate-x-4;
+  }
+  .main-menu-item-new:hover .icon {
+    @apply opacity-50 translate-x-0;
+  }
+  .main-menu-item-new .text {
+    @apply transition-transform duration-300 inline-block;
+  }
+  .main-menu-item-new:hover .text {
+    @apply translate-x-4;
+  }
+
 }

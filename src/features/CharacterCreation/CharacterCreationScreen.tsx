@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, memo, useMemo } from 'react';
 import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot } from '../../types';
 import { FaArrowLeft, FaDiceD20, FaCheck, FaSyncAlt } from 'react-icons/fa';
@@ -200,7 +201,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     };
     
     return (
-        <div className="w-full animate-fade-in themed-panel p-4 sm:p-6 lg:p-8">
+        <div className="w-full animate-fade-in">
             {renderHeader()}
             <StepIndicator currentStep={step} />
             <div className="max-h-[calc(100vh-22rem)] min-h-[50vh] overflow-y-auto pr-2 flex flex-col justify-center">
