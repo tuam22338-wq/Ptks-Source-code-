@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter, EventChoice } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -150,6 +150,11 @@ const GamePlayScreenContent: React.FC = memo(() => {
         });
     }, [dispatch]);
     
+    const handleEventChoice = useCallback((choice: EventChoice) => {
+        setActiveEvent(null);
+        handlePlayerAction(choice.text, 'act', 0, showNotification);
+    }, [setActiveEvent, handlePlayerAction, showNotification]);
+
     const handleAskAssistant = useCallback(async (query: string) => {
         if (!gameState || isAiResponding) return;
         
@@ -333,7 +338,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     {isSpecialPanelActive ? (
                         <>
                             {combatState && <CombatScreen />}
-                            {activeEvent && <EventPanel event={activeEvent} onChoice={() => {}} playerAttributes={gameState.playerCharacter.attributes} />}
+                            {activeEvent && <EventPanel event={activeEvent} onChoice={handleEventChoice} playerAttributes={gameState.playerCharacter.attributes} />}
                             {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
                             {dialogueChoices && (
                                 <InteractionOverlay 

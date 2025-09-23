@@ -1,5 +1,6 @@
 
 
+
 .theme-bamboo-forest {
   --bg-color: #1a2e29;
   --text-color: #f0ead6;
@@ -21,6 +22,7 @@
   --border-subtle: rgba(107, 114, 128, 0.4);
   --player-bubble-bg-color: rgb(55 65 81 / 0.8);
   --npc-bubble-bg-color: rgb(31 41 55 / 0.6);
+  --glass-bg-color: rgba(0, 0, 0, 0.3);
 }
 
 .theme-sunrise-peak {
@@ -44,6 +46,7 @@
   --border-subtle: rgba(156, 163, 175, 0.4); /* gray-400 */
   --player-bubble-bg-color: rgb(59 130 246 / 0.2); /* blue-500/20 */
   --npc-bubble-bg-color: rgb(229 231 235 / 0.6); /* gray-200 */
+  --glass-bg-color: rgba(255, 255, 255, 0.3);
 }
 
 .theme-bich-du-cung {
@@ -67,6 +70,7 @@
   --border-subtle: rgba(75, 85, 99, 0.4);
   --player-bubble-bg-color: rgb(55 65 81 / 0.8);
   --npc-bubble-bg-color: rgb(31 41 55 / 0.6);
+  --glass-bg-color: rgba(17, 24, 39, 0.4);
 }
 
 .theme-ngoc-hu-cung {
@@ -90,6 +94,7 @@
   --border-subtle: rgba(209, 213, 219, 0.6);
   --player-bubble-bg-color: rgb(229 231 235 / 0.8);
   --npc-bubble-bg-color: rgb(243 244 246 / 0.7);
+  --glass-bg-color: rgba(255, 255, 255, 0.4);
 }
 
 .theme-huyet-sat-ma-dien {
@@ -113,6 +118,7 @@
   --border-subtle: rgba(64, 64, 64, 0.5);
   --player-bubble-bg-color: rgb(38 38 38 / 0.8);
   --npc-bubble-bg-color: rgb(23 23 23 / 0.6);
+  --glass-bg-color: rgba(0, 0, 0, 0.3);
 }
 
 .theme-thuy-mac-hoa {
@@ -136,6 +142,7 @@
   --border-subtle: rgba(212, 212, 212, 0.6);
   --player-bubble-bg-color: rgb(229 231 235 / 0.8);
   --npc-bubble-bg-color: rgb(243 244 246 / 0.7);
+  --glass-bg-color: rgba(255, 255, 255, 0.5);
 }
 
 html {
@@ -452,6 +459,13 @@ body.force-desktop {
 .theme-thuy-mac-hoa .main-menu-title {
     color: #000;
 }
+
+.theme-sunrise-peak .ink-background-container,
+.theme-ngoc-hu-cung .ink-background-container,
+.theme-thuy-mac-hoa .ink-background-container {
+    display: none;
+}
+
 
 @keyframes gradient-animation {
   0% { background-position: 0% 50%; }

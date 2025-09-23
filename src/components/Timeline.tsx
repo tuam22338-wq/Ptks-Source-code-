@@ -1,8 +1,8 @@
 import React, { useState, memo, useMemo } from 'react';
-import type { GameDate, MajorEvent, DynamicWorldEvent, ForeshadowedEvent } from '../types';
+import type { GameDate, MajorEvent, DynamicWorldEvent, ForeshadowedEvent, Season } from '../types';
 // FIX: Replaced non-existent GiExclamationMark with FaExclamationTriangle from react-icons/fa
-import { GiScrollUnfurled, GiGalaxy, GiStairsGoal, GiFastForwardButton } from 'react-icons/gi';
-import { SHICHEN_LIST, SEASON_ICONS, WEATHER_INFO, TIMEOFDAY_DETAILS } from '../constants';
+import { GiScrollUnfurled, GiGalaxy, GiStairsGoal } from 'react-icons/gi';
+import { SEASON_ICONS, WEATHER_INFO, TIMEOFDAY_DETAILS, SHICHEN_TO_TIME_MAP } from '../constants';
 import { FaQuestionCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 interface TimelineProps {
@@ -26,10 +26,25 @@ const Timeline: React.FC<TimelineProps> = ({ gameDate, majorEvents, dynamicEvent
   
   const timeOfDayDetails = TIMEOFDAY_DETAILS[gameDate.shichen];
   const weatherDetails = WEATHER_INFO[gameDate.weather];
-  const currentShichen = SHICHEN_LIST.find(s => s.name === gameDate.shichen);
   
   const totalDays = useMemo(() => {
     return (gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(gameDate.season) * 30) + gameDate.day;
+  }, [gameDate]);
+
+  const { displayDate, westernTime } = useMemo(() => {
+    const seasonIndex = ['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(gameDate.season);
+    // A year in-game has 4 seasons of 30 days. Let's map a season to a month for display.
+    // Xuân -> Month 1, Hạ -> Month 2, ...
+    const month = seasonIndex > -1 ? seasonIndex + 1 : 1;
+
+    const dd = String(gameDate.day).padStart(2, '0');
+    const mm = String(month).padStart(2, '0');
+    const yyyy = gameDate.year;
+
+    return {
+        displayDate: `${dd}/${mm}/${yyyy}`,
+        westernTime: SHICHEN_TO_TIME_MAP[gameDate.shichen] || '00:00'
+    };
   }, [gameDate]);
 
   const activeDynamicEvents = useMemo(() => {
@@ -67,9 +82,9 @@ const Timeline: React.FC<TimelineProps> = ({ gameDate, majorEvents, dynamicEvent
         </div>
         <div className="w-px h-8 bg-gray-600/70"></div>
         <div className="text-center font-semibold text-gray-300">
-            <p className="text-sm sm:text-base leading-tight">{`${gameDate.era} ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}`}</p>
+            <p className="text-sm sm:text-base leading-tight">{`${displayDate} (${gameDate.season})`}</p>
             <p className="text-xs sm:text-sm text-amber-300 leading-tight">
-                Giờ {gameDate.shichen} {currentShichen?.icon} ({timeOfDayDetails.name})
+                {westernTime} ({timeOfDayDetails.name})
             </p>
         </div>
       </div>

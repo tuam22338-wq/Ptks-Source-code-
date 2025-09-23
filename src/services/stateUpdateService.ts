@@ -1,6 +1,3 @@
-
-
-
 import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
@@ -16,6 +13,9 @@ export const applyMechanicalChanges = (
 ): GameState => {
     let finalState = JSON.parse(JSON.stringify(currentState));
     let pc = finalState.playerCharacter;
+
+    // Always clear previous interaction states before applying new ones.
+    finalState.dialogueChoices = null;
 
     // --- TRANSACTIONAL CHECK (for costs) ---
     // First, verify if all costs can be paid before applying any changes.
@@ -38,14 +38,15 @@ export const applyMechanicalChanges = (
         // If any cost cannot be met, we reject the entire mechanical intent.
         // The narrative will still proceed, but the player gets no items/stats.
         showNotification("Hành động không thành công do không đủ tài nguyên.");
-        return currentState;
+        // Return the state but with the choices cleared to avoid getting stuck.
+        return finalState;
     }
 
 
     // --- APPLY CHANGES (if affordable) ---
     
     // Handle interaction states first, as they are mutually exclusive
-    if (intent.dialogueChoices) {
+    if (intent.dialogueChoices && intent.dialogueChoices.length > 0) {
         finalState.dialogueChoices = intent.dialogueChoices;
         return finalState; // Halt further processing until choice is made
     }

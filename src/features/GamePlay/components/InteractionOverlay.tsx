@@ -31,12 +31,6 @@ const InteractionOverlay: React.FC<InteractionOverlayProps> = ({ choices, player
                                 className="w-full text-left p-3 bg-gray-800/60 hover:bg-gray-700/50 border border-gray-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-900/80 disabled:hover:bg-gray-900/80"
                             >
                                 <p className={`font-semibold ${isUnavailable ? 'text-gray-500' : 'text-gray-200'}`}>{choice.text}</p>
-                                {check && (
-                                    <div className={`text-xs mt-1 flex items-center gap-2 ${isUnavailable ? 'text-red-400/70' : 'text-cyan-300'}`}>
-                                        <FaDiceD20 />
-                                        <span>Yêu cầu {check.attribute} &ge; {check.difficulty} (Của bạn: {Math.floor(playerAttrValue)})</span>
-                                    </div>
-                                )}
                             </button>
                          );
                     })}

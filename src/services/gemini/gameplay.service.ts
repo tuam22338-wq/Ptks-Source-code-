@@ -1,6 +1,3 @@
-
-
-
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, GameEvent, Location, CultivationTechnique, RealmConfig, RealmStage, InnerDemonTrial, CultivationTechniqueType, Element, DynamicWorldEvent, StatBonus, MemoryFragment, CharacterAttributes, PlayerCharacter, GameSettings, AIResponsePayload, MechanicalIntent, SkillCheck, EventChoice } from '../../types';
 import { NARRATIVE_STYLES, REALM_SYSTEM, PT_FACTIONS, PHAP_BAO_RANKS, ALL_ATTRIBUTES, PERSONALITY_TRAITS, PT_WORLD_MAP, DEFAULT_ATTRIBUTE_DEFINITIONS, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -156,11 +153,15 @@ Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Th
 ### QUY TẮC TỐI THƯỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **"Ý-HÌNH SONG SINH":** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game).
 2.  **ĐỒNG BỘ TUYỆT ĐỐI:** Mọi sự kiện, vật phẩm, thay đổi chỉ số xảy ra trong \`narrative\` PHẢI được phản ánh chính xác trong \`mechanicalIntent\`, và ngược lại.
-3.  **LUẬT TƯƠNG TÁC THUỘC TÍNH (CỰC KỲ QUAN TRỌNG):**
-    -   **KHÔNG SỬ DỤNG \`skillCheck\`:** Hệ thống roll xúc xắc đã bị loại bỏ. **TUYỆT ĐỐI KHÔNG** được yêu cầu một \`skillCheck\`.
-    -   **SỬ DỤNG \`dialogueChoices\` THAY THẾ:** Khi người chơi thực hiện một hành động có tính rủi ro (vd: "nhảy qua vực sâu", "thuyết phục lính canh"), thay vì quyết định kết quả, hãy tạm dừng câu chuyện và cung cấp một danh sách các lựa chọn trong \`dialogueChoices\`.
-    -   **Lựa chọn có điều kiện:** Một vài lựa chọn có thể yêu cầu chỉ số cao mới thực hiện được. Hãy thêm một điều kiện \`"check": {"attribute": "Mị Lực", "difficulty": 60}\` vào lựa chọn đó. Game sẽ tự động hiển thị và vô hiệu hóa nếu người chơi không đủ điểu kiện.
-    -   **Luôn có lựa chọn an toàn:** Phải luôn cung cấp ít nhất một lựa chọn không có "check" để người chơi không bị kẹt.
+3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (CỰC KỲ QUAN TRỌNG):**
+    -   **BẠN LÀ TRỌNG TÀI:** Khi người chơi thực hiện một hành động, bạn phải đóng vai trò là Game Master để quyết định kết quả.
+    -   **DỰA VÀO THUỘC TÍNH:** Phân tích các chỉ số của người chơi được cung cấp trong Bối Cảnh (ví dụ: Lực Lượng, Thân Pháp, Ngộ Tính, Mị Lực).
+    -   **QUYẾT ĐỊNH KẾT QUẢ:** Dựa trên các chỉ số đó, hãy quyết định một cách logic xem hành động đó thành công, thất bại, hay thành công một phần.
+    -   **TƯỜNG THUẬT KẾT QUẢ:** Tường thuật lại kết quả một cách hợp lý và hấp dẫn.
+        -   **Ví dụ 1 (Thất bại):** Nếu người chơi có Lực Lượng thấp và hành động là "phá tung cánh cửa gỗ", hãy tường thuật rằng họ cố gắng nhưng cánh cửa không hề suy suyển.
+        -   **Ví dụ 2 (Thành công):** Nếu người chơi có Mị Lực cao và hành động là "thuyết phục lính canh cho qua", hãy tường thuật rằng lính canh bị lời nói của họ thuyết phục và đồng ý.
+        -   **Ví dụ 3 (Thành công một phần):** Nếu người chơi có Thân Pháp vừa phải và hành động là "nhảy qua vực sâu", họ có thể nhảy qua được nhưng bị trượt chân và bị thương nhẹ (phản ánh trong \`mechanicalIntent\` với \`statChanges\`).
+    -   **LỰA CHỌN TRONG HỘI THOẠI:** Bạn VẪN CÓ THỂ sử dụng \`dialogueChoices\` khi một NPC đưa ra các lựa chọn rõ ràng trong cuộc trò chuyện, nhưng **TUYỆT ĐỐI KHÔNG** được đính kèm điều kiện \`check\` vào các lựa chọn đó nữa.
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động (mua thông tin, thuê động phủ, học kỹ năng từ NPC) sẽ tiêu tốn tiền tệ. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\`). Nếu người chơi không đủ tiền, hãy để NPC từ chối một cách hợp lý.
 ${nsfwInstruction}
@@ -202,18 +203,12 @@ Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối
             itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING } } } },
             dialogueChoices: {
                 type: Type.ARRAY,
+                description: "Sử dụng cho các lựa chọn hội thoại rõ ràng do NPC đưa ra. KHÔNG dùng cho kiểm tra kỹ năng.",
                 items: {
                     type: Type.OBJECT,
                     properties: {
                         id: { type: Type.STRING },
-                        text: { type: Type.STRING },
-                        check: {
-                            type: Type.OBJECT,
-                            properties: {
-                                attribute: { type: Type.STRING, enum: DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name) },
-                                difficulty: { type: Type.NUMBER }
-                            }
-                        }
+                        text: { type: Type.STRING }
                     },
                      required: ['id', 'text']
                 }
