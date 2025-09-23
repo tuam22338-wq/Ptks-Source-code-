@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -179,7 +180,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             const existingStack = pc.inventory.items.find(i => i.name === itemToUnequip.name && !i.isEquipped);
             let newInventoryItems;
             if (existingStack) {
-// FIX: Added fallback to 0 for quantity to prevent runtime errors if the value is missing.
+                // FIX: Ensure 'i.quantity' is treated as a number to prevent type errors in arithmetic operations.
                 newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (i.quantity || 0) + 1} : i);
             } else {
                 newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];
@@ -230,9 +231,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             }
             
             const newItems = pc.inventory.items.map(i => 
-// FIX: Added fallback to 0 for quantity to prevent runtime errors if the value is missing.
                 i.id === itemToUse.id ? { ...i, quantity: (i.quantity || 0) - 1 } : i
-            ).filter(i => i.quantity > 0);
+            ).filter(i => (i.quantity || 0) > 0);
             
             pc = { ...pc, inventory: { ...pc.inventory, items: newItems } };
 
@@ -259,9 +259,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
         return filtered.sort((a, b) => {
             switch (sort) {
                 case 'name_asc': return a.name.localeCompare(b.name);
-// FIX: Corrected a logic bug where a variable was compared against itself, causing sort to fail.
                 case 'name_desc': return b.name.localeCompare(a.name);
-// FIX: Added fallbacks to 0 for weight to prevent sorting errors if the value is missing.
                 case 'weight_desc': return (b.weight || 0) - (a.weight || 0);
                 case 'quality_desc':
                 default:
@@ -279,7 +277,6 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     if (!isOpen || !playerCharacter) return null;
     
-// FIX: Added fallbacks to 0 for item weight and quantity to prevent runtime errors if values are missing.
     const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * (item.quantity || 0)), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 

@@ -1,3 +1,4 @@
+
 import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
@@ -172,7 +173,6 @@ export const applyMechanicalChanges = (
          pc = { ...pc, activeQuests: [...pc.activeQuests, ...newQuests] };
     }
     
-    // FIX: Corrected logic to update `encounteredNpcIds` on the `GameState` (nextState) instead of `PlayerCharacter` (pc).
     if (intent.npcEncounters) {
         const newEncounters = intent.npcEncounters.filter(npcName => {
             const npc = nextState.activeNpcs.find((n: NPC) => n.identity.name === npcName);

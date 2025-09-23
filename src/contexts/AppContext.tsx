@@ -1,6 +1,5 @@
 
 
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from '../constants';
@@ -13,7 +12,7 @@ import { processPlayerAction } from '../services/actionService';
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
 
 export interface GameStartData {
-    identity: Omit<PlayerCharacter['identity'], 'age'>;
+    identity: PlayerCharacter['identity'];
     npcDensity: NpcDensity;
     difficulty: DifficultyLevel;
     initialBonuses: StatBonus[];
@@ -178,7 +177,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp hệ thống lưu trữ...' }});
             try {
                 // Migration logic from old AppContext
-                // FIX: Use dispatch to update migration message
                 dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp thành công!' }});
                 await db.setMigrationStatus(true);
             } catch (error) {

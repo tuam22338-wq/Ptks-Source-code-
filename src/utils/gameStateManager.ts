@@ -1,8 +1,5 @@
 
 
-
-
-
 import { FaQuestionCircle } from 'react-icons/fa';
 import {
     REALM_SYSTEM, SECTS,
@@ -14,7 +11,6 @@ import {
     CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
 } from "../constants";
 import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus } from "../types";
-// FIX: Import `generateDynamicNpcs` from the correct service file to resolve 'Cannot find name' error.
 import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
@@ -311,12 +307,8 @@ export const createNewGameState = async (
     // Calculate derived stats for the first time
     const attributesWithDerived = calculateDerivedStats(initialAttributes, attributeSystemToUse.definitions);
 
-    // FIX: Add a default `age` property to the character identity to resolve the type error.
     let playerCharacter: PlayerCharacter = {
-        identity: {
-            ...identity,
-            age: (identity as PlayerCharacter['identity']).age || 18,
-        },
+        identity: identity,
         attributes: attributesWithDerived,
         spiritualRoot: spiritualRoot,
         inventory: initialInventory,
