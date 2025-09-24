@@ -111,7 +111,7 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
 const SaveSlotScreen: React.FC = () => {
   const { state, handleSlotSelection, handleNavigate, handleDeleteGame, handleVerifyAndRepairSlot } = useAppContext();
   return (
-    <div className="w-full animate-fade-in">
+    <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-3xl font-bold font-title">Thiên Mệnh Thư</h2>
          <button 

@@ -1,6 +1,5 @@
 
 
-
 import React, { memo, useMemo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS } from '../../constants';
@@ -26,7 +25,7 @@ const ThoiTheScreen: React.FC = () => {
   }, [state.activeWorldId]);
 
   return (
-    <div className="w-full animate-fade-in">
+    <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold font-title">{title}</h2>
         <button
@@ -39,7 +38,7 @@ const ThoiTheScreen: React.FC = () => {
       </div>
       <p className="text-center mb-10" style={{color: 'var(--text-muted-color)'}}>{description}</p>
 
-      <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-8">
+      <div className="flex-grow min-h-0 overflow-y-auto pr-4 space-y-8">
         {events.map((event, index) => (
           <div key={index} className="bg-black/20 p-5 rounded-xl border-y-2 border-amber-800/50 flex flex-col animate-fade-in" style={{animationDelay: `${index * 50}ms`}}>
             <div className="pb-3 mb-4 text-center">

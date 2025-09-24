@@ -48,7 +48,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
                 const newInventoryItems = [...pc.inventory.items];
                 const existingItem = newInventoryItems.find(i => i.name === name);
                 if (existingItem) {
-                    existingItem.quantity += 1;
+                    existingItem.quantity = (Number(existingItem.quantity) || 0) + 1;
                 } else {
                     const { price: itemPrice, stock, ...baseItem } = item;
                     const newItem: InventoryItem = { ...baseItem, id: `item-${Date.now()}-${Math.random()}`, quantity: 1, isEquipped: false };
@@ -72,8 +72,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
                 const newCurrencies = { ...pc.currencies, [currencyName]: (pc.currencies[currencyName] || 0) + sellPrice };
                 let newInventoryItems = [...pc.inventory.items];
                 const itemInInventory = newInventoryItems.find(i => i.id === item.id);
-                if (itemInInventory && itemInInventory.quantity > 1) {
-                    newInventoryItems = newInventoryItems.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i);
+                if (itemInInventory && (Number(itemInInventory.quantity) || 0) > 1) {
+                    newInventoryItems = newInventoryItems.map(i => i.id === item.id ? { ...i, quantity: (Number(i.quantity) || 1) - 1 } : i);
                 } else {
                     newInventoryItems = newInventoryItems.filter(i => i.id !== item.id);
                 }

@@ -13,8 +13,9 @@ function launchApp() {
         throw new Error("Lỗi: Không tìm thấy phần tử gốc 'root', ứng dụng không thể khởi chạy.");
     }
     
-    // Hiển thị vùng chứa ứng dụng
-    rootElement.style.display = 'block';
+    // Hiển thị vùng chứa ứng dụng bằng cách gỡ bỏ class `hidden`.
+    // Điều này cho phép các class layout của Tailwind trong index.html được áp dụng.
+    rootElement.classList.remove('hidden');
 
     const root = ReactDOM.createRoot(rootElement);
     root.render(

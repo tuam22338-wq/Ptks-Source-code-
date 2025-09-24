@@ -33,14 +33,14 @@ const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, icon
 
     const percentage = max > 0 ? (Math.max(0, current) / max) * 100 : 0;
     return (
-        <div className={`stat-bar-container ${isChanged ? 'stat-changed-flash' : ''}`} title={`${label}: ${Math.floor(current)} / ${max}`}>
-            <div className="stat-bar-icon">
+        <div className={`flex items-center gap-2 ${isChanged ? 'stat-changed-flash' : ''}`} title={`${label}: ${Math.floor(current)} / ${max}`}>
+            <div className="w-6 text-center text-lg">
                 <Icon />
             </div>
-            <div className="stat-bar-progress-wrapper">
-                <div className={`stat-bar-progress ${colorClass}`} style={{ width: `${percentage}%` }}></div>
+            <div className="flex-grow h-2 bg-black/40 rounded-full border border-gray-800">
+                <div className={`h-full rounded-full transition-all duration-500 ${colorClass}`} style={{ width: `${percentage}%` }}></div>
             </div>
-            <div className="stat-bar-text">
+            <div className="text-xs font-mono w-20 text-right text-gray-300">
                 {Math.floor(current)}/{max}
             </div>
         </div>
@@ -66,7 +66,7 @@ const SummaryPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
     const vitalAttributes = attributeSystem.definitions.filter(def => def.type === 'VITAL' && attributes[def.id]?.maxValue);
     const coreAttributeDefs = attributeSystem.definitions.filter(def => ['luc_luong', 'than_phap', 'can_cot', 'nguyen_than', 'ngo_tinh', 'co_duyen'].includes(def.id));
     
-    // FIX: Added hunger and thirst to the color maps to ensure they render.
+    // FIX: Added hunger and thirst to the color maps to ensure they render with appropriate colors instead of the default gray.
     const VITAL_COLORS: Record<string, string> = {
         'sinh_menh': 'bg-red-500',
         'linh_luc': 'bg-blue-500',
@@ -85,8 +85,8 @@ const SummaryPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
     }
 
     return (
-        <div className="summary-panel animate-fade-in" style={{animationDuration: '300ms'}}>
-            <div className="summary-panel-vitals">
+        <div className="flex-shrink-0 w-80 bg-[var(--bg-subtle)] border-l border-[var(--border-subtle)] p-3 space-y-3 overflow-y-auto hidden md:block animate-fade-in" style={{animationDuration: '300ms'}}>
+            <div className="space-y-2">
                 {vitalAttributes.map(def => {
                     const attr = attributes[def.id];
                     if (!attr || attr.maxValue === undefined) return null;
@@ -106,13 +106,13 @@ const SummaryPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                 })}
             </div>
 
-            <button onClick={() => setIsAttributesExpanded(!isAttributesExpanded)} className="summary-panel-toggle">
+            <button onClick={() => setIsAttributesExpanded(!isAttributesExpanded)} className="w-full flex justify-between items-center text-left text-sm font-semibold text-gray-400 hover:text-white p-2 bg-[var(--bg-interactive)] rounded-md">
                 <span>Thuộc Tính Cốt Lõi</span>
                 {isAttributesExpanded ? <FaChevronUp /> : <FaChevronDown />}
             </button>
             
             {isAttributesExpanded && (
-                <div className="summary-panel-attributes">
+                <div className="p-2 bg-black/20 rounded-b-md animate-fade-in" style={{animationDuration: '300ms'}}>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                         {coreAttributeDefs.map(def => {
                             const attr = attributes[def.id];

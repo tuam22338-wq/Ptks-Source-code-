@@ -11,7 +11,7 @@ import { CURRENT_GAME_VERSION } from '../../constants';
 const DonateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal w-full max-w-md m-4 p-6 flex flex-col relative text-center">
+            <div className="bg-stone-900/80 backdrop-blur-lg border-2 border-amber-500/30 rounded-xl shadow-2xl shadow-black/50 w-full max-w-md m-4 p-6 flex flex-col relative text-center">
                 <div className="mb-4">
                     <FaHeart className="text-4xl text-red-400 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-red-300">Ủng Hộ Tác Giả</h2>
@@ -27,7 +27,7 @@ const DonateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="mt-6 flex justify-center">
                     <button
                         onClick={onClose}
-                        className="w-full sm:w-auto px-8 py-2 themed-button-primary font-bold rounded-lg"
+                        className="w-full sm:w-auto px-8 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 font-bold rounded-lg"
                     >
                         Đóng
                     </button>
@@ -83,7 +83,7 @@ const MainMenu: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center overflow-hidden">
+    <div className="w-full flex flex-col items-center justify-center overflow-hidden h-full min-h-0">
         {isUpdateModalOpen && <UpdateModal onClose={handleCloseUpdateModal} onDismissPermanently={handleDismissUpdatePermanently} />}
         {isDonateModalOpen && <DonateModal onClose={() => setIsDonateModalOpen(false)} />}
         <div className="relative z-10 w-full max-w-7xl px-4 flex flex-col items-center justify-center space-y-8 md:space-y-12 animate-fade-in-menu">
@@ -105,11 +105,11 @@ const MainMenu: React.FC = () => {
                     <button 
                         key={item.label}
                         onClick={() => handleMenuItemClick(item)}
-                        className="main-menu-item-new"
+                        className="group relative flex items-center justify-center w-72 h-16 bg-black/20 border-2 border-gray-800/80 rounded-lg text-xl font-title text-gray-400 font-semibold tracking-wider transition-all duration-300 ease-in-out transform hover:border-[var(--primary-accent-color)]/70 hover:text-white hover:scale-105 hover:bg-[var(--primary-accent-color)]/10 animate-menu-item"
                         style={{ animationDelay: `${item.delay}ms` }}
                     >
-                        <item.icon className="icon" />
-                        <span className="text">{item.label}</span>
+                        <item.icon className="absolute left-4 text-2xl transition-all duration-300 opacity-70 group-hover:opacity-100 group-hover:scale-110" />
+                        <span className="transition-transform duration-300 group-hover:translate-x-4">{item.label}</span>
                     </button>
                 ))}
             </div>

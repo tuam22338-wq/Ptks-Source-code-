@@ -48,20 +48,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
 
     return (
         <>
-            <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
-                <div className="sidebar-tabs">
+            <div className={`fixed top-0 left-0 h-full z-40 w-96 max-w-[90vw] bg-stone-900/90 backdrop-blur-md border-r border-gray-700 transform transition-transform duration-300 ease-in-out flex ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="w-16 flex-shrink-0 bg-black/30 flex flex-col items-center p-2 gap-2">
                     {PANELS.map(panel => (
                         <button
                             key={panel.id}
                             title={panel.label}
-                            className={`sidebar-tab-button ${activePanelId === panel.id ? 'active' : ''}`}
+                            className={`w-12 h-12 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-700/50 hover:text-white transition-colors ${activePanelId === panel.id ? 'bg-amber-600/50 text-white' : ''}`}
                             onClick={() => setActivePanelId(panel.id)}
                         >
                             <panel.icon className="w-6 h-6" />
                         </button>
                     ))}
                 </div>
-                <div className="sidebar-content">
+                <div className="flex-grow p-4 min-w-0">
                     <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-700">
                         <h2 className="text-2xl font-bold font-title text-amber-300">
                             {PANELS.find(p => p.id === activePanelId)?.label}

@@ -23,10 +23,10 @@ const TabButton: React.FC<{
 }> = memo(({ tabId, activeTab, onClick, icon: Icon, label }) => (
   <button
     onClick={() => onClick(tabId)}
-    className={`settings-tab-button ${activeTab === tabId ? 'active' : ''}`}
+    className={`flex-grow flex flex-col items-center justify-center p-3 text-gray-400 rounded-lg transition-colors duration-200 hover:bg-gray-700/50 hover:text-white ${activeTab === tabId ? 'bg-gray-600 text-white shadow-inner' : ''}`}
   >
-    <Icon className="icon" />
-    <span className="label">{label}</span>
+    <Icon className="text-2xl mb-1" />
+    <span className="text-xs font-semibold">{label}</span>
   </button>
 ));
 
@@ -37,17 +37,17 @@ export const SettingsPanel: React.FC = () => {
     const [isRagManagerOpen, setIsRagManagerOpen] = useState(false);
 
     return (
-        <div className="w-full animate-fade-in flex flex-col h-full">
+        <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             {isRagManagerOpen && <RagSourceManagerModal onClose={() => setIsRagManagerOpen(false)} />}
-            <div className="settings-header">
-                <button onClick={() => handleNavigate('mainMenu')} className="settings-back-button" title="Quay Lại Menu">
+            <div className="flex-shrink-0 flex justify-between items-center mb-6">
+                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Quay Lại Menu">
                     <FaArrowLeft className="w-5 h-5" />
                 </button>
-                <h2 className="settings-main-title">Cài Đặt</h2>
+                <h2 className="text-3xl font-bold font-title">Cài Đặt</h2>
                 <div className="w-9 h-9"></div> {/* Spacer */}
             </div>
 
-            <div className="settings-tab-nav">
+            <div className="flex-shrink-0 flex items-center gap-2 p-2 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
                 <TabButton tabId="sound" activeTab={activeTab} onClick={setActiveTab} icon={FaVolumeUp} label="Âm Thanh" />
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI" />
@@ -57,7 +57,7 @@ export const SettingsPanel: React.FC = () => {
                 <TabButton tabId="advanced" activeTab={activeTab} onClick={setActiveTab} icon={FaCog} label="Nâng Cao" />
             </div>
 
-            <div className="settings-content">
+            <div className="flex-grow min-h-0 overflow-y-auto pr-2">
                 {activeTab === 'interface' && <InterfaceSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'sound' && <SoundSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'ai_models' && <AiModelSettings settings={settings} handleSettingChange={handleSettingChange} />}
@@ -67,8 +67,8 @@ export const SettingsPanel: React.FC = () => {
                 {activeTab === 'advanced' && <AdvancedSettings settings={settings} handleSettingChange={handleSettingChange} />}
             </div>
 
-            <div className="settings-footer">
-                <button onClick={handleSettingsSave} className="settings-button-primary">Lưu Cài Đặt</button>
+            <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-end">
+                <button onClick={handleSettingsSave} className="px-6 py-2 bg-teal-700 text-white border border-teal-600 rounded-lg font-semibold transition-colors duration-200 hover:bg-teal-600">Lưu Cài Đặt</button>
             </div>
         </div>
     );

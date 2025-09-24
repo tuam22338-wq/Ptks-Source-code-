@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
     FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch, FaBrain
@@ -163,7 +162,7 @@ const ModLibrary: React.FC<{ onBack: () => void, installedMods: ModInLibrary[], 
     }, [installedMods, communityMods, activeFilter, searchTerm]);
     
     return (
-        <div className="flex-grow flex flex-col min-h-0 animate-fade-in">
+        <div className="h-full flex flex-col min-h-0 animate-fade-in">
             <div className="flex-shrink-0 mb-4">
                  <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4">
                     <FaArrowLeft /> Quay Lại Menu
@@ -342,7 +341,7 @@ const ModsScreen: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-full animate-fade-in flex flex-col">
+        <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             <div className="flex justify-between items-center mb-6 flex-shrink-0">
                 <h2 className="text-3xl font-bold font-title">Quản lý Mods</h2>
                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">

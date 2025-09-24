@@ -109,7 +109,7 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                                     onChange={(e) => setFamilyName(e.target.value)}
                                     onBlur={handleBlur}
                                     placeholder="VD: Lý, Trần..."
-                                    className="w-full themed-input"
+                                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200"
                                 />
                             </div>
                              <div className="flex-1">
@@ -120,7 +120,7 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                                     onChange={(e) => setName(e.target.value)}
                                     onBlur={handleBlur}
                                     placeholder="VD: Thanh Vân..."
-                                    className="w-full themed-input"
+                                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200"
                                 />
                             </div>
                         </div>
@@ -150,18 +150,18 @@ const CharacterIdentityDisplay: React.FC<CharacterIdentityDisplayProps> = ({ ide
                                 onBlur={handleBlur}
                                 placeholder="VD: Thiếu nữ áo trắng, dung mạo thanh lệ..."
                                 rows={2}
-                                className="w-full themed-textarea"
+                                className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y"
                             />
                         </div>
                          <div>
                             <p className="text-xs text-gray-400 mb-1">Thiên Hướng</p>
-                             <div className="themed-button-group">
+                             <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
                                 {PERSONALITY_TRAITS.map(trait => (
                                     <button
                                         key={trait.name}
                                         onClick={() => onIdentityChange({ personality: trait.name })}
                                         title={trait.description}
-                                        className={`${identity.personality === trait.name ? 'active' : ''}`}
+                                        className={`w-full text-center py-1.5 px-2 text-sm text-gray-400 rounded-md transition-colors duration-200 font-semibold hover:bg-gray-700/50 hover:text-white ${identity.personality === trait.name ? 'bg-gray-600 text-white shadow-inner' : ''}`}
                                     >
                                         {trait.name}
                                     </button>

@@ -13,7 +13,7 @@ import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
 import { generateInnerDemonTrial, askAiAssistant } from '../../services/geminiService';
 import { CULTIVATION_PATHS } from '../../constants';
-import InventoryModal from './components/InventoryModal';
+import { InventoryModal } from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
@@ -292,7 +292,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
     }
 
     return (
-        <div className="h-[calc(var(--vh,1vh)*100)] w-full flex flex-col">
+        <div className="flex-grow w-full flex flex-col">
             <NotificationArea notifications={notifications} onDismiss={dismissNotification} />
             <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} gameState={gameState} />
@@ -313,8 +313,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 onToggleSidebar={() => setIsSidebarOpen(v => !v)}
              />
             
-            <div className={`gameplay-main-content relative ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-                <main className="gameplay-story-panel w-full flex flex-col bg-transparent min-h-0 overflow-hidden">
+            <div className={`flex-grow w-full flex min-h-0 relative min-h-0`}>
+                <main className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:ml-96' : ''}`}>
                     <StoryLog 
                         pageEntries={storyPages[currentPage] || []} 
                         inventoryItems={playerCharacter.inventory.items} 

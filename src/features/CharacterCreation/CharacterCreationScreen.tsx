@@ -130,15 +130,15 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black/20 rounded-lg border border-gray-700/60">
                            <div>
                                 <label className="block text-lg font-title text-cyan-300 mb-2">Chủng Tộc / Huyết Mạch</label>
-                                <textarea value={raceInput} onChange={e => setRaceInput(e.target.value)} rows={4} className="themed-textarea" placeholder="Ví dụ: Hậu duệ của Yêu Tộc, Người thường nhưng có tiên duyên, Một linh hồn từ thế giới khác, Nửa người nửa máy..."/>
+                                <textarea value={raceInput} onChange={e => setRaceInput(e.target.value)} rows={4} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y" placeholder="Ví dụ: Hậu duệ của Yêu Tộc, Người thường nhưng có tiên duyên, Một linh hồn từ thế giới khác, Nửa người nửa máy..."/>
                            </div>
                            <div>
                                 <label className="block text-lg font-title text-cyan-300 mb-2">Xuất Thân / Trưởng Thành</label>
-                                <textarea value={backgroundInput} onChange={e => setBackgroundInput(e.target.value)} rows={4} className="themed-textarea" placeholder="Ví dụ: Lớn lên trong một gia đình thương nhân giàu có, Là một nô lệ bỏ trốn, Được một vị ẩn sĩ bí ẩn nuôi dạy trong rừng sâu..."/>
+                                <textarea value={backgroundInput} onChange={e => setBackgroundInput(e.target.value)} rows={4} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y" placeholder="Ví dụ: Lớn lên trong một gia đình thương nhân giàu có, Là một nô lệ bỏ trốn, Được một vị ẩn sĩ bí ẩn nuôi dạy trong rừng sâu..."/>
                            </div>
                         </div>
                         <div className="text-center pt-4">
-                            <button onClick={handleGenerateDetails} disabled={!isStep1Complete} className="themed-button-primary px-8 py-3 text-xl font-bold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
+                            <button onClick={handleGenerateDetails} disabled={!isStep1Complete} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 px-8 py-3 text-xl font-bold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
                                 <GiGalaxy className="inline-block mr-2" />
                                 Diễn Giải Số Mệnh
                             </button>
@@ -179,9 +179,9 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                             </div>
                             <div>
                                 <p className="text-lg font-bold font-title text-center mb-2 text-gray-300">Mật độ Chúng Sinh</p>
-                                <div className="themed-button-group flex-col gap-2">
+                                <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full flex-col gap-2">
                                     {NPC_DENSITY_LEVELS.map(level => (
-                                        <button key={level.id} onClick={() => setNpcDensity(level.id as 'medium')} title={level.description} className={`${npcDensity === level.id ? 'active' : ''} !border-0`}>
+                                        <button key={level.id} onClick={() => setNpcDensity(level.id as 'medium')} title={level.description} className={`w-full text-center py-1.5 px-2 text-sm text-gray-400 rounded-md transition-colors duration-200 font-semibold hover:bg-gray-700/50 hover:text-white !border-0 ${npcDensity === level.id ? 'bg-gray-600 text-white shadow-inner' : ''}`}>
                                             {level.name}
                                         </button>
                                     ))}
@@ -189,10 +189,10 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                             </div>
                         </div>
                         <div className="text-center pt-4 flex justify-center items-center gap-4">
-                            <button onClick={handleGenerateDetails} className="settings-button flex items-center gap-2">
+                            <button onClick={handleGenerateDetails} className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2">
                                 <FaSyncAlt /> Thử Lại
                             </button>
-                            <button onClick={handleFinalize} className="themed-button-primary px-8 py-3 text-xl font-bold rounded-lg">Bắt Đầu Hành Trình</button>
+                            <button onClick={handleFinalize} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 px-8 py-3 text-xl font-bold rounded-lg">Bắt Đầu Hành Trình</button>
                         </div>
                      </div>
                 );
@@ -201,10 +201,10 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     };
     
     return (
-        <div className="w-full animate-fade-in">
+        <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             {renderHeader()}
             <StepIndicator currentStep={step} />
-            <div className="max-h-[calc(100vh-22rem)] min-h-[50vh] overflow-y-auto pr-2 flex flex-col justify-center">
+            <div className="flex-grow min-h-0 overflow-y-auto pr-2">
                 {renderStepContent()}
             </div>
         </div>

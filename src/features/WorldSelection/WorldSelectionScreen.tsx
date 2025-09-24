@@ -85,7 +85,7 @@ const WorldSelectionScreen: React.FC = () => {
     };
 
     return (
-        <div className="w-full animate-fade-in">
+        <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-bold font-title">Lựa Chọn Thế Giới</h2>
                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
@@ -101,7 +101,7 @@ const WorldSelectionScreen: React.FC = () => {
                     <LoadingSpinner message="Đang tải các thế giới..." />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-grow min-h-0 overflow-y-auto pr-4">
                     {worlds.map(world => (
                         <WorldCard 
                             key={world.id}

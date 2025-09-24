@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -56,7 +55,7 @@ const EquipmentSlotComponent: React.FC<{
     
     return (
         <div 
-            className={`absolute equipment-slot-wrapper slot-${slot.toLowerCase().replace(/[\s\d]+/g, '-')}`}
+            className={`equipment-slot-wrapper slot-${slot.toLowerCase().replace(/[\s\d]+/g, '-')}`}
             onMouseEnter={() => onSelect(item)}
             onMouseLeave={() => onSelect(null)}
         >
@@ -112,7 +111,7 @@ const ItemComparison: React.FC<{ item: InventoryItem; equipped: InventoryItem | 
     );
 };
 
-const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
+export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     const { state, dispatch } = useAppContext();
     const { gameState } = state;
     const { showNotification, closeInventoryModal } = useGameUIContext();
@@ -157,8 +156,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 pc = { ...pc, attributes: applyBonuses(pc, itemToEquip.bonuses, 'add') };
             }
             
-            if (itemToEquip.quantity > 1) {
-                newInventoryItems.push({ ...itemToEquip, quantity: itemToEquip.quantity - 1, isEquipped: false });
+            if ((Number(itemToEquip.quantity) || 0) > 1) {
+                newInventoryItems.push({ ...itemToEquip, quantity: (Number(itemToEquip.quantity) || 1) - 1, isEquipped: false });
             }
             return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment } };
         }) });
@@ -180,8 +179,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             const existingStack = pc.inventory.items.find(i => i.name === itemToUnequip.name && !i.isEquipped);
             let newInventoryItems;
             if (existingStack) {
-                // FIX: Ensure 'i.quantity' is treated as a number to prevent type errors in arithmetic operations.
-                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (i.quantity || 0) + 1} : i);
+                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (Number(i.quantity) || 0) + 1} : i);
             } else {
                 newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];
             }
@@ -231,8 +229,8 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             }
             
             const newItems = pc.inventory.items.map(i => 
-                i.id === itemToUse.id ? { ...i, quantity: (i.quantity || 0) - 1 } : i
-            ).filter(i => (i.quantity || 0) > 0);
+                i.id === itemToUse.id ? { ...i, quantity: (Number(i.quantity) || 1) - 1 } : i
+            ).filter(i => (Number(i.quantity) || 0) > 0);
             
             pc = { ...pc, inventory: { ...pc.inventory, items: newItems } };
 
@@ -277,7 +275,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     if (!isOpen || !playerCharacter) return null;
     
-    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * (item.quantity || 0)), 0);
+    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * (Number(item.quantity) || 0)), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 
     const equippedItemForComparison = selectedItem?.slot ? playerCharacter.equipment[selectedItem.slot] : null;
@@ -297,15 +295,17 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                             <h4 className="text-lg font-bold font-title text-center mb-2">{playerCharacter.identity.name} - Trang Bị</h4>
                             <div className="relative h-48 w-full flex items-center justify-center">
                                 <GiPerson className="text-9xl text-gray-800" />
-                                {(Object.keys(EQUIPMENT_SLOTS) as EquipmentSlot[]).map(slot => (
-                                    <EquipmentSlotComponent 
-                                        key={slot}
-                                        slot={slot}
-                                        item={playerCharacter.equipment[slot] || null}
-                                        onUnequip={handleUnequip}
-                                        onSelect={setSelectedItem}
-                                    />
-                                ))}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-5 grid-rows-4 w-40 h-48">
+                                    {(Object.keys(EQUIPMENT_SLOTS) as EquipmentSlot[]).map(slot => (
+                                        <EquipmentSlotComponent 
+                                            key={slot}
+                                            slot={slot}
+                                            item={playerCharacter.equipment[slot] || null}
+                                            onUnequip={handleUnequip}
+                                            onSelect={setSelectedItem}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         </div>
                          <div className="flex-grow p-3 rounded-lg border border-[var(--border-subtle)] min-h-[14rem]">
@@ -358,7 +358,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                     className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-[color:var(--primary-accent-color)]/70`}
                                 >
                                     <span className="text-4xl select-none" role="img" aria-label={item.name}>{item.icon || '📜'}</span>
-                                    {item.quantity > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
+                                    {Number(item.quantity) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
                                     <div className={`absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-gray-900 ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>
                                 </button>
                             ))}
@@ -377,5 +377,3 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
         </div>
     );
 };
-
-export default InventoryModal;

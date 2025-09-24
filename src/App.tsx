@@ -168,30 +168,30 @@ const AppContent: React.FC = () => {
     
     const showHeader = view !== 'mainMenu' && view !== 'gamePlay' && !isLoading && !isMigratingData;
     const isPanelScreen = !['mainMenu', 'gamePlay'].includes(view);
-    const hasDynamicBackground = settings.dynamicBackground && settings.dynamicBackground !== 'none';
+    const containerClasses = isPanelScreen 
+        ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col p-4 sm:p-6 lg:p-8'
+        : 'w-full flex-grow flex flex-col';
     
-    const containerClasses = `relative z-10 w-full min-h-[calc(var(--vh,1vh)*100)] flex flex-col items-center transition-all duration-500 ${view === 'mainMenu' ? 'justify-center' : 'justify-start'}`;
+    const panelClasses = 'bg-[var(--panel-bg-color)] backdrop-blur-md border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50';
 
     return (
-        <div className="relative w-full min-h-[calc(var(--vh,1vh)*100)]">
+        <div className="relative w-full h-full flex flex-col items-center">
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
             {gameState && <WeatherOverlay />}
             {gameState && <SpecialEffectsOverlay />}
 
-            <div className={containerClasses}>
-              <div className={`w-full max-w-7xl transition-opacity duration-700 px-4 sm:px-6 lg:px-8 ${!showHeader ? 'opacity-0 h-0 invisible' : 'opacity-100 pt-4 sm:pt-6 lg:pt-8'}`}>
-                {showHeader && <Header />}
+            {showHeader && (
+              <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex-shrink-0">
+                <Header />
               </div>
-        
-              <main className={`w-full flex-grow ${view === 'gamePlay' ? 'h-[calc(var(--vh,1vh)*100)] max-w-full' : 'max-w-7xl flex flex-col'} ${isPanelScreen ? 'p-4 sm:p-6 lg:p-8' : ''}`}>
-                 <div className={`${isPanelScreen ? 'themed-panel flex-grow' : 'h-full'}`}>
-                    {renderContent()}
-                 </div>
-              </main>
-              
-              {settings.enableDeveloperConsole && <DeveloperConsole />}
-            </div>
+            )}
+      
+            <main className={`${containerClasses} min-h-0 ${isPanelScreen ? panelClasses : ''}`}>
+              {renderContent()}
+            </main>
+            
+            {settings.enableDeveloperConsole && <DeveloperConsole />}
         </div>
     );
 };

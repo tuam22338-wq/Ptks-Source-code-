@@ -31,7 +31,7 @@ export const applyMechanicalChanges = (
     if (canAfford && intent.itemsLost) {
         for (const itemLost of intent.itemsLost) {
             const itemInInventory = currentState.playerCharacter.inventory.items.find((i: InventoryItem) => i.name === itemLost.name);
-            if (!itemInInventory || itemInInventory.quantity < itemLost.quantity) {
+            if (!itemInInventory || Number(itemInInventory.quantity) < Number(itemLost.quantity)) {
                 canAfford = false;
                 showNotification(`Hành động thất bại! Không đủ ${itemLost.name}.`);
                 break;
@@ -83,7 +83,7 @@ export const applyMechanicalChanges = (
         intent.itemsLost.forEach(itemLost => {
             const itemIndex = newItems.findIndex((i: InventoryItem) => i.name === itemLost.name);
             if (itemIndex > -1) {
-                const updatedItem = { ...newItems[itemIndex], quantity: newItems[itemIndex].quantity - itemLost.quantity };
+                const updatedItem = { ...newItems[itemIndex], quantity: (Number(newItems[itemIndex].quantity) || 0) - (Number(itemLost.quantity) || 0) };
                 if (updatedItem.quantity > 0) {
                     newItems[itemIndex] = updatedItem;
                 } else {
@@ -99,27 +99,28 @@ export const applyMechanicalChanges = (
         let newQuests = [...pc.activeQuests];
         let newItems = [...pc.inventory.items];
         intent.itemsGained.forEach(itemData => {
+            const gainedQuantity = Number(itemData.quantity || 1);
             const existingItemIndex = newItems.findIndex((i: InventoryItem) => i.name === itemData.name);
             if (existingItemIndex > -1) {
                 newItems[existingItemIndex] = {
                     ...newItems[existingItemIndex],
-                    quantity: newItems[existingItemIndex].quantity + (itemData.quantity || 1)
+                    quantity: (Number(newItems[existingItemIndex].quantity) || 0) + gainedQuantity
                 };
             } else {
                 newItems.push({
                     ...itemData,
                     id: `item-${Date.now()}-${Math.random()}`,
-                    quantity: itemData.quantity || 1,
+                    quantity: gainedQuantity,
                     isEquipped: false,
                 } as InventoryItem);
             }
-            showNotification(`Nhận được: [${itemData.name} x${itemData.quantity || 1}]`);
+            showNotification(`Nhận được: [${itemData.name} x${gainedQuantity}]`);
 
             // Update GATHER quest progress cumulatively
             newQuests = newQuests.map(quest => {
                 const updatedObjectives = quest.objectives.map(obj => {
                     if (obj.type === 'GATHER' && !obj.isCompleted && obj.target === itemData.name) {
-                        const newCurrent = obj.current + (itemData.quantity || 1);
+                        const newCurrent = obj.current + gainedQuantity;
                         showNotification(`Nhiệm vụ cập nhật: ${obj.description} (${Math.min(newCurrent, obj.required)}/${obj.required})`);
                         return { ...obj, current: newCurrent };
                     }
