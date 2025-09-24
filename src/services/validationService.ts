@@ -1,5 +1,4 @@
 
-
 import type { GameState, MechanicalIntent } from '../types';
 import { RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 

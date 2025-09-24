@@ -1,5 +1,4 @@
 
-
 import Dexie, { type Table } from 'dexie';
 import { REALM_SYSTEM } from './constants';
 import type { 
@@ -53,6 +52,7 @@ export class MyDatabase extends Dexie {
   constructor() {
     super('PhongThanKySuDB');
     // Version 4 adds RAG tables
+    // FIX: Cast 'this' to Dexie to access inherited methods in subclass constructor.
     (this as Dexie).version(4).stores({
       saveSlots: 'id',
       settings: 'key',
@@ -66,9 +66,21 @@ export class MyDatabase extends Dexie {
       ragEmbeddings: '++id, sourceId',
     });
     // This will upgrade from version 3 to 4, creating the new tables.
+    // FIX: Cast 'this' to Dexie to access inherited methods in subclass constructor.
     (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });
+  }
+
+  // New methods to encapsulate casting for meta-operations
+  public getTables(): Table[] {
+    // This is a safe cast as `tables` is a meta-property on Dexie instances.
+    return (this as Dexie).tables;
+  }
+
+  public async deleteDatabase(): Promise<void> {
+    // This is a safe cast to call the root delete method.
+    return (this as Dexie).delete();
   }
 }
 
@@ -177,7 +189,7 @@ export const saveModToLibrary = async (mod: DbModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: DbModInLibrary[]): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
+    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
@@ -237,10 +249,10 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
  */
 export const exportAllData = async (): Promise<Record<string, any>> => {
   const data: Record<string, any> = {};
-  // FIX: Cast `db` to `Dexie` to access the `tables` property.
-  await (db as Dexie).transaction('r', (db as Dexie).tables, async () => {
-    // FIX: Cast `db` to `Dexie` to access the `tables` property.
-    for (const table of (db as Dexie).tables) {
+  const allTables = db.getTables();
+  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
+  await (db as Dexie).transaction('r', allTables, async () => {
+    for (const table of allTables) {
       data[table.name] = await table.toArray();
     }
   });
@@ -252,15 +264,31 @@ export const exportAllData = async (): Promise<Record<string, any>> => {
  * @param data A record object where keys are table names and values are arrays of records.
  */
 export const importAllData = async (data: Record<string, any>): Promise<void> => {
-  // FIX: Cast `db` to `Dexie` to access the `tables` property.
-  await (db as Dexie).transaction('rw', (db as Dexie).tables, async () => {
+  // Validate the basic structure of the imported data before wiping anything.
+  if (!data || typeof data !== 'object' || !Array.isArray(data.saveSlots) || !Array.isArray(data.settings)) {
+    throw new Error("Tệp sao lưu không hợp lệ hoặc bị hỏng. Thiếu các bảng dữ liệu chính (saveSlots, settings).");
+  }
+  if (data.saveSlots.length > 0) {
+      const firstSlot = data.saveSlots[0];
+      if (typeof firstSlot.id !== 'number' || (firstSlot.data !== null && typeof firstSlot.data !== 'object')) {
+           throw new Error("Dữ liệu 'saveSlots' trong tệp sao lưu không hợp lệ.");
+      }
+  }
+  if (data.settings.length > 0) {
+      const firstSetting = data.settings[0];
+      if (typeof firstSetting.key !== 'string' || (firstSetting.value !== null && typeof firstSetting.value !== 'object')) {
+           throw new Error("Dữ liệu 'settings' trong tệp sao lưu không hợp lệ.");
+      }
+  }
+
+  const allTables = db.getTables();
+  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
+  await (db as Dexie).transaction('rw', allTables, async () => {
     // Clear all tables first for a clean import
-    // FIX: Cast `db` to `Dexie` to access the `tables` property.
-    await Promise.all((db as Dexie).tables.map(table => table.clear()));
+    await Promise.all(allTables.map(table => table.clear()));
 
     // Import new data table by table
-    // FIX: Cast `db` to `Dexie` to access the `tables` property.
-    for (const table of (db as Dexie).tables) {
+    for (const table of allTables) {
       // Check if the backup data contains this table
       if (data[table.name] && Array.isArray(data[table.name])) {
         try {
@@ -280,8 +308,7 @@ export const importAllData = async (data: Record<string, any>): Promise<void> =>
 
 // Encapsulate database deletion logic to resolve typing issue where 'delete' is not found on the subclass.
 export const deleteDb = (): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
-    return (db as Dexie).delete();
+    return db.deleteDatabase();
 };
 
 // --- Memory Service ---
@@ -290,7 +317,7 @@ export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<numb
 };
 
 export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing.
+    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.memoryFragments, db.graphEdges, async () => {
         await db.memoryFragments.where('slotId').equals(slotId).delete();
         await db.graphEdges.where('slotId').equals(slotId).delete();
@@ -329,7 +356,8 @@ export const getRelevantMemories = async (
   // Deduplicate and sort
   const uniqueFragments = Array.from(new Map(allFragments.map(f => [f.id, f])).values());
   
-  uniqueFragments.sort((a, b) => {
+  // FIX: Explicitly type sort function parameters to resolve 'unknown' type error.
+  uniqueFragments.sort((a: MemoryFragment, b: MemoryFragment) => {
       if (a.gameDate.year !== b.gameDate.year) return b.gameDate.year - a.gameDate.year;
       const seasonOrder = ['Xuân', 'Hạ', 'Thu', 'Đông'];
       if (a.gameDate.season !== b.gameDate.season) return seasonOrder.indexOf(b.gameDate.season) - seasonOrder.indexOf(a.gameDate.season);

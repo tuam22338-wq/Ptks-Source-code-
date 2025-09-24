@@ -82,6 +82,12 @@ const GameplaySettings: React.FC<GameplaySettingsProps> = ({ settings, handleSet
                  <SettingsRow label="Độ Sâu Ký Ức AI" description={AI_MEMORY_DEPTH_LEVELS.find(o => o.value === settings.aiMemoryDepth)?.description || ''}>
                      <LevelButtonGroup options={AI_MEMORY_DEPTH_LEVELS} selectedValue={settings.aiMemoryDepth} onSelect={(v) => handleSettingChange('aiMemoryDepth', v as AiMemoryDepth)} />
                 </SettingsRow>
+                <SettingsRow label="AI Tường thuật Thay đổi Hệ thống" description="Khi bật, AI sẽ mô tả các thay đổi về chỉ số, vật phẩm nhận được... ngay trong lời kể để tăng tính nhập vai.">
+                    <label className="flex items-center cursor-pointer">
+                        <input type="checkbox" checked={settings.narrateSystemChanges} onChange={e => handleSettingChange('narrateSystemChanges', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                        <span className="ml-3 text-sm text-gray-300">Bật tường thuật cơ chế game</span>
+                    </label>
+                </SettingsRow>
             </SettingsSection>
 
             <SettingsSection title="Mô Phỏng Thế Giới">

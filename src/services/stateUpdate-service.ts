@@ -1,3 +1,4 @@
+
 import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
@@ -30,7 +31,8 @@ export const applyMechanicalChanges = (
     if (canAfford && intent.itemsLost) {
         for (const itemLost of intent.itemsLost) {
             const itemInInventory = currentState.playerCharacter.inventory.items.find((i: InventoryItem) => i.name === itemLost.name);
-            if (!itemInInventory || itemInInventory.quantity < itemLost.quantity) {
+            // FIX: Cast quantity to number for comparison
+            if (!itemInInventory || (Number(itemInInventory.quantity) || 0) < (Number(itemLost.quantity) || 0)) {
                 canAfford = false;
                 showNotification(`Hành động thất bại! Không đủ ${itemLost.name}.`);
                 break;
@@ -82,7 +84,8 @@ export const applyMechanicalChanges = (
         intent.itemsLost.forEach(itemLost => {
             const itemIndex = newItems.findIndex((i: InventoryItem) => i.name === itemLost.name);
             if (itemIndex > -1) {
-                const updatedItem = { ...newItems[itemIndex], quantity: newItems[itemIndex].quantity - itemLost.quantity };
+                // FIX: Cast quantity to number for arithmetic
+                const updatedItem = { ...newItems[itemIndex], quantity: (Number(newItems[itemIndex].quantity) || 0) - (Number(itemLost.quantity) || 0) };
                 if (updatedItem.quantity > 0) {
                     newItems[itemIndex] = updatedItem;
                 } else {
@@ -101,13 +104,14 @@ export const applyMechanicalChanges = (
             if (existingItemIndex > -1) {
                 newItems[existingItemIndex] = {
                     ...newItems[existingItemIndex],
-                    quantity: newItems[existingItemIndex].quantity + (itemData.quantity || 1)
+                    // FIX: Cast quantity to number for arithmetic
+                    quantity: (Number(newItems[existingItemIndex].quantity) || 0) + (Number(itemData.quantity) || 1)
                 };
             } else {
                 newItems.push({
                     ...itemData,
                     id: `item-${Date.now()}-${Math.random()}`,
-                    quantity: itemData.quantity || 1,
+                    quantity: Number(itemData.quantity) || 1,
                     isEquipped: false,
                 } as InventoryItem);
             }

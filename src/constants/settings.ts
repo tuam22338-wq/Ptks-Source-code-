@@ -128,6 +128,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     enableSurvivalMechanics: true,
     deathPenalty: 'resource_loss',
     validationServiceCap: 'strict',
+    narrateSystemChanges: true,
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [

@@ -29,6 +29,12 @@ export async function* generateDualResponseStream(
     const context = createFullGameStateContext(gameState, instantMemoryReport, thoughtBubble);
     const playerActionText = inputType === 'say' ? `Nhân vật của bạn nói: "${userInput}"` : `Hành động của nhân vật: "${userInput}"`;
 
+    const narrateSystemChangesInstruction = settings.narrateSystemChanges
+        ? `7. **TƯỜNG THUẬT CƠ CHẾ:** Bạn PHẢI lồng ghép các thay đổi cơ chế (nhận vật phẩm, tăng chỉ số) vào trong đoạn văn tường thuật một cách tự nhiên. Ví dụ, thay vì chỉ nói "bạn nhặt được vật phẩm", hãy mô tả "tay bạn chạm vào một vật lạnh lẽo, đó là một thanh [Thiết Kiếm]".`
+        : '';
+
+    const realmConsistencyInstruction = `8. **LUẬT BẤT BIẾN VỀ CẢNH GIỚI:** Cảnh giới tu luyện của người chơi đã được cung cấp trong Bối Cảnh. Bạn TUYỆT ĐỐI KHÔNG được hạ thấp hoặc mô tả sai cảnh giới của họ trong phần tường thuật. Ví dụ: Nếu Bối Cảnh ghi người chơi là Luyện Khí Kỳ, không được mô tả họ là 'phàm nhân'.`;
+
     const masterSchema = {
       type: Type.OBJECT,
       properties: {
@@ -73,6 +79,8 @@ Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Th
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
+${narrateSystemChangesInstruction}
+${realmConsistencyInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}
 - **Giọng văn:** ${narrativeStyle}.
@@ -327,44 +335,4 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealm:
     }, specificApiKey);
     
     return JSON.parse(response.text) as InnerDemonTrial;
-};
-
-export const generateActionSuggestions = async (gameState: GameState): Promise<string[]> => {
-    const context = createFullGameStateContext(gameState);
-    
-    const responseSchema = {
-        type: Type.ARRAY,
-        items: {
-            type: Type.STRING,
-            description: "Một gợi ý hành động ngắn gọn (2-4 từ), sáng tạo và phù hợp với bối cảnh cho người chơi."
-        },
-        description: "Một danh sách gồm 3 gợi ý hành động."
-    };
-
-    const prompt = `Bạn là AI trợ lý cho một game tu tiên. Dựa vào trạng thái game hiện tại, hãy đưa ra 3 gợi ý hành động sáng tạo và phù hợp với bối cảnh cho người chơi. Gợi ý phải ngắn gọn (2-4 từ).
-
-    ${context}
-
-    Gợi ý:`;
-    
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
-    const response = await generateWithRetry({
-        model: settings?.quickSupportModel || 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema,
-        }
-    }, specificApiKey);
-    
-    try {
-        const suggestions = JSON.parse(response.text) as string[];
-        if (Array.isArray(suggestions)) {
-            return suggestions.slice(0, 3);
-        }
-    } catch (e) {
-        console.error("Failed to parse suggestions from AI", e);
-    }
-    return [];
 };

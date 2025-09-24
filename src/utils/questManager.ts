@@ -1,3 +1,4 @@
+
 import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem, EventOutcome, PlayerNpcRelationship } from '../types';
 import { generateMainQuestFromEvent, generateSideQuestFromNpc, generateSystemQuest } from '../services/geminiService';
 import { FACTION_REPUTATION_TIERS } from '../constants';
@@ -117,38 +118,25 @@ const updateQuestProgress = (currentState: GameState): QuestUpdateResult => {
         const updatedObjectives = quest.objectives.map(obj => {
             if (obj.isCompleted) return obj;
 
-            let progressMade = false;
-            let previousCurrent = obj.current;
-
             switch (obj.type) {
                 case 'TRAVEL':
                     if (playerCharacter.currentLocationId === obj.target) {
-                        obj.current = 1;
+                        obj.current = obj.required;
                     }
                     break;
                 case 'GATHER':
-                    // FIX: The progress for GATHER quests is now updated cumulatively in stateUpdateService
-                    // when items are gained. This switch case is now intentionally left blank to prevent
-                    // the old logic from resetting the progress based on current inventory quantity.
-                    // The completion check after the switch statement will handle the rest.
+                    // Progress for GATHER quests is now updated cumulatively in stateUpdateService.
+                    // This section now only handles the completion check.
                     break;
                 case 'TALK': // This needs to be triggered explicitly
                     break;
                 case 'DEFEAT': // This would be updated after combat
                     break;
             }
-            
-            if (obj.current > previousCurrent) {
-                progressMade = true;
-            }
 
-            if (obj.current >= obj.required) {
-                if (!obj.isCompleted) progressMade = true; // Notify on completion
+            if (obj.current >= obj.required && !obj.isCompleted) {
                 obj.isCompleted = true;
-            }
-            
-            if (progressMade) {
-                 notifications.push(`Nhiệm vụ cập nhật: ${obj.description} (${Math.min(obj.current, obj.required)}/${obj.required})`);
+                notifications.push(`Nhiệm vụ hoàn thành mục tiêu: ${obj.description}`);
             }
 
             if (!obj.isCompleted) {
@@ -190,18 +178,15 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             notifications.push(`Nhiệm vụ hoàn thành: ${quest.title}`);
             const { rewards } = quest;
 
-            // Apply rewards
             if (rewards.spiritualQi) {
                 pc.cultivation.spiritualQi += rewards.spiritualQi;
                 notifications.push(`Bạn nhận được [${rewards.spiritualQi.toLocaleString()} Linh khí]`);
             }
             if (rewards.danhVong) {
                 pc.danhVong.value += rewards.danhVong;
-                // TODO: Update danhVong status based on new value
                 notifications.push(`Bạn nhận được [${rewards.danhVong} Danh vọng]`);
             }
             
-            // Additive currency rewards
             let newCurrencies = { ...pc.currencies };
             if (rewards.currencies) {
                 for (const [currency, amount] of Object.entries(rewards.currencies)) {
@@ -213,7 +198,6 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             }
             pc.currencies = newCurrencies;
 
-            // Faction Reputation rewards
             if (rewards.reputation) {
                 let newReputation = [...pc.reputation];
                 rewards.reputation.forEach(repChange => {
@@ -229,13 +213,12 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
                 pc.reputation = newReputation;
             }
 
-            // Item rewards
             if (rewards.items) {
                 let newItems = [...pc.inventory.items];
                 rewards.items.forEach(rewardItem => {
                     const existingItem = newItems.find(i => i.name === rewardItem.name);
                     if (existingItem) {
-                        existingItem.quantity += rewardItem.quantity;
+                        existingItem.quantity = (Number(existingItem.quantity) || 0) + rewardItem.quantity;
                     } else {
                         newItems.push({
                             id: `reward-${rewardItem.name.replace(/\s+/g, '_')}-${Date.now()}`,
@@ -249,13 +232,12 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
                 pc.inventory = { ...pc.inventory, items: newItems };
             }
 
-            // Consume gathered items
             let itemsToConsume = [...pc.inventory.items];
             quest.objectives.forEach(obj => {
                 if (obj.type === 'GATHER' && obj.isCompleted) {
                     const itemIndex = itemsToConsume.findIndex(i => i.name === obj.target);
                     if (itemIndex !== -1) {
-                        const newQuantity = itemsToConsume[itemIndex].quantity - obj.required;
+                        const newQuantity = (Number(itemsToConsume[itemIndex].quantity) || 0) - obj.required;
                         if (newQuantity > 0) {
                             itemsToConsume[itemIndex] = { ...itemsToConsume[itemIndex], quantity: newQuantity };
                         } else {
@@ -304,7 +286,7 @@ export const checkFailedQuests = (currentState: GameState): QuestUpdateResult =>
             playerCharacter: {
                 ...newState.playerCharacter,
                 activeQuests: remainingQuests,
-                completedQuestIds: [...newState.playerCharacter.completedQuestIds, ...failedQuests.map(q => q.source)] // Also add to completed to prevent re-triggering
+                completedQuestIds: [...newState.playerCharacter.completedQuestIds, ...failedQuests.map(q => q.source)]
             }
         };
     }
@@ -313,10 +295,7 @@ export const checkFailedQuests = (currentState: GameState): QuestUpdateResult =>
 };
 
 export const processQuestUpdates = (currentState: GameState): QuestUpdateResult => {
-    // 1. Update progress on existing quests
     const { newState: stateAfterProgress, notifications: progressNotifications } = updateQuestProgress(currentState);
-
-    // 2. Check for and process completed quests
     const { newState: stateAfterCompletion, notifications: completionNotifications } = processCompletedQuests(stateAfterProgress);
 
     return {

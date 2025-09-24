@@ -1,6 +1,8 @@
 
 
 
+
+
 import type Dexie from 'dexie';
 import type { RagSource, RagEmbedding } from '../types';
 import * as db from './dbService';
@@ -53,10 +55,10 @@ export const addPlayerJournalSource = async (file: File): Promise<void> => {
     await db.db.ragSources.put(source);
 };
 export const deleteSource = async (sourceId: string): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing. Corrected 'db.db' to 'db'.
-    await (db.db as Dexie).transaction('rw', db.ragSources, db.ragEmbeddings, async () => {
-        await db.ragSources.delete(sourceId);
-        await db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
+    // FIX: Access tables via the exported 'db' instance from the 'db' module namespace.
+    await (db.db as Dexie).transaction('rw', db.db.ragSources, db.db.ragEmbeddings, async () => {
+        await db.db.ragSources.delete(sourceId);
+        await db.db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
     });
 };
 export const indexSource = async (sourceId: string): Promise<void> => {
@@ -76,10 +78,10 @@ export const indexSource = async (sourceId: string): Promise<void> => {
             embedding: embeddings[i],
         }));
         // Clear old embeddings and add new ones
-        // FIX: Cast 'db' to Dexie to resolve typing issue with subclassing. Corrected 'db.db' to 'db'.
-        await (db.db as Dexie).transaction('rw', db.ragEmbeddings, async () => {
-            await db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
-            await db.ragEmbeddings.bulkAdd(embeddingObjects as RagEmbedding[]);
+        // FIX: Access tables via the exported 'db' instance from the 'db' module namespace.
+        await (db.db as Dexie).transaction('rw', db.db.ragEmbeddings, async () => {
+            await db.db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
+            await db.db.ragEmbeddings.bulkAdd(embeddingObjects as RagEmbedding[]);
         });
         await db.db.ragSources.update(sourceId, {
             status: 'INDEXED',

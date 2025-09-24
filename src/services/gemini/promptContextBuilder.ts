@@ -1,9 +1,10 @@
+
 import type { GameState } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
 
 export const createFullGameStateContext = (gameState: GameState, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
-  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds } = gameState;
+  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState } = gameState;
   const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
   const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
   const neighbors = currentLocation?.neighbors.map(id => discoveredLocations.find(l => l.id === id)?.name).filter(Boolean) || [];
@@ -11,14 +12,12 @@ export const createFullGameStateContext = (gameState: GameState, instantMemoryRe
   const modContext = createModContextSummary(activeMods);
 
   const currencySummary = Object.entries(playerCharacter.currencies)
-    // FIX: Add type check to ensure amount is a number before filtering.
     .filter(([, amount]) => typeof amount === 'number' && amount > 0)
     .map(([name, amount]) => `${name}: ${amount.toLocaleString()}`)
     .join(', ');
 
   const equipmentSummary = Object.entries(playerCharacter.equipment)
     .filter(([, item]) => item)
-    // FIX: Add non-null assertion `!` as the filter ensures item is not null.
     .map(([slot, item]) => `${slot}: ${item!.name}`)
     .join(', ');
   
@@ -84,9 +83,17 @@ NPC mà người chơi đang tương tác có suy nghĩ nội tâm sau: "${thoug
 `
     : '';
 
+  let dynamicStyleInstruction = '';
+  if (combatState) {
+      dynamicStyleInstruction = `**LUẬT VĂN PHONG (ĐANG CHIẾN ĐẤU):** Hãy dùng câu ngắn, động từ mạnh. Tập trung vào hành động và tác động. Tăng tốc độ tường thuật.`;
+  } else if (gameState.dialogueWithNpcId) {
+      dynamicStyleInstruction = `**LUẬT VĂN PHONG (ĐANG ĐỐI THOẠI):** Tập trung vào biểu cảm, ngôn ngữ cơ thể và ẩn ý trong lời nói.`;
+  }
+
   const context = `
 ${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
 Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
+${dynamicStyleInstruction}
 
 **1. Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.

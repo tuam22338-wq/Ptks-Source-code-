@@ -1,6 +1,9 @@
 
 
 
+
+
+
 import Dexie, { type Table } from 'dexie';
 import { REALM_SYSTEM } from '../constants';
 import type { 
@@ -358,7 +361,8 @@ export const getRelevantMemories = async (
   // Deduplicate and sort
   const uniqueFragments = Array.from(new Map(allFragments.map(f => [f.id, f])).values());
   
-  uniqueFragments.sort((a, b) => {
+  // FIX: Explicitly type sort function parameters to resolve 'unknown' type error.
+  uniqueFragments.sort((a: MemoryFragment, b: MemoryFragment) => {
       if (a.gameDate.year !== b.gameDate.year) return b.gameDate.year - a.gameDate.year;
       const seasonOrder = ['Xuân', 'Hạ', 'Thu', 'Đông'];
       if (a.gameDate.season !== b.gameDate.season) return seasonOrder.indexOf(b.gameDate.season) - seasonOrder.indexOf(a.gameDate.season);

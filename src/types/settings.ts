@@ -109,6 +109,7 @@ export interface GameSettings {
     enableSurvivalMechanics: boolean;
     deathPenalty: DeathPenalty;
     validationServiceCap: ValidationServiceCap;
+    narrateSystemChanges: boolean;
 }
 
 export type SystemFeature = 'status' | 'quests' | 'store' | 'analysis';

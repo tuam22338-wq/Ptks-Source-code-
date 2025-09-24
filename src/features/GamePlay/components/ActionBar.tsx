@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import { FaPaperPlane, FaComment, FaBolt, FaLightbulb, FaSync, FaBrain } from 'react-icons/fa';
+import { FaPaperPlane, FaComment, FaBolt, FaBrain } from 'react-icons/fa';
 import { GiSprout } from 'react-icons/gi';
 import type { Location, GameState } from '../../../types';
-// FIX: Corrected import path as generateActionSuggestions is now in a specific service file.
-import { generateActionSuggestions } from '../../../services/gemini/gameplay.service';
-// FIX: Import 'UI_ICONS' from constants to resolve 'Cannot find name' error.
 import { UI_ICONS } from '../../../constants';
 
 type ActionType = 'say' | 'act' | 'ask';
@@ -21,41 +18,14 @@ interface ActionBarProps {
 
 const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState }) => {
     const [inputText, setInputText] = useState('');
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (inputText.trim() && !disabled) {
             onInputSubmit(inputText);
             setInputText('');
-            setSuggestions([]);
         }
     };
-
-    const handleGetSuggestions = async () => {
-        if (isLoadingSuggestions || disabled) return;
-        setIsLoadingSuggestions(true);
-        setSuggestions([]);
-        try {
-            const result = await generateActionSuggestions(gameState);
-            setSuggestions(result);
-        } catch (error) {
-            console.error("Failed to get suggestions:", error);
-            setSuggestions(['Lỗi khi lấy gợi ý.']);
-        } finally {
-            setIsLoadingSuggestions(false);
-        }
-    };
-    
-    const handleSuggestionClick = (suggestion: string) => {
-        if (disabled) return;
-        // Suggestions are always 'act' type for simplicity now
-        setActiveTab('act');
-        onInputSubmit(suggestion);
-        setSuggestions([]);
-    };
-
 
     const placeholder = activeTab === 'act'
         ? 'Bạn muốn làm gì? (ví dụ: tu luyện, khám phá xung quanh...)'
@@ -93,23 +63,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                 <span>Nồng độ Linh khí: {currentLocation.qiConcentration}</span>
             </div>
 
-            {(suggestions.length > 0 || isLoadingSuggestions) && (
-                <div className="flex flex-wrap gap-2 mb-2 items-center justify-center min-h-[38px]">
-                    {isLoadingSuggestions && <FaSync className="animate-spin text-[var(--primary-accent-color)]" />}
-                    {suggestions.map((s, i) => (
-                        <button
-                            key={i}
-                            onClick={() => handleSuggestionClick(s)}
-                            disabled={disabled}
-                            className="px-3 py-1.5 bg-[var(--bg-interactive)] text-[var(--text-color)] text-sm font-semibold rounded-lg hover:bg-[var(--bg-interactive-hover)] disabled:opacity-50 transition-colors animate-fade-in"
-                            style={{animationDuration: '300ms'}}
-                        >
-                            {s}
-                        </button>
-                    ))}
-                </div>
-            )}
-
             <div className="flex gap-1 p-1 bg-[var(--bg-interactive)] rounded-lg border border-[var(--border-subtle)] mb-2">
                 <TabButton
                     label="Hành Động"
@@ -139,17 +92,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                     disabled={disabled}
                     className="w-full bg-[var(--bg-interactive)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-lg text-[var(--text-color)] focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)] transition-all disabled:opacity-50"
                 />
-                {activeTab !== 'ask' && (
-                    <button
-                        type="button"
-                        onClick={handleGetSuggestions}
-                        disabled={disabled || isLoadingSuggestions}
-                        className="flex-shrink-0 px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] font-bold rounded-lg hover:bg-[var(--bg-interactive-hover)] disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
-                        title="Gợi ý từ AI"
-                    >
-                        <FaLightbulb />
-                    </button>
-                )}
                 <button
                     type="submit"
                     disabled={disabled || !inputText.trim()}

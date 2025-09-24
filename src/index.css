@@ -1,12 +1,12 @@
 /* --- GLOBAL STYLES & THEME VARIABLES --- */
 :root {
-  /* These are placeholder defaults; they will be overridden by theme classes on the body */
-  --bg-color: #1a2e29;
+  /* Default theme: Bamboo Forest (Dark) */
+  --bg-color: #0c1412;
   --text-color: #f0ead6;
   --text-muted-color: #a39f8e;
-  --primary-accent-color: #f59e0b;
+  --primary-accent-color: #f59e0b; /* Amber 500 */
   --primary-accent-text-color: #1f2937;
-  --secondary-accent-color: #0d9488;
+  --secondary-accent-color: #0d9488; /* Teal 600 */
   --border-color: #444b49;
   --panel-bg-color: rgba(12, 10, 9, 0.65);
   --panel-border-color: rgba(245, 158, 11, 0.25);
@@ -22,6 +22,109 @@
   --player-bubble-bg-color: rgb(55 65 81 / 0.8);
   --npc-bubble-bg-color: rgb(31 41 55 / 0.6);
   --glass-bg-color: rgba(0, 0, 0, 0.3);
+}
+
+/* --- THEME DEFINITIONS --- */
+.theme-bamboo-forest { /* Default dark theme */ }
+.theme-sunrise-peak { /* Light theme */
+  --bg-color: #fdf6e3;
+  --text-color: #333333;
+  --text-muted-color: #6c757d;
+  --primary-accent-color: #d97706; /* Amber 600 */
+  --primary-accent-text-color: #ffffff;
+  --secondary-accent-color: #059669; /* Emerald 600 */
+  --border-color: #d1d5db;
+  --panel-bg-color: rgba(255, 255, 255, 0.7);
+  --panel-border-color: rgba(217, 119, 6, 0.3);
+  --button-primary-bg: #d97706;
+  --button-primary-hover-bg: #ea580c;
+  --button-primary-border: #9a3412;
+  --bg-subtle: rgba(243, 244, 246, 0.8);
+  --bg-interactive: rgba(229, 231, 235, 0.7);
+  --bg-interactive-hover: rgba(209, 213, 219, 0.7);
+  --border-subtle: rgba(156, 163, 175, 0.5);
+  --player-bubble-bg-color: rgb(229 231 235 / 0.8);
+  --npc-bubble-bg-color: rgb(243 244 246 / 0.6);
+}
+.theme-bich-du-cung { /* Mystic theme */
+  --bg-color: #1a1b26;
+  --text-color: #a9b1d6;
+  --text-muted-color: #565f89;
+  --primary-accent-color: #7dcfff; /* Light Blue */
+  --primary-accent-text-color: #1a1b26;
+  --secondary-accent-color: #bb9af7; /* Purple */
+  --border-color: #414868;
+  --panel-bg-color: rgba(20, 21, 29, 0.7);
+  --panel-border-color: rgba(125, 207, 255, 0.3);
+  --button-primary-bg: #7dcfff;
+  --button-primary-hover-bg: #9ece6a;
+  --button-primary-border: #2e3d77;
+  --bg-subtle: rgba(20, 21, 29, 0.85);
+  --bg-interactive: rgba(26, 27, 38, 0.7);
+  --bg-interactive-hover: rgba(35, 37, 51, 0.7);
+  --border-subtle: rgba(65, 72, 104, 0.5);
+  --player-bubble-bg-color: rgb(35 37 51 / 0.8);
+  --npc-bubble-bg-color: rgb(26 27 38 / 0.6);
+}
+.theme-ngoc-hu-cung { /* Serene theme */
+  --bg-color: #e0e8f0;
+  --text-color: #273444;
+  --text-muted-color: #606f7b;
+  --primary-accent-color: #3490dc; /* Blue */
+  --primary-accent-text-color: #ffffff;
+  --secondary-accent-color: #38a89d; /* Teal */
+  --border-color: #dae1e7;
+  --panel-bg-color: rgba(255, 255, 255, 0.8);
+  --panel-border-color: rgba(52, 144, 220, 0.3);
+  --button-primary-bg: #3490dc;
+  --button-primary-hover-bg: #2779bd;
+  --button-primary-border: #2269a3;
+  --bg-subtle: rgba(248, 250, 252, 0.85);
+  --bg-interactive: rgba(241, 245, 249, 0.7);
+  --bg-interactive-hover: rgba(226, 232, 240, 0.7);
+  --border-subtle: rgba(203, 213, 225, 0.6);
+  --player-bubble-bg-color: rgb(226 232 240 / 0.8);
+  --npc-bubble-bg-color: rgb(241 245 249 / 0.6);
+}
+.theme-huyet-sat-ma-dien { /* Dark/Red theme */
+  --bg-color: #120c0c;
+  --text-color: #d1d5db;
+  --text-muted-color: #6b7280;
+  --primary-accent-color: #dc2626; /* Red 600 */
+  --primary-accent-text-color: #ffffff;
+  --secondary-accent-color: #4b5563; /* Gray 600 */
+  --border-color: #4b5563;
+  --panel-bg-color: rgba(17, 24, 39, 0.75);
+  --panel-border-color: rgba(220, 38, 38, 0.3);
+  --button-primary-bg: #dc2626;
+  --button-primary-hover-bg: #ef4444;
+  --button-primary-border: #991b1b;
+  --bg-subtle: rgba(17, 24, 39, 0.85);
+  --bg-interactive: rgba(31, 41, 55, 0.7);
+  --bg-interactive-hover: rgba(55, 65, 81, 0.7);
+  --border-subtle: rgba(75, 85, 99, 0.5);
+  --player-bubble-bg-color: rgb(55 65 81 / 0.8);
+  --npc-bubble-bg-color: rgb(31 41 55 / 0.6);
+}
+.theme-thuy-mac-hoa { /* Minimalist Ink Wash theme */
+  --bg-color: #e9e9e9;
+  --text-color: #1a1a1a;
+  --text-muted-color: #5c5c5c;
+  --primary-accent-color: #b91c1c; /* Red Seal Color */
+  --primary-accent-text-color: #ffffff;
+  --secondary-accent-color: #4a5568; /* Slate */
+  --border-color: #dcdcdc;
+  --panel-bg-color: rgba(255, 255, 255, 0.75);
+  --panel-border-color: rgba(0, 0, 0, 0.1);
+  --button-primary-bg: #b91c1c;
+  --button-primary-hover-bg: #991b1b;
+  --button-primary-border: #7f1d1d;
+  --bg-subtle: rgba(245, 245, 245, 0.8);
+  --bg-interactive: rgba(235, 235, 235, 0.7);
+  --bg-interactive-hover: rgba(220, 220, 220, 0.7);
+  --border-subtle: rgba(100, 100, 100, 0.3);
+  --player-bubble-bg-color: rgb(220 220 220 / 0.8);
+  --npc-bubble-bg-color: rgb(235 235 235 / 0.6);
 }
 
 body {
@@ -68,29 +171,50 @@ body {
 /* --- DYNAMIC BACKGROUNDS --- */
 .dynamic-bg-container { position: fixed; inset: 0; z-index: -10; overflow: hidden; background-color: var(--bg-color); }
 .dynamic-bg-layer { position: absolute; inset: 0; background-repeat: repeat-x; background-position: center bottom; will-change: transform; }
-.dynamic-bg-ink_wash .layer-1 { background-image: url('https://i.imgur.com/gHFj1cr.png'); animation: parallax-slow 180s linear infinite; background-size: auto 100%; }
-.dynamic-bg-ink_wash .layer-2 { background-image: url('https://i.imgur.com/qF1y348.png'); animation: parallax-medium 120s linear infinite; background-size: auto 100%; }
-.dynamic-bg-ink_wash .layer-3 { background-image: url('https://i.imgur.com/Bf1oD5p.png'); animation: parallax-fast 80s linear infinite; background-size: auto 100%; }
-.dynamic-bg-ink_wash .layer-4 { background-image: url('https://i.imgur.com/o4S3a2w.png'); animation: parallax-very-fast 50s linear infinite; background-size: auto 100%; }
-.dynamic-bg-sunset_peak .layer-1 { background-image: url('https://i.imgur.com/0fFXx6L.png'); animation: parallax-slow 240s linear infinite; background-size: auto 100%; }
-.dynamic-bg-sunset_peak .layer-2 { background-image: url('https://i.imgur.com/s6k41eX.png'); animation: parallax-medium 180s linear infinite; background-size: auto 100%; }
-.dynamic-bg-sunset_peak .layer-3 { background-image: url('https://i.imgur.com/yFzN8D4.png'); animation: parallax-fast 120s linear infinite; background-size: auto 100%; }
-.dynamic-bg-sunset_peak .layer-4 { background-image: url('https://i.imgur.com/1G606s3.png'); animation: parallax-very-fast 80s linear infinite; background-size: auto 100%; }
-.dynamic-bg-mystic_violet .layer-1 { background-image: url('https://i.imgur.com/qEGGk7P.png'); animation: parallax-slow 200s linear infinite; background-size: auto 100%; }
-.dynamic-bg-mystic_violet .layer-2 { background-image: url('https://i.imgur.com/Q2yG3pP.png'); animation: parallax-medium 150s linear infinite; background-size: auto 100%; }
-.dynamic-bg-mystic_violet .layer-3 { background-image: url('https://i.imgur.com/lM8W3lP.png'); animation: parallax-fast 100s linear infinite; background-size: auto 100%; }
-.dynamic-bg-mystic_violet .layer-4 { background-image: url('https://i.imgur.com/pZzN5Yl.png'); animation: parallax-very-fast 60s linear infinite; background-size: auto 100%; }
 
-.bg-thumbnail-ink_wash { background-image: url('https://i.imgur.com/mO2rYfA.jpg'); background-size: cover; }
-.bg-thumbnail-sunset_peak { background-image: url('https://i.imgur.com/1Dq2a7e.jpg'); background-size: cover; }
-.bg-thumbnail-mystic_violet { background-image: url('https://i.imgur.com/4l3zO6I.jpg'); background-size: cover; }
-.bg-thumbnail-blood_moon { background-image: url('https://i.imgur.com/gK9q3jR.jpg'); background-size: cover; }
-.bg-thumbnail-jade_forest { background-image: url('https://i.imgur.com/2s4R5yO.jpg'); background-size: cover; }
+/* Single parallax keyframe for cleanliness */
+@keyframes parallax-scroll { 
+  from { transform: translateX(0); } 
+  to { transform: translateX(-1920px); } 
+}
 
-@keyframes parallax-slow { 0% { transform: translateX(0); } 100% { transform: translateX(-1920px); } }
-@keyframes parallax-medium { 0% { transform: translateX(0); } 100% { transform: translateX(-1920px); } }
-@keyframes parallax-fast { 0% { transform: translateX(0); } 100% { transform: translateX(-1920px); } }
-@keyframes parallax-very-fast { 0% { transform: translateX(0); } 100% { transform: translateX(-1920px); } }
+/* Ink Wash Theme */
+.dynamic-bg-ink_wash .layer-1 { background-image: url('https://i.imgur.com/Z4d3pG3.png'); animation: parallax-scroll 180s linear infinite; background-size: auto 100%; }
+.dynamic-bg-ink_wash .layer-2 { background-image: url('https://i.imgur.com/R8Jg6z8.png'); animation: parallax-scroll 120s linear infinite; background-size: auto 100%; }
+.dynamic-bg-ink_wash .layer-3 { background-image: url('https://i.imgur.com/JTFjN22.png'); animation: parallax-scroll 80s linear infinite; background-size: auto 100%; }
+.dynamic-bg-ink_wash .layer-4 { background-image: url('https://i.imgur.com/nJt3A07.png'); animation: parallax-scroll 50s linear infinite; background-size: auto 100%; }
+
+/* Sunset Peak Theme */
+.dynamic-bg-sunset_peak .layer-1 { background-image: url('https://i.imgur.com/eKE2p3f.png'); animation: parallax-scroll 240s linear infinite; background-size: auto 100%; }
+.dynamic-bg-sunset_peak .layer-2 { background-image: url('https://i.imgur.com/k2EVY4t.png'); animation: parallax-scroll 180s linear infinite; background-size: auto 100%; }
+.dynamic-bg-sunset_peak .layer-3 { background-image: url('https://i.imgur.com/A6AWaC5.png'); animation: parallax-scroll 120s linear infinite; background-size: auto 100%; }
+.dynamic-bg-sunset_peak .layer-4 { background-image: url('https://i.imgur.com/J33y64I.png'); animation: parallax-scroll 80s linear infinite; background-size: auto 100%; }
+
+/* Mystic Violet Theme */
+.dynamic-bg-mystic_violet .layer-1 { background-image: url('https://i.imgur.com/qK1kCgY.png'); animation: parallax-scroll 200s linear infinite; background-size: auto 100%; }
+.dynamic-bg-mystic_violet .layer-2 { background-image: url('https://i.imgur.com/UDSyPsj.png'); animation: parallax-scroll 150s linear infinite; background-size: auto 100%; }
+.dynamic-bg-mystic_violet .layer-3 { background-image: url('https://i.imgur.com/2s4R5yO.png'); animation: parallax-scroll 100s linear infinite; background-size: auto 100%; }
+.dynamic-bg-mystic_violet .layer-4 { background-image: url('https://i.imgur.com/gHh9b8A.png'); animation: parallax-scroll 60s linear infinite; background-size: auto 100%; }
+
+/* Blood Moon Theme */
+.dynamic-bg-blood_moon .layer-1 { background-image: url('https://i.imgur.com/JbJ9tYn.png'); animation: parallax-scroll 220s linear infinite; background-size: auto 100%; }
+.dynamic-bg-blood_moon .layer-2 { background-image: url('https://i.imgur.com/z4a5gL3.png'); animation: parallax-scroll 160s linear infinite; background-size: auto 100%; }
+.dynamic-bg-blood_moon .layer-3 { background-image: url('https://i.imgur.com/1o5g9Lg.png'); animation: parallax-scroll 110s linear infinite; background-size: auto 100%; }
+.dynamic-bg-blood_moon .layer-4 { background-image: url('https://i.imgur.com/GgG4s1j.png'); animation: parallax-scroll 70s linear infinite; background-size: auto 100%; }
+
+/* Jade Forest Theme */
+.dynamic-bg-jade_forest .layer-1 { background-image: url('https://i.imgur.com/9yX3B5p.png'); animation: parallax-scroll 210s linear infinite; background-size: auto 100%; }
+.dynamic-bg-jade_forest .layer-2 { background-image: url('https://i.imgur.com/2s4R5yO.png'); animation: parallax-scroll 155s linear infinite; background-size: auto 100%; }
+.dynamic-bg-jade_forest .layer-3 { background-image: url('https://i.imgur.com/gHh9b8A.png'); animation: parallax-scroll 105s linear infinite; background-size: auto 100%; }
+.dynamic-bg-jade_forest .layer-4 { background-image: url('https://i.imgur.com/qE4J3qJ.png'); animation: parallax-scroll 65s linear infinite; background-size: auto 100%; }
+
+/* Background Thumbnails for Settings */
+.bg-thumbnail-ink_wash { background-image: url('https://i.imgur.com/fL3t42r.jpg'); background-size: cover; }
+.bg-thumbnail-sunset_peak { background-image: url('https://i.imgur.com/z6uD2uU.jpg'); background-size: cover; }
+.bg-thumbnail-mystic_violet { background-image: url('https://i.imgur.com/1zS4T5k.jpg'); background-size: cover; }
+.bg-thumbnail-blood_moon { background-image: url('https://i.imgur.com/X4y1L5C.jpg'); background-size: cover; }
+.bg-thumbnail-jade_forest { background-image: url('https://i.imgur.com/qL6p9l0.jpg'); background-size: cover; }
+
 
 /* --- AMBIENT/PARTICLE EFFECTS --- */
 .particle-container { position: fixed; inset: 0; z-index: -5; pointer-events: none; }
@@ -109,12 +233,14 @@ body {
 .snowflake { position: absolute; top: -10px; background-color: #fff; border-radius: 50%; animation: snowfall linear infinite; }
 @keyframes snowfall { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(105vh) translateX(var(--sway-x)); } }
 
-/* --- KEYFRAME ANIMATIONS (keep these) --- */
+/* --- KEYFRAME ANIMATIONS --- */
+.animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+.animate-fade-in-menu { animation: fade-in-menu 0.8s ease-out forwards; }
+.animate-menu-item { opacity: 0; transform: translateY(20px); animation: menu-item-appear 0.6s ease-out forwards; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade-in-menu { from { opacity: 0; } to { opacity: 1; } }
 @keyframes menu-item-appear { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes stat-flash { 0%, 100% { background-color: transparent; } 50% { background-color: var(--primary-glow-color); } }
-@keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade-in-special { from { opacity: 0; } to { opacity: 1; } }
 @keyframes breakthrough-pulse { 0%, 100% { transform: scale(0.8); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } }
 @keyframes breakthrough-zoom { from { transform: rotate(var(--angle)) scaleY(0) translateY(100px); opacity: 0; } to { transform: rotate(var(--angle)) scaleY(1) translateY(0); opacity: 1; } }
@@ -125,7 +251,7 @@ body {
 @keyframes card-flip { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(180deg); } }
 @keyframes text-fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* --- Remaining valid CSS --- */
+/* --- UTILITY & COMPONENT STYLES --- */
 .writing-vertical {
   writing-mode: vertical-rl;
   text-orientation: mixed;
@@ -139,17 +265,13 @@ body {
   justify-content: center;
   align-items: center;
 }
-
 .stat-changed-flash { animation: stat-flash 0.7s ease-out; }
-
-/* --- GLOBAL ELEMENT STYLES FOR CONSISTENCY --- */
 select {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
   background-size: 1.5em 1.5em;
   background-repeat: no-repeat;
 }
-
 input[type="color"]::-webkit-color-swatch-wrapper {
     padding: 0;
 }
