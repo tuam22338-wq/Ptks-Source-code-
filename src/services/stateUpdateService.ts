@@ -63,6 +63,39 @@ export const applyMechanicalChanges = (
         return nextState; // Stop further processing if choices are presented.
     }
     
+    // Handle Realm/Stage change from breakthrough
+    if (intent.realmChange && intent.stageChange) {
+        const newCultivation = {
+            ...pc.cultivation,
+            currentRealmId: intent.realmChange,
+            currentStageId: intent.stageChange,
+        };
+        const newRealm = currentState.realmSystem.find(r => r.id === intent.realmChange);
+        const newStage = newRealm?.stages.find(s => s.id === intent.stageChange);
+
+        if (newRealm && newStage) {
+            pc = { ...pc, cultivation: newCultivation };
+            showNotification(`Đột phá thành công! Cảnh giới mới: ${newRealm.name} - ${newStage.name}`);
+            
+            // Apply stat bonuses from the new stage
+            if (newStage.bonuses && newStage.bonuses.length > 0) {
+                let newAttributes = { ...pc.attributes };
+                newStage.bonuses.forEach(bonus => {
+                    const attrDef = currentState.attributeSystem.definitions.find(def => def.name === bonus.attribute);
+                    if (attrDef && newAttributes[attrDef.id]) {
+                        const attr = newAttributes[attrDef.id];
+                        attr.value += bonus.value;
+                        if (attr.maxValue !== undefined) {
+                            attr.maxValue += bonus.value;
+                        }
+                        showNotification(`Thuộc tính tăng: ${bonus.attribute} +${bonus.value}`);
+                    }
+                });
+                pc = { ...pc, attributes: newAttributes }; // Assign updated attributes
+            }
+        }
+    }
+
     if (intent.locationChange && nextState.discoveredLocations.some((l: any) => l.id === intent.locationChange)) {
         pc = { ...pc, currentLocationId: intent.locationChange };
         showNotification(`Đã đến: ${nextState.discoveredLocations.find((l:any) => l.id === pc.currentLocationId)?.name || pc.currentLocationId}`);
@@ -225,20 +258,22 @@ export const applyMechanicalChanges = (
         Object.entries(changesMap).forEach(([attrId, changes]) => {
             const attrDef = nextState.attributeSystem.definitions.find((def: any) => def.id === attrId);
             if (newAttributes[attrId]) {
-                const attr = { ...newAttributes[attrId] }; // Copy attribute object
+                const attr = { ...newAttributes[attrId] };
                 
                 if (changes.changeMax) {
-                    attr.maxValue = (attr.maxValue || attr.value) + changes.changeMax;
+                    attr.maxValue = Math.max(1, (attr.maxValue !== undefined ? attr.maxValue : attr.value) + changes.changeMax);
                     showNotification(`Giới hạn ${attrDef?.name || attrId} thay đổi: ${changes.changeMax > 0 ? '+' : ''}${changes.changeMax}`);
                 }
                 
                 if (changes.change) {
                     attr.value = (attr.value || 0) + changes.change;
-                    if (attr.maxValue !== undefined) {
-                        attr.value = Math.min(attr.value, attr.maxValue);
-                    }
                     if (changes.change !== 0) showNotification(`${attrDef?.name || attrId}: ${changes.change > 0 ? '+' : ''}${changes.change}`);
                 }
+
+                if (attr.maxValue !== undefined) {
+                    attr.value = Math.min(attr.value, attr.maxValue);
+                }
+                attr.value = Math.max(0, attr.value);
 
                 newAttributes[attrId] = attr;
 

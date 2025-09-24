@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, CharacterAttributes } from '../../../types';
 import { decideNpcCombatAction } from '../../../services/geminiService';
@@ -167,7 +163,7 @@ const CombatScreen: React.FC = () => {
                         let newPlayer = { ...gs.playerCharacter };
                         const sinhMenhAttr = newPlayer.attributes['sinh_menh'];
                         if (sinhMenhAttr) {
-                            const newSinhMenh = sinhMenhAttr.value - damage;
+                            const newSinhMenh = Math.max(0, sinhMenhAttr.value - damage);
                             const newAttributes: CharacterAttributes = { ...newPlayer.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
                             newPlayer = { ...newPlayer, attributes: newAttributes };
                         }
@@ -203,7 +199,7 @@ const CombatScreen: React.FC = () => {
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
                     const sinhMenhAttr = e.attributes['sinh_menh'];
-                    const newSinhMenh = sinhMenhAttr.value - damage;
+                    const newSinhMenh = Math.max(0, sinhMenhAttr.value - damage);
                     const newAttributes: CharacterAttributes = { ...e.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
                     return { ...e, attributes: newAttributes };
                 }
@@ -242,7 +238,7 @@ const CombatScreen: React.FC = () => {
             let newEnemies = gs.combatState.enemies.map(e => {
                 if (e.id === selectedTargetId) {
                     const sinhMenhAttr = e.attributes['sinh_menh'];
-                    const newSinhMenh = sinhMenhAttr.value - damage;
+                    const newSinhMenh = Math.max(0, sinhMenhAttr.value - damage);
                     const newAttributes: CharacterAttributes = { ...e.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
                     return { ...e, attributes: newAttributes };
                 }
@@ -251,7 +247,7 @@ const CombatScreen: React.FC = () => {
             let newPlayer = { ...gs.playerCharacter };
             const linhLucAttr = newPlayer.attributes['linh_luc'];
             if (linhLucAttr) {
-                const newLinhLuc = linhLucAttr.value - technique.cost.value;
+                const newLinhLuc = Math.max(0, linhLucAttr.value - technique.cost.value);
                 const newAttributes: CharacterAttributes = { ...newPlayer.attributes, 'linh_luc': { ...linhLucAttr, value: newLinhLuc }};
                 newPlayer = { ...newPlayer, attributes: newAttributes };
             }

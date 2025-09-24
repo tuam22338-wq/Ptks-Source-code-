@@ -1,12 +1,19 @@
 
 
+
 import React, { memo, useState, useEffect } from 'react';
-import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart } from 'react-icons/fa';
+import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import UpdateModal from './UpdateModal';
 import * as db from '../../services/dbService';
 import { CURRENT_GAME_VERSION } from '../../constants';
+
+const topDonors = [
+    { name: 'moondainhan', rank: 1, icon: FaTrophy, color: 'text-yellow-400', glow: 'shadow-[0_0_15px_rgba(250,204,21,0.7)]' },
+    { name: 'Cừu đồng', rank: 2, icon: FaTrophy, color: 'text-gray-300', glow: 'shadow-[0_0_10px_rgba(209,213,219,0.6)]' },
+    { name: 'túi mật đầy sỏi và mink', rank: 3, icon: FaTrophy, color: 'text-amber-600', glow: 'shadow-[0_0_8px_rgba(209,150,91,0.6)]' }
+];
 
 const DonateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
@@ -24,6 +31,19 @@ const DonateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <p>NGUYEN HOANG TRUONG</p>
                     </div>
                 </div>
+
+                <div className="mt-6 pt-4 border-t border-amber-500/20">
+                    <h3 className="text-2xl font-bold font-title text-amber-300 mb-3">Phú Hào Bảng</h3>
+                    <div className="space-y-3">
+                        {topDonors.map((donor) => (
+                            <div key={donor.rank} className="flex items-center gap-4 p-2 bg-black/20 rounded-lg">
+                                <donor.icon className={`text-3xl ${donor.color} ${donor.glow} animate-pulse`} style={{ animationDuration: '2s' }} />
+                                <span className="text-lg font-semibold text-gray-200 text-left">{donor.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="mt-6 flex justify-center">
                     <button
                         onClick={onClose}

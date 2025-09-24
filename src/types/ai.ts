@@ -72,6 +72,8 @@ export interface MechanicalIntent {
     emotionChanges?: { npcName: string; emotion: 'trust' | 'fear' | 'anger'; change: number; reason: string; }[];
     systemActions?: { actionType: string; details: Record<string, any>; }[];
     dialogueChoices?: EventChoice[];
+    realmChange?: string; // ID of the new realm after breakthrough
+    stageChange?: string; // ID of the new stage after breakthrough
 }
 
 export interface AIResponsePayload {

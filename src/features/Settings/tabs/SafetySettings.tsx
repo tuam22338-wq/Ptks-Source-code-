@@ -46,7 +46,7 @@ const SafetySettingsTab: React.FC<SafetySettingsProps> = ({ settings, handleSett
                     </label>
                     {settings.enableNsfwMode && (
                          <p className="mt-2 text-xs text-red-400 bg-red-900/30 border border-red-500/50 p-2 rounded-md">
-                            <strong>CẢNH BÁO:</strong> Bạn đã bật chế độ NSFW. AI sẽ tạo ra các nội dung người lớn, tình dục một cách chi tiết và trần trụi. Các bộ lọc an toàn khác đã bị vô hiệu hóa.
+                            <strong>CẢNH BÁO:</strong> Bạn đã bật chế độ NSFW. AI sẽ tạo ra các nội dung cực kỳ bạo lực, tàn khốc, và tình dục một cách chi tiết, trần trụi. Trải nghiệm có thể chứa các yếu tố kinh dị và gây khó chịu. Các bộ lọc an toàn khác đã bị vô hiệu hóa.
                         </p>
                     )}
                 </div>
