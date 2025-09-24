@@ -87,7 +87,7 @@ const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) 
                 <button 
                     onClick={handleGenerateWorld}
                     disabled={!fileContent.trim()}
-                    className="mt-6 px-8 py-4 text-xl font-bold rounded-lg themed-button-primary disabled:bg-gray-600 disabled:cursor-not-allowed disabled:border-gray-700 disabled:text-gray-400"
+                    className="mt-6 px-8 py-4 text-xl font-bold rounded-lg px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:border-gray-700 disabled:text-gray-400"
                 >
                     Kiến Tạo Thế Giới
                 </button>

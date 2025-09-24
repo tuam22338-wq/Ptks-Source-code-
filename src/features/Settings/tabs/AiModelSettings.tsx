@@ -8,9 +8,9 @@ interface SettingsSectionProps {
     children: React.ReactNode;
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
-  <section className="settings-section">
-    <h3 className="settings-section-title">{title}</h3>
-    <div className="space-y-6">{children}</div>
+  <section className="mb-10">
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">{title}</h3>
+    <div className="space-y-4">{children}</div>
   </section>
 );
 
@@ -21,12 +21,12 @@ interface SettingsRowProps {
     disabled?: boolean;
 }
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
-  <div className={`settings-row ${disabled ? 'opacity-50' : ''}`}>
-    <div className="settings-row-label">
-      <label>{label}</label>
-      <p>{description}</p>
+  <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
+    <div className="md:w-1/3 flex-shrink-0">
+      <label className="block font-semibold text-gray-200">{label}</label>
+      <p className="text-sm text-gray-500 mt-1">{description}</p>
     </div>
-    <div className="settings-row-control">{children}</div>
+    <div className="md:w-2/3">{children}</div>
   </div>
 );
 
@@ -73,12 +73,12 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                     {settings.apiKeys.map(key => (
                         <div key={key} className="flex items-center gap-2 mb-2">
                             <FaKey className="text-gray-500" />
-                            <input type="text" readOnly value={`••••••••${key.slice(-4)}`} className="themed-input flex-grow" />
+                            <input type="text" readOnly value={`••••••••${key.slice(-4)}`} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 flex-grow" />
                             <button onClick={() => handleRemoveApiKey(key)} className="p-2 text-gray-400 hover:text-red-400"><FaTrash /></button>
                         </div>
                     ))}
                     <div className="flex items-center gap-2 mt-2">
-                        <input type="text" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} placeholder="Dán API Key mới vào đây" className="themed-input flex-grow" />
+                        <input type="text" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} placeholder="Dán API Key mới vào đây" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 flex-grow" />
                         <button onClick={handleAddApiKey} className="p-2 text-gray-200 bg-gray-600 rounded-md hover:bg-gray-500"><FaPlus /></button>
                     </div>
                 </div>
@@ -93,7 +93,7 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                                 <select 
                                     value={(settings as any)[config.id] || ''}
                                     onChange={e => handleSettingChange(config.id, e.target.value)}
-                                    className="themed-select flex-grow"
+                                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none flex-grow"
                                 >
                                     {config.modelType === 'image' ? IMAGE_AI_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
                                      config.modelType === 'rag' ? RAG_EMBEDDING_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
@@ -102,7 +102,7 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                                 <select 
                                     value={settings.modelApiKeyAssignments[config.id] || 'auto'}
                                     onChange={e => handleSettingChange('modelApiKeyAssignments', { ...settings.modelApiKeyAssignments, [config.id]: e.target.value })}
-                                    className="themed-select w-40"
+                                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none w-40"
                                 >
                                     <option value="auto">Tự động</option>
                                     {settings.apiKeys.map((key, index) => (

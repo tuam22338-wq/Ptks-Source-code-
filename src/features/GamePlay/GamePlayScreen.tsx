@@ -8,7 +8,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
 import EventPanel from './components/EventPanel';
 import CombatScreen from './components/CombatScreen';
-import CultivationPathModal from './components/CultivationPathModal';
+import CultivationPathModal from './CultivationPathModal';
 import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
 import { generateInnerDemonTrial, askAiAssistant } from '../../services/geminiService';

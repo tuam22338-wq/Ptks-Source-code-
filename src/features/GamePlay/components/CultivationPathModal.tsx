@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import type { CultivationPath } from '../../../types';
 
@@ -13,7 +14,7 @@ const CultivationPathModal: React.FC<CultivationPathModalProps> = ({ isOpen, pat
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal w-full max-w-4xl m-4 p-6 max-h-[90vh] flex flex-col">
+            <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-4xl m-4 p-6 max-h-[90vh] flex flex-col">
                 <h2 className="text-3xl font-bold font-title text-center text-amber-300">Thiên Mệnh Rẽ Lối</h2>
                 <p className="text-center text-gray-400 mt-2 mb-6">Bạn đã đột phá thành công, một con đường mới đã mở ra. Hãy lựa chọn hướng đi cho mình.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto pr-2">
@@ -31,7 +32,7 @@ const CultivationPathModal: React.FC<CultivationPathModalProps> = ({ isOpen, pat
                             </div>
                             <button
                                 onClick={() => onSelectPath(path)}
-                                className="w-full mt-auto themed-button-primary font-bold py-3 px-4 rounded-lg text-lg"
+                                className="w-full mt-auto px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 font-bold py-3 px-4 rounded-lg text-lg"
                             >
                                 Lựa chọn
                             </button>

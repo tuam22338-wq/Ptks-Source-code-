@@ -7,9 +7,9 @@ interface SettingsSectionProps {
     children: React.ReactNode;
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
-  <section className="settings-section">
-    <h3 className="settings-section-title">{title}</h3>
-    <div className="space-y-6">{children}</div>
+  <section className="mb-10">
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">{title}</h3>
+    <div className="space-y-4">{children}</div>
   </section>
 );
 
@@ -20,12 +20,12 @@ interface SettingsRowProps {
     disabled?: boolean;
 }
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
-  <div className={`settings-row ${disabled ? 'opacity-50' : ''}`}>
-    <div className="settings-row-label">
-      <label>{label}</label>
-      <p>{description}</p>
+  <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
+    <div className="md:w-1/3 flex-shrink-0">
+      <label className="block font-semibold text-gray-200">{label}</label>
+      <p className="text-sm text-gray-500 mt-1">{description}</p>
     </div>
-    <div className="settings-row-control">{children}</div>
+    <div className="md:w-2/3">{children}</div>
   </div>
 );
 
@@ -39,21 +39,21 @@ const InterfaceSettings: React.FC<InterfaceSettingsProps> = ({ settings, handleS
         <>
             <SettingsSection title="Giao Diện & Hiển Thị">
                 <SettingsRow label="Chế độ hiển thị" description="Tự động phát hiện hoặc ép hiển thị theo giao diện máy tính/di động.">
-                    <div className="themed-button-group">
+                    <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
                         {LAYOUT_MODES.map(mode => (
-                            <button key={mode.value} className={settings.layoutMode === mode.value ? 'active' : ''} onClick={() => handleSettingChange('layoutMode', mode.value)}>{mode.label}</button>
+                            <button key={mode.value} className={`w-full text-center py-1.5 px-2 text-sm text-gray-400 rounded-md transition-colors duration-200 font-semibold hover:bg-gray-700/50 hover:text-white ${settings.layoutMode === mode.value ? 'bg-gray-600 text-white shadow-inner' : ''}`} onClick={() => handleSettingChange('layoutMode', mode.value)}>{mode.label}</button>
                         ))}
                     </div>
                 </SettingsRow>
                  <SettingsRow label="Chủ đề (Theme)" description="Thay đổi giao diện sáng/tối và bảng màu tổng thể.">
-                    <select className="themed-select" value={settings.theme} onChange={(e) => handleSettingChange('theme', e.target.value)}>
+                    <select className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" value={settings.theme} onChange={(e) => handleSettingChange('theme', e.target.value)}>
                         {THEME_OPTIONS.map(theme => (
                             <option key={theme.value} value={theme.value}>{theme.label}</option>
                         ))}
                     </select>
                 </SettingsRow>
                  <SettingsRow label="Font chữ" description="Thay đổi font chữ chính của trò chơi.">
-                     <select className="themed-select" value={settings.fontFamily} onChange={(e) => handleSettingChange('fontFamily', e.target.value)}>
+                     <select className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" value={settings.fontFamily} onChange={(e) => handleSettingChange('fontFamily', e.target.value)}>
                         {FONT_OPTIONS.map(font => (
                             <option key={font.value} value={font.value} style={{fontFamily: font.value}}>{font.label}</option>
                         ))}
@@ -61,12 +61,12 @@ const InterfaceSettings: React.FC<InterfaceSettingsProps> = ({ settings, handleS
                 </SettingsRow>
                  <SettingsRow label="Cỡ chữ / Độ phóng to" description="Điều chỉnh kích thước chữ và giao diện tổng thể.">
                     <div className="flex items-center gap-4">
-                       <input type="range" min="40" max="200" step="5" value={settings.zoomLevel} onChange={(e) => handleSettingChange('zoomLevel', parseInt(e.target.value))} className="themed-slider flex-grow" />
-                       <span className="themed-slider-value">{settings.zoomLevel}%</span>
+                       <input type="range" min="40" max="200" step="5" value={settings.zoomLevel} onChange={(e) => handleSettingChange('zoomLevel', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                       <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.zoomLevel}%</span>
                     </div>
                 </SettingsRow>
                  <SettingsRow label="Màu chữ chính" description="Chọn màu sắc cho các đoạn văn tường thuật chính.">
-                    <input type="color" value={settings.textColor} onChange={(e) => handleSettingChange('textColor', e.target.value)} className="themed-color-input" />
+                    <input type="color" value={settings.textColor} onChange={(e) => handleSettingChange('textColor', e.target.value)} className="h-10 w-full p-1 bg-black/30 border border-gray-600 rounded-lg cursor-pointer" />
                 </SettingsRow>
             </SettingsSection>
             <SettingsSection title="Hình Nền Động">

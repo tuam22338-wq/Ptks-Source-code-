@@ -11,7 +11,7 @@ interface UpdateModalProps {
 const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal w-full max-w-2xl m-4 p-6 flex flex-col relative">
+            <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-2xl m-4 p-6 flex flex-col relative">
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>
@@ -45,7 +45,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
                     </button>
                     <button
                         onClick={onClose}
-                        className="w-full sm:w-auto px-6 py-2 themed-button-primary font-bold rounded-lg"
+                        className="w-full sm:w-auto px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 font-bold rounded-lg"
                     >
                         Đóng
                     </button>

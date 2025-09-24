@@ -102,45 +102,45 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Tên Mod</label>
-                                <input name="name" value={modInfo.name} onChange={handleInfoChange} className="themed-input" placeholder="Vd: Vương Quốc Eldoria"/>
+                                <input name="name" value={modInfo.name} onChange={handleInfoChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200" placeholder="Vd: Vương Quốc Eldoria"/>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">ID Mod</label>
-                                <input name="id" value={modInfo.id} onChange={handleInfoChange} className="themed-input" placeholder="vd: vuong_quoc_eldoria"/>
+                                <input name="id" value={modInfo.id} onChange={handleInfoChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200" placeholder="vd: vuong_quoc_eldoria"/>
                             </div>
                         </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Tác Giả</label>
-                            <input name="author" value={modInfo.author} onChange={handleInfoChange} className="themed-input" placeholder="Tên của bạn"/>
+                            <input name="author" value={modInfo.author} onChange={handleInfoChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200" placeholder="Tên của bạn"/>
                         </div>
                     </div>
 
                     <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
                         <h4 className="text-xl font-semibold font-title text-gray-300">Nội Dung Sáng Tạo</h4>
                         <Field label="Bối Cảnh (Bắt buộc)" description="Mô tả tổng quan về thế giới, môi trường, không khí, và các đặc điểm chính.">
-                            <textarea name="setting" value={prompts.setting} onChange={handlePromptChange} rows={3} className="themed-textarea" placeholder="Vd: Một vương quốc tu tiên lơ lửng trên những hòn đảo bay, nơi linh khí được khai thác từ những tinh thể khổng lồ..."/>
+                            <textarea name="setting" value={prompts.setting} onChange={handlePromptChange} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y" placeholder="Vd: Một vương quốc tu tiên lơ lửng trên những hòn đảo bay, nơi linh khí được khai thác từ những tinh thể khổng lồ..."/>
                         </Field>
                         <Field label="Mục Tiêu Chính (Tùy chọn)" description="Mô tả mục tiêu cuối cùng hoặc kết thúc mong muốn của câu chuyện.">
-                            <textarea name="mainGoal" value={prompts.mainGoal} onChange={handlePromptChange} rows={2} className="themed-textarea" placeholder="Vd: Người chơi phải thu thập đủ 5 mảnh tinh thể để phục hồi lõi thế giới đang suy tàn..."/>
+                            <textarea name="mainGoal" value={prompts.mainGoal} onChange={handlePromptChange} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y" placeholder="Vd: Người chơi phải thu thập đủ 5 mảnh tinh thể để phục hồi lõi thế giới đang suy tàn..."/>
                         </Field>
                         <Field label="Cốt Truyện Khởi Đầu (Tùy chọn)" description="Viết phần mở đầu cho câu chuyện của bạn, hoặc để trống để AI tự tạo.">
-                            <textarea name="openingStory" value={prompts.openingStory} onChange={handlePromptChange} rows={4} className="themed-textarea" placeholder="Vd: Bạn tỉnh dậy trên một con thuyền bay ọp ẹp, không một ký ức. Người lái thuyền già nua nhìn bạn và nói..."/>
+                            <textarea name="openingStory" value={prompts.openingStory} onChange={handlePromptChange} rows={4} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y" placeholder="Vd: Bạn tỉnh dậy trên một con thuyền bay ọp ẹp, không một ký ức. Người lái thuyền già nua nhìn bạn và nói..."/>
                         </Field>
                     </div>
                     
                     <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
                         <h4 className="text-xl font-semibold font-title text-cyan-300">Luật Lệ AI (AI Hooks - Nâng cao)</h4>
                         <Field label="Luật Lệ Vĩnh Cửu (on_world_build)" description="Các quy tắc cốt lõi, không thay đổi của thế giới mà AI phải luôn tuân theo. Mỗi quy tắc một dòng.">
-                            <textarea name="on_world_build" value={aiHooks.on_world_build} onChange={handleHooksChange} rows={3} className="themed-textarea" placeholder="Vd: Trong thế giới này, yêu tộc và nhân tộc có mối thù truyền kiếp."/>
+                            <textarea name="on_world_build" value={aiHooks.on_world_build} onChange={handleHooksChange} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y" placeholder="Vd: Trong thế giới này, yêu tộc và nhân tộc có mối thù truyền kiếp."/>
                         </Field>
                         <Field label="Luật Lệ Tình Huống (on_action_evaluate)" description="Các quy tắc được AI xem xét và áp dụng cho kết quả của mỗi hành động người chơi. Mỗi quy tắc một dòng.">
-                            <textarea name="on_action_evaluate" value={aiHooks.on_action_evaluate} onChange={handleHooksChange} rows={3} className="themed-textarea" placeholder="Vd: Nếu người chơi ở nơi có âm khí nồng đậm, tốc độ tu luyện ma công tăng gấp đôi."/>
+                            <textarea name="on_action_evaluate" value={aiHooks.on_action_evaluate} onChange={handleHooksChange} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y" placeholder="Vd: Nếu người chơi ở nơi có âm khí nồng đậm, tốc độ tu luyện ma công tăng gấp đôi."/>
                         </Field>
                     </div>
                 </div>
 
                 <div className="pt-4 mt-auto flex-shrink-0">
-                    <button onClick={handleGenerateWorld} disabled={!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()} className="px-8 py-4 text-xl font-bold rounded-lg themed-button-primary disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    <button onClick={handleGenerateWorld} disabled={!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()} className="px-8 py-4 text-xl font-bold rounded-lg px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:bg-gray-600 disabled:cursor-not-allowed">
                         <FaBrain className="inline-block mr-3"/>
                         Kiến Tạo Thế Giới
                     </button>

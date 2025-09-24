@@ -11,9 +11,9 @@ interface SettingsSectionProps {
     children: React.ReactNode;
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
-  <section className="settings-section">
-    <h3 className="settings-section-title">{title}</h3>
-    <div className="space-y-6">{children}</div>
+  <section className="mb-10">
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">{title}</h3>
+    <div className="space-y-4">{children}</div>
   </section>
 );
 
@@ -24,12 +24,12 @@ interface SettingsRowProps {
     disabled?: boolean;
 }
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
-  <div className={`settings-row ${disabled ? 'opacity-50' : ''}`}>
-    <div className="settings-row-label">
-      <label>{label}</label>
-      <p>{description}</p>
+  <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
+    <div className="md:w-1/3 flex-shrink-0">
+      <label className="block font-semibold text-gray-200">{label}</label>
+      <p className="text-sm text-gray-500 mt-1">{description}</p>
     </div>
-    <div className="settings-row-control">{children}</div>
+    <div className="md:w-2/3">{children}</div>
   </div>
 );
 
@@ -89,9 +89,9 @@ const GameplaySettings: React.FC<GameplaySettingsProps> = ({ settings, handleSet
                     <LevelButtonGroup options={NPC_COMPLEXITY_LEVELS} selectedValue={settings.npcComplexity} onSelect={(v) => handleSettingChange('npcComplexity', v as NpcComplexity)} />
                 </SettingsRow>
                 <SettingsRow label="Tần Suất Sự Kiện Thế Giới" description="Điều chỉnh tần suất các sự kiện động ngẫu nhiên xảy ra.">
-                    <div className="themed-button-group">
+                    <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
                         {WORLD_EVENT_FREQUENCY_LEVELS.map(level => (
-                            <button key={level.value} className={settings.worldEventFrequency === level.value ? 'active' : ''} onClick={() => handleSettingChange('worldEventFrequency', level.value)}>{level.label}</button>
+                            <button key={level.value} className={`w-full text-center py-1.5 px-2 text-sm text-gray-400 rounded-md transition-colors duration-200 font-semibold hover:bg-gray-700/50 hover:text-white ${settings.worldEventFrequency === level.value ? 'bg-gray-600 text-white shadow-inner' : ''}`} onClick={() => handleSettingChange('worldEventFrequency', level.value)}>{level.label}</button>
                         ))}
                     </div>
                 </SettingsRow>
@@ -103,31 +103,31 @@ const GameplaySettings: React.FC<GameplaySettingsProps> = ({ settings, handleSet
             <SettingsSection title="Cơ Chế Game & Nhân Vật">
                 <SettingsRow label="Tỷ Lệ Tu Vi Nhận Được" description="Điều chỉnh lượng tu vi nhận được từ mọi nguồn.">
                     <div className="flex items-center gap-4">
-                        <input type="range" min="50" max="300" step="10" value={settings.cultivationRateMultiplier} onChange={(e) => handleSettingChange('cultivationRateMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
-                        <span className="themed-slider-value">{settings.cultivationRateMultiplier}%</span>
+                        <input type="range" min="50" max="300" step="10" value={settings.cultivationRateMultiplier} onChange={(e) => handleSettingChange('cultivationRateMultiplier', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                        <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.cultivationRateMultiplier}%</span>
                     </div>
                 </SettingsRow>
                 <SettingsRow label="Tỷ Lệ Thu Thập Tài Nguyên" description="Điều chỉnh số lượng tài nguyên thu thập được.">
                     <div className="flex items-center gap-4">
-                        <input type="range" min="50" max="300" step="10" value={settings.resourceRateMultiplier} onChange={(e) => handleSettingChange('resourceRateMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
-                        <span className="themed-slider-value">{settings.resourceRateMultiplier}%</span>
+                        <input type="range" min="50" max="300" step="10" value={settings.resourceRateMultiplier} onChange={(e) => handleSettingChange('resourceRateMultiplier', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                        <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.resourceRateMultiplier}%</span>
                     </div>
                 </SettingsRow>
                  <SettingsRow label="Sát Thương Gây Ra" description="Điều chỉnh sát thương bạn gây ra cho kẻ địch.">
                     <div className="flex items-center gap-4">
-                        <input type="range" min="50" max="200" step="10" value={settings.damageDealtMultiplier} onChange={(e) => handleSettingChange('damageDealtMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
-                        <span className="themed-slider-value">{settings.damageDealtMultiplier}%</span>
+                        <input type="range" min="50" max="200" step="10" value={settings.damageDealtMultiplier} onChange={(e) => handleSettingChange('damageDealtMultiplier', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                        <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.damageDealtMultiplier}%</span>
                     </div>
                 </SettingsRow>
                  <SettingsRow label="Sát Thương Nhận Vào" description="Điều chỉnh sát thương bạn nhận vào từ kẻ địch.">
                     <div className="flex items-center gap-4">
-                        <input type="range" min="50" max="200" step="10" value={settings.damageTakenMultiplier} onChange={(e) => handleSettingChange('damageTakenMultiplier', parseInt(e.target.value))} className="themed-slider flex-grow" />
-                        <span className="themed-slider-value">{settings.damageTakenMultiplier}%</span>
+                        <input type="range" min="50" max="200" step="10" value={settings.damageTakenMultiplier} onChange={(e) => handleSettingChange('damageTakenMultiplier', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                        <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.damageTakenMultiplier}%</span>
                     </div>
                 </SettingsRow>
                  <SettingsRow label="Bật Cơ Chế Sinh Tồn" description="Bật hoặc tắt hoàn toàn nhu cầu về đói, khát.">
                     <label className="flex items-center cursor-pointer">
-                        <input type="checkbox" checked={settings.enableSurvivalMechanics} onChange={e => handleSettingChange('enableSurvivalMechanics', e.target.checked)} className="themed-checkbox" />
+                        <input type="checkbox" checked={settings.enableSurvivalMechanics} onChange={e => handleSettingChange('enableSurvivalMechanics', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
                         <span className="ml-3 text-sm text-gray-300">Bật đói và khát</span>
                     </label>
                 </SettingsRow>

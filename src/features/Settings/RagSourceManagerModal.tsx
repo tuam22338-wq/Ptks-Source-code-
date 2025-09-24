@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaTimes, FaFileUpload, FaSync, FaTrash, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import type { RagSource } from '../../types';
@@ -76,7 +77,7 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="themed-modal rounded-lg shadow-2xl shadow-black/50 w-full max-w-3xl m-4 h-[80vh] flex flex-col">
+            <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-3xl m-4 h-[80vh] flex flex-col">
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <h2 className="text-2xl font-bold font-title text-amber-300">Quản lý Nguồn Tri Thức RAG</h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
@@ -110,7 +111,7 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                                      <button 
                                         onClick={() => handleReIndex(source.id)}
                                         disabled={source.status === 'INDEXING'}
-                                        className="settings-button text-xs px-3 py-1 flex items-center gap-2 disabled:opacity-50"
+                                        className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 text-xs px-3 py-1 flex items-center gap-2 disabled:opacity-50"
                                         title="Lập chỉ mục lại"
                                     >
                                         <FaSync />
@@ -118,7 +119,7 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                                     {source.type === 'PLAYER_JOURNAL' && (
                                         <button 
                                             onClick={() => handleDelete(source.id)}
-                                            className="settings-button-danger text-xs px-3 py-1"
+                                            className="bg-red-800/80 text-white border border-red-700/80 rounded-lg font-semibold transition-colors duration-200 hover:bg-red-700 text-xs px-3 py-1"
                                             title="Xóa Nguồn"
                                         >
                                             <FaTrash />
@@ -134,7 +135,7 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                     <input type="file" accept=".txt" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                     <button 
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full settings-button-primary flex items-center justify-center gap-3 py-3"
+                        className="w-full px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 flex items-center justify-center gap-3 py-3"
                     >
                         <FaFileUpload /> Thêm "Tâm Kinh Ký" (Tải lên file .txt)
                     </button>

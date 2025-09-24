@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -275,6 +276,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     if (!isOpen || !playerCharacter) return null;
     
+    // FIX: Cast item.quantity to a number to prevent arithmetic errors with mixed types.
     const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * (Number(item.quantity) || 0)), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 
@@ -282,7 +284,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     return (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 animate-fade-in" style={{ animationDuration: '200ms' }} onClick={handleClose}>
-            <div className="themed-modal w-full max-w-4xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-4xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
                     <h3 className="text-2xl text-[var(--primary-accent-color)] font-bold font-title">Túi Càn Khôn</h3>
                     <button onClick={handleClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
@@ -320,7 +322,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
                                     </div>
                                     <div className="flex justify-end items-center gap-2 mt-2">
-                                        {selectedItem.isEquipped && selectedItem.slot && <button onClick={() => handleUnequip(selectedItem.slot!)} className="themed-button-primary text-sm font-bold px-3 py-1 rounded">Tháo Ra</button>}
+                                        {selectedItem.isEquipped && selectedItem.slot && <button onClick={() => handleUnequip(selectedItem.slot!)} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 text-sm font-bold px-3 py-1 rounded">Tháo Ra</button>}
                                         {selectedItem.slot && !selectedItem.isEquipped && <button onClick={() => handleEquip(selectedItem)} className="bg-green-700/80 hover:bg-green-600/80 text-white text-sm font-bold px-3 py-1 rounded">Trang Bị</button>}
                                         {(selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương') && <button onClick={() => handleUse(selectedItem)} className="bg-blue-700/80 hover:bg-blue-600/80 text-white text-sm font-bold px-3 py-1 rounded">{selectedItem.type === 'Đan Phương' ? 'Học' : 'Sử Dụng'}</button>}
                                         <button onClick={() => handleDrop(selectedItem)} className="bg-red-800/80 hover:bg-red-700 text-white text-sm font-bold px-3 py-1 rounded">Vứt Bỏ</button>
@@ -344,7 +346,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                              </div>
                              <div className="relative pt-2">
                                 <FaSearch className="absolute left-3 top-1/2 text-gray-500" />
-                                <input type="text" placeholder="Tìm vật phẩm..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="themed-input w-full !py-1.5 pl-9" />
+                                <input type="text" placeholder="Tìm vật phẩm..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 w-full !py-1.5 pl-9" />
                              </div>
                         </div>
 

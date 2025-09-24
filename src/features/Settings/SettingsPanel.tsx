@@ -68,7 +68,7 @@ export const SettingsPanel: React.FC = () => {
             </div>
 
             <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-end">
-                <button onClick={handleSettingsSave} className="px-6 py-2 bg-teal-700 text-white border border-teal-600 rounded-lg font-semibold transition-colors duration-200 hover:bg-teal-600">Lưu Cài Đặt</button>
+                <button onClick={handleSettingsSave} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30">Lưu Cài Đặt</button>
             </div>
         </div>
     );

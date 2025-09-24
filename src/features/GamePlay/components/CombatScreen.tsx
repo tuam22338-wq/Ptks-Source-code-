@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, CharacterAttributes } from '../../../types';
 import { decideNpcCombatAction } from '../../../services/geminiService';
@@ -47,7 +48,7 @@ const TechniqueSelectionModal: React.FC<{
     const playerLinhLuc = getFinalAttributeValue(player, 'linh_luc');
     return (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-            <div className="themed-modal w-full max-w-2xl m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-2xl m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <h3 className="text-xl text-[var(--primary-accent-color)] font-bold font-title">Chọn Công Pháp</h3>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
