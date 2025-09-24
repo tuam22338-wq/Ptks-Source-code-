@@ -1,7 +1,6 @@
 import React, { memo, useState, useEffect } from 'react';
 import type { GameDate, MajorEvent, DynamicWorldEvent, ForeshadowedEvent } from '../../../types';
-import { FaArrowLeft, FaSave, FaExpand, FaBars } from 'react-icons/fa';
-import { GiPerson } from 'react-icons/gi';
+import { FaArrowLeft, FaSave, FaExpand } from 'react-icons/fa';
 import Timeline from '../../../components/Timeline';
 
 interface TopBarProps {
@@ -11,13 +10,9 @@ interface TopBarProps {
     majorEvents: MajorEvent[];
     dynamicEvents?: DynamicWorldEvent[];
     foreshadowedEvents?: ForeshadowedEvent[];
-    isSummaryPanelVisible: boolean;
-    onToggleSummaryPanel: () => void;
-    isSidebarOpen: boolean;
-    onToggleSidebar: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, dynamicEvents, foreshadowedEvents, isSummaryPanelVisible, onToggleSummaryPanel, isSidebarOpen, onToggleSidebar }) => {
+const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, dynamicEvents, foreshadowedEvents }) => {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
     const handleFullscreen = () => {
@@ -40,14 +35,7 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, 
 
     return (
         <header className="flex-shrink-0 flex items-center justify-between p-2 sm:p-3 bg-[var(--bg-subtle)] backdrop-blur-sm border-b border-[var(--border-subtle)]">
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={onToggleSidebar}
-                    className={`p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors ${isSidebarOpen ? 'text-amber-300' : ''}`}
-                    title="Mở Bảng Điều Khiển"
-                >
-                    <FaBars className="w-5 h-5" />
-                </button>
+            <div className="flex items-center gap-2 w-48">
                 <button 
                     onClick={onBack} 
                     className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors"
@@ -61,13 +49,6 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, 
                     title="Lưu Game"
                 >
                     <FaSave className="w-5 h-5" />
-                </button>
-                <button
-                    onClick={onToggleSummaryPanel}
-                    className={`p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-[var(--bg-interactive-hover)] transition-colors ${isSummaryPanelVisible ? 'text-amber-300' : ''}`}
-                    title="Bảng Trạng Thái"
-                >
-                    <GiPerson className="w-5 h-5" />
                 </button>
                 {!isFullscreen && (
                     <button 
@@ -84,7 +65,7 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, 
                 <Timeline gameDate={gameDate} majorEvents={majorEvents} dynamicEvents={dynamicEvents} foreshadowedEvents={foreshadowedEvents} />
             </div>
 
-            <div className="w-32 md:w-48">
+            <div className="w-48">
                 {/* Spacer for centering Timeline */}
             </div>
         </header>

@@ -1,4 +1,5 @@
 
+
 import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
@@ -98,26 +99,41 @@ export const applyMechanicalChanges = (
     }
 
     if (intent.itemsGained) {
+        let newQuests = [...pc.activeQuests];
         let newItems = [...pc.inventory.items];
         intent.itemsGained.forEach(itemData => {
+            const gainedQuantity = Number(itemData.quantity || 1);
             const existingItemIndex = newItems.findIndex((i: InventoryItem) => i.name === itemData.name);
             if (existingItemIndex > -1) {
                 newItems[existingItemIndex] = {
                     ...newItems[existingItemIndex],
-                    // FIX: Cast quantity to number for arithmetic
-                    quantity: (Number(newItems[existingItemIndex].quantity) || 0) + (Number(itemData.quantity) || 1)
+                    // FIX: Cast quantity to number to prevent arithmetic errors
+                    quantity: (Number(newItems[existingItemIndex].quantity) || 0) + gainedQuantity
                 };
             } else {
                 newItems.push({
                     ...itemData,
                     id: `item-${Date.now()}-${Math.random()}`,
-                    quantity: Number(itemData.quantity) || 1,
+                    quantity: gainedQuantity,
                     isEquipped: false,
                 } as InventoryItem);
             }
-            showNotification(`Nhận được: [${itemData.name} x${itemData.quantity || 1}]`);
+            showNotification(`Nhận được: [${itemData.name} x${gainedQuantity}]`);
+
+            // Update GATHER quest progress cumulatively
+            newQuests = newQuests.map(quest => {
+                const updatedObjectives = quest.objectives.map(obj => {
+                    if (obj.type === 'GATHER' && !obj.isCompleted && obj.target === itemData.name) {
+                        const newCurrent = obj.current + gainedQuantity;
+                        showNotification(`Nhiệm vụ cập nhật: ${obj.description} (${Math.min(newCurrent, obj.required)}/${obj.required})`);
+                        return { ...obj, current: newCurrent };
+                    }
+                    return obj;
+                });
+                return { ...quest, objectives: updatedObjectives };
+            });
         });
-        pc = { ...pc, inventory: { ...pc.inventory, items: newItems }};
+        pc = { ...pc, inventory: { ...pc.inventory, items: newItems }, activeQuests: newQuests};
     }
     
     if (intent.newTechniques) {
@@ -200,21 +216,37 @@ export const applyMechanicalChanges = (
         let newAttributes = { ...pc.attributes };
         let newCultivation = { ...pc.cultivation };
 
-        const changesMap: Record<string, number> = intent.statChanges.reduce((acc, sc) => ({ ...acc, [sc.attribute]: (acc[sc.attribute] || 0) + sc.change }), {});
+        const changesMap: Record<string, { change?: number; changeMax?: number }> = (intent.statChanges || []).reduce((acc, sc) => {
+            acc[sc.attribute] = {
+                change: (acc[sc.attribute]?.change || 0) + (sc.change || 0),
+                changeMax: (acc[sc.attribute]?.changeMax || 0) + (sc.changeMax || 0),
+            };
+            return acc;
+        }, {} as Record<string, { change?: number; changeMax?: number }>);
         
-        Object.entries(changesMap).forEach(([attrId, change]) => {
+        Object.entries(changesMap).forEach(([attrId, changes]) => {
             const attrDef = nextState.attributeSystem.definitions.find((def: any) => def.id === attrId);
             if (newAttributes[attrId]) {
                 const attr = { ...newAttributes[attrId] }; // Copy attribute object
-                attr.value = (attr.value || 0) + change;
-                if (attr.maxValue !== undefined) {
-                    attr.value = Math.min(attr.value, attr.maxValue);
+                
+                if (changes.changeMax) {
+                    attr.maxValue = (attr.maxValue || attr.value) + changes.changeMax;
+                    showNotification(`Giới hạn ${attrDef?.name || attrId} thay đổi: ${changes.changeMax > 0 ? '+' : ''}${changes.changeMax}`);
                 }
+                
+                if (changes.change) {
+                    attr.value = (attr.value || 0) + changes.change;
+                    if (attr.maxValue !== undefined) {
+                        attr.value = Math.min(attr.value, attr.maxValue);
+                    }
+                    if (changes.change !== 0) showNotification(`${attrDef?.name || attrId}: ${changes.change > 0 ? '+' : ''}${changes.change}`);
+                }
+
                 newAttributes[attrId] = attr;
-                if (change !== 0) showNotification(`${attrDef?.name || attrId}: ${change > 0 ? '+' : ''}${change}`);
-            } else if (attrId === 'spiritualQi') {
-                 newCultivation.spiritualQi = Math.max(0, newCultivation.spiritualQi + change);
-                 if (change !== 0) showNotification(`Linh Khí: ${change > 0 ? '+' : ''}${change.toLocaleString()}`);
+
+            } else if (attrId === 'spiritualQi' && changes.change) {
+                 newCultivation.spiritualQi = Math.max(0, newCultivation.spiritualQi + changes.change);
+                 if (changes.change !== 0) showNotification(`Linh Khí: ${changes.change > 0 ? '+' : ''}${changes.change.toLocaleString()}`);
             }
         });
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { FaPaperPlane, FaComment, FaBolt, FaBrain } from 'react-icons/fa';
-import { GiSprout } from 'react-icons/gi';
+import { FaPaperPlane, FaComment, FaBolt, FaBrain, FaChevronUp, FaChevronDown, FaUser, FaMapMarkedAlt } from 'react-icons/fa';
+import { GiSprout, GiSwapBag, GiStairsGoal, GiPerson } from 'react-icons/gi';
 import type { Location, GameState } from '../../../types';
 import { UI_ICONS } from '../../../constants';
+import { useAppContext } from '../../../contexts/AppContext';
+import { useGameUIContext } from '../../../contexts/GameUIContext';
 
 type ActionType = 'say' | 'act' | 'ask';
 
@@ -14,10 +16,51 @@ interface ActionBarProps {
     activeTab: ActionType;
     setActiveTab: (tab: ActionType) => void;
     gameState: GameState;
+    handleBreakthrough: () => void;
+    onToggleSidebar: () => void;
 }
 
-const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState }) => {
+const QuickActionButton: React.FC<{ onClick: () => void; disabled?: boolean; title?: string; className?: string; children: React.ReactNode }> = ({ onClick, disabled, title, className = '', children }) => (
+    <button
+        onClick={onClick}
+        disabled={disabled}
+        title={title}
+        className={`flex items-center justify-center gap-2 px-3 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] text-sm font-semibold rounded-lg hover:bg-[var(--bg-interactive-hover)] disabled:opacity-50 transition-colors ${className}`}
+    >
+        {children}
+    </button>
+);
+
+
+const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState, handleBreakthrough, onToggleSidebar }) => {
     const [inputText, setInputText] = useState('');
+    const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
+    
+    const { openInventoryModal } = useGameUIContext();
+    const { handlePlayerAction } = useAppContext();
+
+    const { playerCharacter, realmSystem } = gameState;
+    const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+    const currentStageIndex = currentRealm?.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId) ?? -1;
+    let canBreakthrough = false;
+    
+    if (currentRealm && currentStageIndex !== -1) {
+        if (currentStageIndex < currentRealm.stages.length - 1) {
+            const nextStage = currentRealm.stages[currentStageIndex + 1];
+            if (playerCharacter.cultivation.spiritualQi >= nextStage.qiRequired) {
+                canBreakthrough = true;
+            }
+        } else {
+            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
+            if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
+                 const nextRealm = realmSystem[currentRealmIndex + 1];
+                 if (playerCharacter.cultivation.spiritualQi >= nextRealm.stages[0].qiRequired) {
+                     canBreakthrough = true;
+                 }
+            }
+        }
+    }
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,32 +78,43 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
 
     return (
         <div className="flex-shrink-0 p-3 bg-[var(--bg-subtle)] backdrop-blur-sm border-t border-[var(--border-subtle)]">
-            {currentLocation.contextualActions && currentLocation.contextualActions.length > 0 && (
-                <div className="mb-2">
-                    <p className="text-xs text-[var(--text-muted-color)] mb-1 text-center">Hành động đặc biệt tại {currentLocation.name}</p>
-                    <div className="flex flex-wrap gap-2 justify-center">
-                        {currentLocation.contextualActions.map(action => {
-                            const Icon = UI_ICONS[action.iconName as keyof typeof UI_ICONS];
+            <div className="bg-black/20 rounded-lg border border-gray-700/60 mb-3">
+                 <button
+                    onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
+                    className="w-full flex justify-between items-center p-2 text-gray-300 hover:bg-gray-800/50 rounded-t-lg transition-colors"
+                >
+                    <span className="font-bold font-title">Hành Động Nhanh</span>
+                    {isQuickActionsOpen ? <FaChevronUp /> : <FaChevronDown />}
+                </button>
+                {isQuickActionsOpen && (
+                    <div className="p-3 border-t border-gray-700/60 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {currentLocation.contextualActions?.map(action => {
+                            const Icon = UI_ICONS[action.iconName as keyof typeof UI_ICONS] || FaBolt;
                             return (
-                                <button
-                                    key={action.id}
-                                    onClick={() => onContextualAction(action.id, action.label)}
-                                    disabled={disabled}
-                                    title={action.description}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-interactive)] text-[var(--text-color)] text-sm font-semibold rounded-lg hover:bg-[var(--bg-interactive-hover)] disabled:opacity-50 transition-colors"
-                                >
-                                    {Icon && <Icon />}
-                                    {action.label}
-                                </button>
+                                <QuickActionButton key={action.id} onClick={() => onContextualAction(action.id, action.label)} disabled={disabled} title={action.description}>
+                                    <Icon /> {action.label}
+                                </QuickActionButton>
                             );
                         })}
+                        <QuickActionButton onClick={() => handlePlayerAction('tu luyện', 'act', 1, () => {})} disabled={disabled} title="Hấp thụ linh khí để tăng tu vi">
+                            <GiSprout /> Tu Luyện
+                        </QuickActionButton>
+                        <QuickActionButton onClick={openInventoryModal} disabled={disabled} title="Mở túi đồ của bạn">
+                            <GiSwapBag /> Túi Đồ
+                        </QuickActionButton>
+                        {canBreakthrough && (
+                            <QuickActionButton onClick={handleBreakthrough} disabled={disabled} title="Đột phá cảnh giới tiếp theo!" className="animate-pulse bg-amber-600/50 border border-amber-400 col-span-2 sm:col-span-1">
+                                <GiStairsGoal /> Đột Phá!
+                            </QuickActionButton>
+                        )}
+                        <QuickActionButton onClick={onToggleSidebar} disabled={disabled} title="Mở bảng nhân vật và bản đồ">
+                            <FaUser /> Nhân Vật
+                        </QuickActionButton>
+                         <QuickActionButton onClick={onToggleSidebar} disabled={disabled} title="Mở bảng nhân vật và bản đồ">
+                            <FaMapMarkedAlt /> Bản Đồ
+                        </QuickActionButton>
                     </div>
-                </div>
-            )}
-            
-            <div className="flex items-center justify-center gap-2 text-sm text-cyan-400 mb-2" title="Nồng độ linh khí ảnh hưởng đến hiệu quả tu luyện">
-                <GiSprout />
-                <span>Nồng độ Linh khí: {currentLocation.qiConcentration}</span>
+                )}
             </div>
 
             <div className="flex gap-1 p-1 bg-[var(--bg-interactive)] rounded-lg border border-[var(--border-subtle)] mb-2">

@@ -1,15 +1,24 @@
-
-import type { GameState } from '../../types';
+import type { GameState, GameSettings } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
 
-export const createFullGameStateContext = (gameState: GameState, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
+// FIX: Add 'settings' parameter to the function signature and remove the incorrect access from gameState.
+export const createFullGameStateContext = (gameState: GameState, settings: GameSettings, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
   const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState } = gameState;
-  const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
-  const npcsHere = activeNpcs.filter(n => n.locationId === playerCharacter.currentLocationId);
-  const neighbors = currentLocation?.neighbors.map(id => discoveredLocations.find(l => l.id === id)?.name).filter(Boolean) || [];
+  const playerAiHooks = settings?.playerAiHooks;
+  let playerRulesContext = '';
+  if (playerAiHooks && (playerAiHooks.on_world_build || playerAiHooks.on_action_evaluate)) {
+      playerRulesContext += '\n- **QUY LUẬT TÙY CHỈNH CỦA NGƯỜI CHƠI (ƯU TIÊN TUYỆT ĐỐI):**\n';
+      if (playerAiHooks.on_world_build) {
+           playerRulesContext += `**Luật Lệ Vĩnh Cửu:**\n${playerAiHooks.on_world_build.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
+      }
+      if (playerAiHooks.on_action_evaluate) {
+           playerRulesContext += `**Luật Lệ Tình Huống:**\n${playerAiHooks.on_action_evaluate.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
+      }
+  }
 
-  const modContext = createModContextSummary(activeMods);
+  const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
+  const npcsHere = activeNpcs.filter(npc => npc.locationId === playerCharacter.currentLocationId);
 
   const currencySummary = Object.entries(playerCharacter.currencies)
     .filter(([, amount]) => typeof amount === 'number' && amount > 0)
@@ -89,9 +98,11 @@ NPC mà người chơi đang tương tác có suy nghĩ nội tâm sau: "${thoug
   } else if (gameState.dialogueWithNpcId) {
       dynamicStyleInstruction = `**LUẬT VĂN PHONG (ĐANG ĐỐI THOẠI):** Tập trung vào biểu cảm, ngôn ngữ cơ thể và ẩn ý trong lời nói.`;
   }
-
+  const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
+  const neighbors = currentLocation?.neighbors.map(id => discoveredLocations.find(l => l.id === id)?.name).filter(Boolean) || [];
+  const modContext = createModContextSummary(activeMods);
   const context = `
-${modContext}### TOÀN BỘ BỐI CẢNH GAME ###
+${modContext}${playerRulesContext}### TOÀN BỘ BỐI CẢNH GAME ###
 Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
 ${dynamicStyleInstruction}
 

@@ -93,6 +93,10 @@ export interface GameSettings {
     ttsPitch: number;
     ttsVolume: number;
     aiSyncMode: AiSyncMode;
+    playerAiHooks: {
+        on_world_build: string;
+        on_action_evaluate: string;
+    };
 
     // New Detailed Gameplay Settings
     aiCreativityLevel: AiCreativityLevel;

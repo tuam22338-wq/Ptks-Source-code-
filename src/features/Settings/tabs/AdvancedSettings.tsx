@@ -114,30 +114,6 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
 
     return (
         <SettingsSection title="Nâng Cao">
-             <SettingsRow label="Độ dài Phản hồi AI (Số từ)" description="Đặt độ dài gần đúng cho mỗi phản hồi tường thuật của AI.">
-                <div className="flex items-center gap-4">
-                    <input type="range" min="50" max="800" step="50" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.aiResponseWordCount}</span>
-                </div>
-            </SettingsRow>
-            <SettingsRow label="Nhiệt độ (Temperature)" description="Kiểm soát mức độ sáng tạo/ngẫu nhiên của AI. Giá trị cao hơn (vd: 1.2) cho kết quả đa dạng, giá trị thấp hơn (vd: 0.7) cho kết quả nhất quán hơn.">
-                <div className="flex items-center gap-4">
-                    <input type="range" min="0" max="2" step="0.1" value={settings.temperature} onChange={(e) => handleSettingChange('temperature', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.temperature.toFixed(1)}</span>
-                </div>
-            </SettingsRow>
-            <SettingsRow label="Top-K" description="Giới hạn số lượng token có khả năng cao nhất mà AI xem xét ở mỗi bước. Giá trị thấp hơn làm cho AI bớt ngẫu nhiên.">
-                <div className="flex items-center gap-4">
-                    <input type="range" min="1" max="128" step="1" value={settings.topK} onChange={(e) => handleSettingChange('topK', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.topK}</span>
-                </div>
-            </SettingsRow>
-            <SettingsRow label="Top-P" description="Chọn các token có xác suất tích lũy đạt đến một ngưỡng nhất định. Kiểm soát sự đa dạng của phản hồi.">
-                <div className="flex items-center gap-4">
-                    <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={(e) => handleSettingChange('topP', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.topP.toFixed(2)}</span>
-                </div>
-            </SettingsRow>
             <SettingsRow label="Chế độ Đồng bộ AI" description="Chọn cách AI đồng bộ hóa trạng thái game. 'Thiên Cơ' được khuyến khích để đảm bảo tính nhất quán.">
                 <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
                     {AI_SYNC_MODES.map(mode => (
@@ -150,18 +126,6 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                             {mode.label}
                         </button>
                     ))}
-                </div>
-            </SettingsRow>
-            <SettingsRow label="Bật 'Suy Nghĩ' (Thinking)" description="Cho phép model suy nghĩ trước khi trả lời để có chất lượng cao hơn (chỉ cho gemini-2.5-flash). Tắt có thể giảm độ trễ.">
-                <label className="flex items-center cursor-pointer">
-                    <input type="checkbox" checked={settings.enableThinking} onChange={e => handleSettingChange('enableThinking', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                    <span className="ml-3 text-sm text-gray-300">Bật Thinking</span>
-                </label>
-            </SettingsRow>
-            <SettingsRow label="Ngân sách 'Suy Nghĩ' (Thinking Budget)" description="Lượng token tối đa mà model có thể dùng để 'suy nghĩ'. Giá trị cao hơn có thể cải thiện chất lượng nhưng tăng độ trễ. Đặt là 0 để tắt." disabled={!settings.enableThinking}>
-                <div className="flex items-center gap-4">
-                    <input type="range" min="0" max="2000" step="50" value={settings.thinkingBudget} onChange={(e) => handleSettingChange('thinkingBudget', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" disabled={!settings.enableThinking}/>
-                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.thinkingBudget}</span>
                 </div>
             </SettingsRow>
             <SettingsRow label="Bảng điều khiển nhà phát triển" description="Hiển thị một console trong game để theo dõi log và các thông tin gỡ lỗi.">

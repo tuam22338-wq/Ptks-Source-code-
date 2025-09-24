@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -155,10 +156,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 pc = { ...pc, attributes: applyBonuses(pc, itemToEquip.bonuses, 'add') };
             }
             
-            // FIX: Cast quantity to number to prevent arithmetic errors
-            if ((Number(itemToEquip.quantity) || 0) > 1) {
-                // FIX: Cast quantity to number to prevent arithmetic errors
-                newInventoryItems.push({ ...itemToEquip, quantity: (Number(itemToEquip.quantity) || 1) - 1, isEquipped: false });
+            // FIX: Cast quantity to number before performing arithmetic operations to prevent type errors.
+            if (Number(itemToEquip.quantity) > 1) {
+                newInventoryItems.push({ ...itemToEquip, quantity: Number(itemToEquip.quantity) - 1, isEquipped: false });
             }
             return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment } };
         }) });
@@ -181,7 +181,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             let newInventoryItems;
             if (existingStack) {
                 // FIX: Cast quantity to a number before performing arithmetic operation to prevent type errors.
-                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (Number(i.quantity) || 0) + 1} : i);
+                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: Number(i.quantity) + 1} : i);
             } else {
                 newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];
             }
@@ -232,8 +232,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             
             // FIX: Cast quantity to number to prevent arithmetic errors
             const newItems = pc.inventory.items.map(i => 
-                i.id === itemToUse.id ? { ...i, quantity: (Number(i.quantity) || 1) - 1 } : i
-            ).filter(i => (Number(i.quantity) || 0) > 0);
+                i.id === itemToUse.id ? { ...i, quantity: Number(i.quantity) - 1 } : i
+            ).filter(i => Number(i.quantity) > 0);
             
             pc = { ...pc, inventory: { ...pc.inventory, items: newItems } };
 
@@ -279,7 +279,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     if (!isOpen || !playerCharacter) return null;
     
     // FIX: Cast item.quantity to a number to prevent arithmetic errors with mixed types.
-    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * (Number(item.quantity) || 0)), 0);
+    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * Number(item.quantity)), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 
     const equippedItemForComparison = selectedItem?.slot ? playerCharacter.equipment[selectedItem.slot] : null;

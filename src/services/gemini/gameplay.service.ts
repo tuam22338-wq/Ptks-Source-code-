@@ -26,7 +26,7 @@ export async function* generateDualResponseStream(
         : '';
     
     const lengthInstruction = `**LUẬT VỀ ĐỘ DÀI (QUAN TRỌNG):** Phản hồi tường thuật phải có độ dài khoảng ${settings.aiResponseWordCount} từ.`;
-    const context = createFullGameStateContext(gameState, instantMemoryReport, thoughtBubble);
+    const context = createFullGameStateContext(gameState, settings, instantMemoryReport, thoughtBubble);
     const playerActionText = inputType === 'say' ? `Nhân vật của bạn nói: "${userInput}"` : `Hành động của nhân vật: "${userInput}"`;
 
     const narrateSystemChangesInstruction = settings.narrateSystemChanges
@@ -34,6 +34,10 @@ export async function* generateDualResponseStream(
         : '';
 
     const realmConsistencyInstruction = `8. **LUẬT BẤT BIẾN VỀ CẢNH GIỚI:** Cảnh giới tu luyện của người chơi đã được cung cấp trong Bối Cảnh. Bạn TUYỆT ĐỐI KHÔNG được hạ thấp hoặc mô tả sai cảnh giới của họ trong phần tường thuật. Ví dụ: Nếu Bối Cảnh ghi người chơi là Luyện Khí Kỳ, không được mô tả họ là 'phàm nhân'.`;
+    
+    const survivalInstruction = settings.enableSurvivalMechanics
+        ? `9. **LUẬT SINH TỒN THEO CẢNH GIỚI:** Cảnh giới tu luyện càng cao, khả năng chống chọi đói và khát càng mạnh. Khi người chơi đột phá đại cảnh giới (ví dụ từ Luyện Khí lên Trúc Cơ), cơ thể họ sẽ được tôi luyện, cho phép họ nhịn đói và khát lâu hơn rất nhiều. Hãy phản ánh điều này bằng cách tăng GIỚI HẠN TỐI ĐA (sử dụng 'changeMax') của chỉ số 'hunger' và 'thirst' trong 'statChanges'.`
+        : `9. **LUẬT SINH TỒN (ĐÃ TẮT):** Người chơi đã tắt cơ chế sinh tồn. TUYỆT ĐỐI KHÔNG đề cập đến đói hoặc khát trong phần tường thuật.`;
 
     const masterSchema = {
       type: Type.OBJECT,
@@ -43,7 +47,7 @@ export async function* generateDualResponseStream(
           type: Type.OBJECT,
           description: "Tất cả các thay đổi cơ chế game được suy ra từ đoạn tường thuật.",
           properties: {
-            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, change: { type: Type.NUMBER } }, required: ['attribute', 'change'] } },
+            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, change: { type: Type.NUMBER, description: "Thay đổi giá trị hiện tại của chỉ số." }, changeMax: { type: Type.NUMBER, description: "Thay đổi giá trị TỐI ĐA của chỉ số (chỉ dành cho Sinh Mệnh, Linh Lực, Độ No, Độ Khát...)." } }, required: ['attribute'] } },
             currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING, enum: Object.keys(CURRENCY_DEFINITIONS) }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
             itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
             itemsLost: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
@@ -66,8 +70,8 @@ export async function* generateDualResponseStream(
 Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Nhiệm vụ của bạn là tiếp nối câu chuyện một cách hấp dẫn, logic và tạo ra các thay đổi cơ chế game tương ứng.
 
 ### QUY TẮC TỐI THƯỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
-1.  **"Ý-HÌNH SONG SINH":** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game).
-2.  **ĐỒNG BỘ TUYỆT ĐỐI:** Mọi sự kiện, vật phẩm, thay đổi chỉ số xảy ra trong \`narrative\` PHẢI được phản ánh chính xác trong \`mechanicalIntent\`, và ngược lại. Nếu không có thay đổi nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
+1.  **ĐỒNG BỘ TUYỆT ĐỐI ("Ý-HÌNH SONG SINH"):** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game). Mọi sự kiện, vật phẩm, thay đổi chỉ số, đột phá cảnh giới, thay đổi cảm xúc... được mô tả trong \`narrative\` PHẢI được phản ánh chính xác 100% trong \`mechanicalIntent\`, và ngược lại. KHÔNG CÓ NGOẠI LỆ. Nếu không có thay đổi cơ chế nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
+2.  **VIẾT TIẾP, KHÔNG LẶP LẠI (CỰC KỲ QUAN TRỌNG):** TUYỆT ĐỐI KHÔNG lặp lại, diễn giải lại, hoặc tóm tắt lại bất kỳ nội dung nào đã có trong "Nhật Ký Gần Đây" hoặc "Tóm Tắt Cốt Truyện". Nhiệm vụ của bạn là **VIẾT TIẾP** câu chuyện, tạo ra diễn biến **HOÀN TOÀN MỚI** dựa trên hành động của người chơi. Hãy coi như người chơi đã đọc và hiểu nhật ký; chỉ tập trung vào những gì xảy ra **TIẾP THEO**.
 3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (CỰC KỲ QUAN TRỌNG):**
     -   **BẠN LÀ TRỌNG TÀI:** Khi người chơi thực hiện một hành động, bạn phải đóng vai trò là Game Master để quyết định kết quả.
     -   **DỰA VÀO THUỘC TÍNH:** Phân tích các chỉ số của người chơi được cung cấp trong Bối Cảnh (ví dụ: Lực Lượng, Thân Pháp, Ngộ Tính, Mị Lực).
@@ -81,6 +85,7 @@ Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Th
 6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
 ${narrateSystemChangesInstruction}
 ${realmConsistencyInstruction}
+${survivalInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}
 - **Giọng văn:** ${narrativeStyle}.
@@ -226,7 +231,9 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
         required: ['shouldCreateEvent']
     };
 
-    const context = createFullGameStateContext(gameState);
+    // FIX: Fetch settings from the database as it's not passed into this function.
+    const settings = await db.getSettings();
+    const context = createFullGameStateContext(gameState, settings!);
     const prompt = `You are a world event simulator. Based on the current game state, decide if a new dynamic world event should occur.
     
     ${context}
@@ -235,7 +242,6 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
     An event could be a war declaration, a natural disaster, the discovery of a new resource, etc.
     `;
 
-    const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     const response = await generateWithRetry({
         model: settings?.gameMasterModel || 'gemini-2.5-flash',
@@ -255,7 +261,9 @@ export const generateFactionEvent = async (gameState: GameState): Promise<Omit<D
 };
 
 export const askAiAssistant = async (query: string, gameState: GameState): Promise<string> => {
-    const context = createFullGameStateContext(gameState, undefined, undefined, true);
+    // FIX: Fetch settings from the database as it's not passed into this function.
+    const settings = await db.getSettings();
+    const context = createFullGameStateContext(gameState, settings!, undefined, undefined, true);
     
     const prompt = `Bạn là "Thiên Cơ Lão Nhân", một trợ lý AI toàn tri trong game. Người chơi đang hỏi bạn một câu hỏi.
     Dựa vào Bách Khoa Toàn Thư (thông tin đã biết) trong bối cảnh game, hãy trả lời câu hỏi của người chơi một cách ngắn gọn, súc tích và chính xác.
@@ -269,7 +277,6 @@ export const askAiAssistant = async (query: string, gameState: GameState): Promi
     **Câu trả lời của bạn:**
     `;
 
-    const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
     const response = await generateWithRetry({
         model: settings?.quickSupportModel || 'gemini-2.5-flash',

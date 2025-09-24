@@ -307,10 +307,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 majorEvents={gameState.majorEvents}
                 dynamicEvents={worldState.dynamicEvents}
                 foreshadowedEvents={worldState.foreshadowedEvents}
-                isSummaryPanelVisible={isSummaryPanelVisible}
-                isSidebarOpen={isSidebarOpen}
-                onToggleSummaryPanel={() => setIsSummaryPanelVisible(v => !v)}
-                onToggleSidebar={() => setIsSidebarOpen(v => !v)}
              />
             
             <div className={`flex-grow w-full flex min-h-0 relative min-h-0`}>
@@ -358,6 +354,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             activeTab={activeActionTab}
                             setActiveTab={setActiveActionTab}
                             gameState={gameState}
+                            handleBreakthrough={handleBreakthrough}
+                            onToggleSidebar={() => setIsSidebarOpen(v => !v)}
                         />
                     )}
                 </main>

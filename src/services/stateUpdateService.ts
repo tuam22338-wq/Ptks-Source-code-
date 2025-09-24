@@ -1,5 +1,3 @@
-
-
 import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
@@ -32,6 +30,7 @@ export const applyMechanicalChanges = (
     if (canAfford && intent.itemsLost) {
         for (const itemLost of intent.itemsLost) {
             const itemInInventory = currentState.playerCharacter.inventory.items.find((i: InventoryItem) => i.name === itemLost.name);
+            // FIX: Cast quantity to number for comparison
             if (!itemInInventory || (Number(itemInInventory.quantity) || 0) < (Number(itemLost.quantity) || 0)) {
                 canAfford = false;
                 showNotification(`Hành động thất bại! Không đủ ${itemLost.name}.`);
@@ -84,7 +83,7 @@ export const applyMechanicalChanges = (
         intent.itemsLost.forEach(itemLost => {
             const itemIndex = newItems.findIndex((i: InventoryItem) => i.name === itemLost.name);
             if (itemIndex > -1) {
-                // FIX: Cast quantity to number to prevent arithmetic errors
+                // FIX: Cast quantity to number for arithmetic
                 const updatedItem = { ...newItems[itemIndex], quantity: (Number(newItems[itemIndex].quantity) || 0) - (Number(itemLost.quantity) || 0) };
                 if (updatedItem.quantity > 0) {
                     newItems[itemIndex] = updatedItem;
@@ -215,21 +214,37 @@ export const applyMechanicalChanges = (
         let newAttributes = { ...pc.attributes };
         let newCultivation = { ...pc.cultivation };
 
-        const changesMap: Record<string, number> = intent.statChanges.reduce((acc, sc) => ({ ...acc, [sc.attribute]: (acc[sc.attribute] || 0) + sc.change }), {});
+        const changesMap: Record<string, { change?: number; changeMax?: number }> = (intent.statChanges || []).reduce((acc, sc) => {
+            acc[sc.attribute] = {
+                change: (acc[sc.attribute]?.change || 0) + (sc.change || 0),
+                changeMax: (acc[sc.attribute]?.changeMax || 0) + (sc.changeMax || 0),
+            };
+            return acc;
+        }, {} as Record<string, { change?: number; changeMax?: number }>);
         
-        Object.entries(changesMap).forEach(([attrId, change]) => {
+        Object.entries(changesMap).forEach(([attrId, changes]) => {
             const attrDef = nextState.attributeSystem.definitions.find((def: any) => def.id === attrId);
             if (newAttributes[attrId]) {
                 const attr = { ...newAttributes[attrId] }; // Copy attribute object
-                attr.value = (attr.value || 0) + change;
-                if (attr.maxValue !== undefined) {
-                    attr.value = Math.min(attr.value, attr.maxValue);
+                
+                if (changes.changeMax) {
+                    attr.maxValue = (attr.maxValue || attr.value) + changes.changeMax;
+                    showNotification(`Giới hạn ${attrDef?.name || attrId} thay đổi: ${changes.changeMax > 0 ? '+' : ''}${changes.changeMax}`);
                 }
+                
+                if (changes.change) {
+                    attr.value = (attr.value || 0) + changes.change;
+                    if (attr.maxValue !== undefined) {
+                        attr.value = Math.min(attr.value, attr.maxValue);
+                    }
+                    if (changes.change !== 0) showNotification(`${attrDef?.name || attrId}: ${changes.change > 0 ? '+' : ''}${changes.change}`);
+                }
+
                 newAttributes[attrId] = attr;
-                if (change !== 0) showNotification(`${attrDef?.name || attrId}: ${change > 0 ? '+' : ''}${change}`);
-            } else if (attrId === 'spiritualQi') {
-                 newCultivation.spiritualQi = Math.max(0, newCultivation.spiritualQi + change);
-                 if (change !== 0) showNotification(`Linh Khí: ${change > 0 ? '+' : ''}${change.toLocaleString()}`);
+
+            } else if (attrId === 'spiritualQi' && changes.change) {
+                 newCultivation.spiritualQi = Math.max(0, newCultivation.spiritualQi + changes.change);
+                 if (changes.change !== 0) showNotification(`Linh Khí: ${changes.change > 0 ? '+' : ''}${changes.change.toLocaleString()}`);
             }
         });
 

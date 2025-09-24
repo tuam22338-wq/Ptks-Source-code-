@@ -1,10 +1,6 @@
 import React, { memo } from 'react';
-import type { GameSettings, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap } from '../../../types';
-import {
-    AI_CREATIVITY_LEVELS, NARRATIVE_PACING_LEVELS, PLAYER_AGENCY_LEVELS, AI_MEMORY_DEPTH_LEVELS,
-    NPC_COMPLEXITY_LEVELS, WORLD_EVENT_FREQUENCY_LEVELS, WORLD_REACTIVITY_LEVELS,
-    DEATH_PENALTY_LEVELS, VALIDATION_CAP_LEVELS
-} from '../../../constants';
+import type { GameSettings, DeathPenalty, ValidationServiceCap } from '../../../types';
+import { DEATH_PENALTY_LEVELS, VALIDATION_CAP_LEVELS } from '../../../constants';
 
 interface SettingsSectionProps {
     title: string;
@@ -69,43 +65,6 @@ interface GameplaySettingsProps {
 const GameplaySettings: React.FC<GameplaySettingsProps> = ({ settings, handleSettingChange }) => {
     return (
         <>
-            <SettingsSection title="AI & Tường Thuật">
-                <SettingsRow label="Mức Độ Sáng Tạo của AI" description={AI_CREATIVITY_LEVELS.find(o => o.value === settings.aiCreativityLevel)?.description || ''}>
-                    <LevelButtonGroup options={AI_CREATIVITY_LEVELS} selectedValue={settings.aiCreativityLevel} onSelect={(v) => handleSettingChange('aiCreativityLevel', v as AiCreativityLevel)} />
-                </SettingsRow>
-                <SettingsRow label="Nhịp Độ Tường Thuật" description={NARRATIVE_PACING_LEVELS.find(o => o.value === settings.narrativePacing)?.description || ''}>
-                     <LevelButtonGroup options={NARRATIVE_PACING_LEVELS} selectedValue={settings.narrativePacing} onSelect={(v) => handleSettingChange('narrativePacing', v as NarrativePacing)} />
-                </SettingsRow>
-                 <SettingsRow label="Quyền Tự Quyết của Người Chơi" description={PLAYER_AGENCY_LEVELS.find(o => o.value === settings.playerAgencyLevel)?.description || ''}>
-                     <LevelButtonGroup options={PLAYER_AGENCY_LEVELS} selectedValue={settings.playerAgencyLevel} onSelect={(v) => handleSettingChange('playerAgencyLevel', v as PlayerAgencyLevel)} />
-                </SettingsRow>
-                 <SettingsRow label="Độ Sâu Ký Ức AI" description={AI_MEMORY_DEPTH_LEVELS.find(o => o.value === settings.aiMemoryDepth)?.description || ''}>
-                     <LevelButtonGroup options={AI_MEMORY_DEPTH_LEVELS} selectedValue={settings.aiMemoryDepth} onSelect={(v) => handleSettingChange('aiMemoryDepth', v as AiMemoryDepth)} />
-                </SettingsRow>
-                <SettingsRow label="AI Tường thuật Thay đổi Hệ thống" description="Khi bật, AI sẽ mô tả các thay đổi về chỉ số, vật phẩm nhận được... ngay trong lời kể để tăng tính nhập vai.">
-                    <label className="flex items-center cursor-pointer">
-                        <input type="checkbox" checked={settings.narrateSystemChanges} onChange={e => handleSettingChange('narrateSystemChanges', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                        <span className="ml-3 text-sm text-gray-300">Bật tường thuật cơ chế game</span>
-                    </label>
-                </SettingsRow>
-            </SettingsSection>
-
-            <SettingsSection title="Mô Phỏng Thế Giới">
-                <SettingsRow label="Độ Phức Tạp của NPC" description={NPC_COMPLEXITY_LEVELS.find(o => o.value === settings.npcComplexity)?.description || ''}>
-                    <LevelButtonGroup options={NPC_COMPLEXITY_LEVELS} selectedValue={settings.npcComplexity} onSelect={(v) => handleSettingChange('npcComplexity', v as NpcComplexity)} />
-                </SettingsRow>
-                <SettingsRow label="Tần Suất Sự Kiện Thế Giới" description="Điều chỉnh tần suất các sự kiện động ngẫu nhiên xảy ra.">
-                    <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
-                        {WORLD_EVENT_FREQUENCY_LEVELS.map(level => (
-                            <button key={level.value} className={`w-full text-center py-1.5 px-2 text-sm text-gray-400 rounded-md transition-colors duration-200 font-semibold hover:bg-gray-700/50 hover:text-white ${settings.worldEventFrequency === level.value ? 'bg-gray-600 text-white shadow-inner' : ''}`} onClick={() => handleSettingChange('worldEventFrequency', level.value)}>{level.label}</button>
-                        ))}
-                    </div>
-                </SettingsRow>
-                <SettingsRow label="Mức Độ Phản Ứng của Thế Giới" description={WORLD_REACTIVITY_LEVELS.find(o => o.value === settings.worldReactivity)?.description || ''}>
-                    <LevelButtonGroup options={WORLD_REACTIVITY_LEVELS} selectedValue={settings.worldReactivity} onSelect={(v) => handleSettingChange('worldReactivity', v as WorldReactivity)} />
-                </SettingsRow>
-            </SettingsSection>
-
             <SettingsSection title="Cơ Chế Game & Nhân Vật">
                 <SettingsRow label="Tỷ Lệ Tu Vi Nhận Được" description="Điều chỉnh lượng tu vi nhận được từ mọi nguồn.">
                     <div className="flex items-center gap-4">
