@@ -1,4 +1,5 @@
 
+
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload } from '../types';
 import { generateDualResponseStream, harmonizeNarrative, summarizeStory } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
@@ -74,9 +75,9 @@ export const processPlayerAction = async (
 
     // --- CẬP NHẬT TRẠNG THÁI CUỐI CÙNG ---
     const allNewEntries = [...baseLogEntries, playerActionEntry, narrativeEntry];
-    const lastId = gameState.storyLog.length > 0 ? gameState.storyLog[gameState.storyLog.length - 1].id : 0;
+    const lastId = finalState.storyLog.length > 0 ? finalState.storyLog[finalState.storyLog.length - 1].id : 0;
     const finalNewLogEntries: StoryEntry[] = allNewEntries.map((entry, index) => ({ ...entry, id: lastId + index + 1 }));
-    finalState.storyLog = [...gameState.storyLog, ...finalNewLogEntries];
+    finalState.storyLog = [...finalState.storyLog, ...finalNewLogEntries];
 
     for (const entry of finalNewLogEntries) {
         await addEntryToMemory(entry, finalState, currentSlotId);

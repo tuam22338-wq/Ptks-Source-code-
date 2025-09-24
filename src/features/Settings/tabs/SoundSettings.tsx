@@ -1,5 +1,6 @@
-import React, { memo, useRef, useState, useEffect } from 'react';
-import type { GameSettings } from '../../../types';
+import React, { memo, useRef, useState, useEffect, useCallback } from 'react';
+import type { GameSettings, TtsProvider } from '../../../types';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 
 interface SettingsSectionProps {
     title: string;
@@ -35,12 +36,15 @@ interface SoundSettingsProps {
 
 const SoundSettings: React.FC<SoundSettingsProps> = ({ settings, handleSettingChange }) => {
     const musicInputRef = useRef<HTMLInputElement>(null);
-    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [elevenLabsVoices, setElevenLabsVoices] = useState<any[]>([]);
+    const [isLoadingVoices, setIsLoadingVoices] = useState(false);
+    const [elevenLabsError, setElevenLabsError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadVoices = () => {
             if (window.speechSynthesis) {
-                setVoices(window.speechSynthesis.getVoices());
+                setBrowserVoices(window.speechSynthesis.getVoices());
             }
         };
         if (window.speechSynthesis) {
@@ -54,7 +58,54 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({ settings, handleSettingCh
         };
     }, []);
 
-    const vietnameseVoices = voices.filter(v => v.lang.startsWith('vi'));
+    const fetchElevenLabsVoices = useCallback(async (apiKey: string) => {
+        if (!apiKey) {
+            setElevenLabsVoices([]);
+            setElevenLabsError(null);
+            return;
+        }
+        setIsLoadingVoices(true);
+        setElevenLabsError(null);
+        try {
+            const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+                headers: { 
+                    'Accept': 'application/json',
+                    'xi-api-key': apiKey 
+                }
+            });
+            if (!response.ok) {
+                let errorMsg = `Lỗi tải giọng đọc (Mã lỗi: ${response.status}).`;
+                try {
+                    const errorJson = await response.json();
+                    if (errorJson.detail?.message) {
+                        errorMsg = errorJson.detail.message; // Use API message directly
+                    }
+                    if (response.status === 401) {
+                        errorMsg += ' Vui lòng kiểm tra lại API Key.';
+                    }
+                } catch (e) {
+                    // Ignore if response body isn't json
+                }
+                throw new Error(errorMsg);
+            }
+            const data = await response.json();
+            setElevenLabsVoices(data.voices || []);
+        } catch (error: any) {
+            console.error(error);
+            setElevenLabsVoices([]);
+            setElevenLabsError(error.message);
+        } finally {
+            setIsLoadingVoices(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (settings.ttsProvider === 'elevenlabs') {
+            fetchElevenLabsVoices(settings.elevenLabsApiKey);
+        }
+    }, [settings.elevenLabsApiKey, settings.ttsProvider, fetchElevenLabsVoices]);
+
+    const vietnameseVoices = browserVoices.filter(v => v.lang.startsWith('vi'));
 
     const handleMusicFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -97,26 +148,66 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({ settings, handleSettingCh
             </SettingsRow>
             {settings.enableTTS && (
                  <>
-                    <SettingsRow label="Giọng đọc" description="Chọn giọng đọc cho hệ thống.">
-                         <select className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" value={settings.ttsVoiceURI} onChange={(e) => handleSettingChange('ttsVoiceURI', e.target.value)}>
-                            <option value="">Giọng mặc định của trình duyệt</option>
-                            {vietnameseVoices.map(voice => (
-                                <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} ({voice.lang})</option>
-                            ))}
-                        </select>
-                    </SettingsRow>
-                    <SettingsRow label="Tốc độ đọc" description="Điều chỉnh tốc độ đọc.">
-                        <div className="flex items-center gap-4">
-                            <input type="range" min="0.5" max="2" step="0.1" value={settings.ttsRate} onChange={(e) => handleSettingChange('ttsRate', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.ttsRate.toFixed(1)}x</span>
+                    <SettingsRow label="Nhà cung cấp TTS" description="Chọn dịch vụ để đọc văn bản. ElevenLabs cho chất lượng cao hơn.">
+                        <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
+                            <button className={`w-1/2 text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors ${settings.ttsProvider === 'browser' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:bg-gray-700/50'}`} onClick={() => handleSettingChange('ttsProvider', 'browser')}>Trình duyệt</button>
+                            <button className={`w-1/2 text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors ${settings.ttsProvider === 'elevenlabs' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:bg-gray-700/50'}`} onClick={() => handleSettingChange('ttsProvider', 'elevenlabs')}>ElevenLabs</button>
                         </div>
                     </SettingsRow>
-                    <SettingsRow label="Cao độ" description="Điều chỉnh cao độ của giọng đọc.">
+
+                    {settings.ttsProvider === 'elevenlabs' && (
+                        <>
+                            <SettingsRow label="ElevenLabs API Key" description="Dán API key của bạn từ trang web ElevenLabs.">
+                                <input type="password" value={settings.elevenLabsApiKey} onChange={(e) => handleSettingChange('elevenLabsApiKey', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50" />
+                                {elevenLabsError && <p className="text-sm text-red-400 mt-2">{elevenLabsError}</p>}
+                            </SettingsRow>
+                            <SettingsRow label="Giọng đọc ElevenLabs" description="Chọn một trong các giọng đọc có sẵn của bạn.">
+                                {isLoadingVoices ? <LoadingSpinner size="sm" /> : (
+                                <select className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 pr-8 appearance-none" value={settings.elevenLabsVoiceId} onChange={(e) => handleSettingChange('elevenLabsVoiceId', e.target.value)} disabled={!settings.elevenLabsApiKey || elevenLabsVoices.length === 0}>
+                                    <option value="">{elevenLabsVoices.length > 0 ? "Chọn giọng đọc" : (settings.elevenLabsApiKey ? "Không có giọng nào (kiểm tra API key)" : "Vui lòng nhập API Key")}</option>
+                                    {elevenLabsVoices.map(voice => (
+                                        <option key={voice.voice_id} value={voice.voice_id}>{voice.name}</option>
+                                    ))}
+                                </select>
+                                )}
+                            </SettingsRow>
+                        </>
+                    )}
+
+                    {settings.ttsProvider === 'browser' && (
+                        <SettingsRow label="Giọng đọc (Trình duyệt)" description="Chọn giọng đọc cho hệ thống.">
+                             <select className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 pr-8 appearance-none" value={settings.ttsVoiceURI} onChange={(e) => handleSettingChange('ttsVoiceURI', e.target.value)}>
+                                <option value="">Giọng mặc định</option>
+                                {vietnameseVoices.map(voice => (
+                                    <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} ({voice.lang})</option>
+                                ))}
+                            </select>
+                        </SettingsRow>
+                    )}
+                    
+                    <SettingsRow label="Âm lượng đọc" description="Điều chỉnh âm lượng giọng đọc.">
                          <div className="flex items-center gap-4">
-                            <input type="range" min="0" max="2" step="0.1" value={settings.ttsPitch} onChange={(e) => handleSettingChange('ttsPitch', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.ttsPitch.toFixed(1)}</span>
+                            <input type="range" min="0" max="1" step="0.1" value={settings.ttsVolume} onChange={(e) => handleSettingChange('ttsVolume', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{Math.round(settings.ttsVolume * 100)}%</span>
                         </div>
                     </SettingsRow>
+
+                    {settings.ttsProvider === 'browser' && (
+                        <>
+                            <SettingsRow label="Tốc độ đọc" description="Điều chỉnh tốc độ đọc.">
+                                <div className="flex items-center gap-4">
+                                    <input type="range" min="0.5" max="2" step="0.1" value={settings.ttsRate} onChange={(e) => handleSettingChange('ttsRate', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.ttsRate.toFixed(1)}x</span>
+                                </div>
+                            </SettingsRow>
+                            <SettingsRow label="Cao độ" description="Điều chỉnh cao độ của giọng đọc.">
+                                 <div className="flex items-center gap-4">
+                                    <input type="range" min="0" max="2" step="0.1" value={settings.ttsPitch} onChange={(e) => handleSettingChange('ttsPitch', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.ttsPitch.toFixed(1)}</span>
+                                </div>
+                            </SettingsRow>
+                        </>
+                     )}
                  </>
             )}
         </SettingsSection>

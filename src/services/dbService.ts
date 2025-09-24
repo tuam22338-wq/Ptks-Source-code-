@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import Dexie, { type Table } from 'dexie';
 import { REALM_SYSTEM } from '../constants';
 import type { 
@@ -53,10 +47,11 @@ export class MyDatabase extends Dexie {
   graphEdges!: Table<GraphEdge, number>;
   ragSources!: Table<RagSource, string>; // primary key is id
   ragEmbeddings!: Table<RagEmbedding, number>; // auto-incrementing primary key
+  assetCache!: Table<{id: string, data: any}, string>; // New table for AI-generated assets
 
   constructor() {
     super('PhongThanKySuDB');
-    // Version 4 adds RAG tables
+    // Version 4 adds RAG tables and the new assetCache
     // FIX: Cast 'this' to Dexie to access inherited methods in subclass constructor.
     (this as Dexie).version(4).stores({
       saveSlots: 'id',
@@ -69,6 +64,7 @@ export class MyDatabase extends Dexie {
       graphEdges: '++id, slotId, [source.id+target.id], type, memoryFragmentId',
       ragSources: 'id, type, isEnabled',
       ragEmbeddings: '++id, sourceId',
+      assetCache: 'id',
     });
     // This will upgrade from version 3 to 4, creating the new tables.
     // FIX: Cast 'this' to Dexie to access inherited methods in subclass constructor.
@@ -90,6 +86,25 @@ export class MyDatabase extends Dexie {
 }
 
 export const db = new MyDatabase();
+
+// --- Asset Cache Service ---
+export const getAsset = async (id: string): Promise<any | null> => {
+    const asset = await db.assetCache.get(id);
+    return asset ? asset.data : null;
+};
+
+export const saveAsset = async (id:string, data: any): Promise<void> => {
+    await db.assetCache.put({ id, data });
+};
+export const getAllAssets = async (): Promise<Record<string, any>> => {
+    const assets = await db.assetCache.toArray();
+    const assetMap: Record<string, any> = {};
+    assets.forEach(asset => {
+        assetMap[asset.id] = asset.data;
+    });
+    return assetMap;
+};
+
 
 // --- Migration Service ---
 export const getMigrationStatus = async (): Promise<boolean> => {

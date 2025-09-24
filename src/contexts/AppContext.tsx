@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION } from '../constants';
@@ -8,6 +6,7 @@ import * as db from '../services/dbService';
 import { apiKeyManager } from '../services/gemini/gemini.core';
 import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
+import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service';
 
 export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
 
@@ -29,6 +28,7 @@ interface AppContextType {
     // Handlers
     handleNavigate: (targetView: View) => void;
     handleSettingChange: (key: keyof GameSettings, value: any) => void;
+    handleDynamicBackgroundChange: (themeId: string) => Promise<void>;
     handleSettingsSave: () => Promise<void>;
     handleSlotSelection: (slotId: number) => void;
     handleSaveGame: () => Promise<void>;
@@ -64,11 +64,13 @@ const initialState: AppState = {
     settings: DEFAULT_SETTINGS,
     storageUsage: { usageString: '0 B / 0 B', percentage: 0 },
     activeWorldId: 'phong_than_dien_nghia',
+    backgrounds: { status: {}, urls: {} },
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const [state, dispatch] = useReducer(gameReducer, initialState);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -91,25 +93,80 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         };
     }, []);
 
-    const speak = useCallback((text: string, force = false) => {
-        if (!window.speechSynthesis || (!state.settings.enableTTS && !force) || !text) return;
+    const speak = useCallback(async (text: string, force = false) => {
+        if (!text || (!state.settings.enableTTS && !force)) return;
+
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        const selectedVoice = voices.find(v => v.voiceURI === state.settings.ttsVoiceURI);
-        if (selectedVoice) utterance.voice = selectedVoice;
-        else {
-            const vietnameseVoice = voices.find(v => v.lang === 'vi-VN');
-            if (vietnameseVoice) utterance.voice = vietnameseVoice;
+        if (ttsAudioRef.current) {
+            ttsAudioRef.current.pause();
+            ttsAudioRef.current.src = '';
         }
-        utterance.rate = state.settings.ttsRate;
-        utterance.pitch = state.settings.ttsPitch;
-        utterance.volume = state.settings.ttsVolume;
-        window.speechSynthesis.speak(utterance);
-    }, [state.settings.enableTTS, state.settings.ttsVoiceURI, state.settings.ttsRate, state.settings.ttsPitch, state.settings.ttsVolume, voices]);
+
+        if (state.settings.ttsProvider === 'elevenlabs') {
+            const { elevenLabsApiKey, elevenLabsVoiceId, ttsVolume } = state.settings;
+            if (!elevenLabsApiKey || !elevenLabsVoiceId) {
+                console.warn("ElevenLabs TTS is enabled, but API key or Voice ID is missing.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'audio/mpeg',
+                        'Content-Type': 'application/json',
+                        'xi-api-key': elevenLabsApiKey,
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        model_id: 'eleven_multilingual_v2',
+                        voice_settings: {
+                            stability: 0.5,
+                            similarity_boost: 0.75,
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`ElevenLabs API error: ${errorData.detail?.message || response.statusText}`);
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                if (!ttsAudioRef.current) {
+                    ttsAudioRef.current = new Audio();
+                }
+                ttsAudioRef.current.src = url;
+                ttsAudioRef.current.volume = ttsVolume;
+                ttsAudioRef.current.play();
+
+            } catch (error) {
+                console.error("Failed to play audio from ElevenLabs:", error);
+            }
+        } else { // 'browser' TTS
+            const utterance = new SpeechSynthesisUtterance(text);
+            const selectedVoice = voices.find(v => v.voiceURI === state.settings.ttsVoiceURI);
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            } else {
+                const vietnameseVoice = voices.find(v => v.lang === 'vi-VN');
+                if (vietnameseVoice) utterance.voice = vietnameseVoice;
+            }
+            utterance.rate = state.settings.ttsRate;
+            utterance.pitch = state.settings.ttsPitch;
+            utterance.volume = state.settings.ttsVolume;
+            window.speechSynthesis.speak(utterance);
+        }
+    }, [state.settings, voices]);
 
     const cancelSpeech = useCallback(() => {
         if (window.speechSynthesis) {
             window.speechSynthesis.cancel();
+        }
+        if (ttsAudioRef.current) {
+            ttsAudioRef.current.pause();
+            ttsAudioRef.current.src = '';
         }
     }, []);
 
@@ -193,12 +250,19 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         const loadInitialData = async () => {
             if (state.isMigratingData) return;
             try {
-                const savedSettings = await db.getSettings();
+                const [savedSettings, worldId, cachedAssets] = await Promise.all([
+                    db.getSettings(),
+                    db.getActiveWorldId(),
+                    db.getAllAssets()
+                ]);
+
                 const finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
                 dispatch({ type: 'SET_SETTINGS', payload: finalSettings });
+                dispatch({ type: 'SET_ALL_CACHED_BACKGROUNDS', payload: cachedAssets });
+
                 apiKeyManager.updateKeys(finalSettings.apiKeys || []);
-                const worldId = await db.getActiveWorldId();
                 dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
+
                 await loadSaveSlots();
             } catch (error) {
                 console.error("Failed to load initial data from DB", error);
@@ -251,6 +315,25 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleSettingChange = useCallback((key: keyof GameSettings, value: any) => {
         dispatch({ type: 'UPDATE_SETTING', payload: { key, value } });
     }, []);
+
+    const handleDynamicBackgroundChange = async (themeId: string) => {
+        handleSettingChange('dynamicBackground', themeId);
+        if (themeId === 'none') return;
+
+        const cacheId = `bg_theme_${themeId}`;
+        if (state.backgrounds.urls[cacheId]) {
+            return; // Already loaded
+        }
+
+        dispatch({ type: 'LOAD_BACKGROUND_START', payload: { themeId } });
+        try {
+            const urls = await generateAndCacheBackgroundSet(themeId);
+            dispatch({ type: 'LOAD_BACKGROUND_SUCCESS', payload: { themeId, urls } });
+        } catch (error) {
+            console.error(`Failed to generate background for ${themeId}:`, error);
+            dispatch({ type: 'LOAD_BACKGROUND_ERROR', payload: { themeId } });
+        }
+    };
 
     const handleSettingsSave = useCallback(async () => {
         try {
@@ -357,10 +440,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Đạo đang suy diễn...' }});
 
         try {
-            // Need to get the fresh state after clearing interactions
-            const currentState = (stateRef as any).current.gameState;
             const finalState = await processPlayerAction(
-                currentState, 
+                state.gameState, 
                 text, 
                 type, 
                 apCost, 
@@ -386,13 +467,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
-    }, [state.isLoading, state.settings, state.currentSlotId, cancelSpeech]);
-
-    // This is a bit of a hack to get the latest state inside async callbacks
-    const stateRef = useRef(state);
-    useEffect(() => {
-        stateRef.current = state;
-    }, [state]);
+    }, [state.isLoading, state.settings, state.currentSlotId, cancelSpeech, state.gameState]);
 
     const handleDialogueChoice = useCallback((choice: EventChoice) => {
         // AP cost for a dialogue choice is 0
@@ -410,7 +485,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, []);
 
     const contextValue: AppContextType = {
-        state, dispatch, handleNavigate, handleSettingChange, handleSettingsSave,
+        state, dispatch, handleNavigate, handleSettingChange, handleDynamicBackgroundChange, handleSettingsSave,
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
         handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice

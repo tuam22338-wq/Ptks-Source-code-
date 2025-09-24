@@ -1,5 +1,3 @@
-
-
 import React, { useMemo } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
@@ -19,20 +17,18 @@ import { AppProvider, useAppContext } from './contexts/AppContext';
 const BackgroundOverlay: React.FC = () => {
     const { state } = useAppContext();
     const { dynamicBackground } = state.settings;
+    const backgroundSet = state.backgrounds.urls[`bg_theme_${dynamicBackground}`];
 
-    if (!dynamicBackground || dynamicBackground === 'none') {
-        // Render a static background div if dynamic is off, ensuring there's always a background
+    if (!dynamicBackground || dynamicBackground === 'none' || !backgroundSet) {
         return <div className="fixed inset-0 -z-10 bg-[var(--bg-color)]" />;
     }
-    
-    const backgroundClass = `dynamic-bg-${dynamicBackground}`;
 
     return (
-        <div className={`dynamic-bg-container ${backgroundClass}`}>
-            <div className="dynamic-bg-layer layer-1"></div>
-            <div className="dynamic-bg-layer layer-2"></div>
-            <div className="dynamic-bg-layer layer-3"></div>
-            <div className="dynamic-bg-layer layer-4"></div>
+        <div className={`dynamic-bg-container`}>
+            <div className="dynamic-bg-layer layer-1" style={{ backgroundImage: `url(${backgroundSet.layer1})` }}></div>
+            <div className="dynamic-bg-layer layer-2" style={{ backgroundImage: `url(${backgroundSet.layer2})` }}></div>
+            <div className="dynamic-bg-layer layer-3" style={{ backgroundImage: `url(${backgroundSet.layer3})` }}></div>
+            <div className="dynamic-bg-layer layer-4" style={{ backgroundImage: `url(${backgroundSet.layer4})` }}></div>
         </div>
     );
 };

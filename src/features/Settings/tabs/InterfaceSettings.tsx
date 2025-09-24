@@ -1,6 +1,9 @@
 import React, { memo } from 'react';
 import type { GameSettings } from '../../../types';
 import { LAYOUT_MODES, THEME_OPTIONS, FONT_OPTIONS, DYNAMIC_BACKGROUND_OPTIONS } from '../../../constants';
+import { useAppContext } from '../../../contexts/AppContext';
+import LoadingSpinner from '../../../components/LoadingSpinner';
+import { FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 interface SettingsSectionProps {
     title: string;
@@ -35,6 +38,9 @@ interface InterfaceSettingsProps {
 }
 
 const InterfaceSettings: React.FC<InterfaceSettingsProps> = ({ settings, handleSettingChange }) => {
+    const { state, handleDynamicBackgroundChange } = useAppContext();
+    const backgroundStatus = state.backgrounds.status;
+
     return (
         <>
             <SettingsSection title="Giao Diện & Hiển Thị">
@@ -69,23 +75,42 @@ const InterfaceSettings: React.FC<InterfaceSettingsProps> = ({ settings, handleS
                     <input type="color" value={settings.textColor} onChange={(e) => handleSettingChange('textColor', e.target.value)} className="h-10 w-full p-1 bg-black/30 border border-gray-600 rounded-lg cursor-pointer" />
                 </SettingsRow>
             </SettingsSection>
-            <SettingsSection title="Hình Nền Động">
-                <SettingsRow label="Chọn hình nền" description="Chọn một hình nền động cho toàn bộ trò chơi.">
+            <SettingsSection title="Hình Nền Động (AI Tạo)">
+                <SettingsRow label="Chọn hình nền" description="Chọn một chủ đề, AI sẽ tạo hình nền độc nhất cho bạn và lưu lại. Quá trình này có thể mất một chút thời gian.">
                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                        {DYNAMIC_BACKGROUND_OPTIONS.map(bg => (
-                            <button 
-                                key={bg.id} 
-                                onClick={() => handleSettingChange('dynamicBackground', bg.id)}
-                                className={`aspect-video rounded-md overflow-hidden border-2 transition-all duration-200 relative flex items-center justify-center
-                                    ${settings.dynamicBackground === bg.id 
-                                        ? 'border-amber-400 ring-2 ring-amber-400/50' 
-                                        : 'border-gray-700/60 hover:border-amber-400/50'
-                                    }`}
-                            >
-                                <div className={`absolute inset-0 ${bg.thumbnailClass}`}></div>
-                                <span className="relative text-white font-bold text-sm bg-black/50 px-2 py-1 rounded-md">{bg.name}</span>
-                            </button>
-                        ))}
+                        {DYNAMIC_BACKGROUND_OPTIONS.map(bg => {
+                            const status = backgroundStatus[bg.id];
+                            return (
+                                <button 
+                                    key={bg.id} 
+                                    onClick={() => handleDynamicBackgroundChange(bg.id)}
+                                    className={`aspect-video rounded-md overflow-hidden border-2 transition-all duration-200 relative flex items-center justify-center
+                                        ${settings.dynamicBackground === bg.id 
+                                            ? 'border-amber-400 ring-2 ring-amber-400/50' 
+                                            : 'border-gray-700/60 hover:border-amber-400/50'
+                                        }`}
+                                >
+                                    <div className={`absolute inset-0 ${bg.thumbnailClass}`}></div>
+                                    <div className="absolute inset-0 bg-black/40"></div>
+                                    <span className="relative text-white font-bold text-sm bg-black/50 px-2 py-1 rounded-md z-10">{bg.name}</span>
+                                    {status === 'loading' && (
+                                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-20">
+                                            <LoadingSpinner size="sm"/>
+                                        </div>
+                                    )}
+                                    {status === 'loaded' && bg.id !== 'none' && (
+                                        <div className="absolute top-1 right-1 text-green-400 z-20">
+                                            <FaCheckCircle />
+                                        </div>
+                                    )}
+                                    {status === 'error' && (
+                                        <div className="absolute top-1 right-1 text-red-400 z-20" title="Tạo ảnh thất bại">
+                                            <FaExclamationTriangle />
+                                        </div>
+                                    )}
+                                </button>
+                            )
+                        })}
                     </div>
                 </SettingsRow>
             </SettingsSection>

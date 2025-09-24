@@ -154,7 +154,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 pc = { ...pc, attributes: applyBonuses(pc, itemToEquip.bonuses, 'add') };
             }
             
-            // FIX: The `quantity` property could potentially be a non-numeric type from data sources. Explicitly cast to a number before performing arithmetic operations to prevent a TypeError.
             if ((Number(itemToEquip.quantity) || 0) > 1) {
                 newInventoryItems.push({ ...itemToEquip, quantity: (Number(itemToEquip.quantity) || 0) - 1, isEquipped: false });
             }
@@ -178,7 +177,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             const existingStack = pc.inventory.items.find(i => i.name === itemToUnequip.name && !i.isEquipped);
             let newInventoryItems;
             if (existingStack) {
-                // FIX: Cast quantity to a number and handle potential NaN to prevent type errors.
                 newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (Number(i.quantity) || 0) + 1} : i);
             } else {
                 newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];
@@ -229,7 +227,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 pc = { ...pc, knownRecipeIds: [...pc.knownRecipeIds, itemToUse.recipeId] };
             }
             
-            // FIX: Cast quantity to number and handle potential NaN to prevent arithmetic errors.
             const newItems = pc.inventory.items.map(i => 
                 i.id === itemToUse.id ? { ...i, quantity: (Number(i.quantity) || 0) - 1 } : i
             ).filter(i => (Number(i.quantity) || 0) > 0);
@@ -277,7 +274,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     if (!isOpen || !playerCharacter) return null;
     
-    // FIX: Cast item.quantity to a number and handle potential NaN to prevent arithmetic errors with mixed types.
     const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * (Number(item.quantity) || 0)), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 
@@ -361,7 +357,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                     className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-[color:var(--primary-accent-color)]/70`}
                                 >
                                     <span className="text-4xl select-none" role="img" aria-label={item.name}>{item.icon || '📜'}</span>
-                                    {/* FIX: Cast quantity to number and handle potential NaN for comparison. */}
                                     {(Number(item.quantity) || 0) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
                                     <div className={`absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-gray-900 ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>
                                 </button>

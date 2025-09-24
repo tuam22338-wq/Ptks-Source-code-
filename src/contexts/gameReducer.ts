@@ -1,4 +1,4 @@
-import type { GameState, SaveSlot, GameSettings } from '../types';
+import type { GameState, SaveSlot, GameSettings, BackgroundState } from '../types';
 import type { View } from './AppContext';
 
 // Define the shape of our global state
@@ -14,6 +14,7 @@ export interface AppState {
     settings: GameSettings;
     storageUsage: { usageString: string; percentage: number };
     activeWorldId: string;
+    backgrounds: BackgroundState;
 }
 
 // Define action types
@@ -29,7 +30,11 @@ export type Action =
   | { type: 'LOAD_GAME'; payload: { gameState: GameState; slotId: number } }
   | { type: 'START_CHARACTER_CREATION'; payload: number }
   | { type: 'QUIT_GAME' }
-  | { type: 'UPDATE_GAME_STATE'; payload: GameState | null | ((prevState: GameState | null) => GameState | null) };
+  | { type: 'UPDATE_GAME_STATE'; payload: GameState | null | ((prevState: GameState | null) => GameState | null) }
+  | { type: 'LOAD_BACKGROUND_START'; payload: { themeId: string } }
+  | { type: 'LOAD_BACKGROUND_SUCCESS'; payload: { themeId: string; urls: any } }
+  | { type: 'LOAD_BACKGROUND_ERROR'; payload: { themeId: string } }
+  | { type: 'SET_ALL_CACHED_BACKGROUNDS'; payload: Record<string, any> };
 
 
 // The reducer function
@@ -89,6 +94,26 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
              // Prevent updates if no game is active, except when loading a new game.
              if (!state.gameState && !newGameState) return state;
              return { ...state, gameState: newGameState };
+        
+        case 'LOAD_BACKGROUND_START':
+            return { ...state, backgrounds: { ...state.backgrounds, status: { ...state.backgrounds.status, [action.payload.themeId]: 'loading' } } };
+
+        case 'LOAD_BACKGROUND_SUCCESS':
+            return { ...state, backgrounds: { 
+                status: { ...state.backgrounds.status, [action.payload.themeId]: 'loaded' },
+                urls: { ...state.backgrounds.urls, [`bg_theme_${action.payload.themeId}`]: action.payload.urls }
+            }};
+
+        case 'LOAD_BACKGROUND_ERROR':
+            return { ...state, backgrounds: { ...state.backgrounds, status: { ...state.backgrounds.status, [action.payload.themeId]: 'error' } } };
+            
+        case 'SET_ALL_CACHED_BACKGROUNDS':
+            const newStatus: Record<string, 'loaded'> = {};
+            Object.keys(action.payload).forEach(key => {
+                const themeId = key.replace('bg_theme_', '');
+                newStatus[themeId] = 'loaded';
+            });
+            return { ...state, backgrounds: { urls: action.payload, status: { ...state.backgrounds.status, ...newStatus } } };
 
         default:
             return state;

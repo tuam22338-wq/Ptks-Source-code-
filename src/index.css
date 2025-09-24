@@ -170,7 +170,7 @@ body {
 
 /* --- DYNAMIC BACKGROUNDS --- */
 .dynamic-bg-container { position: fixed; inset: 0; z-index: -10; overflow: hidden; background-color: var(--bg-color); }
-.dynamic-bg-layer { position: absolute; inset: 0; background-repeat: repeat-x; background-position: center bottom; will-change: transform; }
+.dynamic-bg-layer { position: absolute; inset: 0; background-size: auto 100%; background-repeat: repeat-x; background-position: center bottom; will-change: transform; }
 
 /* Single parallax keyframe for cleanliness */
 @keyframes parallax-scroll { 
@@ -178,42 +178,19 @@ body {
   to { transform: translateX(-1920px); } 
 }
 
-/* Ink Wash Theme */
-.dynamic-bg-ink_wash .layer-1 { background-image: url('https://i.imgur.com/Z4d3pG3.png'); animation: parallax-scroll 180s linear infinite; background-size: auto 100%; }
-.dynamic-bg-ink_wash .layer-2 { background-image: url('https://i.imgur.com/R8Jg6z8.png'); animation: parallax-scroll 120s linear infinite; background-size: auto 100%; }
-.dynamic-bg-ink_wash .layer-3 { background-image: url('https://i.imgur.com/JTFjN22.png'); animation: parallax-scroll 80s linear infinite; background-size: auto 100%; }
-.dynamic-bg-ink_wash .layer-4 { background-image: url('https://i.imgur.com/nJt3A07.png'); animation: parallax-scroll 50s linear infinite; background-size: auto 100%; }
+/* Different animation speeds per layer */
+.layer-1 { animation: parallax-scroll 240s linear infinite; }
+.layer-2 { animation: parallax-scroll 180s linear infinite; }
+.layer-3 { animation: parallax-scroll 120s linear infinite; }
+.layer-4 { animation: parallax-scroll 80s linear infinite; }
 
-/* Sunset Peak Theme */
-.dynamic-bg-sunset_peak .layer-1 { background-image: url('https://i.imgur.com/eKE2p3f.png'); animation: parallax-scroll 240s linear infinite; background-size: auto 100%; }
-.dynamic-bg-sunset_peak .layer-2 { background-image: url('https://i.imgur.com/k2EVY4t.png'); animation: parallax-scroll 180s linear infinite; background-size: auto 100%; }
-.dynamic-bg-sunset_peak .layer-3 { background-image: url('https://i.imgur.com/A6AWaC5.png'); animation: parallax-scroll 120s linear infinite; background-size: auto 100%; }
-.dynamic-bg-sunset_peak .layer-4 { background-image: url('https://i.imgur.com/J33y64I.png'); animation: parallax-scroll 80s linear infinite; background-size: auto 100%; }
-
-/* Mystic Violet Theme */
-.dynamic-bg-mystic_violet .layer-1 { background-image: url('https://i.imgur.com/qK1kCgY.png'); animation: parallax-scroll 200s linear infinite; background-size: auto 100%; }
-.dynamic-bg-mystic_violet .layer-2 { background-image: url('https://i.imgur.com/UDSyPsj.png'); animation: parallax-scroll 150s linear infinite; background-size: auto 100%; }
-.dynamic-bg-mystic_violet .layer-3 { background-image: url('https://i.imgur.com/2s4R5yO.png'); animation: parallax-scroll 100s linear infinite; background-size: auto 100%; }
-.dynamic-bg-mystic_violet .layer-4 { background-image: url('https://i.imgur.com/gHh9b8A.png'); animation: parallax-scroll 60s linear infinite; background-size: auto 100%; }
-
-/* Blood Moon Theme */
-.dynamic-bg-blood_moon .layer-1 { background-image: url('https://i.imgur.com/JbJ9tYn.png'); animation: parallax-scroll 220s linear infinite; background-size: auto 100%; }
-.dynamic-bg-blood_moon .layer-2 { background-image: url('https://i.imgur.com/z4a5gL3.png'); animation: parallax-scroll 160s linear infinite; background-size: auto 100%; }
-.dynamic-bg-blood_moon .layer-3 { background-image: url('https://i.imgur.com/1o5g9Lg.png'); animation: parallax-scroll 110s linear infinite; background-size: auto 100%; }
-.dynamic-bg-blood_moon .layer-4 { background-image: url('https://i.imgur.com/GgG4s1j.png'); animation: parallax-scroll 70s linear infinite; background-size: auto 100%; }
-
-/* Jade Forest Theme */
-.dynamic-bg-jade_forest .layer-1 { background-image: url('https://i.imgur.com/9yX3B5p.png'); animation: parallax-scroll 210s linear infinite; background-size: auto 100%; }
-.dynamic-bg-jade_forest .layer-2 { background-image: url('https://i.imgur.com/2s4R5yO.png'); animation: parallax-scroll 155s linear infinite; background-size: auto 100%; }
-.dynamic-bg-jade_forest .layer-3 { background-image: url('https://i.imgur.com/gHh9b8A.png'); animation: parallax-scroll 105s linear infinite; background-size: auto 100%; }
-.dynamic-bg-jade_forest .layer-4 { background-image: url('https://i.imgur.com/qE4J3qJ.png'); animation: parallax-scroll 65s linear infinite; background-size: auto 100%; }
 
 /* Background Thumbnails for Settings */
-.bg-thumbnail-ink_wash { background-image: url('https://i.imgur.com/fL3t42r.jpg'); background-size: cover; }
-.bg-thumbnail-sunset_peak { background-image: url('https://i.imgur.com/z6uD2uU.jpg'); background-size: cover; }
-.bg-thumbnail-mystic_violet { background-image: url('https://i.imgur.com/1zS4T5k.jpg'); background-size: cover; }
-.bg-thumbnail-blood_moon { background-image: url('https://i.imgur.com/X4y1L5C.jpg'); background-size: cover; }
-.bg-thumbnail-jade_forest { background-image: url('https://i.imgur.com/qL6p9l0.jpg'); background-size: cover; }
+.bg-thumbnail-ink_wash { background-image: url('https://i.ibb.co/Yh8TfB4/ink-wash-thumb.jpg'); background-size: cover; }
+.bg-thumbnail-sunset_peak { background-image: url('https://i.ibb.co/8df0S2r/sunset-thumb.jpg'); background-size: cover; }
+.bg-thumbnail-mystic_violet { background-image: url('https://i.ibb.co/bF07j4G/mystic-thumb.jpg'); background-size: cover; }
+.bg-thumbnail-blood_moon { background-image: url('https://i.ibb.co/hL7g7p1/blood-thumb.jpg'); background-size: cover; }
+.bg-thumbnail-jade_forest { background-image: url('https://i.ibb.co/R4m00f7/jade-thumb.jpg'); background-size: cover; }
 
 
 /* --- AMBIENT/PARTICLE EFFECTS --- */

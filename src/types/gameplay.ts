@@ -9,6 +9,20 @@ import type { SpiritualRoot, CharacterIdentity, InnateTalent } from './character
 import type { FullMod, RealmConfig, ModAttributeSystem, ModEvent, EventChoice, EventOutcome } from './modding';
 import type { SystemInfo } from './settings';
 
+// --- New Asset Types ---
+export type AssetLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
+export interface BackgroundSet {
+    layer1: string;
+    layer2: string;
+    layer3: string;
+    layer4: string;
+}
+export interface BackgroundState {
+    status: Record<string, AssetLoadStatus>;
+    urls: Record<string, BackgroundSet>;
+}
+// --- End Asset Types ---
+
 
 // --- Save Slot Types ---
 export interface SaveSlot {

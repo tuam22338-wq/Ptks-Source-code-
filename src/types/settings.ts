@@ -10,6 +10,7 @@ export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise';
 export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa';
 export type AiSyncMode = 'classic' | 'intent_driven';
+export type TtsProvider = 'browser' | 'elevenlabs';
 
 // New Detailed Gameplay Settings Types
 export type AiCreativityLevel = 'grounded' | 'balanced' | 'free';
@@ -88,6 +89,9 @@ export interface GameSettings {
     backgroundMusicName: string;
     backgroundMusicVolume: number;
     enableTTS: boolean;
+    ttsProvider: TtsProvider;
+    elevenLabsApiKey: string;
+    elevenLabsVoiceId: string;
     ttsVoiceURI: string;
     ttsRate: number;
     ttsPitch: number;
