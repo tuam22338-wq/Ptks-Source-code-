@@ -107,11 +107,8 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                                 <GiStairsGoal /> Đột Phá!
                             </QuickActionButton>
                         )}
-                        <QuickActionButton onClick={onToggleSidebar} disabled={disabled} title="Mở bảng nhân vật và bản đồ">
-                            <FaUser /> Nhân Vật
-                        </QuickActionButton>
-                         <QuickActionButton onClick={onToggleSidebar} disabled={disabled} title="Mở bảng nhân vật và bản đồ">
-                            <FaMapMarkedAlt /> Bản Đồ
+                        <QuickActionButton onClick={onToggleSidebar} disabled={disabled} title="Mở Bảng Điều Khiển">
+                            <FaUser /> Bảng Điều Khiển
                         </QuickActionButton>
                     </div>
                 )}

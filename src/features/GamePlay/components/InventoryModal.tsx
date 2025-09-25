@@ -15,18 +15,14 @@ type SortOrder = 'name_asc' | 'name_desc' | 'quality_desc' | 'weight_desc';
 
 const ITEMS_PER_PAGE = 28; // 4 rows * 7 columns
 
-const deepCopyAttributes = (attributes: CharacterAttributes): CharacterAttributes => {
-    return JSON.parse(JSON.stringify(attributes));
-};
-
-const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add' | 'subtract'): CharacterAttributes => {
-    const newAttributes = deepCopyAttributes(pc.attributes);
+const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add' | 'subtract'): PlayerCharacter => {
+    const newPc = JSON.parse(JSON.stringify(pc));
     const multiplier = operation === 'add' ? 1 : -1;
 
     bonuses.forEach(bonus => {
         const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === bonus.attribute);
-        if (attrDef && newAttributes[attrDef.id]) {
-            const attr = newAttributes[attrDef.id];
+        if (attrDef && newPc.attributes[attrDef.id]) {
+            const attr = newPc.attributes[attrDef.id];
             attr.value += (bonus.value * multiplier);
 
             if (attr.maxValue !== undefined) {
@@ -38,7 +34,7 @@ const applyBonuses = (pc: PlayerCharacter, bonuses: StatBonus[], operation: 'add
             }
         }
     });
-    return newAttributes;
+    return newPc;
 };
 
 const EquipmentSlotComponent: React.FC<{
@@ -130,90 +126,109 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     const playerCharacter = gameState?.playerCharacter;
 
     const handleEquip = useCallback((itemToEquip: InventoryItem) => {
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (pcState => {
-            if (!pcState) return null;
-            let { playerCharacter: pc } = pcState;
-            const slot = itemToEquip.slot;
-            if (!slot) return pcState;
+        if (!playerCharacter) return;
+        const slot = itemToEquip.slot;
+        if (!slot) return;
     
-            let newInventoryItems = [...pc.inventory.items];
-            let newEquipment = { ...pc.equipment };
+        dispatch({
+            type: 'UPDATE_GAME_STATE', payload: (gs) => {
+                if (!gs) return null;
+                const pc = JSON.parse(JSON.stringify(gs.playerCharacter));
     
-            const currentItemInSlot = newEquipment[slot];
-            if (currentItemInSlot) {
-                newInventoryItems.push({ ...currentItemInSlot, isEquipped: false });
-                if (currentItemInSlot.bonuses) {
-                    pc = { ...pc, attributes: applyBonuses(pc, currentItemInSlot.bonuses, 'subtract') };
+                // 1. Unequip existing item in slot
+                const currentItemInSlot = pc.equipment[slot];
+                if (currentItemInSlot) {
+                    if (currentItemInSlot.bonuses) {
+                        Object.assign(pc, applyBonuses(pc, currentItemInSlot.bonuses, 'subtract'));
+                    }
+                    const existingStack = pc.inventory.items.find((i: InventoryItem) => i.name === currentItemInSlot.name && !i.isEquipped);
+                    if (existingStack) {
+                        existingStack.quantity++;
+                    } else {
+                        pc.inventory.items.push({ ...currentItemInSlot, isEquipped: false, quantity: 1 });
+                    }
                 }
+    
+                // 2. Remove item from inventory
+                const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.id === itemToEquip.id);
+                if (itemIndex > -1) {
+                    if (pc.inventory.items[itemIndex].quantity > 1) {
+                        pc.inventory.items[itemIndex].quantity--;
+                    } else {
+                        pc.inventory.items.splice(itemIndex, 1);
+                    }
+                }
+    
+                // 3. Equip new item
+                pc.equipment[slot] = { ...itemToEquip, quantity: 1, isEquipped: true };
+                if (itemToEquip.bonuses) {
+                    Object.assign(pc, applyBonuses(pc, itemToEquip.bonuses, 'add'));
+                }
+                
+                return { ...gs, playerCharacter: pc };
             }
-            
-            newInventoryItems = newInventoryItems.filter(i => i.id !== itemToEquip.id);
-            
-            newEquipment[slot] = { ...itemToEquip, quantity: 1, isEquipped: true };
-            if (itemToEquip.bonuses) {
-                pc = { ...pc, attributes: applyBonuses(pc, itemToEquip.bonuses, 'add') };
-            }
-            
-            if ((Number(itemToEquip.quantity) || 0) > 1) {
-                newInventoryItems.push({ ...itemToEquip, quantity: (Number(itemToEquip.quantity) || 0) - 1, isEquipped: false });
-            }
-            return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment } };
-        }) });
+        });
         showNotification(`Đã trang bị [${itemToEquip.name}]`);
         setSelectedItem(null);
-    }, [dispatch, showNotification]);
+    }, [playerCharacter, dispatch, showNotification]);
     
     const handleUnequip = useCallback((slot: EquipmentSlot) => {
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (pcState => {
-            if (!pcState) return null;
-            let { playerCharacter: pc } = pcState;
-            const itemToUnequip = pc.equipment[slot];
-            if (!itemToUnequip) return pcState;
+        if (!playerCharacter) return;
+        
+        dispatch({
+            type: 'UPDATE_GAME_STATE', payload: (gs) => {
+                if (!gs) return null;
+                const pc = JSON.parse(JSON.stringify(gs.playerCharacter));
+                const itemToUnequip = pc.equipment[slot];
+                if (!itemToUnequip) return gs;
     
-            if (itemToUnequip.bonuses) {
-                 pc = { ...pc, attributes: applyBonuses(pc, itemToUnequip.bonuses, 'subtract') };
-            }
+                // 1. Remove bonuses
+                if (itemToUnequip.bonuses) {
+                    Object.assign(pc, applyBonuses(pc, itemToUnequip.bonuses, 'subtract'));
+                }
     
-            const existingStack = pc.inventory.items.find(i => i.name === itemToUnequip.name && !i.isEquipped);
-            let newInventoryItems;
-            if (existingStack) {
-                newInventoryItems = pc.inventory.items.map(i => i.id === existingStack.id ? {...i, quantity: (Number(i.quantity) || 0) + 1} : i);
-            } else {
-                newInventoryItems = [...pc.inventory.items, { ...itemToUnequip, isEquipped: false, quantity: 1 }];
+                // 2. Add item back to inventory
+                const existingStack = pc.inventory.items.find((i: InventoryItem) => i.name === itemToUnequip.name && !i.isEquipped);
+                if (existingStack) {
+                    existingStack.quantity++;
+                } else {
+                    pc.inventory.items.push({ ...itemToUnequip, isEquipped: false, quantity: 1 });
+                }
+                
+                // 3. Clear slot
+                pc.equipment[slot] = null;
+    
+                return { ...gs, playerCharacter: pc };
             }
-            
-            const newEquipment = { ...pc.equipment };
-            newEquipment[slot] = null;
-            return { ...pcState, playerCharacter: { ...pc, inventory: { ...pc.inventory, items: newInventoryItems }, equipment: newEquipment } };
-        }) });
-         showNotification(`Đã tháo [${playerCharacter?.equipment[slot]?.name}]`);
-         setSelectedItem(null);
+        });
+        showNotification(`Đã tháo [${playerCharacter.equipment[slot]?.name}]`);
+        setSelectedItem(null);
     }, [playerCharacter, dispatch, showNotification]);
-
+    
     const handleDrop = useCallback((itemToDrop: InventoryItem) => {
         if (!window.confirm(`Bạn có chắc muốn vứt bỏ ${itemToDrop.name}?`)) return;
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (pcState => {
-             if (!pcState) return null;
-             return { ...pcState, playerCharacter: { ...pcState.playerCharacter, inventory: { ...pcState.playerCharacter.inventory, items: pcState.playerCharacter.inventory.items.filter(i => i.id !== itemToDrop.id) } } };
-        }) });
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs) => {
+             if (!gs) return null;
+             const pc = { ...gs.playerCharacter };
+             pc.inventory.items = pc.inventory.items.filter((i: InventoryItem) => i.id !== itemToDrop.id);
+             return { ...gs, playerCharacter: pc };
+        }});
         showNotification(`Đã vứt bỏ [${itemToDrop.name}]`);
         setSelectedItem(null);
     }, [dispatch, showNotification]);
     
     const handleUse = useCallback((itemToUse: InventoryItem) => {
-        if (!playerCharacter) return;
         let actionMessage = `Đã sử dụng [${itemToUse.name}].`;
         
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (pcState => {
-            if (!pcState) return null;
-            let pc = { ...pcState.playerCharacter };
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs) => {
+            if (!gs) return null;
+            const pc = JSON.parse(JSON.stringify(gs.playerCharacter));
             
             if (itemToUse.vitalEffects) {
                 itemToUse.vitalEffects.forEach(effect => {
-                    const attr = pc.attributes[effect.vital]; // effect.vital is an attribute ID like 'hunger'
+                    const attr = pc.attributes[effect.vital];
                     if (attr && attr.maxValue !== undefined) {
-                        const newValue = (attr.value || 0) + effect.value;
-                        attr.value = Math.max(0, Math.min(attr.maxValue, newValue));
+                        attr.value = Math.max(0, Math.min(attr.maxValue, attr.value + effect.value));
                     }
                 });
             }
@@ -221,24 +236,28 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             if (itemToUse.type === 'Đan Phương' && itemToUse.recipeId) {
                 if (pc.knownRecipeIds.includes(itemToUse.recipeId)) {
                     showNotification("Bạn đã học đan phương này rồi.");
-                    return pcState;
+                    return gs;
                 }
                 actionMessage = `Đã học được [${itemToUse.name}]!`;
-                pc = { ...pc, knownRecipeIds: [...pc.knownRecipeIds, itemToUse.recipeId] };
+                pc.knownRecipeIds.push(itemToUse.recipeId);
             }
             
-            const newItems = pc.inventory.items.map(i => 
-                i.id === itemToUse.id ? { ...i, quantity: (Number(i.quantity) || 0) - 1 } : i
-            ).filter(i => (Number(i.quantity) || 0) > 0);
+            const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.id === itemToUse.id);
+            if (itemIndex > -1) {
+                if (pc.inventory.items[itemIndex].quantity > 1) {
+                    pc.inventory.items[itemIndex].quantity--;
+                } else {
+                    pc.inventory.items.splice(itemIndex, 1);
+                }
+            }
             
-            pc = { ...pc, inventory: { ...pc.inventory, items: newItems } };
-
-            return { ...pcState, playerCharacter: pc };
-        }) });
+            return { ...gs, playerCharacter: pc };
+        }});
         
         showNotification(actionMessage);
         setSelectedItem(null);
-    }, [playerCharacter, dispatch, showNotification]);
+    }, [dispatch, showNotification]);
+    
 
     const sortedAndFilteredItems = useMemo(() => {
         if (!playerCharacter) return [];
@@ -274,7 +293,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     if (!isOpen || !playerCharacter) return null;
     
-    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * (Number(item.quantity) || 0)), 0);
+    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * item.quantity), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 
     const equippedItemForComparison = selectedItem?.slot ? playerCharacter.equipment[selectedItem.slot] : null;
@@ -357,7 +376,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                     className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-[color:var(--primary-accent-color)]/70`}
                                 >
                                     <span className="text-4xl select-none" role="img" aria-label={item.name}>{item.icon || '📜'}</span>
-                                    {(Number(item.quantity) || 0) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
+                                    {item.quantity > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
                                     <div className={`absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-gray-900 ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>
                                 </button>
                             ))}

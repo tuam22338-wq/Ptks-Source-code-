@@ -17,7 +17,6 @@ import { InventoryModal } from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-import SummaryPanel from './components/SummaryPanel';
 import Sidebar from './components/Sidebar/Sidebar';
 import InteractionOverlay from './components/InteractionOverlay';
 
@@ -79,8 +78,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
     const [activeActionTab, setActiveActionTab] = useState<'act' | 'say' | 'ask'>('act');
     const isAiResponding = state.isLoading && state.view === 'gamePlay';
     const [responseTimer, setResponseTimer] = useState(0);
-    const [isSummaryPanelVisible, setIsSummaryPanelVisible] = useState(true);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Default to open
 
 
     // --- PAGINATION LOGIC ---
@@ -310,7 +308,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
              />
             
             <div className={`flex-grow w-full flex min-h-0 relative min-h-0`}>
-                <main className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:ml-96' : ''}`}>
+                <main className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:mr-96' : ''}`}>
                     <StoryLog 
                         pageEntries={storyPages[currentPage] || []} 
                         inventoryItems={playerCharacter.inventory.items} 
@@ -360,7 +358,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
                     )}
                 </main>
 
-                {isSummaryPanelVisible && <SummaryPanel gameState={gameState} />}
             </div>
         </div>
     );

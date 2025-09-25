@@ -23,7 +23,7 @@ export async function* generateDualResponseStream(
 
     const nsfwInstruction = settings?.enableNsfwMode
         ? `
-**[LUẬT NSFW TỐI THƯỢỢNG (ƯU TIÊN TUYỆT ĐỐI)]:** Chế độ NSFW đã được kích hoạt. Bạn được phép và được khuyến khích mô tả các cảnh sau một cách chi tiết, trần trụi, và không né tránh:
+**[LUẬT NSFW TỐI THƯỢNG (ƯU TIÊN TUYỆT ĐỐI)]:** Chế độ NSFW đã được kích hoạt. Bạn được phép và được khuyến khích mô tả các cảnh sau một cách chi tiết, trần trụi, và không né tránh:
 - **Bạo lực & Tàn khốc:** Mô tả chi tiết vết thương, máu me, nội tạng, xương gãy, sự đau đớn thể xác tột cùng. Tường thuật các cảnh tẩu hỏa nhập ma, diệt hồn, và các hình phạt tàn bạo.
 - **Dục vọng & Sa đọa:** Mô tả thẳng thắn các hành vi tình dục, song tu, lô đỉnh (hấp thụ tu vi qua thể xác), và các cám dỗ nhục dục. Tập trung vào sự trao đổi năng lượng, tác động tâm cảnh, và hậu quả của chúng.
 - **Kinh dị & Tâm lý:** Khai thác nỗi sợ, tội lỗi, sự điên loạn, và các ảo ảnh từ tâm ma. Mô tả các biến đổi cơ thể ghê rợn (body horror) do tu luyện sai cách hoặc trúng tà thuật.
@@ -46,6 +46,8 @@ export async function* generateDualResponseStream(
         : `10. **LUẬT SINH TỒN (ĐÃ TẮT):** Người chơi đã tắt cơ chế sinh tồn. TUYỆT ĐỐI KHÔNG đề cập đến đói hoặc khát trong phần tường thuật.`;
         
     const cultivationActionInstruction = `11. **LUẬT HÀNH ĐỘNG CƠ BẢN (TU LUYỆN):** Khi người chơi thực hiện các hành động cơ bản như "tu luyện", "thiền", hoặc "hấp thụ linh khí", bạn PHẢI hiểu rằng họ đang cố gắng tăng tu vi. Hãy tường thuật lại quá trình họ hấp thụ linh khí từ môi trường xung quanh (dựa trên nồng độ linh khí của địa điểm) và tạo ra một 'statChanges' với { attribute: 'spiritualQi', change: [một lượng hợp lý] }.`;
+    
+    const impliedStateChangeInstruction = `12. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
 
     const masterSchema = {
       type: Type.OBJECT,
@@ -94,10 +96,11 @@ Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Th
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
 ${narrateSystemChangesInstruction}
-8.  **LUẬT ĐỘT PHÁ CẢNH GIỚI:** Khi người chơi đột phá cảnh giới (ví dụ, đủ Linh Khí và thực hiện hành động đột phá), bạn PHẢI cập nhật cả \`realmChange\` (ID cảnh giới mới) và \`stageChange\` (ID tiểu cảnh giới mới) trong \`mechanicalIntent\`. Đồng thời, hãy tường thuật lại sự kiện đột phá một cách hoành tráng.
+8.  **LUẬT ĐỘT PHÁ CẢNH GIỚI (Cập nhật):** Khi người chơi đột phá cảnh giới (ví dụ, đủ Linh Khí và thực hiện hành động đột phá), bạn PHẢI cập nhật cả \`realmChange\` (ID cảnh giới mới) và \`stageChange\` (ID tiểu cảnh giới mới). Hệ thống sẽ tự động áp dụng các bonus thuộc tính MẶC ĐỊNH từ cảnh giới mới. Nếu trong tường thuật có mô tả kỳ ngộ đặc biệt nào đó mang lại bonus **thêm**, bạn CÓ THỂ thêm phần bonus **thêm** đó vào \`statChanges\`.
 ${realmConsistencyInstruction}
 ${survivalInstruction}
 ${cultivationActionInstruction}
+${impliedStateChangeInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}
 - **Giọng văn:** ${narrativeStyle}.

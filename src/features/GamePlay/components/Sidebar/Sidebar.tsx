@@ -3,13 +3,13 @@ import type { GameState } from '../../../../types';
 import { FaTimes, FaUser, FaMapMarkedAlt, FaBook, FaBrain, FaQuestionCircle } from 'react-icons/fa';
 
 // Import panel components
-import CharacterPanel from './panels/CharacterPanel';
+import StatusPanel from './panels/StatusPanel';
 import MapView from './panels/MapView';
 import QuestPanel from './panels/QuestPanel';
 import AiMemoryPanel from './panels/AiMemoryPanel';
 import GuidePanel from './panels/GuidePanel';
 
-type PanelId = 'character' | 'map' | 'quests' | 'memory' | 'guide';
+type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'guide';
 
 interface SidebarPanel {
     id: PanelId;
@@ -19,7 +19,7 @@ interface SidebarPanel {
 }
 
 const PANELS: SidebarPanel[] = [
-    { id: 'character', label: 'Nhân Vật', icon: FaUser, component: CharacterPanel },
+    { id: 'status', label: 'Trạng Thái', icon: FaUser, component: StatusPanel },
     { id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, component: MapView },
     { id: 'quests', label: 'Nhiệm Vụ', icon: FaBook, component: QuestPanel },
     { id: 'memory', label: 'Ký Ức AI', icon: FaBrain, component: AiMemoryPanel },
@@ -34,12 +34,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
-    const [activePanelId, setActivePanelId] = useState<PanelId>('character');
+    const [activePanelId, setActivePanelId] = useState<PanelId>('status');
 
     const ActivePanel = PANELS.find(p => p.id === activePanelId)?.component;
     
     const panelProps = {
-        character: { playerCharacter: gameState.playerCharacter, gameState: gameState },
+        status: { gameState: gameState },
         map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
         memory: { gameState },
@@ -48,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
 
     return (
         <>
-            <div className={`fixed top-0 left-0 h-full z-40 w-96 max-w-[90vw] bg-stone-900/90 backdrop-blur-md border-r border-gray-700 transform transition-transform duration-300 ease-in-out flex ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className={`fixed top-0 right-0 h-full z-40 w-96 max-w-[90vw] bg-stone-900/90 backdrop-blur-md border-l border-gray-700 transform transition-transform duration-300 ease-in-out flex flex-row-reverse ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="w-16 flex-shrink-0 bg-black/30 flex flex-col items-center p-2 gap-2">
                     {PANELS.map(panel => (
                         <button
