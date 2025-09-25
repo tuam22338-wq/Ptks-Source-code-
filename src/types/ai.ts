@@ -56,6 +56,14 @@ export interface RagEmbedding {
   embedding: number[]; // The vector embedding
 }
 
+// --- Arbiter AI Types ---
+export interface ArbiterDecision {
+  success: boolean;
+  reason: string; // Explanation of why it succeeded or failed
+  consequence: string; // A short description of the outcome, e.g., "The door remains shut"
+}
+// --- End Arbiter AI Types ---
+
 
 // --- Thien Co Luan Hoi (State Sync) Types ---
 export interface MechanicalIntent {

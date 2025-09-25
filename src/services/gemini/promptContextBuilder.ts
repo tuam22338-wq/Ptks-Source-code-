@@ -5,15 +5,21 @@ import { createModContextSummary } from '../../utils/modManager';
 // FIX: Add 'settings' parameter to the function signature and remove the incorrect access from gameState.
 export const createFullGameStateContext = (gameState: GameState, settings: GameSettings, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
   const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState } = gameState;
-  const playerAiHooks = settings?.playerAiHooks;
+  const playerAiHooks = gameState.playerCharacter.playerAiHooks;
   let playerRulesContext = '';
-  if (playerAiHooks && (playerAiHooks.on_world_build || playerAiHooks.on_action_evaluate)) {
+  if (playerAiHooks) {
       playerRulesContext += '\n- **QUY LUẬT TÙY CHỈNH CỦA NGƯỜI CHƠI (ƯU TIÊN TUYỆT ĐỐI):**\n';
       if (playerAiHooks.on_world_build) {
-           playerRulesContext += `**Luật Lệ Vĩnh Cửu:**\n${playerAiHooks.on_world_build.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
+           playerRulesContext += `**Luật Lệ Vĩnh Cửu (Sự thật của thế giới):**\n${playerAiHooks.on_world_build.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
       }
       if (playerAiHooks.on_action_evaluate) {
-           playerRulesContext += `**Luật Lệ Tình Huống:**\n${playerAiHooks.on_action_evaluate.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
+           playerRulesContext += `**Luật Lệ Tình Huống (Xem xét mỗi hành động):**\n${playerAiHooks.on_action_evaluate.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
+      }
+      if (playerAiHooks.on_narration) {
+           playerRulesContext += `**Luật Lệ Tường Thuật (Văn phong & Giọng điệu):**\n${playerAiHooks.on_narration.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
+      }
+      if (playerAiHooks.on_realm_rules) {
+           playerRulesContext += `**Luật Lệ Cảnh Giới (Hệ thống tu luyện):**\n${playerAiHooks.on_realm_rules.split('\n').filter(Boolean).map(r => `- ${r}`).join('\n')}\n`;
       }
   }
 

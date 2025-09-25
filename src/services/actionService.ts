@@ -1,10 +1,9 @@
-import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload } from '../types';
-import { generateDualResponseStream, harmonizeNarrative, summarizeStory, generateNpcThoughtBubble } from './geminiService';
+import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload, ArbiterDecision } from '../types';
+import { generateDualResponseStream, harmonizeNarrative, summarizeStory, generateNpcThoughtBubble, decideActionOutcome } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
 import { simulateWorldTurn } from './worldSimulator';
 import * as questManager from '../utils/questManager';
-import { addEntryToMemory } from './memoryService';
-import { orchestrateRagQuery } from './ragOrchestrator';
+import { addEntryToMemory, retrieveAndSynthesizeMemory } from './memoryService';
 import { validateMechanicalChanges } from './validationService';
 import { applyMechanicalChanges } from './stateUpdateService';
 
@@ -36,21 +35,27 @@ export const processPlayerAction = async (
         }
     }
 
-    // --- GIAI ĐOẠN 0.5: TƯ DUY NPC ---
+    // --- GIAI ĐOẠN 0.5: TƯ DUY NPC & TRUY XUẤT KÝ ỨC ---
     let thoughtBubble: string | undefined = undefined;
     const npcsHere = stateAfterSim.activeNpcs.filter(npc => npc.locationId === stateAfterSim.playerCharacter.currentLocationId);
-    // Find the first NPC mentioned in the player's input
     const targetNpc = npcsHere.find(npc => text.includes(npc.identity.name));
 
     if (targetNpc) {
         thoughtBubble = await generateNpcThoughtBubble(targetNpc, stateAfterSim, text);
     }
     
-    const instantMemoryReport = await orchestrateRagQuery(text, type, stateAfterSim);
+    // NEW STEP 1: Retrieve personalized memories (RAG) for the current save slot
+    const memoryContext = await retrieveAndSynthesizeMemory(text, stateAfterSim, currentSlotId);
+
+    // NEW STEP 2: Get Arbiter's logical decision
+    const arbiterDecision = await decideActionOutcome(stateAfterSim, text);
+
     const playerActionEntry: Omit<StoryEntry, 'id'> = { type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
     
     // --- GIAI ĐOẠN 1: "Ý-HÌNH SONG SINH" ---
-    const stream = generateDualResponseStream(stateAfterSim, text, type, instantMemoryReport, settings, thoughtBubble);
+    // NEW STEP 3: Pass new context (arbiter's decision & memories) to the narrator
+    const stream = generateDualResponseStream(stateAfterSim, text, type, memoryContext, settings, arbiterDecision, thoughtBubble);
+
     let fullResponseJsonString = '';
     for await (const chunk of stream) {
         if (abortSignal.aborted) throw new Error("Hành động đã bị hủy.");
@@ -66,22 +71,19 @@ export const processPlayerAction = async (
     }
     
     // --- GIAI ĐOẠN 2: "THIÊN ĐẠO GIÁM SÁT" ---
-    // The AI's proposed mechanical changes are now validated.
     const { validatedIntent, validationNotifications } = validateMechanicalChanges(aiPayload.mechanicalIntent, stateAfterSim);
     validationNotifications.forEach(showNotification);
 
     // --- GIAI ĐOẠN 3: "NGÔN-THỰC HỢP NHẤT" ---
-    // The validated mechanical changes are applied to the state.
     let finalState = applyMechanicalChanges(stateAfterSim, validatedIntent, showNotification);
     
     let finalNarrative = aiPayload.narrative;
-    if (validationNotifications.length > 0) { // If there were changes, harmonize the narrative
+    if (validationNotifications.length > 0) {
         finalNarrative = await harmonizeNarrative(aiPayload.narrative, validatedIntent, validationNotifications);
     }
 
     const narrativeEntry: Omit<StoryEntry, 'id'> = { type: 'narrative', content: finalNarrative };
 
-    // --- CẬP NHẬT TRẠNG THÁI CUỐI CÙNG ---
     const allNewEntries = [...baseLogEntries, playerActionEntry, narrativeEntry];
     const lastId = finalState.storyLog.length > 0 ? finalState.storyLog[finalState.storyLog.length - 1].id : 0;
     const finalNewLogEntries: StoryEntry[] = allNewEntries.map((entry, index) => ({ ...entry, id: lastId + index + 1 }));
@@ -95,7 +97,6 @@ export const processPlayerAction = async (
     finalQuestCheck.notifications.forEach(showNotification);
     let finalStateForSummary = finalQuestCheck.newState;
 
-    // Tự động tóm tắt nếu cần
     if (finalStateForSummary.storyLog.length > 0 && finalStateForSummary.storyLog.length % settings.autoSummaryFrequency === 0) {
         try {
             const summary = await summarizeStory(finalStateForSummary.storyLog, finalStateForSummary.playerCharacter);

@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus } from '../../types';
+import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
@@ -10,8 +10,9 @@ export async function* generateDualResponseStream(
     gameState: GameState, 
     userInput: string, 
     inputType: 'say' | 'act',
-    instantMemoryReport: string,
+    memoryContext: string,
     settings: GameSettings,
+    arbiterDecision: ArbiterDecision,
     thoughtBubble?: string
 ): AsyncIterable<string> {
     const { playerCharacter, difficulty, activeMods } = gameState;
@@ -32,7 +33,7 @@ export async function* generateDualResponseStream(
         : '';
     
     const lengthInstruction = `**LUẬT VỀ ĐỘ DÀI (QUAN TRỌNG):** Phản hồi tường thuật phải có độ dài khoảng ${settings.aiResponseWordCount} từ.`;
-    const context = createFullGameStateContext(gameState, settings, instantMemoryReport, thoughtBubble);
+    const context = createFullGameStateContext(gameState, settings, memoryContext, thoughtBubble);
     const playerActionText = inputType === 'say' ? `Nhân vật của bạn nói: "${userInput}"` : `Hành động của nhân vật: "${userInput}"`;
 
     const narrateSystemChangesInstruction = settings.narrateSystemChanges
@@ -48,6 +49,14 @@ export async function* generateDualResponseStream(
     const cultivationActionInstruction = `11. **LUẬT HÀNH ĐỘNG CƠ BẢN (TU LUYỆN):** Khi người chơi thực hiện các hành động cơ bản như "tu luyện", "thiền", hoặc "hấp thụ linh khí", bạn PHẢI hiểu rằng họ đang cố gắng tăng tu vi. Hãy tường thuật lại quá trình họ hấp thụ linh khí từ môi trường xung quanh (dựa trên nồng độ linh khí của địa điểm) và tạo ra một 'statChanges' với { attribute: 'spiritualQi', change: [một lượng hợp lý] }.`;
     
     const impliedStateChangeInstruction = `12. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
+
+    const arbiterInstruction = `
+### LUẬT LỆ TỐI THƯỢNG TỪ TRỌNG TÀI (PHẢI TUÂN THEO 100%) ###
+Kết quả hành động của người chơi đã được một AI logic khác quyết định trước. Bạn BẮT BUỘC phải tường thuật một kịch bản khớp HOÀN TOÀN với kết quả sau đây:
+- **Kết quả:** ${arbiterDecision.success ? 'Thành công' : 'Thất bại'}
+- **Lý do logic:** ${arbiterDecision.reason}
+- **Hậu quả cơ bản:** "${arbiterDecision.consequence}"
+TUYỆT ĐỐI KHÔNG được thay đổi kết quả này trong phần tường thuật của bạn. Hãy sáng tạo một câu chuyện xoay quanh kết quả đã được định sẵn này.`;
 
     const masterSchema = {
       type: Type.OBJECT,
@@ -80,18 +89,11 @@ export async function* generateDualResponseStream(
 
     const prompt = `
 Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Nhiệm vụ của bạn là tiếp nối câu chuyện một cách hấp dẫn, logic và tạo ra các thay đổi cơ chế game tương ứng.
-
+${arbiterInstruction}
 ### QUY TẮC TỐI THƯỢỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **ĐỒNG BỘ TUYỆT ĐỐI ("Ý-HÌNH SONG SINH"):** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game). Mọi sự kiện, vật phẩm, thay đổi chỉ số, đột phá cảnh giới, thay đổi cảm xúc... được mô tả trong \`narrative\` PHẢI được phản ánh chính xác 100% trong \`mechanicalIntent\`, và ngược lại. KHÔNG CÓ NGOẠI LỆ. Nếu không có thay đổi cơ chế nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
 2.  **VIẾT TIẾP, KHÔNG LẶP LẠI (CỰC KỲ QUAN TRỌNG):** TUYỆT ĐỐI KHÔNG lặp lại, diễn giải lại, hoặc tóm tắt lại bất kỳ nội dung nào đã có trong "Nhật Ký Gần Đây" hoặc "Tóm Tắt Cốt Truyện". Nhiệm vụ của bạn là **VIẾT TIẾP** câu chuyện, tạo ra diễn biến **HOÀN TOÀN MỚI** dựa trên hành động của người chơi. Hãy coi như người chơi đã đọc và hiểu nhật ký; chỉ tập trung vào những gì xảy ra **TIẾP THEO**.
-3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (CỰC KỲ QUAN TRỌNG):**
-    -   **BẠN LÀ TRỌNG TÀI:** Khi người chơi thực hiện một hành động, bạn phải đóng vai trò là Game Master để quyết định kết quả.
-    -   **DỰA VÀO THUỘC TÍNH:** Phân tích các chỉ số của người chơi được cung cấp trong Bối Cảnh (ví dụ: Lực Lượng, Thân Pháp, Ngộ Tính, Mị Lực).
-    -   **QUYẾT ĐỊNH KẾT QUẢ:** Dựa trên các chỉ số đó, hãy quyết định một cách logic xem hành động đó thành công, thất bại, hay thành công một phần.
-    -   **TƯỜNG THUẬT KẾT QUẢ:** Tường thuật lại kết quả một cách hợp lý và hấp dẫn, đồng thời điền chính xác kết quả đó vào \`mechanicalIntent\`.
-        -   **Ví dụ 1 (Thất bại):** Nếu người chơi có Lực Lượng thấp và hành động là "phá tung cánh cửa gỗ", hãy tường thuật rằng họ cố gắng nhưng cánh cửa không hề suy suyển và \`mechanicalIntent\` rỗng.
-        -   **Ví dụ 2 (Thành công):** Nếu người chơi có Mị Lực cao và hành động là "thuyết phục lính canh cho qua", hãy tường thuật rằng lính canh bị thuyết phục. Nếu có thay đổi cảm xúc, hãy điền vào \`emotionChanges\`.
-        -   **Ví dụ 3 (Thành công một phần):** Nếu người chơi có Thân Pháp vừa phải và hành động là "nhảy qua vực sâu", họ có thể nhảy qua được nhưng bị trượt chân và bị thương nhẹ. Hãy tường thuật điều này và điền vào \`mechanicalIntent\` với \`statChanges: [{ attribute: 'sinh_menh', change: -10 }]\`.
+3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (ĐÃ THAY ĐỔI):** Kết quả hành động của người chơi đã được Trọng Tài AI quyết định (xem LUẬT LỆ TỐI THƯỢỢNG ở trên). Nhiệm vụ của bạn là **TƯỜNG THUẬT** lại kết quả đó một cách hợp lý và hấp dẫn, đồng thời điền các thay đổi cơ chế tương ứng vào \`mechanicalIntent\`. Bạn không cần tự quyết định hành động thành công hay thất bại nữa.
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
@@ -226,53 +228,6 @@ export const synthesizeMemoriesForPrompt = async (
     }, specificApiKey);
     
     return response.text.trim();
-};
-
-export const generateFactionEvent = async (gameState: GameState): Promise<Omit<DynamicWorldEvent, 'id' | 'turnStart'> | null> => {
-    const { worldState, gameDate, activeMods } = gameState;
-    const factions = ['Xiển Giáo', 'Triệt Giáo', 'Nhà Thương']; // Simplified
-    const locationIds = ['trieu_ca', 'tay_ky']; // Simplified
-
-    const schema = {
-        type: Type.OBJECT,
-        properties: {
-            shouldCreateEvent: { type: Type.BOOLEAN },
-            title: { type: Type.STRING },
-            description: { type: Type.STRING },
-            duration: { type: Type.NUMBER },
-            affectedFactions: { type: Type.ARRAY, items: { type: Type.STRING, enum: factions } },
-            affectedLocationIds: { type: Type.ARRAY, items: { type: Type.STRING, enum: locationIds } },
-        },
-        required: ['shouldCreateEvent']
-    };
-
-    // FIX: Fetch settings from the database as it's not passed into this function.
-    const settings = await db.getSettings();
-    const context = createFullGameStateContext(gameState, settings!);
-    const prompt = `You are a world event simulator. Based on the current game state, decide if a new dynamic world event should occur.
-    
-    ${context}
-    
-    Consider the current year, existing events, and faction tensions. If a new event is warranted, create one. Otherwise, set shouldCreateEvent to false.
-    An event could be a war declaration, a natural disaster, the discovery of a new resource, etc.
-    `;
-
-    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
-    const response = await generateWithRetry({
-        model: settings?.gameMasterModel || 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: schema,
-        }
-    }, specificApiKey);
-
-    const result = JSON.parse(response.text);
-    if (result.shouldCreateEvent) {
-        const { shouldCreateEvent, ...eventData } = result;
-        return eventData;
-    }
-    return null;
 };
 
 export const askAiAssistant = async (query: string, gameState: GameState): Promise<string> => {

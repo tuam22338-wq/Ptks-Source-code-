@@ -13,7 +13,7 @@ export const generateCharacterFromPrompts = async (
         raceInput: string;
         backgroundInput: string;
     }
-): Promise<{ identity: CharacterIdentity; spiritualRoot: SpiritualRoot; initialBonuses: StatBonus[], initialItems: any[] }> => {
+): Promise<{ identity: CharacterIdentity; spiritualRoot: SpiritualRoot; initialBonuses: StatBonus[], initialItems: any[], initialCurrency: Currency }> => {
 
     const responseSchema = {
         type: Type.OBJECT,
@@ -56,6 +56,14 @@ export const generateCharacterFromPrompts = async (
                     },
                     required: ['name', 'quantity', 'description', 'type', 'quality', 'icon']
                 }
+            },
+            starting_currency: {
+                type: Type.OBJECT,
+                description: "Một đối tượng chứa tiền tệ khởi đầu, phù hợp với xuất thân. Ví dụ: một thương nhân giàu có có thể có nhiều 'Bạc'.",
+                properties: {
+                    "Bạc": { type: Type.NUMBER },
+                    "Linh thạch hạ phẩm": { type: Type.NUMBER }
+                }
             }
         },
         required: ['refined_appearance', 'origin_story', 'power_source', 'bonuses'],
@@ -77,7 +85,7 @@ export const generateCharacterFromPrompts = async (
     2.  **Viết nên "origin_story":** Đây là phần quan trọng nhất. Hãy viết một đoạn văn kể về câu chuyện nền của nhân vật, giải thích cách các yếu tố trên kết nối với nhau.
     3.  **Hoàn thiện "refined_appearance":** Dựa trên ý tưởng của người chơi, hãy viết một mô tả ngoại hình hoàn chỉnh hơn.
     4.  **Tạo "power_source":** Dựa vào câu chuyện, hãy tạo ra một nguồn gốc sức mạnh độc đáo.
-    5.  **Gán "bonuses" & "starting_items":** Dựa trên toàn bộ câu chuyện, hãy chọn ra các chỉ số thưởng và vật phẩm khởi đầu hợp lý.
+    5.  **Gán "bonuses", "starting_items", và "starting_currency":** Dựa trên toàn bộ câu chuyện, hãy chọn ra các chỉ số thưởng, vật phẩm và tiền tệ khởi đầu hợp lý. Một thiếu niên nghèo khó thì không có tiền, một công tử nhà giàu thì có nhiều Bạc.
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
     
@@ -122,6 +130,7 @@ export const generateCharacterFromPrompts = async (
         spiritualRoot: spiritualRoot,
         initialBonuses: json.bonuses || [],
         initialItems: json.starting_items || [],
+        initialCurrency: json.starting_currency || {},
     };
 };
 
@@ -251,6 +260,10 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
     
     const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
+
+    ### MỆNH LỆNH TỐI THƯỢỢNG (PHẢI TUÂN THEO 100%) ###
+    Bạn BẮT BUỘC phải viết đoạn mở đầu bám sát 100% vào "Xuất thân & Câu chuyện nền" được cung cấp. TUYỆT ĐỐI KHÔNG được bịa ra một kịch bản "thiếu niên nghèo khó" chung chung nếu nó không khớp với câu chuyện. Hãy tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra.
+
     - **Giọng văn:** ${narrativeStyle}. Mô tả chi tiết, hấp dẫn và phù hợp với bối cảnh.
     - **Nhân vật chính:**
         - Tên: ${playerCharacter.identity.name}, ${playerCharacter.identity.age} tuổi.

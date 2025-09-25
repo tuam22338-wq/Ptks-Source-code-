@@ -1,6 +1,7 @@
 import React, { useState, memo } from 'react';
 import type { GameState } from '../../../../types';
 import { FaTimes, FaUser, FaMapMarkedAlt, FaBook, FaBrain, FaQuestionCircle } from 'react-icons/fa';
+import { GiGears } from 'react-icons/gi';
 
 // Import panel components
 import StatusPanel from './panels/StatusPanel';
@@ -8,8 +9,9 @@ import MapView from './panels/MapView';
 import QuestPanel from './panels/QuestPanel';
 import AiMemoryPanel from './panels/AiMemoryPanel';
 import GuidePanel from './panels/GuidePanel';
+import AiRulesPanel from './panels/AiRulesPanel';
 
-type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'guide';
+type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'guide';
 
 interface SidebarPanel {
     id: PanelId;
@@ -23,6 +25,7 @@ const PANELS: SidebarPanel[] = [
     { id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, component: MapView },
     { id: 'quests', label: 'Nhiệm Vụ', icon: FaBook, component: QuestPanel },
     { id: 'memory', label: 'Ký Ức AI', icon: FaBrain, component: AiMemoryPanel },
+    { id: 'rules', label: 'Quy Luật', icon: GiGears, component: AiRulesPanel },
     { id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle, component: GuidePanel },
 ];
 
@@ -43,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
         map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
         memory: { gameState },
+        rules: { gameState: gameState },
         guide: {},
     };
 

@@ -1,5 +1,3 @@
-
-
 import { FaQuestionCircle } from 'react-icons/fa';
 import {
     REALM_SYSTEM, SECTS,
@@ -15,6 +13,7 @@ import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } f
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
 import type { GameStartData } from '../contexts/AppContext';
+import { sanitizeGameState } from './gameStateSanitizer';
 
 const ATTRIBUTE_NAME_TO_ID_MAP: Record<string, string> = {
     'Căn Cốt': 'can_cot',
@@ -137,6 +136,22 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
 
     // --- Post-migration Default Values & Finalization ---
     // ... [existing finalization logic] ...
+    if (!dataToProcess.activeWorldId) {
+        dataToProcess.activeWorldId = DEFAULT_WORLD_ID;
+    }
+    if (!dataToProcess.playerCharacter.playerAiHooks) {
+        dataToProcess.playerCharacter.playerAiHooks = {
+            on_world_build: '',
+            on_action_evaluate: '',
+            on_narration: '',
+            on_realm_rules: '',
+            on_conditional_rules: '',
+        };
+    }
+    if (typeof dataToProcess.playerCharacter.playerAiHooks.on_conditional_rules === 'undefined') {
+        dataToProcess.playerCharacter.playerAiHooks.on_conditional_rules = '';
+    }
+
 
     dataToProcess.version = CURRENT_GAME_VERSION;
 
@@ -168,7 +183,7 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
         dataToProcess.attributeSystem.definitions
     );
 
-    return dataToProcess as GameState;
+    return sanitizeGameState(dataToProcess as GameState);
 };
 
 const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmSystem: RealmConfig[], attributeSystem: ModAttributeSystem): NPC => {
@@ -227,14 +242,27 @@ export const createNewGameState = async (
     activeWorldId: string,
     setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
-    const { identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong } = gameStartData;
+    const { identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong, initialCurrency } = gameStartData;
 
-    const worldMapToUse = PT_WORLD_MAP;
-    const initialNpcsFromData = PT_NPC_LIST;
-    const majorEventsToUse = PT_MAJOR_EVENTS;
-    const factionsToUse = PT_FACTIONS;
-    const startingYear = 1;
-    const eraName = 'Tiên Phong Thần';
+    let worldMapToUse, initialNpcsFromData, majorEventsToUse, factionsToUse, startingYear, eraName, startingLocationId;
+    
+    if (activeWorldId === 'tay_du_ky') {
+        worldMapToUse = JTTW_WORLD_MAP;
+        initialNpcsFromData = JTTW_NPC_LIST;
+        majorEventsToUse = JTTW_MAJOR_EVENTS;
+        factionsToUse = JTTW_FACTIONS;
+        startingYear = 627;
+        eraName = 'Đường Trinh Quán';
+        startingLocationId = 'jttw_truong_an';
+    } else { // Default to Phong Than
+        worldMapToUse = PT_WORLD_MAP;
+        initialNpcsFromData = PT_NPC_LIST;
+        majorEventsToUse = PT_MAJOR_EVENTS;
+        factionsToUse = PT_FACTIONS;
+        startingYear = 1;
+        eraName = 'Tiên Phong Thần';
+        startingLocationId = 'thanh_ha_tran';
+    }
 
     const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
     const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
@@ -270,7 +298,9 @@ export const createNewGameState = async (
     const canCotValue = initialAttributes['can_cot']?.value || baseStatValue;
     const initialWeightCapacity = 20 + (canCotValue - 10) * 2;
     
-    const initialCurrencies: Currency = { 'Bạc': 50, 'Linh thạch hạ phẩm': 20 };
+    const initialCurrencies: Currency = initialCurrency && Object.keys(initialCurrency).length > 0
+        ? initialCurrency
+        : { 'Bạc': 50, 'Linh thạch hạ phẩm': 20 }; // Fallback for safety
 
     const startingInventoryItems: InventoryItem[] = initialItems.map((item, index) => ({
         id: `start-item-${index}-${Date.now()}`,
@@ -293,7 +323,7 @@ export const createNewGameState = async (
     const initialVitals: PlayerVitals = {
         temperature: 37,
     };
-    const startingLocation = worldMapToUse[0];
+    const startingLocation = worldMapToUse.find(l => l.id === startingLocationId) || worldMapToUse[0];
     const initialCaveAbode: CaveAbode = {
         name: `${identity.name} Động Phủ`,
         level: 1,
@@ -333,6 +363,13 @@ export const createNewGameState = async (
         completedQuestIds: [],
         inventoryActionLog: [],
         element: spiritualRoot.elements.length === 1 ? spiritualRoot.elements[0].type : 'Hỗn Độn',
+        playerAiHooks: {
+            on_world_build: '',
+            on_action_evaluate: '',
+            on_narration: '',
+            on_realm_rules: '',
+            on_conditional_rules: '',
+        },
     };
     
     setLoadingMessage('Đang tạo ra gia đình và chúng sinh trong thế giới...');
@@ -374,8 +411,9 @@ export const createNewGameState = async (
     const initialWorldState: WorldState = { rumors: [], dynamicEvents: [], foreshadowedEvents: [], triggeredDynamicEventIds: {} };
     const discoveredLocations: Location[] = [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))];
 
-    return {
+    const newGameState: GameState = {
         version: CURRENT_GAME_VERSION,
+        activeWorldId: activeWorldId,
         playerCharacter,
         activeNpcs: allNpcs,
         gameDate: initialGameDate,
@@ -399,4 +437,6 @@ export const createNewGameState = async (
         playerStall: null,
         playerSect: null,
     };
+    
+    return sanitizeGameState(newGameState);
 };

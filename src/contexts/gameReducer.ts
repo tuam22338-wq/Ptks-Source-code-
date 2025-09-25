@@ -1,5 +1,6 @@
 import type { GameState, SaveSlot, GameSettings, BackgroundState } from '../types';
 import type { View } from './AppContext';
+import { sanitizeGameState } from '../utils/gameStateSanitizer';
 
 // Define the shape of our global state
 export interface AppState {
@@ -76,9 +77,10 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             return { ...state, currentSlotId: action.payload, view: 'characterCreation' };
 
         case 'LOAD_GAME':
+            const loadedGameState = sanitizeGameState(action.payload.gameState);
             return { 
                 ...state, 
-                gameState: action.payload.gameState, 
+                gameState: loadedGameState, 
                 currentSlotId: action.payload.slotId, 
                 view: 'gamePlay', 
                 isLoading: false 
@@ -88,11 +90,16 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             return { ...state, gameState: null, currentSlotId: null, view: 'mainMenu' };
         
         case 'UPDATE_GAME_STATE':
-             const newGameState = typeof action.payload === 'function'
+             let newGameState = typeof action.payload === 'function'
                 ? (action.payload as (prevState: GameState | null) => GameState | null)(state.gameState)
                 : action.payload;
-             // Prevent updates if no game is active, except when loading a new game.
+             
              if (!state.gameState && !newGameState) return state;
+
+             if (newGameState) {
+                 newGameState = sanitizeGameState(newGameState);
+             }
+
              return { ...state, gameState: newGameState };
         
         case 'LOAD_BACKGROUND_START':

@@ -1,7 +1,7 @@
 
 
 import React, { useState, useCallback, memo, useMemo } from 'react';
-import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot } from '../../types';
+import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency } from '../../types';
 import { FaArrowLeft, FaDiceD20, FaCheck, FaSyncAlt } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill, GiStairsGoal, GiSparkles, GiFamilyTree } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
@@ -50,7 +50,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const [backgroundInput, setBackgroundInput] = useState('');
     
     // State for AI-generated results
-    const [generatedResult, setGeneratedResult] = useState<{ identity: CharacterIdentity; spiritualRoot: SpiritualRoot; initialBonuses: StatBonus[]; initialItems: any[] } | null>(null);
+    const [generatedResult, setGeneratedResult] = useState<{ identity: CharacterIdentity; spiritualRoot: SpiritualRoot; initialBonuses: StatBonus[]; initialItems: any[], initialCurrency: Currency; } | null>(null);
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
@@ -94,6 +94,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
             spiritualRoot: generatedResult.spiritualRoot,
             initialBonuses: generatedResult.initialBonuses,
             initialItems: generatedResult.initialItems,
+            initialCurrency: generatedResult.initialCurrency,
             npcDensity,
             difficulty,
             danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },

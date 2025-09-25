@@ -1,7 +1,7 @@
-
 import React, { memo, useMemo } from 'react';
 import type { GameState } from '../../../../../types';
-import { UI_ICONS } from '../../../../../constants';
+import { UI_ICONS, CURRENCY_DEFINITIONS } from '../../../../../constants';
+import { GiGoldBar } from 'react-icons/gi';
 
 // Helper component for displaying an attribute
 const AttributeRow: React.FC<{
@@ -87,6 +87,29 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
             </div>
         )
     }
+    
+    const renderCurrencies = () => {
+        const currencies = Object.entries(playerCharacter.currencies).filter(([, amount]) => typeof amount === 'number' && amount > 0);
+        if (currencies.length === 0) return null;
+
+        return (
+            <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
+                <h4 className="font-bold text-amber-300 font-title mb-2">Tài Sản</h4>
+                <div className="space-y-1">
+                    {currencies.map(([name, amount]) => {
+                        return (
+                            <AttributeRow
+                                key={name}
+                                label={name}
+                                value={amount.toLocaleString()}
+                                icon={GiGoldBar}
+                            />
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="space-y-4 animate-fade-in" style={{ animationDuration: '300ms' }}>
@@ -106,6 +129,9 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                     />
                 </div>
             </div>
+            
+            {/* Currencies */}
+            {renderCurrencies()}
 
             {/* Vitals */}
             {renderAttributeGroup('vitals')}

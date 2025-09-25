@@ -1,6 +1,4 @@
 
-
-
 import React, { memo, useState, useEffect } from 'react';
 import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
@@ -64,7 +62,7 @@ const menuItems = [
     { label: "Thời Thế", icon: FaBookOpen, view: 'thoiThe' as const, delay: 950 },
     { label: "Cài Đặt", icon: FaCog, view: 'settings' as const, delay: 1100 },
     { label: "Thông Tin", icon: FaInfoCircle, view: 'info' as const, delay: 1250 },
-    { label: "Discord", icon: FaDiscord, href: 'https://discord.gg/5FEcnPwM', delay: 1400 },
+    { label: "Discord", icon: FaDiscord, href: 'https://discord.gg/sPq3Y37eR7', delay: 1400 },
     { label: "Ủng Hộ", icon: FaHeart, action: 'donate' as const, delay: 1550 },
 ];
 

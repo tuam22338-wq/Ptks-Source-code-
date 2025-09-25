@@ -1,9 +1,9 @@
-
 import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, StatBonus, CharacterAttributes } from '../types';
-import { generateFactionEvent } from './gemini/gameplay.service';
 import { generateRelationshipUpdate } from './gemini/npc.service';
 import { generateNpcActionPlan } from './gemini/planning.service';
+import { generateDynamicWorldEventFromAI } from './gemini/faction.service';
 import { REALM_SYSTEM, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
+import * as db from './dbService';
 
 const SIMULATED_NPCS_PER_TURN = 3; // Limit API calls
 
@@ -31,29 +31,28 @@ const applyBonuses = (attributes: CharacterAttributes, bonuses: StatBonus[]): Ch
 export const simulateWorldTurn = async (
     gameState: GameState
 ): Promise<{ newState: GameState; rumors: Rumor[] }> => {
-    let currentTurnState = { ...gameState };
+    let currentTurnState = JSON.parse(JSON.stringify(gameState)); // Deep copy to avoid mutation issues
     let { activeNpcs, realmSystem } = currentTurnState;
     const newRumors: Rumor[] = [];
 
     // --- Pillar 2: NPC Goal & Planning Simulation ---
     const npcsToSimulatePlan = activeNpcs
-        .filter(n => (!n.currentPlan || n.currentPlan.length === 0) && n.goals.length > 0) // Only idle NPCs with goals
+        .filter((n: NPC) => (!n.currentPlan || n.currentPlan.length === 0) && n.goals.length > 0) // Only idle NPCs with goals
         .sort(() => 0.5 - Math.random())
         .slice(0, SIMULATED_NPCS_PER_TURN);
 
     for (const npc of npcsToSimulatePlan) {
-        const npcIndex = currentTurnState.activeNpcs.findIndex(n => n.id === npc.id);
+        const npcIndex = currentTurnState.activeNpcs.findIndex((n: NPC) => n.id === npc.id);
         if (npcIndex === -1) continue;
 
         try {
             console.log(`[WorldSim] Generating plan for idle NPC: ${npc.identity.name}`);
             const newPlan = await generateNpcActionPlan(npc, currentTurnState);
             if (newPlan && newPlan.length > 0) {
-                const npcToUpdate = { ...currentTurnState.activeNpcs[npcIndex] };
+                const npcToUpdate = currentTurnState.activeNpcs[npcIndex];
                 npcToUpdate.currentPlan = newPlan;
                 npcToUpdate.status = `Đang có ý định: ${newPlan[0]}`;
-                currentTurnState.activeNpcs[npcIndex] = npcToUpdate;
-
+                
                 const rumor: Rumor = {
                     id: `rumor-plan-${Date.now()}-${npc.id}`,
                     locationId: npc.locationId,
@@ -65,10 +64,55 @@ export const simulateWorldTurn = async (
             console.error(`[WorldSim] Failed to generate plan for ${npc.identity.name}:`, error);
         }
     }
+
+    // --- Pillar 3: Faction Ambition Simulation ---
+    const settings = await db.getSettings();
+    if (settings) {
+        const eventFrequency = settings.worldEventFrequency || 'occasional';
+        const eventChanceMap = {
+            'rare': 0.10,
+            'occasional': 0.25,
+            'frequent': 0.50,
+            'chaotic': 0.80
+        };
+        const chance = eventChanceMap[eventFrequency];
+
+        if (Math.random() < chance) {
+            console.log(`[WorldSim] Triggering faction event simulation (Chance: ${chance * 100}%)`);
+            try {
+                const eventData = await generateDynamicWorldEventFromAI(currentTurnState);
+                if (eventData) {
+                    const totalDays = (currentTurnState.gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(currentTurnState.gameDate.season) * 30) + currentTurnState.gameDate.day;
+                    const newEvent: DynamicWorldEvent = {
+                        ...eventData,
+                        id: `world-event-${Date.now()}`,
+                        turnStart: totalDays,
+                    };
+                    
+                    if (!currentTurnState.worldState.dynamicEvents) {
+                        currentTurnState.worldState.dynamicEvents = [];
+                    }
+                    currentTurnState.worldState.dynamicEvents.push(newEvent);
+
+                    const rumor: Rumor = {
+                        id: `rumor-event-${Date.now()}-${newEvent.id}`,
+                        locationId: newEvent.affectedLocationIds[0] || currentTurnState.playerCharacter.currentLocationId,
+                        text: `[Thiên Hạ Đại Sự] ${eventData.title}: ${eventData.description}`,
+                    };
+                    newRumors.push(rumor);
+                    console.log(`[WorldSim] New world event created: ${newEvent.title}`);
+                }
+            } catch (error) {
+                console.error("[WorldSim] Failed to simulate faction turn:", error);
+                // Don't crash the game, just log the error.
+            }
+        }
+    }
     
     const newWorldState = {
         ...currentTurnState.worldState,
-        rumors: [...currentTurnState.worldState.rumors, ...newRumors.filter(nr => !currentTurnState.worldState.rumors.some(r => r.text === nr.text))],
+        rumors: [...currentTurnState.worldState.rumors, ...newRumors.filter((nr: Rumor) => !currentTurnState.worldState.rumors.some((r: Rumor) => r.text === nr.text))],
+        dynamicEvents: currentTurnState.worldState.dynamicEvents || [], // ensure it exists
     };
 
     return {
@@ -78,31 +122,4 @@ export const simulateWorldTurn = async (
         },
         rumors: newRumors,
     };
-};
-
-
-export const simulateFactionTurn = async (
-    gameState: GameState
-): Promise<{ newEvent: DynamicWorldEvent | null, narrative: string | null }> => {
-    try {
-        const eventData = await generateFactionEvent(gameState);
-        if (!eventData) {
-            return { newEvent: null, narrative: null };
-        }
-        
-        const totalDays = (gameState.gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(gameState.gameDate.season) * 30) + gameState.gameDate.day;
-
-        const newEvent: DynamicWorldEvent = {
-            ...eventData,
-            id: `world-event-${Date.now()}`,
-            turnStart: totalDays,
-        };
-
-        const narrative = `[Thiên Hạ Đại Sự] ${eventData.title}: ${eventData.description}`;
-        return { newEvent, narrative };
-
-    } catch (error) {
-        console.error("Failed to simulate faction turn:", error);
-        return { newEvent: null, narrative: "Thiên cơ hỗn loạn, không thể suy diễn được đại sự trong thiên hạ." };
-    }
 };

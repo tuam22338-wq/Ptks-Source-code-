@@ -141,7 +141,7 @@ export const retrieveAndSynthesizeMemory = async (
         return ''; // No relevant entities, no need to query memory
     }
     
-    // 2. Retrieve relevant memory fragments from the database
+    // 2. Retrieve relevant memory fragments from the database for the correct save slot
     const memories = await db.getRelevantMemories(slotId, entityIds);
 
     if (memories.length === 0) {

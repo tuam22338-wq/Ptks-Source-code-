@@ -290,6 +290,14 @@ export interface PlayerVitals {
     temperature: number;
 }
 
+export interface PlayerAiHooks {
+  on_world_build?: string;
+  on_action_evaluate?: string;
+  on_narration?: string;
+  on_realm_rules?: string;
+  on_conditional_rules?: string;
+}
+
 export interface PlayerCharacter {
     identity: CharacterIdentity;
     attributes: CharacterAttributes;
@@ -320,6 +328,7 @@ export interface PlayerCharacter {
     inventoryActionLog: string[];
     element?: Element;
     systemInfo?: SystemInfo;
+    playerAiHooks?: PlayerAiHooks;
 }
 
 export interface StoryEntry {
@@ -403,6 +412,8 @@ export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
 
 export interface GameState {
     version?: string;
+    // FIX: Add activeWorldId to GameState to make it self-contained for services.
+    activeWorldId: string;
     difficulty?: DifficultyLevel;
     playerCharacter: PlayerCharacter;
     activeNpcs: NPC[];

@@ -115,10 +115,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ttsPitch: 1,
     ttsVolume: 1,
     aiSyncMode: 'intent_driven',
-    playerAiHooks: {
-        on_world_build: '',
-        on_action_evaluate: '',
-    },
 
     // New Detailed Gameplay Settings Defaults
     aiCreativityLevel: 'balanced',

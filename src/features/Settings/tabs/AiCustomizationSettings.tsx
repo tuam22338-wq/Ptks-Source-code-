@@ -66,52 +66,6 @@ interface AiCustomizationSettingsProps {
 }
 
 const AiCustomizationSettings: React.FC<AiCustomizationSettingsProps> = ({ settings, handleSettingChange }) => {
-    const importInputRef = useRef<HTMLInputElement>(null);
-
-    const handleExport = () => {
-        try {
-            const data = JSON.stringify(settings.playerAiHooks || { on_world_build: '', on_action_evaluate: '' }, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'tamthienthegioi_ai_rules.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            alert('Lỗi khi xuất quy luật.');
-            console.error(error);
-        }
-    };
-
-    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const json = JSON.parse(e.target?.result as string);
-                if (typeof json.on_world_build === 'string' || typeof json.on_action_evaluate === 'string') {
-                    handleSettingChange('playerAiHooks', {
-                        on_world_build: json.on_world_build || '',
-                        on_action_evaluate: json.on_action_evaluate || '',
-                    });
-                    alert('Đã nhập quy luật thành công!');
-                } else {
-                    alert('Lỗi: Định dạng tệp không hợp lệ.');
-                }
-            } catch (err) {
-                alert('Lỗi khi đọc tệp tin.');
-            } finally {
-                 if (importInputRef.current) importInputRef.current.value = "";
-            }
-        };
-        reader.readAsText(file);
-    };
-
     return (
         <>
             <SettingsSection title="Phong Cách Tường Thuật">
@@ -187,44 +141,6 @@ const AiCustomizationSettings: React.FC<AiCustomizationSettingsProps> = ({ setti
                 </SettingsRow>
                 <SettingsRow label="Mức Độ Phản Ứng của Thế Giới" description={WORLD_REACTIVITY_LEVELS.find(o => o.value === settings.worldReactivity)?.description || ''}>
                     <LevelButtonGroup options={WORLD_REACTIVITY_LEVELS} selectedValue={settings.worldReactivity} onSelect={(v) => handleSettingChange('worldReactivity', v as WorldReactivity)} />
-                </SettingsRow>
-            </SettingsSection>
-            
-            <SettingsSection title="Quy Luật AI Tùy Chỉnh">
-                 <SettingsRow label="Quản lý Quy luật" description="Xuất bộ quy luật hiện tại ra tệp tin JSON hoặc nhập từ một tệp đã có.">
-                     <div className="flex gap-2">
-                        <button onClick={handleExport} className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2">
-                            <FaDownload /> Xuất
-                        </button>
-                        <button onClick={() => importInputRef.current?.click()} className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2">
-                            <FaUpload /> Nhập
-                        </button>
-                        <input
-                            type="file"
-                            ref={importInputRef}
-                            className="hidden"
-                            accept=".json"
-                            onChange={handleImport}
-                        />
-                    </div>
-                </SettingsRow>
-                <SettingsRow label="Luật Lệ Vĩnh Cửu (on_world_build)" description="Các quy tắc cốt lõi, không thay đổi của thế giới mà AI phải luôn tuân theo. Mỗi quy tắc viết trên một dòng.">
-                    <textarea
-                        value={settings.playerAiHooks?.on_world_build || ''}
-                        onChange={(e) => handleSettingChange('playerAiHooks', { ...settings.playerAiHooks, on_world_build: e.target.value })}
-                        rows={5}
-                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
-                        placeholder="Ví dụ: Trong thế giới này, yêu tộc và nhân tộc có mối thù truyền kiếp."
-                    />
-                </SettingsRow>
-                 <SettingsRow label="Luật Lệ Tình Huống (on_action_evaluate)" description="Các quy tắc được AI xem xét và áp dụng cho kết quả của mỗi hành động người chơi. Mỗi quy tắc viết trên một dòng.">
-                    <textarea
-                        value={settings.playerAiHooks?.on_action_evaluate || ''}
-                        onChange={(e) => handleSettingChange('playerAiHooks', { ...settings.playerAiHooks, on_action_evaluate: e.target.value })}
-                        rows={5}
-                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
-                        placeholder="Ví dụ: Nếu người chơi ở nơi có âm khí nồng đậm, tốc độ tu luyện ma công tăng gấp đôi."
-                    />
                 </SettingsRow>
             </SettingsSection>
         </>
