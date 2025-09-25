@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -143,7 +144,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     }
                     const existingStack = pc.inventory.items.find((i: InventoryItem) => i.name === currentItemInSlot.name && !i.isEquipped);
                     if (existingStack) {
-                        existingStack.quantity++;
+                        // FIX: Cast quantity to number for arithmetic operation.
+                        existingStack.quantity = (Number(existingStack.quantity) || 0) + 1;
                     } else {
                         pc.inventory.items.push({ ...currentItemInSlot, isEquipped: false, quantity: 1 });
                     }
@@ -152,8 +154,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 // 2. Remove item from inventory
                 const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.id === itemToEquip.id);
                 if (itemIndex > -1) {
-                    if (pc.inventory.items[itemIndex].quantity > 1) {
-                        pc.inventory.items[itemIndex].quantity--;
+                    // FIX: Cast quantity to number for comparison and arithmetic.
+                    if (Number(pc.inventory.items[itemIndex].quantity) > 1) {
+                        pc.inventory.items[itemIndex].quantity = (Number(pc.inventory.items[itemIndex].quantity) || 0) - 1;
                     } else {
                         pc.inventory.items.splice(itemIndex, 1);
                     }
@@ -190,7 +193,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 // 2. Add item back to inventory
                 const existingStack = pc.inventory.items.find((i: InventoryItem) => i.name === itemToUnequip.name && !i.isEquipped);
                 if (existingStack) {
-                    existingStack.quantity++;
+                    // FIX: Cast quantity to number for arithmetic operation.
+                    existingStack.quantity = (Number(existingStack.quantity) || 0) + 1;
                 } else {
                     pc.inventory.items.push({ ...itemToUnequip, isEquipped: false, quantity: 1 });
                 }
@@ -244,8 +248,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             
             const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.id === itemToUse.id);
             if (itemIndex > -1) {
-                if (pc.inventory.items[itemIndex].quantity > 1) {
-                    pc.inventory.items[itemIndex].quantity--;
+                // FIX: Cast quantity to Number to prevent type errors from deep copy.
+                if (Number(pc.inventory.items[itemIndex].quantity) > 1) {
+                    pc.inventory.items[itemIndex].quantity = (Number(pc.inventory.items[itemIndex].quantity) || 1) - 1;
                 } else {
                     pc.inventory.items.splice(itemIndex, 1);
                 }
@@ -293,7 +298,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     if (!isOpen || !playerCharacter) return null;
     
-    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * item.quantity), 0);
+    // FIX: Cast quantity to Number for arithmetic operation.
+    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((item.weight || 0) * Number(item.quantity)), 0);
     const weightPercentage = (currentWeight / playerCharacter.inventory.weightCapacity) * 100;
 
     const equippedItemForComparison = selectedItem?.slot ? playerCharacter.equipment[selectedItem.slot] : null;
@@ -376,7 +382,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                     className={`relative aspect-square border-2 rounded-md flex items-center justify-center p-1 cursor-pointer transition-colors bg-[var(--bg-interactive)] border-[var(--border-subtle)] hover:border-[color:var(--primary-accent-color)]/70`}
                                 >
                                     <span className="text-4xl select-none" role="img" aria-label={item.name}>{item.icon || '📜'}</span>
-                                    {item.quantity > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
+                                    {/* FIX: Cast quantity to Number for comparison. */}
+                                    {Number(item.quantity) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-gray-900/80 text-white px-1 rounded-sm">{item.quantity}</span>}
                                     <div className={`absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-gray-900 ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>
                                 </button>
                             ))}

@@ -177,16 +177,30 @@ export const applyMechanicalChanges = (
         const attrDef = nextState.attributeSystem.definitions.find((def: any) => def.id === attrId);
         if (pc.attributes[attrId]) {
             const attr = pc.attributes[attrId];
+            const originalMaxValue = attr.maxValue; // Store original max value before changes
+    
             if (changes.changeMax) {
                 attr.maxValue = Math.max(1, (attr.maxValue !== undefined ? attr.maxValue : attr.value) + changes.changeMax);
                 if(changes.changeMax !== 0) showNotification(`Giới hạn ${attrDef?.name || attrId} thay đổi: ${changes.changeMax > 0 ? '+' : ''}${changes.changeMax}`);
+    
+                // FIX: If a vital's maxValue increases, the current value should also increase to match the new max, effectively 'refilling' it.
+                const isVitalThatRefills = ['sinh_menh', 'linh_luc', 'hunger', 'thirst'].includes(attrId);
+                if (isVitalThatRefills && attr.maxValue > (originalMaxValue || 0)) {
+                    attr.value = attr.maxValue;
+                }
             }
+    
             if (changes.change) {
                 attr.value += changes.change;
                 if (changes.change !== 0) showNotification(`${attrDef?.name || attrId}: ${changes.change > 0 ? '+' : ''}${changes.change}`);
             }
-            if (attr.maxValue !== undefined) attr.value = Math.min(attr.value, attr.maxValue);
+    
+            // Clamp the value to be within [0, new maxValue] after all changes.
+            if (attr.maxValue !== undefined) {
+                attr.value = Math.min(attr.value, attr.maxValue);
+            }
             attr.value = Math.max(0, attr.value);
+            
         } else if (attrId === 'spiritualQi' && changes.change) {
              pc.cultivation.spiritualQi = Math.max(0, pc.cultivation.spiritualQi + changes.change);
              if (changes.change !== 0) showNotification(`Linh Khí: ${changes.change > 0 ? '+' : ''}${changes.change.toLocaleString()}`);
