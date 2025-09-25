@@ -19,6 +19,8 @@ export const NARRATIVE_STYLES: { value: NarrativeStyle; label: string }[] = [
     { value: 'dark_fantasy', label: 'Huyền huyễn Hắc ám' },
     { value: 'poetic', label: 'Văn phong Thi vị' },
     { value: 'concise', label: 'Súc tích, ngắn gọn' },
+    { value: 'er_gen_style', label: 'Phong cách Nhĩ Căn' },
+    { value: 'fenghuo_style', label: 'Phong cách Phong Hỏa' },
 ];
 
 export const FONT_OPTIONS: { value: string; label: string }[] = [

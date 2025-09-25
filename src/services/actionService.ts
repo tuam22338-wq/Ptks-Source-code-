@@ -1,7 +1,5 @@
-
-
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload } from '../types';
-import { generateDualResponseStream, harmonizeNarrative, summarizeStory } from './geminiService';
+import { generateDualResponseStream, harmonizeNarrative, summarizeStory, generateNpcThoughtBubble } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
 import { simulateWorldTurn } from './worldSimulator';
 import * as questManager from '../utils/questManager';
@@ -37,12 +35,22 @@ export const processPlayerAction = async (
             baseLogEntries.push({ type: 'system-notification', content: `[Thế Giới Vận Chuyển] ${simResult.rumors.map(r => r.text).join(' ')}` });
         }
     }
+
+    // --- GIAI ĐOẠN 0.5: TƯ DUY NPC ---
+    let thoughtBubble: string | undefined = undefined;
+    const npcsHere = stateAfterSim.activeNpcs.filter(npc => npc.locationId === stateAfterSim.playerCharacter.currentLocationId);
+    // Find the first NPC mentioned in the player's input
+    const targetNpc = npcsHere.find(npc => text.includes(npc.identity.name));
+
+    if (targetNpc) {
+        thoughtBubble = await generateNpcThoughtBubble(targetNpc, stateAfterSim, text);
+    }
     
     const instantMemoryReport = await orchestrateRagQuery(text, type, stateAfterSim);
     const playerActionEntry: Omit<StoryEntry, 'id'> = { type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
     
     // --- GIAI ĐOẠN 1: "Ý-HÌNH SONG SINH" ---
-    const stream = generateDualResponseStream(stateAfterSim, text, type, instantMemoryReport, settings);
+    const stream = generateDualResponseStream(stateAfterSim, text, type, instantMemoryReport, settings, thoughtBubble);
     let fullResponseJsonString = '';
     for await (const chunk of stream) {
         if (abortSignal.aborted) throw new Error("Hành động đã bị hủy.");
