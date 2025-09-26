@@ -17,9 +17,10 @@ export const applyMechanicalChanges = (
     let canAfford = true;
     if (intent.currencyChanges) {
         for (const change of intent.currencyChanges) {
-            if (change.change < 0) {
+            const changeAmount = Number(change.change) || 0;
+            if (changeAmount < 0) {
                 const currentAmount = currentState.playerCharacter.currencies[change.currencyName] || 0;
-                if (currentAmount < Math.abs(change.change)) {
+                if (currentAmount < Math.abs(changeAmount)) {
                     canAfford = false;
                     showNotification(`Giao dịch thất bại! Không đủ ${change.currencyName}.`);
                     break;
@@ -62,9 +63,11 @@ export const applyMechanicalChanges = (
 
     if (intent.currencyChanges) {
         intent.currencyChanges.forEach(change => {
+            const changeAmount = Number(change.change) || 0;
+            if (changeAmount === 0) return;
             const currentAmount = Number(pc.currencies[change.currencyName]) || 0;
-            pc.currencies[change.currencyName] = currentAmount + Number(change.change);
-            if (change.change !== 0) showNotification(`${change.currencyName}: ${change.change > 0 ? '+' : ''}${change.change.toLocaleString()}`);
+            pc.currencies[change.currencyName] = currentAmount + changeAmount;
+            showNotification(`${change.currencyName}: ${changeAmount > 0 ? '+' : ''}${changeAmount.toLocaleString()}`);
         });
     }
 

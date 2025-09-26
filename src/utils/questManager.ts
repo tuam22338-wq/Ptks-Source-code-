@@ -1,4 +1,3 @@
-
 import type { GameState, NPC, ActiveQuest, QuestObjective, InventoryItem, EventOutcome, PlayerNpcRelationship } from '../types';
 import { generateMainQuestFromEvent, generateSideQuestFromNpc, generateSystemQuest } from '../services/geminiService';
 import { FACTION_REPUTATION_TIERS } from '../constants';
@@ -179,8 +178,11 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             const { rewards } = quest;
 
             if (rewards.spiritualQi) {
-                pc.cultivation.spiritualQi += rewards.spiritualQi;
-                notifications.push(`Bạn nhận được [${rewards.spiritualQi.toLocaleString()} Linh khí]`);
+                const qiAmount = Number(rewards.spiritualQi) || 0;
+                if (qiAmount > 0) {
+                    pc.cultivation.spiritualQi += qiAmount;
+                    notifications.push(`Bạn nhận được [${qiAmount.toLocaleString()} Linh khí]`);
+                }
             }
             if (rewards.danhVong) {
                 pc.danhVong.value += rewards.danhVong;
@@ -190,9 +192,10 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             let newCurrencies = { ...pc.currencies };
             if (rewards.currencies) {
                 for (const [currency, amount] of Object.entries(rewards.currencies)) {
-                    if (amount) {
-                        newCurrencies[currency] = (newCurrencies[currency] || 0) + amount;
-                        notifications.push(`Bạn nhận được [${amount.toLocaleString()} ${currency}]`);
+                    const rewardAmount = Number(amount) || 0;
+                    if (rewardAmount) {
+                        newCurrencies[currency] = (newCurrencies[currency] || 0) + rewardAmount;
+                        notifications.push(`Bạn nhận được [${rewardAmount.toLocaleString()} ${currency}]`);
                     }
                 }
             }

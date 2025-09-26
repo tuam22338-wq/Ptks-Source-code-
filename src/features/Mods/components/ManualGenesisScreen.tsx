@@ -5,6 +5,7 @@ import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefini
 import LoadingScreen from '../../../components/LoadingScreen';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS } from '../../../constants';
 import AttributeEditorModal from './AttributeEditorModal';
+import RealmEditorModal from './RealmEditorModal';
 
 interface ManualGenesisScreenProps {
     onBack: () => void;
@@ -40,6 +41,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
+    const [isRealmEditorOpen, setIsRealmEditorOpen] = useState(false);
     const [editingAttribute, setEditingAttribute] = useState<AttributeDefinition | null>(null);
     const [editingAttributeGroup, setEditingAttributeGroup] = useState<AttributeGroupDefinition | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'physical': true });
@@ -89,14 +91,13 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const handleSaveAttribute = (savedAttr: AttributeDefinition) => {
         setAttributeSystem(prev => {
             const newDefinitions = [...prev.definitions];
-            // Check if it's an update or a new addition by looking for an existing definition with the original ID
             const originalId = editingAttribute ? editingAttribute.id : savedAttr.id;
             const index = newDefinitions.findIndex(d => d.id === originalId);
 
             if (index > -1) {
-                newDefinitions[index] = savedAttr; // Update
+                newDefinitions[index] = savedAttr;
             } else {
-                newDefinitions.push(savedAttr); // Add
+                newDefinitions.push(savedAttr);
             }
             return { ...prev, definitions: newDefinitions };
         });
@@ -110,6 +111,10 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 definitions: prev.definitions.filter(d => d.id !== attrId)
             }));
         }
+    };
+
+    const handleSaveRealms = (updatedRealms: RealmConfig[]) => {
+        setRealmConfigs(updatedRealms);
     };
 
     if (isLoading) {
@@ -127,6 +132,13 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                     group={editingAttributeGroup}
                 />
             )}
+            <RealmEditorModal
+                isOpen={isRealmEditorOpen}
+                onClose={() => setIsRealmEditorOpen(false)}
+                onSave={handleSaveRealms}
+                initialRealms={realmConfigs}
+                attributeSystem={attributeSystem}
+            />
             <div className="flex-shrink-0 mb-4">
                 <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4"><FaArrowLeft /> Quay Lại Menu</button>
             </div>
@@ -210,7 +222,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                             </div>
                              {isRealmSystemEnabled && (
                                 <div className="mt-2 pt-2 border-t border-gray-600/50 text-center">
-                                     <button onClick={() => alert("Chức năng đang được phát triển")} className="px-3 py-1.5 bg-cyan-700/80 text-white text-xs font-bold rounded-lg hover:bg-cyan-600/80 flex items-center gap-2 mx-auto disabled:opacity-50" disabled>
+                                     <button onClick={() => setIsRealmEditorOpen(true)} className="px-3 py-1.5 bg-cyan-700/80 text-white text-xs font-bold rounded-lg hover:bg-cyan-600/80 flex items-center gap-2 mx-auto">
                                         <FaEdit /> Chỉnh sửa Hệ Thống Cảnh Giới
                                     </button>
                                 </div>
