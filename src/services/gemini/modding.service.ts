@@ -233,7 +233,33 @@ const worldSchema = {
     required: ['modInfo', 'content']
 };
 
-export const generateWorldFromText = async (text: string): Promise<FullMod> => {
+export const generateWorldFromText = async (text: string, mode: 'fast' | 'deep' | 'super_deep'): Promise<FullMod> => {
+    
+    let modeInstructions = '';
+    switch (mode) {
+        case 'deep':
+            modeInstructions = `
+**CHẾ ĐỘ PHÂN TÍCH: CHUYÊN SÂU**
+Bên cạnh việc trích xuất thông tin bề mặt, bạn PHẢI:
+1.  **Suy luận Quan hệ & Động cơ:** Đọc kỹ các tương tác giữa nhân vật để suy ra mối quan hệ (bạn, thù, đồng minh), động cơ ẩn, và mục tiêu cá nhân của họ.
+2.  **Phát hiện Quy luật Ngầm:** Tìm ra các quy luật độc đáo của thế giới (về ma thuật, xã hội, chính trị) và chuyển hóa chúng thành \`aiHooks\`.
+3.  **Chi tiết hóa Mô tả:** Làm cho các mô tả về địa điểm và nhân vật trở nên chi tiết và sống động hơn một chút dựa trên văn bản gốc.`;
+            break;
+        case 'super_deep':
+            modeInstructions = `
+**CHẾ ĐỘ PHÂN TÍCH: SIÊU CHUYÊN SÂU (CHẤT LƯỢNG > TỐC ĐỘ)**
+Bạn không chỉ là một cỗ máy trích xuất, mà là một ĐỒNG SÁNG TẠO. Nhiệm vụ của bạn là:
+1.  **Đào sâu Tối đa:** Phân tích từng chi tiết nhỏ nhất trong văn bản để xây dựng một thế giới cực kỳ nhất quán và có chiều sâu. Suy luận mọi mối quan hệ, mọi âm mưu, mọi quy luật.
+2.  **Sáng tạo Mở rộng:** Dựa trên nền tảng của văn bản, hãy mạnh dạn SÁNG TẠO thêm các chi tiết nhỏ để làm thế giới thêm phong phú. Ví dụ: tạo thêm một vài NPC phụ có liên quan, một vài tin đồn, hoặc các sự kiện động (\`dynamicEvents\`) nhỏ gián tiếp liên quan đến cốt truyện chính.
+3.  **Tạo ra Sự kiện Phức tạp:** Trong \`dynamicEvents\`, hãy tạo ra các sự kiện có ý nghĩa hơn, có thể có nhiều kết quả hoặc ảnh hưởng đến nhiều phe phái.
+4.  **Chất lượng là Tuyệt đối:** Hãy dành nhiều thời gian hơn để đảm bảo mọi thứ liên kết với nhau một cách logic. Độ chi tiết và chiều sâu quan trọng hơn tốc độ.`;
+            break;
+        default: // 'fast' mode
+            modeInstructions = `**CHẾ ĐỘ PHÂN TÍCH: NHANH**
+Tập trung vào việc trích xuất nhanh và chính xác các thực thể chính (nhân vật, địa điểm, phe phái, sự kiện) được đề cập rõ ràng trong văn bản.`;
+            break;
+    }
+
     const prompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những dòng văn bản tự do thành một thế giới game có cấu trúc hoàn chỉnh.
     Nhiệm vụ của bạn là đọc và phân tích sâu văn bản do người dùng cung cấp, sau đó trích xuất và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
 
@@ -241,6 +267,8 @@ export const generateWorldFromText = async (text: string): Promise<FullMod> => {
     ---
     ${text}
     ---
+
+    ${modeInstructions}
 
     **Quy trình Phân Tích & Suy Luận:**
     1.  **Đọc Tổng Thể:** Đọc toàn bộ văn bản để nắm bắt tông màu, chủ đề chính, và các khái niệm cốt lõi của thế giới.

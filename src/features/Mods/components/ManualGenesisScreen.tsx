@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronUp, FaDownload } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
 import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
@@ -68,6 +68,43 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và cài đặt thành công!`);
                 onBack();
             }
+        } catch (e: any) {
+            setError(`Lỗi khi tạo thế giới: ${e.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGenerateAndExport = async () => {
+        if (!modInfo.name.trim() || !modInfo.id.trim() || !prompts.setting.trim()) {
+            setError("Tên Mod, ID Mod, và Bối Cảnh là bắt buộc.");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            const fullModInfo: Omit<ModInfo, 'description' | 'version'> = { ...modInfo };
+            const generatedMod = await generateWorldFromPrompts({
+                modInfo: fullModInfo,
+                prompts,
+                aiHooks,
+                attributeSystem,
+                realmConfigs: isRealmSystemEnabled ? realmConfigs : []
+            });
+
+            const jsonString = JSON.stringify(generatedMod, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${generatedMod.modInfo.id}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và xuất file thành công!`);
+
         } catch (e: any) {
             setError(`Lỗi khi tạo thế giới: ${e.message}`);
         } finally {
@@ -251,10 +288,14 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                     </div>
 
                 </div>
-                <div className="pt-4 mt-auto flex-shrink-0">
-                    <button onClick={handleGenerateWorld} disabled={!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()} className="px-8 py-4 text-xl font-bold rounded-lg bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:bg-gray-600 disabled:cursor-not-allowed">
+                <div className="pt-4 mt-auto flex-shrink-0 flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button onClick={handleGenerateAndExport} disabled={!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()} className="w-full sm:w-auto px-6 py-3 text-lg font-bold rounded-lg bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--bg-interactive-hover)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:bg-gray-800 disabled:cursor-not-allowed disabled:text-gray-500">
+                        <FaDownload className="inline-block mr-2"/>
+                        Tạo & Xuất File
+                    </button>
+                    <button onClick={handleGenerateWorld} disabled={!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()} className="w-full sm:w-auto px-8 py-4 text-xl font-bold rounded-lg bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:bg-gray-600 disabled:cursor-not-allowed">
                         <FaBrain className="inline-block mr-3"/>
-                        Kiến Tạo Thế Giới
+                        Kiến Tạo & Cài Đặt
                     </button>
                 </div>
             </div>

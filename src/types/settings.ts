@@ -114,6 +114,7 @@ export interface GameSettings {
     deathPenalty: DeathPenalty;
     validationServiceCap: ValidationServiceCap;
     narrateSystemChanges: boolean;
+    enableAutomaticModelRotation: boolean;
 }
 
 export type SystemFeature = 'status' | 'quests' | 'store' | 'analysis';

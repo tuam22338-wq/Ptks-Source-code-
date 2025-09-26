@@ -68,6 +68,12 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
 
     return (
         <SettingsSection title="AI & Models">
+            <SettingsRow label="Tự động xoay vòng Model" description="Khi bật, nếu Model được chọn (vd: Flash) hết hạn ngạch, hệ thống sẽ tự động thử lại với model mạnh hơn (vd: Pro) để đảm bảo trò chơi không bị gián đoạn.">
+                <label className="flex items-center cursor-pointer">
+                    <input type="checkbox" checked={settings.enableAutomaticModelRotation} onChange={e => handleSettingChange('enableAutomaticModelRotation', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                    <span className="ml-3 text-sm text-gray-300">Bật tự động xoay vòng Model</span>
+                </label>
+            </SettingsRow>
             <SettingsRow label="Quản lý API Keys" description="Thêm một hoặc nhiều Google Gemini API Key. Hệ thống sẽ tự động xoay vòng và thử lại khi một key hết hạn ngạch hoặc gặp lỗi.">
                 <div>
                     {settings.apiKeys.map(key => (

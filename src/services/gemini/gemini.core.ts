@@ -13,6 +13,7 @@ class ApiKeyManager {
     private keys: string[] = [];
     private instances: GoogleGenAI[] = [];
     private currentIndex = 0;
+    private modelRotationEnabled = true;
 
     updateKeys(newKeys: string[]) {
         const sortedNew = [...(newKeys || [])].sort().join(',');
@@ -28,6 +29,14 @@ class ApiKeyManager {
             .filter(key => key && key.trim().length > 0)
             .map(key => new GoogleGenAI({ apiKey: key }));
         this.currentIndex = 0;
+    }
+
+    public updateModelRotationSetting(isEnabled: boolean) {
+        this.modelRotationEnabled = isEnabled;
+    }
+
+    public isModelRotationEnabled(): boolean {
+        return this.modelRotationEnabled;
     }
 
     /**
@@ -138,20 +147,58 @@ const executeApiCallWithSingleKey = async <T>(apiFunction: (instance: GoogleGenA
     throw new Error(`Dịch vụ không khả dụng (503) cho API key được chỉ định sau ${MAX_503_RETRIES} lần thử.`);
 };
 
-export const generateWithRetry = (generationRequest: any, specificApiKey?: string | null): Promise<GenerateContentResponse> => {
-    const apiFunc = (instance: GoogleGenAI) => instance.models.generateContent(generationRequest);
-    if (specificApiKey) {
-        return executeApiCallWithSingleKey(apiFunc, specificApiKey);
+const modelFallbackMap: Record<string, string | undefined> = {
+    'gemini-2.5-flash': 'gemini-2.5-pro',
+    'gemini-2.5-flash-lite': 'gemini-2.5-flash',
+    'gemini-2.5-flash-lite-preview-06-17': 'gemini-2.5-flash',
+    'gemini-2.5-flash-preview-05-20': 'gemini-2.5-flash',
+    'gemini-2.5-flash-preview-04-17': 'gemini-2.5-flash',
+};
+
+const executeWithModelRotation = async <T>(
+    baseRequest: any,
+    createApiCall: (request: any) => (instance: GoogleGenAI) => Promise<T>,
+    specificApiKey?: string | null
+): Promise<T> => {
+    let currentRequest = { ...baseRequest };
+    let currentModel = currentRequest.model;
+
+    while (currentModel) {
+        try {
+            const apiFunc = createApiCall(currentRequest);
+            if (specificApiKey) {
+                return await executeApiCallWithSingleKey(apiFunc, specificApiKey);
+            }
+            return await executeApiCallWithPool(apiFunc);
+        } catch (error: any) {
+            const isAllKeysFailedError = error.message.includes("Tất cả các API key đều đã hết hạn ngạch") || error.toString().includes('503');
+            const fallbackModel = apiKeyManager.isModelRotationEnabled() ? modelFallbackMap[currentModel] : undefined;
+
+            if (isAllKeysFailedError && fallbackModel) {
+                console.warn(`All keys failed for model '${currentModel}'. Rotating to fallback model '${fallbackModel}'.`);
+                currentModel = fallbackModel;
+                currentRequest.model = fallbackModel;
+                if (currentRequest.config?.thinkingConfig && (currentModel === 'gemini-2.5-pro')) {
+                    console.log("Removing 'thinkingConfig' as it is not supported by gemini-2.5-pro.");
+                    delete currentRequest.config.thinkingConfig;
+                }
+            } else {
+                throw error;
+            }
+        }
     }
-    return executeApiCallWithPool(apiFunc);
+    throw new Error("All models in the fallback chain failed.");
+};
+
+
+export const generateWithRetry = (generationRequest: any, specificApiKey?: string | null): Promise<GenerateContentResponse> => {
+    const createApiCall = (request: any) => (instance: GoogleGenAI) => instance.models.generateContent(request);
+    return executeWithModelRotation<GenerateContentResponse>(generationRequest, createApiCall, specificApiKey);
 };
 
 export const generateWithRetryStream = (generationRequest: any, specificApiKey?: string | null): Promise<AsyncIterable<GenerateContentResponse>> => {
-    const apiFunc = (instance: GoogleGenAI) => instance.models.generateContentStream(generationRequest);
-    if (specificApiKey) {
-        return executeApiCallWithSingleKey(apiFunc, specificApiKey);
-    }
-    return executeApiCallWithPool(apiFunc);
+    const createApiCall = (request: any) => (instance: GoogleGenAI) => instance.models.generateContentStream(request);
+    return executeWithModelRotation<AsyncIterable<GenerateContentResponse>>(generationRequest, createApiCall, specificApiKey);
 };
 
 export const generateImagesWithRetry = (generationRequest: any, specificApiKey?: string | null): Promise<GenerateImagesResponse> => {

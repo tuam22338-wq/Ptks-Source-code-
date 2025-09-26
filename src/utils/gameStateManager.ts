@@ -36,8 +36,6 @@ const ATTRIBUTE_NAME_TO_ID_MAP: Record<string, string> = {
     'Linh Lực': 'linh_luc',
     'Cảnh Giới': 'canh_gioi',
     'Tuổi Thọ': 'tuoi_tho',
-    'Chính Đạo': 'chinh_dao',
-    'Ma Đạo': 'ma_dao',
     'Độ No': 'hunger',
     'Độ Khát': 'thirst',
 };
@@ -244,9 +242,52 @@ export const createNewGameState = async (
 ): Promise<GameState> => {
     const { identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong, initialCurrency } = gameStartData;
 
-    let worldMapToUse, initialNpcsFromData, majorEventsToUse, factionsToUse, startingYear, eraName, startingLocationId;
+    let worldMapToUse: Location[], initialNpcsFromData: NPC[], majorEventsToUse, factionsToUse, startingYear, eraName, startingLocationId;
     
-    if (activeWorldId === 'tay_du_ky') {
+    // --- DYNAMIC WORLD LOADING ---
+    const activeModWorld = activeMods.find(m => m.content.worldData?.some(w => w.name === activeWorldId));
+    let modWorldData: ModWorldData | undefined;
+    if (activeModWorld) {
+        const foundWorldData = activeModWorld.content.worldData?.find(w => w.name === activeWorldId);
+        // FIX: Reconstruct the object to satisfy the ModWorldData type, which requires an 'id'.
+        // The 'id' for a world is derived from its unique 'name'.
+        if (foundWorldData) {
+            modWorldData = {
+                ...foundWorldData,
+                id: foundWorldData.name
+            };
+        }
+    }
+    
+    // Mod Data takes precedence
+    const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
+    const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
+        ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
+        : REALM_SYSTEM;
+        
+    const modAttributeSystem = activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem;
+    const attributeSystemToUse = modAttributeSystem || {
+        definitions: DEFAULT_ATTRIBUTE_DEFINITIONS,
+        groups: DEFAULT_ATTRIBUTE_GROUPS
+    };
+
+    if (modWorldData) {
+        console.log(`Loading world data from mod: ${modWorldData.name}`);
+        // FIX: The 'initialLocations' from a mod might have an optional 'id'.
+        // We process them here to ensure each location has a definite 'id' string,
+        // making it conform to the 'Location[]' type. The ID is derived from the name if missing.
+        worldMapToUse = modWorldData.initialLocations.map(loc => ({
+            ...loc,
+            id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+        })) as Location[];
+        initialNpcsFromData = modWorldData.initialNpcs.map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
+        majorEventsToUse = modWorldData.majorEvents;
+        factionsToUse = modWorldData.factions;
+        startingYear = modWorldData.startingYear;
+        eraName = modWorldData.eraName;
+        startingLocationId = worldMapToUse[0].id; // Default to first location in mod
+    } else if (activeWorldId === 'tay_du_ky') {
+        // Fallback to default worlds
         worldMapToUse = JTTW_WORLD_MAP;
         initialNpcsFromData = JTTW_NPC_LIST;
         majorEventsToUse = JTTW_MAJOR_EVENTS;
@@ -263,17 +304,6 @@ export const createNewGameState = async (
         eraName = 'Tiên Phong Thần';
         startingLocationId = 'thanh_ha_tran';
     }
-
-    const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
-    const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
-        ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
-        : REALM_SYSTEM;
-        
-    const modAttributeSystem = activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem;
-    const attributeSystemToUse = modAttributeSystem || {
-        definitions: DEFAULT_ATTRIBUTE_DEFINITIONS,
-        groups: DEFAULT_ATTRIBUTE_GROUPS
-    };
 
     const initialAttributes: CharacterAttributes = {};
     const selectedDifficulty = DIFFICULTY_LEVELS.find(d => d.id === difficulty) || DIFFICULTY_LEVELS.find(d => d.id === 'medium')!;

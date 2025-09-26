@@ -262,6 +262,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 dispatch({ type: 'SET_ALL_CACHED_BACKGROUNDS', payload: cachedAssets });
 
                 apiKeyManager.updateKeys(finalSettings.apiKeys || []);
+                apiKeyManager.updateModelRotationSetting(finalSettings.enableAutomaticModelRotation);
                 dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
 
                 await loadSaveSlots();
@@ -340,6 +341,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         try {
             await db.saveSettings(state.settings);
             apiKeyManager.updateKeys(state.settings.apiKeys || []);
+            apiKeyManager.updateModelRotationSetting(state.settings.enableAutomaticModelRotation);
             await updateStorageUsage();
             alert('Cài đặt đã được lưu!');
         } catch (error) {

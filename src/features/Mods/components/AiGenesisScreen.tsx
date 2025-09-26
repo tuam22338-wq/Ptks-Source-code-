@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { FaArrowLeft, FaFileUpload, FaBrain } from 'react-icons/fa';
+import { FaArrowLeft, FaFileUpload, FaBrain, FaBolt, FaSearch, FaInfinity } from 'react-icons/fa';
 import { generateWorldFromText } from '../../../services/geminiService';
 import type { FullMod } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
@@ -9,11 +9,20 @@ interface AiGenesisScreenProps {
     onInstall: (mod: FullMod) => Promise<boolean>;
 }
 
+type GenerationMode = 'fast' | 'deep' | 'super_deep';
+
+const modeOptions: { id: GenerationMode; label: string; icon: React.ElementType; description: string; }[] = [
+    { id: 'fast', label: 'Nhanh', icon: FaBolt, description: 'Trích xuất nhanh các thực thể chính. Phù hợp để tạo mẫu nhanh.' },
+    { id: 'deep', label: 'Chuyên Sâu', icon: FaSearch, description: 'Phân tích sâu hơn về mối quan hệ, động cơ và quy luật. Mất nhiều thời gian hơn.' },
+    { id: 'super_deep', label: 'Siêu Chuyên Sâu', icon: FaInfinity, description: 'AI sẽ sáng tạo và mở rộng dựa trên lore gốc để tạo ra một thế giới cực kỳ chi tiết. Mất nhiều thời gian nhất.' },
+];
+
 const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) => {
     const [fileContent, setFileContent] = useState<string>('');
     const [fileName, setFileName] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [generationMode, setGenerationMode] = useState<GenerationMode>('fast');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +46,7 @@ const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) 
         setIsLoading(true);
         setError(null);
         try {
-            const generatedMod = await generateWorldFromText(fileContent);
+            const generatedMod = await generateWorldFromText(fileContent, generationMode);
             const success = await onInstall(generatedMod);
             if(success) {
                 alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và cài đặt thành công! Bạn có thể kích hoạt nó trong Thư Viện Mod.`);
@@ -51,7 +60,7 @@ const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) 
     };
     
     if (isLoading) {
-        return <LoadingScreen message="AI đang sáng tạo thế giới..." isGeneratingWorld={true} />;
+        return <LoadingScreen message="AI đang sáng tạo thế giới..." isGeneratingWorld={true} generationMode={generationMode} />;
     }
 
     return (
@@ -66,10 +75,26 @@ const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) 
                 <FaBrain className="text-8xl text-gray-700 mb-4" />
                 <h3 className="text-4xl font-bold font-title text-amber-300">AI Sáng Thế Ký</h3>
                 <p className="text-gray-400 max-w-2xl mx-auto mt-2 mb-6">
-                    Hãy trở thành đấng sáng tạo. Tải lên một tệp văn bản (.txt) chứa lịch sử, địa lý, nhân vật, và quy luật của thế giới bạn mong muốn. Bạn cũng có thể mô tả một hệ thống tu luyện độc đáo (ví dụ: 'Một hệ thống dựa trên việc hấp thụ linh hồn quái vật với các cấp bậc như Hồn Đồ, Hồn Sư...'), và AI sẽ cố gắng tạo ra cơ chế game tương ứng. AI sẽ phân tích và kiến tạo nên một vũ trụ hoàn chỉnh từ những con chữ của bạn.
+                    Hãy trở thành đấng sáng tạo. Tải lên một tệp văn bản (.txt) chứa lịch sử, địa lý, nhân vật, và quy luật của thế giới bạn mong muốn. AI sẽ phân tích và kiến tạo nên một vũ trụ hoàn chỉnh từ những con chữ của bạn.
                 </p>
 
                 {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4">{error}</p>}
+                
+                <div className="w-full max-w-xl mb-6">
+                    <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full mb-2">
+                        {modeOptions.map(mode => (
+                             <button
+                                key={mode.id}
+                                onClick={() => setGenerationMode(mode.id)}
+                                title={mode.description}
+                                className={`w-1/3 text-center py-2 px-2 text-sm text-gray-400 rounded-md transition-colors duration-200 font-semibold hover:bg-gray-700/50 hover:text-white flex items-center justify-center gap-2 ${generationMode === mode.id ? 'bg-gray-600 text-white shadow-inner' : ''}`}
+                            >
+                                <mode.icon /> {mode.label}
+                            </button>
+                        ))}
+                    </div>
+                     <p className="text-xs text-gray-500 italic">{modeOptions.find(m => m.id === generationMode)?.description}</p>
+                </div>
 
                 <div 
                     className="w-full max-w-xl p-8 border-2 border-dashed border-gray-600 rounded-lg bg-black/20 text-center cursor-pointer hover:border-amber-400/80 hover:bg-black/30 transition-colors"
