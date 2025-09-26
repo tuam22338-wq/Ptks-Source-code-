@@ -22,7 +22,7 @@ const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, o
             setFormData(stage ? { ...stage, qiRequired: initialQi } : { id: `stage_${Date.now()}`, name: '', qiRequired: 0, bonuses: [] });
             
             if (attributeDefinitions.length > 0) {
-                const defaultAttr = attributeDefinitions.filter(d => d.type === 'PRIMARY' || d.type === 'VITAL')[0]?.name || '';
+                const defaultAttr = attributeDefinitions[0]?.name || '';
                 setNewBonus({ attribute: defaultAttr, value: 0 });
             }
         }
@@ -98,7 +98,7 @@ const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, o
                         </div>
                         <div className="flex items-center gap-2 p-2 bg-black/25 border border-gray-700/60 rounded">
                              <select name="attribute" value={newBonus.attribute} onChange={handleBonusChange} className="bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-gray-200 text-sm flex-grow">
-                                {attributeDefinitions.filter(d => d.type === 'PRIMARY' || d.type === 'VITAL').map(attr => (
+                                {attributeDefinitions.map(attr => (
                                     <option key={attr.id} value={attr.name}>{attr.name}</option>
                                 ))}
                             </select>

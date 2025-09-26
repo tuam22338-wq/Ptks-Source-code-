@@ -294,7 +294,10 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: worldSchema,
+            responseSchema: JSON.parse(JSON.stringify(worldSchema)), // FIX: Use deep copy to prevent schema mutation issues
+            temperature: 1.0,
+            topK: settings?.topK,
+            topP: settings?.topP,
         }
     }, specificApiKey);
     
@@ -361,7 +364,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         
     const realmContext = realmConfigs && realmConfigs.length > 0
         ? `### HỆ THỐNG CẢNH GIỚI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nĐây là hệ thống tu luyện của thế giới này. Cảnh giới cao nhất là ${realmConfigs[realmConfigs.length - 1].name}.\n${realmConfigs.map(r => `- ${r.name}`).join(' -> ')}\n### KẾT THÚC HỆ THỐNG CẢNH GIỚI ###`
-        : "### HỆ THỐNG CẢNH GIỚI ###\nThế giới này không có hệ thống tu luyện cảnh giới.";
+        : "### HỆ THỐNG CẢNH GIỚI ###\nThế giới này không có hệ thống tu luyện cảnh giới truyền thống.";
 
     // Clone the base schema to modify it
     const dynamicWorldSchema = JSON.parse(JSON.stringify(worldSchema));
@@ -410,6 +413,9 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         config: {
             responseMimeType: "application/json",
             responseSchema: dynamicWorldSchema,
+            temperature: 1.0,
+            topK: settings?.topK,
+            topP: settings?.topP,
         }
     }, specificApiKey);
     

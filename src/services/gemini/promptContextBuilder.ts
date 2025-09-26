@@ -1,4 +1,3 @@
-
 import type { GameState, GameSettings } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
@@ -128,9 +127,16 @@ ${attributeSystem.definitions.map(def => `- **${def.name}:** ${def.description}`
   if (realmSystem && realmSystem.length > 0) {
       const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
       const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
+      
+      const currentRealmStagesInfo = currentRealm 
+        ? `Các tiểu cảnh giới của ${currentRealm.name} là: ${currentRealm.stages.map(s => s.name).join(', ')}.`
+        : '';
+
       cultivationContext = `
-- **Tu Luyện:** Cảnh giới ${currentRealm?.name || 'Không rõ'} - ${currentStage?.name || 'Không rõ'}, Linh khí ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.
-- **Hệ thống cảnh giới:** ${realmSystem.map(r => r.name).join(' -> ')}.
+- **Tu Luyện (CỰC KỲ QUAN TRỌNG):**
+  - Cảnh giới hiện tại: ${currentRealm?.name || 'Không rõ'} - ${currentStage?.name || 'Không rõ'}. ${currentRealmStagesInfo}
+  - Linh khí: ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.
+- **Toàn bộ hệ thống cảnh giới (để tham khảo):** ${realmSystem.map(r => r.name).join(' -> ')}.
 `;
   } else {
       cultivationContext = `- **Hệ thống sức mạnh:** Thế giới này không sử dụng hệ thống tu luyện cảnh giới truyền thống.`;

@@ -118,6 +118,25 @@ export interface ModWorldData {
 }
 // --- END NEW MODDING TYPES ---
 
+// --- NEW: QUICK ACTION BAR MODDING ---
+export interface QuickActionButtonConfig {
+    id: string; // e.g., 'meditate', 'open_hellgate'
+    label: string; // e.g., 'Thiền Định', 'Mở Địa Ngục Môn'
+    description: string; // Tooltip text
+    iconName: string; // Key from UI_ICONS, e.g., 'GiSprout'
+    actionText: string; // The text submitted to the AI, e.g., "ta ngồi xuống thiền định"
+}
+
+export interface QuickActionBarConfig {
+    id: string; // Unique ID for this bar configuration, e.g., 'city_actions'
+    context: {
+        type: 'DEFAULT' | 'LOCATION';
+        value: string[]; // Array of location IDs for 'LOCATION', empty for 'DEFAULT'
+    };
+    buttons: QuickActionButtonConfig[];
+}
+// --- END NEW: QUICK ACTION BAR MODDING ---
+
 
 export type SectMemberRank = 'Tông Chủ' | 'Trưởng Lão' | 'Đệ Tử Chân Truyền' | 'Đệ Tử Nội Môn' | 'Đệ Tử Ngoại Môn';
 
@@ -292,6 +311,7 @@ export interface ModContent {
     dynamicEvents?: Omit<DynamicModEvent, 'id'>[];
     aiHooks?: AiHooks;
     attributeSystem?: ModAttributeSystem;
+    quickActionBars?: QuickActionBarConfig[];
 }
 
 export interface FullMod {

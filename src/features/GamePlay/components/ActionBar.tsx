@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FaPaperPlane, FaComment, FaBolt, FaBrain, FaChevronUp, FaChevronDown, FaUser, FaMapMarkedAlt } from 'react-icons/fa';
 import { GiSprout, GiSwapBag, GiStairsGoal, GiPerson } from 'react-icons/gi';
-import type { Location, GameState } from '../../../types';
+import type { Location, GameState, QuickActionButtonConfig } from '../../../types';
 import { UI_ICONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
@@ -10,7 +10,6 @@ type ActionType = 'say' | 'act' | 'ask';
 
 interface ActionBarProps {
     onInputSubmit: (text: string) => void;
-    onContextualAction: (actionId: string, actionLabel: string) => void;
     disabled: boolean;
     currentLocation: Location;
     activeTab: ActionType;
@@ -20,7 +19,13 @@ interface ActionBarProps {
     onToggleSidebar: () => void;
 }
 
-const QuickActionButton: React.FC<{ onClick: () => void; disabled?: boolean; title?: string; className?: string; children: React.ReactNode }> = ({ onClick, disabled, title, className = '', children }) => (
+const QuickActionButton: React.FC<{ 
+    onClick: () => void; 
+    disabled?: boolean; 
+    title?: string; 
+    className?: string; 
+    children: React.ReactNode 
+}> = ({ onClick, disabled, title, className = '', children }) => (
     <button
         onClick={onClick}
         disabled={disabled}
@@ -31,15 +36,20 @@ const QuickActionButton: React.FC<{ onClick: () => void; disabled?: boolean; tit
     </button>
 );
 
+const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
+    { id: 'cultivate', label: 'Tu Luyện', description: 'Hấp thụ linh khí để tăng tu vi', iconName: 'GiSprout', actionText: 'tu luyện' },
+    { id: 'inventory', label: 'Túi Đồ', description: 'Mở túi đồ của bạn', iconName: 'GiSwapBag', actionText: 'mở túi đồ' },
+    { id: 'dashboard', label: 'Bảng Điều Khiển', description: 'Mở Bảng Điều Khiển', iconName: 'FaUser', actionText: 'mở bảng điều khiển' },
+];
 
-const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState, handleBreakthrough, onToggleSidebar }) => {
+const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, disabled, currentLocation, activeTab, setActiveTab, gameState, handleBreakthrough, onToggleSidebar }) => {
     const [inputText, setInputText] = useState('');
     const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
     
-    const { openInventoryModal } = useGameUIContext();
+    const { openInventoryModal, showNotification } = useGameUIContext();
     const { handlePlayerAction } = useAppContext();
 
-    const { playerCharacter, realmSystem } = gameState;
+    const { playerCharacter, realmSystem, activeMods } = gameState;
     const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
     const currentStageIndex = currentRealm?.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId) ?? -1;
     let canBreakthrough = false;
@@ -61,6 +71,46 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
         }
     }
 
+    const buttonsToDisplay = useMemo((): QuickActionButtonConfig[] => {
+        let locationSpecificBar = null;
+        let modDefaultBar = null;
+
+        for (const mod of activeMods) {
+            if (!mod.content.quickActionBars) continue;
+
+            const foundLocationBar = mod.content.quickActionBars.find(bar => 
+                bar.context.type === 'LOCATION' && bar.context.value.includes(currentLocation.id)
+            );
+            if (foundLocationBar) {
+                locationSpecificBar = foundLocationBar;
+            }
+            
+            const foundDefaultBar = mod.content.quickActionBars.find(bar => bar.context.type === 'DEFAULT');
+            if (foundDefaultBar) {
+                modDefaultBar = foundDefaultBar;
+            }
+        }
+
+        if (locationSpecificBar) return locationSpecificBar.buttons;
+        if (modDefaultBar) return modDefaultBar.buttons;
+        
+        return DEFAULT_BUTTONS;
+    }, [activeMods, currentLocation.id]);
+
+    const handleQuickAction = (button: QuickActionButtonConfig) => {
+        if (disabled) return;
+        // Special cases for hardcoded UI functions
+        if (button.id === 'inventory') {
+            openInventoryModal();
+            return;
+        }
+        if (button.id === 'dashboard') {
+            onToggleSidebar();
+            return;
+        }
+        // Default behavior: send action text to AI
+        handlePlayerAction(button.actionText, 'act', 1, showNotification);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,28 +138,25 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                 </button>
                 {isQuickActionsOpen && (
                     <div className="p-3 border-t border-gray-700/60 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {currentLocation.contextualActions?.map(action => {
-                            const Icon = UI_ICONS[action.iconName as keyof typeof UI_ICONS] || FaBolt;
+                        {buttonsToDisplay.map(button => {
+                            const Icon = UI_ICONS[button.iconName as keyof typeof UI_ICONS] || FaBolt;
                             return (
-                                <QuickActionButton key={action.id} onClick={() => onContextualAction(action.id, action.label)} disabled={disabled} title={action.description}>
-                                    <Icon /> {action.label}
+                                <QuickActionButton 
+                                    key={button.id} 
+                                    onClick={() => handleQuickAction(button)} 
+                                    disabled={disabled} 
+                                    title={button.description}
+                                >
+                                    <Icon /> {button.label}
                                 </QuickActionButton>
                             );
                         })}
-                        <QuickActionButton onClick={() => handlePlayerAction('tu luyện', 'act', 1, () => {})} disabled={disabled} title="Hấp thụ linh khí để tăng tu vi">
-                            <GiSprout /> Tu Luyện
-                        </QuickActionButton>
-                        <QuickActionButton onClick={openInventoryModal} disabled={disabled} title="Mở túi đồ của bạn">
-                            <GiSwapBag /> Túi Đồ
-                        </QuickActionButton>
+
                         {canBreakthrough && (
-                            <QuickActionButton onClick={handleBreakthrough} disabled={disabled} title="Đột phá cảnh giới tiếp theo!" className="animate-pulse bg-amber-600/50 border border-amber-400 col-span-2 sm:col-span-1">
+                            <QuickActionButton onClick={handleBreakthrough} disabled={disabled} title="Đột phá cảnh giới tiếp theo!" className="animate-pulse bg-amber-600/50 border border-amber-400 col-span-full sm:col-span-1">
                                 <GiStairsGoal /> Đột Phá!
                             </QuickActionButton>
                         )}
-                        <QuickActionButton onClick={onToggleSidebar} disabled={disabled} title="Mở Bảng Điều Khiển">
-                            <FaUser /> Bảng Điều Khiển
-                        </QuickActionButton>
                     </div>
                 )}
             </div>
@@ -166,6 +213,5 @@ const TabButton: React.FC<{label: string, icon: React.ElementType, isActive: boo
         <Icon /> {label}
     </button>
 );
-
 
 export default ActionBar;
