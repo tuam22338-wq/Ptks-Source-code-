@@ -70,8 +70,8 @@ export const applyMechanicalChanges = (
 
     if (intent.currencyChanges) {
         intent.currencyChanges.forEach(change => {
-            const currentAmount = pc.currencies[change.currencyName] || 0;
-            pc.currencies[change.currencyName] = currentAmount + change.change;
+            const currentAmount = Number(pc.currencies[change.currencyName]) || 0;
+            pc.currencies[change.currencyName] = currentAmount + Number(change.change);
             if (change.change !== 0) showNotification(`${change.currencyName}: ${change.change > 0 ? '+' : ''}${change.change.toLocaleString()}`);
         });
     }
@@ -148,7 +148,7 @@ export const applyMechanicalChanges = (
         intent.emotionChanges.forEach(emoChange => {
             const npc = nextState.activeNpcs.find((n: NPC) => n.identity.name === emoChange.npcName);
             if (npc) {
-                npc.emotions[emoChange.emotion] = Math.max(0, Math.min(100, (npc.emotions[emoChange.emotion] || 50) + emoChange.change));
+                npc.emotions[emoChange.emotion] = Math.max(0, Math.min(100, (Number(npc.emotions[emoChange.emotion]) || 50) + Number(emoChange.change)));
                 npc.memory.shortTerm = [...npc.memory.shortTerm, emoChange.reason].slice(-5);
             }
         });
@@ -158,8 +158,8 @@ export const applyMechanicalChanges = (
     const allStatChanges: Record<string, { change: number; changeMax: number }> = {};
     const addChange = (attrId: string, change: number, changeMax: number = 0) => {
         if (!allStatChanges[attrId]) allStatChanges[attrId] = { change: 0, changeMax: 0 };
-        allStatChanges[attrId].change += change;
-        allStatChanges[attrId].changeMax += changeMax;
+        allStatChanges[attrId].change += Number(change) || 0;
+        allStatChanges[attrId].changeMax += Number(changeMax) || 0;
     };
 
     (intent.statChanges || []).forEach(sc => {
@@ -187,10 +187,10 @@ export const applyMechanicalChanges = (
         const attrDef = nextState.attributeSystem.definitions.find((def: any) => def.id === attrId);
         if (pc.attributes[attrId]) {
             const attr = pc.attributes[attrId];
-            const originalMaxValue = attr.maxValue; // Store original max value before changes
+            const originalMaxValue = Number(attr.maxValue);
     
             if (changes.changeMax) {
-                attr.maxValue = Math.max(1, (attr.maxValue !== undefined ? attr.maxValue : attr.value) + changes.changeMax);
+                attr.maxValue = Math.max(1, (attr.maxValue !== undefined ? Number(attr.maxValue) : Number(attr.value)) + changes.changeMax);
                 if(changes.changeMax !== 0) showNotification(`Giới hạn ${attrDef?.name || attrId} thay đổi: ${changes.changeMax > 0 ? '+' : ''}${changes.changeMax}`);
     
                 // FIX: If a vital's maxValue increases, the current value should also increase to match the new max, effectively 'refilling' it.
@@ -201,18 +201,18 @@ export const applyMechanicalChanges = (
             }
     
             if (changes.change) {
-                attr.value += changes.change;
+                attr.value = Number(attr.value) + changes.change;
                 if (changes.change !== 0) showNotification(`${attrDef?.name || attrId}: ${changes.change > 0 ? '+' : ''}${changes.change}`);
             }
     
             // Clamp the value to be within [0, new maxValue] after all changes.
             if (attr.maxValue !== undefined) {
-                attr.value = Math.min(attr.value, attr.maxValue);
+                attr.value = Math.min(Number(attr.value), Number(attr.maxValue));
             }
-            attr.value = Math.max(0, attr.value);
+            attr.value = Math.max(0, Number(attr.value));
             
         } else if (attrId === 'spiritualQi' && changes.change) {
-             pc.cultivation.spiritualQi = Math.max(0, pc.cultivation.spiritualQi + changes.change);
+             pc.cultivation.spiritualQi = Math.max(0, Number(pc.cultivation.spiritualQi) + changes.change);
              if (changes.change !== 0) showNotification(`Linh Khí: ${changes.change > 0 ? '+' : ''}${changes.change.toLocaleString()}`);
         }
     });

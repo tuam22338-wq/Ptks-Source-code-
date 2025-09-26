@@ -17,7 +17,6 @@ const SpecialEffectsOverlay: React.FC = () => {
     const prevInventory = useRef<Map<string, number>>(new Map());
     const isInitialMount = useRef(true);
 
-    // This single, more precise useEffect handles all logic to prevent stale state.
     useEffect(() => {
         if (!gameState) return;
 
@@ -26,7 +25,6 @@ const SpecialEffectsOverlay: React.FC = () => {
         const currentItems = playerCharacter.inventory.items;
 
         if (isInitialMount.current) {
-            // Initialize refs on first render
             isInitialMount.current = false;
             prevRealmId.current = currentRealmId;
             const initialMap = new Map<string, number>();
@@ -41,8 +39,7 @@ const SpecialEffectsOverlay: React.FC = () => {
         if (currentRealmId && prevRealmId.current && currentRealmId !== prevRealmId.current) {
             setActiveEffect('breakthrough');
             const timer = setTimeout(() => setActiveEffect(null), 4000);
-            prevRealmId.current = currentRealmId; // Update ref for next change
-            return () => clearTimeout(timer);
+            return () => clearTimeout(timer); // Return here to prevent ref update
         }
         
         // Check for new rare items
@@ -59,14 +56,12 @@ const SpecialEffectsOverlay: React.FC = () => {
                     setRareItemData({ name: newItem.name, icon: newItem.icon || '💎', quality: newItem.quality });
                     setActiveEffect('rareItem');
                     const timer = setTimeout(() => setActiveEffect(null), 5000);
-                    
-                    prevInventory.current = currentInventoryMap; // Update ref after finding a new item
-                    return () => clearTimeout(timer);
+                    return () => clearTimeout(timer); // Return here to prevent ref update
                 }
             }
         }
         
-        // Update refs if no effect was triggered
+        // Update refs only if no effect was triggered in this run.
         prevRealmId.current = currentRealmId;
         prevInventory.current = currentInventoryMap;
 

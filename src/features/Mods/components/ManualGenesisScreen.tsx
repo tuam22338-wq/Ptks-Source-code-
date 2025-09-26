@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
-import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition, RealmStage, StatBonus } from '../../../types';
+import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
-import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS, ALL_ATTRIBUTES } from '../../../constants';
+import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS } from '../../../constants';
+import AttributeEditorModal from './AttributeEditorModal';
 
 interface ManualGenesisScreenProps {
     onBack: () => void;
@@ -16,19 +17,6 @@ const Field: React.FC<{ label: string; description: string; children: React.Reac
         <label className="block text-lg font-semibold font-title text-gray-300">{label}</label>
         <p className="text-sm text-gray-500 mb-2">{description}</p>
         {children}
-    </div>
-);
-
-const EditorModal: React.FC<{ title: string; onClose: () => void; onSave: () => void; children: React.ReactNode }> = ({ title, onClose, onSave, children }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }}>
-        <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 max-h-[90vh] flex flex-col">
-            <h3 className="text-xl font-bold p-4 border-b border-gray-700 text-amber-300">{title}</h3>
-            <div className="p-4 overflow-y-auto space-y-4">{children}</div>
-            <div className="p-4 border-t border-gray-700 flex justify-end gap-3">
-                <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500"><FaTimes className="inline-block mr-2" />Hủy</button>
-                <button onClick={onSave} className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500"><FaSave className="inline-block mr-2" />Lưu</button>
-            </div>
-        </div>
     </div>
 );
 
@@ -51,6 +39,11 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     // UI state
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
+    const [editingAttribute, setEditingAttribute] = useState<AttributeDefinition | null>(null);
+    const [editingAttributeGroup, setEditingAttributeGroup] = useState<AttributeGroupDefinition | null>(null);
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'physical': true });
+
 
     const handleGenerateWorld = async () => {
         if (!modInfo.name.trim() || !modInfo.id.trim() || !prompts.setting.trim()) {
@@ -79,6 +72,45 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
             setIsLoading(false);
         }
     };
+    
+    // --- Attribute Modal Handlers ---
+    const handleOpenAttributeModal = (attr: AttributeDefinition | null, group: AttributeGroupDefinition) => {
+        setEditingAttribute(attr);
+        setEditingAttributeGroup(group);
+        setIsAttributeModalOpen(true);
+    };
+
+    const handleCloseAttributeModal = () => {
+        setIsAttributeModalOpen(false);
+        setEditingAttribute(null);
+        setEditingAttributeGroup(null);
+    };
+
+    const handleSaveAttribute = (savedAttr: AttributeDefinition) => {
+        setAttributeSystem(prev => {
+            const newDefinitions = [...prev.definitions];
+            // Check if it's an update or a new addition by looking for an existing definition with the original ID
+            const originalId = editingAttribute ? editingAttribute.id : savedAttr.id;
+            const index = newDefinitions.findIndex(d => d.id === originalId);
+
+            if (index > -1) {
+                newDefinitions[index] = savedAttr; // Update
+            } else {
+                newDefinitions.push(savedAttr); // Add
+            }
+            return { ...prev, definitions: newDefinitions };
+        });
+        handleCloseAttributeModal();
+    };
+
+    const handleDeleteAttribute = (attrId: string) => {
+        if (window.confirm("Bạn có chắc muốn xóa thuộc tính này? Hành động này không thể hoàn tác.")) {
+            setAttributeSystem(prev => ({
+                ...prev,
+                definitions: prev.definitions.filter(d => d.id !== attrId)
+            }));
+        }
+    };
 
     if (isLoading) {
         return <LoadingScreen message="AI đang dệt nên thế giới của bạn..." isGeneratingWorld={true} />;
@@ -86,6 +118,15 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
 
     return (
         <div className="flex-grow flex flex-col min-h-0 animate-fade-in">
+             {isAttributeModalOpen && editingAttributeGroup && (
+                <AttributeEditorModal
+                    isOpen={isAttributeModalOpen}
+                    onClose={handleCloseAttributeModal}
+                    onSave={handleSaveAttribute}
+                    attribute={editingAttribute}
+                    group={editingAttributeGroup}
+                />
+            )}
             <div className="flex-shrink-0 mb-4">
                 <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4"><FaArrowLeft /> Quay Lại Menu</button>
             </div>
@@ -119,21 +160,61 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                     <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
                         <h4 className="text-xl font-semibold font-title text-cyan-300">2. Thiết Kế Hệ Thống (Tùy chỉnh)</h4>
                         <p className="text-sm text-gray-500 -mt-2">Chỉnh sửa các quy luật cốt lõi của thế giới. Bạn có thể dùng hệ thống mặc định làm nền tảng.</p>
-                        {/* Attribute System Editor Placeholder */}
+                        
                         <div className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
                             <h5 className="font-bold text-gray-300 mb-2">Hệ Thống Thuộc Tính</h5>
-                            <p className="text-xs text-gray-400">Định nghĩa các chỉ số cho nhân vật. (Sắp ra mắt)</p>
+                            <div className="space-y-2">
+                                {attributeSystem.groups.map(group => (
+                                    <div key={group.id} className="bg-black/25 rounded-md border border-gray-800/80">
+                                        <button onClick={() => setExpandedGroups(p => ({...p, [group.id]: !p[group.id]}))} className="w-full flex justify-between items-center p-2 text-left hover:bg-gray-800/50">
+                                            <span className="font-semibold text-gray-300">{group.name}</span>
+                                            {expandedGroups[group.id] ? <FaChevronUp /> : <FaChevronDown />}
+                                        </button>
+                                        {expandedGroups[group.id] && (
+                                            <div className="p-2 border-t border-gray-800/80 space-y-2">
+                                                {attributeSystem.definitions.filter(d => d.group === group.id).map(attr => {
+                                                    const Icon = UI_ICONS[attr.iconName] || (() => <span />);
+                                                    return (
+                                                        <div key={attr.id} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                                            <div className="flex items-center gap-2">
+                                                                <Icon className="text-lg text-cyan-300" />
+                                                                <span className="text-sm font-semibold">{attr.name}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <button onClick={() => handleOpenAttributeModal(attr, group)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>
+                                                                <button onClick={() => handleDeleteAttribute(attr.id)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                                <button onClick={() => handleOpenAttributeModal(null, group)} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
+                                                    <FaPlus /> Thêm Thuộc Tính
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        {/* Realm System Editor Placeholder */}
+                        
                         <div className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
                             <div className="flex justify-between items-center">
-                                <h5 className="font-bold text-gray-300">Hệ Thống Cảnh Giới</h5>
+                                <div>
+                                    <h5 className="font-bold text-gray-300">Hệ Thống Cảnh Giới</h5>
+                                    <p className="text-xs text-gray-400">Định nghĩa các cấp bậc sức mạnh. Tắt đi nếu thế giới không có hệ thống cấp bậc.</p>
+                                </div>
                                 <button onClick={() => setIsRealmSystemEnabled(!isRealmSystemEnabled)} className="flex items-center gap-2 text-sm text-gray-300">
                                     {isRealmSystemEnabled ? <FaToggleOn className="text-green-400 text-xl" /> : <FaToggleOff className="text-gray-500 text-xl" />}
-                                    {isRealmSystemEnabled ? 'Bật' : 'Tắt'}
+                                    {isRealmSystemEnabled ? 'Đang Bật' : 'Đã Tắt'}
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-400">Định nghĩa các cấp bậc sức mạnh. Tắt đi nếu thế giới không có hệ thống cấp bậc. (Sắp ra mắt)</p>
+                             {isRealmSystemEnabled && (
+                                <div className="mt-2 pt-2 border-t border-gray-600/50 text-center">
+                                     <button onClick={() => alert("Chức năng đang được phát triển")} className="px-3 py-1.5 bg-cyan-700/80 text-white text-xs font-bold rounded-lg hover:bg-cyan-600/80 flex items-center gap-2 mx-auto disabled:opacity-50" disabled>
+                                        <FaEdit /> Chỉnh sửa Hệ Thống Cảnh Giới
+                                    </button>
+                                </div>
+                             )}
                         </div>
                     </div>
 

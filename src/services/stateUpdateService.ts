@@ -148,8 +148,8 @@ export const applyMechanicalChanges = (
     const allStatChanges: Record<string, { change: number; changeMax: number }> = {};
     const addChange = (attrId: string, change: number, changeMax: number = 0) => {
         if (!allStatChanges[attrId]) allStatChanges[attrId] = { change: 0, changeMax: 0 };
-        allStatChanges[attrId].change += Number(change);
-        allStatChanges[attrId].changeMax += Number(changeMax);
+        allStatChanges[attrId].change += Number(change) || 0;
+        allStatChanges[attrId].changeMax += Number(changeMax) || 0;
     };
 
     (intent.statChanges || []).forEach(sc => {
