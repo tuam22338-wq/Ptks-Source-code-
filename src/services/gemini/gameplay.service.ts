@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -15,7 +16,7 @@ export async function* generateDualResponseStream(
     arbiterDecision: ArbiterDecision,
     thoughtBubble?: string
 ): AsyncIterable<string> {
-    const { playerCharacter, difficulty, activeMods } = gameState;
+    const { playerCharacter, difficulty, activeMods, attributeSystem } = gameState;
     
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
     const difficultyText = `Độ khó hiện tại là "${difficulty || 'Trung Bình'}".`;
@@ -51,12 +52,15 @@ export async function* generateDualResponseStream(
     const impliedStateChangeInstruction = `12. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
 
     const arbiterInstruction = `
-### LUẬT LỆ TỐI THƯỢNG TỪ TRỌNG TÀI (PHẢI TUÂN THEO 100%) ###
+### LUẬT LỆ TỐI THƯỢỢNG TỪ TRỌNG TÀI (PHẢI TUÂN THEO 100%) ###
 Kết quả hành động của người chơi đã được một AI logic khác quyết định trước. Bạn BẮT BUỘC phải tường thuật một kịch bản khớp HOÀN TOÀN với kết quả sau đây:
 - **Kết quả:** ${arbiterDecision.success ? 'Thành công' : 'Thất bại'}
 - **Lý do logic:** ${arbiterDecision.reason}
 - **Hậu quả cơ bản:** "${arbiterDecision.consequence}"
 TUYỆT ĐỐI KHÔNG được thay đổi kết quả này trong phần tường thuật của bạn. Hãy sáng tạo một câu chuyện xoay quanh kết quả đã được định sẵn này.`;
+
+    const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
+    const validStatNames = attributeSystem.definitions.map(def => def.name);
 
     const masterSchema = {
       type: Type.OBJECT,
@@ -66,13 +70,13 @@ TUYỆT ĐỐI KHÔNG được thay đổi kết quả này trong phần tườn
           type: Type.OBJECT,
           description: "Tất cả các thay đổi cơ chế game được suy ra từ đoạn tường thuật.",
           properties: {
-            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, change: { type: Type.NUMBER, description: "Thay đổi giá trị hiện tại của chỉ số." }, changeMax: { type: Type.NUMBER, description: "Thay đổi giá trị TỐI ĐA của chỉ số (chỉ dành cho Sinh Mệnh, Linh Lực, Độ No, Độ Khát...)." } }, required: ['attribute'] } },
+            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatIds }, change: { type: Type.NUMBER, description: "Thay đổi giá trị hiện tại của chỉ số." }, changeMax: { type: Type.NUMBER, description: "Thay đổi giá trị TỐI ĐA của chỉ số (chỉ dành cho Sinh Mệnh, Linh Lực, Độ No, Độ Khát...)." } }, required: ['attribute'] } },
             currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING, enum: Object.keys(CURRENCY_DEFINITIONS) }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
-            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
+            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
             itemsLost: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
             newTechniques: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] } }, required: ['name', 'description', 'type', 'rank'] } },
             newQuests: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, source: { type: Type.STRING }, objectives: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] }, description: { type: Type.STRING }, target: { type: Type.STRING }, required: { type: Type.NUMBER } }, required: ['type', 'description', 'target', 'required'] } } }, required: ['title', 'description', 'source', 'objectives'] } },
-            newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: ALL_PARSABLE_STATS }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
+            newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
             npcEncounters: { type: Type.ARRAY, items: { type: Type.STRING } },
             locationChange: { type: Type.STRING, description: "ID của địa điểm mới nếu người chơi di chuyển thành công." },
             timeJump: { type: Type.OBJECT, properties: { years: { type: Type.NUMBER }, seasons: { type: Type.NUMBER }, days: { type: Type.NUMBER } } },
@@ -93,7 +97,7 @@ ${arbiterInstruction}
 ### QUY TẮC TỐI THƯỢỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **ĐỒNG BỘ TUYỆT ĐỐI ("Ý-HÌNH SONG SINH"):** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game). Mọi sự kiện, vật phẩm, thay đổi chỉ số, đột phá cảnh giới, thay đổi cảm xúc... được mô tả trong \`narrative\` PHẢI được phản ánh chính xác 100% trong \`mechanicalIntent\`, và ngược lại. KHÔNG CÓ NGOẠI LỆ. Nếu không có thay đổi cơ chế nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
 2.  **VIẾT TIẾP, KHÔNG LẶP LẠI (CỰC KỲ QUAN TRỌNG):** TUYỆT ĐỐI KHÔNG lặp lại, diễn giải lại, hoặc tóm tắt lại bất kỳ nội dung nào đã có trong "Nhật Ký Gần Đây" hoặc "Tóm Tắt Cốt Truyện". Nhiệm vụ của bạn là **VIẾT TIẾP** câu chuyện, tạo ra diễn biến **HOÀN TOÀN MỚI** dựa trên hành động của người chơi. Hãy coi như người chơi đã đọc và hiểu nhật ký; chỉ tập trung vào những gì xảy ra **TIẾP THEO**.
-3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (ĐÃ THAY ĐỔI):** Kết quả hành động của người chơi đã được Trọng Tài AI quyết định (xem LUẬT LỆ TỐI THƯỢỢNG ở trên). Nhiệm vụ của bạn là **TƯỜNG THUẬT** lại kết quả đó một cách hợp lý và hấp dẫn, đồng thời điền các thay đổi cơ chế tương ứng vào \`mechanicalIntent\`. Bạn không cần tự quyết định hành động thành công hay thất bại nữa.
+3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (ĐÃ THAY ĐỔI):** Kết quả hành động của người chơi đã được Trọng Tài AI quyết định (xem LUẬT LỆ TỐI THƯỢNG ở trên). Nhiệm vụ của bạn là **TƯỜNG THUẬT** lại kết quả đó một cách hợp lý và hấp dẫn, đồng thời điền các thay đổi cơ chế tương ứng vào \`mechanicalIntent\`. Bạn không cần tự quyết định hành động thành công hay thất bại nữa.
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.

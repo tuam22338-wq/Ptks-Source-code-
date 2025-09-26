@@ -1,5 +1,9 @@
 
 
+
+
+
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -63,8 +67,9 @@ const ItemComparison: React.FC<{ item: InventoryItem; equipped: InventoryItem | 
     return (
         <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]/50">
             {Array.from(allAttributes).map(attr => {
-                const itemValue = itemBonuses.get(attr) || 0;
-                const equippedValue = equippedBonuses.get(attr) || 0;
+                // FIX: Cast bonus values to Number to prevent arithmetic errors with string types from deserialized save data.
+                const itemValue = Number(itemBonuses.get(attr)) || 0;
+                const equippedValue = Number(equippedBonuses.get(attr)) || 0;
                 const diff = itemValue - equippedValue;
                 let diffColor = 'text-gray-400';
                 if (diff > 0) diffColor = 'text-green-400';
@@ -123,10 +128,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                         const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === bonus.attribute);
                         if (attrDef && pc.attributes[attrDef.id]) {
                             const attr = pc.attributes[attrDef.id];
-                            // FIX: Cast bonus.value to a number to prevent type errors from deserialized game state.
                             attr.value = Number(attr.value) + (Number(bonus.value) * multiplier);
                             if (attr.maxValue !== undefined) {
-                                // FIX: Cast bonus.value to a number to prevent type errors from deserialized game state.
                                 const newMaxValue = Number(attr.maxValue) + (Number(bonus.value) * multiplier);
                                 attr.maxValue = newMaxValue;
                                 if (operation === 'subtract' && attr.value > newMaxValue) {
@@ -144,7 +147,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     }
                     const existingStack = pc.inventory.items.find((i: InventoryItem) => i.name === currentItemInSlot.name && !i.isEquipped);
                     if (existingStack) {
-                        existingStack.quantity = Number(existingStack.quantity) + 1;
+                        existingStack.quantity = (Number(existingStack.quantity) || 0) + 1;
                     } else {
                         pc.inventory.items.push({ ...currentItemInSlot, isEquipped: false, quantity: 1 });
                     }
@@ -153,7 +156,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                 const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.id === itemToEquip.id);
                 if (itemIndex > -1) {
                     if (Number(pc.inventory.items[itemIndex].quantity) > 1) {
-                        // FIX: Cast quantity to a number before performing arithmetic to prevent type errors from deserialized game state.
                         pc.inventory.items[itemIndex].quantity = Number(pc.inventory.items[itemIndex].quantity) - 1;
                     } else {
                         pc.inventory.items.splice(itemIndex, 1);
@@ -191,10 +193,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                         const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === bonus.attribute);
                         if (attrDef && pc.attributes[attrDef.id]) {
                             const attr = pc.attributes[attrDef.id];
-                            // FIX: Cast bonus.value to a number to prevent type errors from deserialized game state.
                             attr.value = Number(attr.value) + (Number(bonus.value) * multiplier);
                             if (attr.maxValue !== undefined) {
-                                // FIX: Cast bonus.value to a number to prevent type errors from deserialized game state.
                                 const newMaxValue = Number(attr.maxValue) + (Number(bonus.value) * multiplier);
                                 attr.maxValue = newMaxValue;
                                 if (attr.value > newMaxValue) {
@@ -313,7 +313,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
 
     if (!isOpen || !playerCharacter) return null;
     
-    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((Number(item.weight) || 0) * Number(item.quantity)), 0);
+    const currentWeight = playerCharacter.inventory.items.reduce((total, item) => total + ((Number(item.weight) || 0) * (Number(item.quantity) || 0)), 0);
     const weightPercentage = (currentWeight / Number(playerCharacter.inventory.weightCapacity)) * 100;
 
     const equippedItemForComparison = selectedItem?.slot ? playerCharacter.equipment[selectedItem.slot] : null;

@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -309,42 +309,68 @@ export const generateWorldFromText = async (text: string): Promise<FullMod> => {
 
 interface WorldGenPrompts {
     modInfo: Omit<ModInfo, 'description' | 'version'>;
-    setting: string;
-    mainGoal?: string;
-    openingStory?: string;
+    prompts: {
+        setting: string;
+        mainGoal?: string;
+        openingStory?: string;
+    };
     aiHooks?: {
         on_world_build?: string;
         on_action_evaluate?: string;
     };
+    attributeSystem?: ModAttributeSystem;
+    realmConfigs?: RealmConfig[];
 }
 
 export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
-    const aiHooksText = (prompts.aiHooks?.on_world_build || '') + '\n' + (prompts.aiHooks?.on_action_evaluate || '');
+    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, realmConfigs } = prompts;
+
+    const aiHooksText = (aiHooks?.on_world_build || '') + '\n' + (aiHooks?.on_action_evaluate || '');
     
+    const attributeContext = attributeSystem
+        ? `### HỆ THỐNG THUỘC TÍNH (ĐÃ ĐỊNH NGHĨA SẴN) ###\nĐây là các thuộc tính của thế giới này. Hãy sử dụng chúng khi tạo NPC và các yếu tố khác.\n${attributeSystem.definitions.map(d => `- ${d.name}: ${d.description}`).join('\n')}\n### KẾT THÚC HỆ THỐNG THUỘC TÍNH ###`
+        : '';
+        
+    const realmContext = realmConfigs && realmConfigs.length > 0
+        ? `### HỆ THỐNG CẢNH GIỚI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nĐây là hệ thống tu luyện của thế giới này. Cảnh giới cao nhất là ${realmConfigs[realmConfigs.length - 1].name}.\n${realmConfigs.map(r => `- ${r.name}`).join(' -> ')}\n### KẾT THÚC HỆ THỐNG CẢNH GIỚI ###`
+        : "### HỆ THỐNG CẢNH GIỚI ###\nThế giới này không có hệ thống tu luyện cảnh giới.";
+
+    // Clone the base schema to modify it
+    const dynamicWorldSchema = JSON.parse(JSON.stringify(worldSchema));
+    
+    // If systems are provided by the user, the AI should not generate them.
+    if (attributeSystem) {
+        delete dynamicWorldSchema.properties.content.properties.attributeSystem;
+    }
+    if (realmConfigs) {
+        delete dynamicWorldSchema.properties.content.properties.realmConfigs;
+    }
+
     const masterPrompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những ý tưởng cốt lõi thành một thế giới game có cấu trúc hoàn chỉnh.
     Nhiệm vụ của bạn là đọc và phân tích các ý tưởng do người dùng cung cấp, sau đó mở rộng, chi tiết hóa và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
 
     **Ý Tưởng Cốt Lõi từ Người Dùng:**
     ---
-    - **Tên Mod:** ${prompts.modInfo.name}
-    - **Bối Cảnh (Setting):** ${prompts.setting}
-    - **Mục Tiêu Chính (Nếu có):** ${prompts.mainGoal || "AI tự do sáng tạo."}
+    - **Tên Mod:** ${modInfo.name}
+    - **Bối Cảnh (Setting):** ${userPrompts.setting}
+    - **Mục Tiêu Chính (Nếu có):** ${userPrompts.mainGoal || "AI tự do sáng tạo."}
     - **Quy Luật Thế Giới (AI Hooks):** ${aiHooksText.trim() || "Không có quy luật đặc biệt, AI tự do sáng tạo."}
-    - **Cốt Truyện Khởi Đầu (Nếu có):** ${prompts.openingStory || "AI tự tạo một phần mở đầu hấp dẫn."}
+    - **Cốt Truyện Khởi Đầu (Nếu có):** ${userPrompts.openingStory || "AI tự tạo một phần mở đầu hấp dẫn."}
     ---
+    
+    ${attributeContext}
+    ${realmContext}
 
     **Quy trình Sáng Tạo & Suy Luận:**
     1.  **\`modInfo\`:** Sử dụng thông tin \`name\` và \`id\` được cung cấp. Tạo một mô tả ngắn gọn dựa trên bối cảnh.
     2.  **\`worldData\`:** Đây là phần quan trọng nhất. Dựa trên Bối Cảnh, Mục Tiêu và Quy Luật:
-        -   **Sáng tạo Lịch sử & Sự kiện (\`majorEvents\`):** Tạo ra ít nhất 5 sự kiện lịch sử quan trọng dẫn đến tình hình hiện tại của thế giới.
-        -   **Sáng tạo Phe phái (\`factions\`):** Dựa trên bối cảnh, tạo ra 2-4 phe phái chính có mục tiêu và mâu thuẫn với nhau.
-        -   **Thiết kế Bản đồ (\`initialLocations\`):** Tạo ra một danh sách các địa điểm khởi đầu (khoảng 5-10 địa điểm) bao gồm thành thị, hoang dã, và các nơi đặc biệt. Các địa điểm phải liên kết với nhau một cách logic qua \`neighbors\`. Tự động tạo tọa độ \`coordinates\` (x, y) hợp lý.
-        -   **Tạo Nhân vật (\`initialNpcs\`):** Tạo ra 3-5 NPC quan trọng, có vai trò trong cốt truyện hoặc các phe phái. Đặt họ vào các địa điểm (\`locationId\`) phù hợp bằng cách sử dụng TÊN của địa điểm đã tạo.
+        -   Sáng tạo Lịch sử & Sự kiện (\`majorEvents\`).
+        -   Sáng tạo Phe phái (\`factions\`).
+        -   Thiết kế Bản đồ (\`initialLocations\`).
+        -   Tạo Nhân vật (\`initialNpcs\`). Đặt họ vào các địa điểm (\`locationId\`) phù hợp bằng cách sử dụng TÊN của địa điểm đã tạo.
     3.  **\`items\` (Tùy chọn):** Tạo ra 1-2 vật phẩm khởi đầu hoặc vật phẩm quan trọng liên quan đến cốt truyện.
-    4.  **\`realmConfigs\` (Hệ Thống Tu Luyện):** Dựa vào "Quy Luật Thế Giới", nếu người dùng mô tả một hệ thống tu luyện, hãy tạo ra cấu trúc \`realmConfigs\` tương ứng. Nếu không, có thể tạo một hệ thống cơ bản hoặc để trống.
-    5.  **\`aiHooks\`:** **QUAN TRỌNG:** Dựa vào các quy luật người dùng cung cấp và suy luận thêm từ bối cảnh, hãy tạo ra 1-3 quy luật độc đáo cho thế giới. Phân loại chúng vào \`on_world_build\` (vĩnh cửu) hoặc \`on_action_evaluate\` (tình huống).
-    6. **\`dynamicEvents\` (Sự kiện động):** Dựa trên lore và các địa điểm, hãy tạo ra 1-3 sự kiện động đơn giản để làm thế giới thêm sống động.
-    7.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
+    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại \`realmConfigs\` hay \`attributeSystem\` nếu chúng đã được cung cấp.
+    5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
 
@@ -355,39 +381,73 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         contents: masterPrompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: worldSchema,
+            responseSchema: dynamicWorldSchema,
         }
     }, specificApiKey);
     
     try {
-        const json = JSON.parse(response.text.trim());
-        if (json.content?.worldData?.[0]) {
-            const world = json.content.worldData[0];
+        const generatedJson = JSON.parse(response.text.trim());
+        
+        // Start building the final mod object
+        const finalMod: FullMod = {
+            modInfo: {
+                ...modInfo,
+                description: generatedJson.modInfo.description || `Một thế giới được tạo bởi AI dựa trên bối cảnh: ${userPrompts.setting}`,
+                version: '1.0.0',
+                author: modInfo.author || generatedJson.modInfo.author
+            },
+            content: {
+                ...generatedJson.content
+            }
+        };
+
+        // Add back user-defined systems if they were provided
+        if (attributeSystem) {
+            finalMod.content.attributeSystem = attributeSystem;
+        }
+        if (realmConfigs) {
+            finalMod.content.realmConfigs = realmConfigs;
+        }
+        // Ensure user-provided AI Hooks take precedence
+        if (aiHooks) {
+            finalMod.content.aiHooks = {
+                on_world_build: aiHooks.on_world_build ? aiHooks.on_world_build.split('\n').filter(Boolean) : finalMod.content.aiHooks?.on_world_build,
+                on_action_evaluate: aiHooks.on_action_evaluate ? aiHooks.on_action_evaluate.split('\n').filter(Boolean) : finalMod.content.aiHooks?.on_action_evaluate,
+            };
+        }
+
+        // Post-processing to add IDs where names are used as references
+        if (finalMod.content?.worldData?.[0]) {
+            const world = finalMod.content.worldData[0];
             const locationNameIdMap = new Map<string, string>();
             
-            world.initialLocations = world.initialLocations.map((loc: any) => {
-                const id = loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
-                locationNameIdMap.set(loc.name, id);
-                return { ...loc, id: id };
-            });
+            if (world.initialLocations) {
+                world.initialLocations = world.initialLocations.map((loc: any) => {
+                    const id = loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+                    locationNameIdMap.set(loc.name, id);
+                    return { ...loc, id: id };
+                });
+                
+                world.initialLocations.forEach((loc: any) => {
+                    loc.neighbors = (loc.neighbors || []).map((name: string) => locationNameIdMap.get(name) || name);
+                });
+            }
             
-            world.initialLocations.forEach((loc: any) => {
-                loc.neighbors = (loc.neighbors || []).map((name: string) => locationNameIdMap.get(name) || name);
-            });
+            if (world.initialNpcs) {
+                world.initialNpcs.forEach((npc: any) => {
+                    npc.locationId = locationNameIdMap.get(npc.locationId) || npc.locationId;
+                });
+            }
             
-            world.initialNpcs.forEach((npc: any) => {
-                npc.locationId = locationNameIdMap.get(npc.locationId) || npc.locationId;
-            });
-            
-            if (json.content.dynamicEvents) {
-                json.content.dynamicEvents.forEach((event: any) => {
+            if (finalMod.content.dynamicEvents) {
+                finalMod.content.dynamicEvents.forEach((event: any) => {
                     if (event.trigger.type === 'ON_ENTER_LOCATION' && event.trigger.details.locationId) {
                         event.trigger.details.locationId = locationNameIdMap.get(event.trigger.details.locationId) || event.trigger.details.locationId;
                     }
                 });
             }
         }
-        return json as FullMod;
+        return finalMod;
     } catch (e) {
         console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);

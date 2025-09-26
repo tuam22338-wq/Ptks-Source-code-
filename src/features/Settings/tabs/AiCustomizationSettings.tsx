@@ -77,7 +77,7 @@ const AiCustomizationSettings: React.FC<AiCustomizationSettingsProps> = ({ setti
                 </SettingsRow>
                 <SettingsRow label="Độ dài Phản hồi AI (Số từ)" description="Đặt độ dài gần đúng cho mỗi phản hồi tường thuật của AI.">
                     <div className="flex items-center gap-4">
-                        <input type="range" min="50" max="800" step="50" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                        <input type="range" min="100" max="5000" step="100" value={settings.aiResponseWordCount} onChange={(e) => handleSettingChange('aiResponseWordCount', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
                         <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.aiResponseWordCount}</span>
                     </div>
                 </SettingsRow>

@@ -1,6 +1,6 @@
 import React, { memo, useMemo } from 'react';
 import type { GameState } from '../../../../../types';
-import { UI_ICONS, CURRENCY_DEFINITIONS } from '../../../../../constants';
+import { UI_ICONS } from '../../../../../constants';
 import { GiGoldBar } from 'react-icons/gi';
 
 // Helper component for displaying an attribute
@@ -9,8 +9,9 @@ const AttributeRow: React.FC<{
     value: string | number;
     maxValue?: string | number;
     icon: React.ElementType;
-}> = ({ label, value, maxValue, icon: Icon }) => (
-    <div className="flex justify-between items-center text-sm py-1">
+    description?: string;
+}> = ({ label, value, maxValue, icon: Icon, description }) => (
+    <div className="flex justify-between items-center text-sm py-1 group relative" title={description}>
         <div className="flex items-center gap-2 text-gray-300">
             <Icon />
             <span>{label}</span>
@@ -57,22 +58,33 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
     
     const getAttributeValue = (id: string) => playerCharacter.attributes[id] || { value: 0 };
     
-    const renderAttributeGroup = (groupId: string) => {
-        const group = attributeSystem.groups.find(g => g.id === groupId);
-        if (!group) return null;
-
+    const renderAttributeGroup = (group: (typeof attributeSystem.groups)[0]) => {
         const attributesInGroup = attributeSystem.definitions
-            .filter(def => def.group === groupId && def.type !== 'INFORMATIONAL' && playerCharacter.attributes[def.id]);
+            .filter(def => def.group === group.id && playerCharacter.attributes[def.id]);
         
         if (attributesInGroup.length === 0) return null;
 
         return (
-            <div key={groupId} className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
+            <div key={group.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
                 <h4 className="font-bold text-amber-300 font-title mb-2">{group.name}</h4>
                 <div className="space-y-1">
                     {attributesInGroup.map(def => {
                         const attr = getAttributeValue(def.id);
                         const Icon = UI_ICONS[def.iconName] || (() => <span />);
+                        
+                        // Handle special case for informational attributes like realm
+                        if (def.type === 'INFORMATIONAL' && def.id === 'canh_gioi') {
+                             return (
+                                <AttributeRow
+                                    key={def.id}
+                                    label={def.name}
+                                    value={`${currentRealm?.name || ''} - ${currentStage?.name || ''}`}
+                                    icon={Icon}
+                                    description={def.description}
+                                />
+                            )
+                        }
+
                         return (
                             <AttributeRow
                                 key={def.id}
@@ -80,6 +92,7 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                                 value={Math.floor(attr.value)}
                                 maxValue={attr.maxValue !== undefined ? Math.floor(attr.maxValue) : undefined}
                                 icon={Icon}
+                                description={def.description}
                             />
                         )
                     })}
@@ -111,36 +124,33 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
         );
     };
 
+    const sortedGroups = [...attributeSystem.groups].sort((a, b) => a.order - b.order);
+
     return (
         <div className="space-y-4 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            {/* Cultivation */}
-            <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                <h4 className="font-bold text-amber-300 font-title">Tu Luyện</h4>
-                <p className="text-lg font-semibold text-cyan-300">{currentRealm?.name} - {currentStage?.name}</p>
-                <div className="mt-2">
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
-                        <span>Linh Khí</span>
-                        <span>{playerCharacter.cultivation.spiritualQi.toLocaleString()} / {(isFinite(qiToNextStage) ? qiToNextStage.toLocaleString() : 'MAX')}</span>
+            {/* Cultivation Progress (if realm system exists) */}
+            {realmSystem.length > 0 && (
+                <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
+                    <h4 className="font-bold text-amber-300 font-title">Tu Luyện</h4>
+                    <p className="text-lg font-semibold text-cyan-300">{currentRealm?.name} - {currentStage?.name}</p>
+                    <div className="mt-2">
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>Linh Khí</span>
+                            <span>{playerCharacter.cultivation.spiritualQi.toLocaleString()} / {(isFinite(qiToNextStage) ? qiToNextStage.toLocaleString() : 'MAX')}</span>
+                        </div>
+                        <ProgressBar 
+                            current={playerCharacter.cultivation.spiritualQi} 
+                            max={isFinite(qiToNextStage) ? qiToNextStage : playerCharacter.cultivation.spiritualQi} 
+                            colorClass="bg-gradient-to-r from-cyan-400 to-blue-500"
+                        />
                     </div>
-                    <ProgressBar 
-                        current={playerCharacter.cultivation.spiritualQi} 
-                        max={isFinite(qiToNextStage) ? qiToNextStage : playerCharacter.cultivation.spiritualQi} 
-                        colorClass="bg-gradient-to-r from-cyan-400 to-blue-500"
-                    />
                 </div>
-            </div>
+            )}
             
-            {/* Currencies */}
             {renderCurrencies()}
-
-            {/* Vitals */}
-            {renderAttributeGroup('vitals')}
-
-            {/* Main Attributes */}
-            {renderAttributeGroup('physical')}
-            {renderAttributeGroup('essence')}
-            {renderAttributeGroup('spirit')}
-            {renderAttributeGroup('external')}
+            
+            {/* Dynamic Attribute Groups */}
+            {sortedGroups.map(group => renderAttributeGroup(group))}
 
             {/* Active Effects */}
             {playerCharacter.activeEffects.length > 0 && (

@@ -6,6 +6,11 @@ const sanitizeInventoryItem = (item: InventoryItem): InventoryItem => {
         item.quantity = Number(item.quantity) || 0;
         item.weight = Number(item.weight) || 0;
         item.value = Number(item.value) || 0;
+        if (item.bonuses) {
+            item.bonuses.forEach(bonus => {
+                bonus.value = Number(bonus.value) || 0;
+            });
+        }
     }
     return item;
 };
@@ -35,6 +40,14 @@ const sanitizePlayerCharacter = (pc: PlayerCharacter): PlayerCharacter => {
             pc.inventory.items.forEach(sanitizeInventoryItem);
         }
     }
+    if (pc.equipment) {
+        for (const slot in pc.equipment) {
+            const item = pc.equipment[slot as keyof typeof pc.equipment];
+            if (item) {
+                sanitizeInventoryItem(item);
+            }
+        }
+    }
     if (pc.currencies) {
         for (const key in pc.currencies) {
             pc.currencies[key as keyof typeof pc.currencies] = Number(pc.currencies[key as keyof typeof pc.currencies]) || 0;
@@ -56,6 +69,14 @@ const sanitizeNpc = (npc: NPC): NPC => {
         npc.inventory.weightCapacity = Number(npc.inventory.weightCapacity) || 0;
         if (npc.inventory.items) {
             npc.inventory.items.forEach(sanitizeInventoryItem);
+        }
+    }
+    if (npc.equipment) {
+        for (const slot in npc.equipment) {
+            const item = npc.equipment[slot as keyof typeof npc.equipment];
+            if (item) {
+                sanitizeInventoryItem(item);
+            }
         }
     }
     if (npc.currencies) {

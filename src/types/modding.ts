@@ -2,12 +2,13 @@ import type {
     Faction, Gender, Element, StatBonus, ItemType, ItemQuality, EquipmentSlot, InnateTalentRank, PhapBaoRank,
     TechniqueEffectType, TechniqueEffect,
     // FIX: Import SkillCheck from core types
-    SkillCheck
+    SkillCheck,
+    AttributeDefinition,
+    AttributeGroupDefinition
 } from './core';
 import type { CharacterIdentity } from './character';
 // FIX: Correct imports to resolve circular dependencies and missing types.
 import type { MajorEvent, GameEvent, NPC, Location } from './gameplay';
-import type { AttributeDefinition, AttributeGroupDefinition } from './core';
 
 export interface ModItem {
     id: string;

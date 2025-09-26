@@ -1,15 +1,16 @@
 
-
-import React, { useState, useCallback, memo, useMemo } from 'react';
-import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency } from '../../types';
+import React, { useState, useCallback, memo, useMemo, useEffect } from 'react';
+import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency, ModAttributeSystem, FullMod } from '../../types';
 import { FaArrowLeft, FaDiceD20, FaCheck, FaSyncAlt } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill, GiStairsGoal, GiSparkles, GiFamilyTree } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
 import { generateCharacterFromPrompts } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import CharacterIdentityDisplay from './CharacterIdentityDisplay';
-import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS, NPC_DENSITY_LEVELS } from '../../constants';
+import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
+import * as db from '../../services/dbService';
+
 
 type CreationStep = 'identity' | 'summary';
 
@@ -57,6 +58,38 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const [npcDensity, setNpcDensity] = useState<'medium'>('medium');
     const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
 
+    const [activeAttributeSystem, setActiveAttributeSystem] = useState<ModAttributeSystem | null>(null);
+
+    useEffect(() => {
+        const loadModSystems = async () => {
+            try {
+                const modLibrary = await db.getModLibrary();
+                const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
+                const activeMods: FullMod[] = (await Promise.all(
+                    enabledModsInfo.map(modInfo => db.getModContent(modInfo.modInfo.id))
+                )).filter((mod): mod is FullMod => mod !== undefined);
+
+                const modAttributeSystem = activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem;
+                
+                if (modAttributeSystem) {
+                    setActiveAttributeSystem(modAttributeSystem);
+                } else {
+                    setActiveAttributeSystem({
+                        definitions: DEFAULT_ATTRIBUTE_DEFINITIONS,
+                        groups: DEFAULT_ATTRIBUTE_GROUPS
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load mod attribute systems:", error);
+                setActiveAttributeSystem({
+                    definitions: DEFAULT_ATTRIBUTE_DEFINITIONS,
+                    groups: DEFAULT_ATTRIBUTE_GROUPS
+                });
+            }
+        };
+        loadModSystems();
+    }, []);
+
     const majorEventsForTimeline = useMemo(() => state.activeWorldId === 'tay_du_ky' ? JTTW_MAJOR_EVENTS : PT_MAJOR_EVENTS, [state.activeWorldId]);
 
     const isStep1Complete = useMemo(() => !!(draftIdentity.name.trim() && raceInput.trim() && backgroundInput.trim()), [draftIdentity.name, raceInput, backgroundInput]);
@@ -68,7 +101,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     };
 
     const handleGenerateDetails = async () => {
-        if (!isStep1Complete) return;
+        if (!isStep1Complete || !activeAttributeSystem) return;
         setIsGenerating(true);
         setGenerationError(null);
         try {
@@ -76,7 +109,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                 draftIdentity,
                 raceInput,
                 backgroundInput
-            });
+            }, activeAttributeSystem);
             setGeneratedResult(result);
             setStep('summary');
         } catch (err: any) {
@@ -139,7 +172,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                            </div>
                         </div>
                         <div className="text-center pt-4">
-                            <button onClick={handleGenerateDetails} disabled={!isStep1Complete} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 px-8 py-3 text-xl font-bold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
+                            <button onClick={handleGenerateDetails} disabled={!isStep1Complete || !activeAttributeSystem} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 px-8 py-3 text-xl font-bold rounded-lg disabled:bg-gray-600 disabled:cursor-not-allowed">
                                 <GiGalaxy className="inline-block mr-2" />
                                 Diễn Giải Số Mệnh
                             </button>

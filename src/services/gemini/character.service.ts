@@ -1,8 +1,7 @@
 
-
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -12,8 +11,22 @@ export const generateCharacterFromPrompts = async (
         draftIdentity: Omit<CharacterIdentity, 'origin' | 'age'>;
         raceInput: string;
         backgroundInput: string;
-    }
+    },
+    attributeSystem: ModAttributeSystem
 ): Promise<{ identity: CharacterIdentity; spiritualRoot: SpiritualRoot; initialBonuses: StatBonus[], initialItems: any[], initialCurrency: Currency }> => {
+
+    const availableAttributes = attributeSystem.definitions
+        .filter(def => def.type === 'PRIMARY')
+        .map(def => def.name);
+
+    const attributeContext = `
+**Hệ Thống Thuộc Tính Của Thế Giới Này (Chỉ số gốc):**
+${attributeSystem.definitions
+    .filter(def => def.type === 'PRIMARY')
+    .map(def => `- ${def.name}: ${def.description}`)
+    .join('\n')}
+Khi gán "bonuses", bạn CHỈ ĐƯỢỢC PHÉP sử dụng tên thuộc tính từ danh sách này.`;
+
 
     const responseSchema = {
         type: Type.OBJECT,
@@ -35,7 +48,7 @@ export const generateCharacterFromPrompts = async (
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                        attribute: { type: Type.STRING, description: `Tên của thuộc tính. PHẢI là một trong các giá trị sau: ${availableAttributes.join(', ')}` },
                         value: { type: Type.NUMBER, description: "Giá trị bonus, có thể dương hoặc âm." }
                     },
                     required: ['attribute', 'value']
@@ -69,7 +82,7 @@ export const generateCharacterFromPrompts = async (
         required: ['refined_appearance', 'origin_story', 'power_source', 'bonuses'],
     };
 
-    const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game tu tiên. Dựa trên các ý tưởng của người chơi, hãy diễn giải và kiến tạo nên một nhân vật hoàn chỉnh.
+    const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game tu tiên. Dựa trên các ý tưởng của người chơi và hệ thống thuộc tính của thế giới, hãy diễn giải và kiến tạo nên một nhân vật hoàn chỉnh.
 
     **Ý Tưởng Cốt Lõi Của Người Chơi:**
     - **Thông tin cơ bản:**
@@ -80,12 +93,14 @@ export const generateCharacterFromPrompts = async (
     - **Huyết Mạch / Chủng Tộc (ý tưởng):** "${context.raceInput}"
     - **Xuất Thân / Trưởng Thành (ý tưởng):** "${context.backgroundInput}"
 
+    ${attributeContext}
+
     **Nhiệm vụ:**
     1.  **Tổng hợp & Sáng tạo:** Kết hợp tất cả các ý tưởng trên một cách sáng tạo để tạo ra một nhân vật độc đáo.
     2.  **Viết nên "origin_story":** Đây là phần quan trọng nhất. Hãy viết một đoạn văn kể về câu chuyện nền của nhân vật, giải thích cách các yếu tố trên kết nối với nhau.
     3.  **Hoàn thiện "refined_appearance":** Dựa trên ý tưởng của người chơi, hãy viết một mô tả ngoại hình hoàn chỉnh hơn.
     4.  **Tạo "power_source":** Dựa vào câu chuyện, hãy tạo ra một nguồn gốc sức mạnh độc đáo.
-    5.  **Gán "bonuses", "starting_items", và "starting_currency":** Dựa trên toàn bộ câu chuyện, hãy chọn ra các chỉ số thưởng, vật phẩm và tiền tệ khởi đầu hợp lý. Một thiếu niên nghèo khó thì không có tiền, một công tử nhà giàu thì có nhiều Bạc.
+    5.  **Gán "bonuses", "starting_items", và "starting_currency":** Dựa trên toàn bộ câu chuyện, hãy chọn ra các chỉ số thưởng (từ danh sách được cung cấp), vật phẩm và tiền tệ khởi đầu hợp lý. Một thiếu niên nghèo khó thì không có tiền, một công tử nhà giàu thì có nhiều Bạc.
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
     

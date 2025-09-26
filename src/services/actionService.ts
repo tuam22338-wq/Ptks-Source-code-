@@ -70,6 +70,48 @@ export const processPlayerAction = async (
         throw new Error("AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
     }
     
+    // --- GIAI ĐOẠN 1.5: ĐIỀU CHỈNH CỦA HỆ THỐNG ---
+    // If the action was a breakthrough, override AI's realm/stage change to ensure correctness.
+    if (text.includes("đột phá")) {
+        const { playerCharacter, realmSystem } = stateAfterSim;
+        const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+        
+        if (currentRealm) {
+            const currentStageIndex = currentRealm.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId);
+
+            if (currentStageIndex !== -1) {
+                let nextRealmId: string | undefined;
+                let nextStageId: string | undefined;
+
+                if (currentStageIndex < currentRealm.stages.length - 1) {
+                    // Breakthrough to the next stage within the same realm
+                    const nextStage = currentRealm.stages[currentStageIndex + 1];
+                    nextRealmId = currentRealm.id;
+                    nextStageId = nextStage.id;
+                } else {
+                    // Breakthrough to the next realm
+                    const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
+                    if (currentRealmIndex < realmSystem.length - 1) {
+                        const nextRealm = realmSystem[currentRealmIndex + 1];
+                        if (nextRealm && nextRealm.stages.length > 0) {
+                            nextRealmId = nextRealm.id;
+                            nextStageId = nextRealm.stages[0].id;
+                        }
+                    }
+                }
+                
+                if (nextRealmId && nextStageId) {
+                    if (!aiPayload.mechanicalIntent) {
+                        aiPayload.mechanicalIntent = {};
+                    }
+                    // Override whatever the AI decided.
+                    aiPayload.mechanicalIntent.realmChange = nextRealmId;
+                    aiPayload.mechanicalIntent.stageChange = nextStageId;
+                }
+            }
+        }
+    }
+
     // --- GIAI ĐOẠN 2: "THIÊN ĐẠO GIÁM SÁT" ---
     const { validatedIntent, validationNotifications } = validateMechanicalChanges(aiPayload.mechanicalIntent, stateAfterSim);
     validationNotifications.forEach(showNotification);

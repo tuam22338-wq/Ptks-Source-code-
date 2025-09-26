@@ -1,10 +1,11 @@
+
 import type { GameState, GameSettings } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
 
 // FIX: Add 'settings' parameter to the function signature and remove the incorrect access from gameState.
 export const createFullGameStateContext = (gameState: GameState, settings: GameSettings, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
-  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState } = gameState;
+  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, realmSystem } = gameState;
   const playerAiHooks = gameState.playerCharacter.playerAiHooks;
   let playerRulesContext = '';
   if (playerAiHooks) {
@@ -42,25 +43,33 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
   
   const reputationSummary = playerCharacter.reputation.map(r => `${r.factionName}: ${r.status} (${r.value})`).join('; ');
   
-  const keyAttributes = DEFAULT_ATTRIBUTE_DEFINITIONS
-    .filter(def => ['luc_luong', 'than_phap', 'ngo_tinh', 'co_duyen', 'can_cot', 'sinh_menh', 'linh_luc'].includes(def.id))
-    .map(def => {
-        const attr = playerCharacter.attributes[def.id];
-        if (!attr) return null;
-        return `${def.name}: ${attr.value}${attr.maxValue ? `/${attr.maxValue}` : ''}`;
-    })
-    .filter(Boolean)
-    .join(', ');
+  // DYNAMIC ATTRIBUTE SUMMARY
+  let attributeSummary = '';
+  const sortedGroups = [...attributeSystem.groups].sort((a,b) => a.order - b.order);
 
+  for (const group of sortedGroups) {
+      const attrsInGroup = attributeSystem.definitions.filter(def => def.group === group.id && playerCharacter.attributes[def.id]);
+      if (attrsInGroup.length === 0) continue;
+      
+      let groupContent = '';
+      const attributeLines = attrsInGroup.map(def => {
+          const attr = playerCharacter.attributes[def.id];
+          if (!attr) return null;
+          
+          if (def.id === 'canh_gioi') return null; // Handled separately
+
+          return `  - ${def.name}: ${Math.floor(attr.value)}${attr.maxValue !== undefined ? `/${Math.floor(attr.maxValue)}` : ''}`;
+      }).filter(Boolean);
+
+      if (attributeLines.length > 0) {
+          groupContent += `\n- **${group.name}:**\n${attributeLines.join('\n')}`;
+      }
+      attributeSummary += groupContent;
+  }
+  
   const activeEffectsSummary = playerCharacter.activeEffects.length > 0
     ? `Hiệu ứng: ${playerCharacter.activeEffects.map(e => e.name).join(', ')}.`
     : 'Không có hiệu ứng đặc biệt.';
-
-  const hungerAttr = playerCharacter.attributes.hunger;
-  const thirstAttr = playerCharacter.attributes.thirst;
-  const hungerText = hungerAttr ? `No ${Math.floor(hungerAttr.value)}/${hungerAttr.maxValue}` : '';
-  const thirstText = thirstAttr ? `Khát ${Math.floor(thirstAttr.value)}/${thirstAttr.maxValue}` : '';
-  const vitalsSummary = `Tình trạng Sinh Tồn: ${[hungerText, thirstText].filter(Boolean).join(', ')}. ${activeEffectsSummary}`;
   
   const npcsHereWithMindState = npcsHere.length > 0
     ? npcsHere.map(n => {
@@ -104,24 +113,43 @@ NPC mà người chơi đang tương tác có suy nghĩ nội tâm sau: "${thoug
   } else if (gameState.dialogueWithNpcId) {
       dynamicStyleInstruction = `**LUẬT VĂN PHONG (ĐANG ĐỐI THOẠI):** Tập trung vào biểu cảm, ngôn ngữ cơ thể và ẩn ý trong lời nói.`;
   }
+  
   const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
   const neighbors = currentLocation?.neighbors.map(id => discoveredLocations.find(l => l.id === id)?.name).filter(Boolean) || [];
   const modContext = createModContextSummary(activeMods);
+  
+  const attributeDefinitionsContext = `
+**3. Hệ Thống Thuộc Tính Của Thế Giới Này**
+Đây là các định nghĩa về chỉ số và thuộc tính tồn tại trong thế giới này. Hãy sử dụng chúng để hiểu ý nghĩa của từng chỉ số.
+${attributeSystem.definitions.map(def => `- **${def.name}:** ${def.description}`).join('\n')}
+`;
+  
+  let cultivationContext = '';
+  if (realmSystem && realmSystem.length > 0) {
+      const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+      const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
+      cultivationContext = `
+- **Tu Luyện:** Cảnh giới ${currentRealm?.name || 'Không rõ'} - ${currentStage?.name || 'Không rõ'}, Linh khí ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.
+- **Hệ thống cảnh giới:** ${realmSystem.map(r => r.name).join(' -> ')}.
+`;
+  } else {
+      cultivationContext = `- **Hệ thống sức mạnh:** Thế giới này không sử dụng hệ thống tu luyện cảnh giới truyền thống.`;
+  }
+
   const context = `
 ${modContext}${playerRulesContext}### TOÀN BỘ BỐI CẢNH GAME ###
 Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
 ${dynamicStyleInstruction}
 
 **1. Nhân Vật Chính: ${playerCharacter.identity.name}**
-- **Tu Luyện:** Cảnh giới ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name}, Linh khí ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.
+${cultivationContext}
 - **Tài Sản (QUAN TRỌNG):** ${currencySummary || 'Không một xu dính túi.'}
-- **Linh Căn:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
-- **Công Pháp Chủ Đạo:** ${playerCharacter.mainCultivationTechniqueInfo ? `${playerCharacter.mainCultivationTechniqueInfo.name} - ${playerCharacter.mainCultivationTechniqueInfo.description}` : 'Chưa có'}.
+- **Nguồn Gốc Sức Mạnh:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
 - **Thần Thông/Kỹ Năng:** ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa có'}.
 - **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: **${playerCharacter.identity.personality}**.
 - **Trang Bị:** ${equipmentSummary || 'Không có'}.
-- **Chỉ Số Chính:** ${keyAttributes}.
-- **${vitalsSummary}**
+- **Chi Tiết Trạng Thái:**${attributeSummary}
+- **Hiệu ứng:** ${activeEffectsSummary}
 - **Danh Vọng & Quan Hệ:** Danh vọng ${playerCharacter.danhVong.status}. Các phe phái: ${reputationSummary}.
 - **Thông tin Tông Môn:** ${playerCharacter.sect ? `Là đệ tử của ${playerCharacter.sect.sectId}, chức vị ${playerCharacter.sect.rank}.` : 'Hiện là tán tu.'}
 - **Vật phẩm trong túi đồ:** ${playerCharacter.inventory.items.map(i => `${i.name} (x${i.quantity})`).join(', ') || 'Trống rỗng.'}
@@ -134,7 +162,9 @@ ${dynamicStyleInstruction}
 ${npcsHereWithMindState}
 - **Sự Kiện Thế Giới Đang Diễn Ra:** ${worldState.dynamicEvents?.map(e => e.title).join(', ') || 'Bình yên.'}
 
-**3. Nhiệm Vụ & Cốt Truyện**
+${attributeDefinitionsContext}
+
+**4. Nhiệm Vụ & Cốt Truyện**
 - **Nhiệm Vụ Đang Làm:**
 ${questSummary}
 - **Tóm Tắt Cốt Truyện (Ký ức dài hạn):**

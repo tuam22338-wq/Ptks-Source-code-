@@ -84,7 +84,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     historyTokenLimit: 8192,
     summarizeBeforePruning: true,
     itemsPerPage: 10,
-    aiResponseWordCount: 150,
+    aiResponseWordCount: 1750,
     enableAiSoundSystem: false,
     masterSafetySwitch: true,
     enableNsfwMode: false,

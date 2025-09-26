@@ -425,8 +425,8 @@ export interface GameState {
     encounteredNpcIds: string[];
     activeMods: FullMod[];
     activeModIds?: string[];
-    realmSystem: RealmConfig[];
-    attributeSystem: ModAttributeSystem;
+    realmSystem: RealmConfig[]; // Now dynamic
+    attributeSystem: ModAttributeSystem; // Now dynamic
     majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;
     combatState: CombatState | null;

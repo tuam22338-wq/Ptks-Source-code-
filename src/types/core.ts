@@ -18,21 +18,20 @@ export interface StatBonus {
 }
 
 export interface AttributeDefinition {
-  id: string;
-  name: string;
-  description: string;
-  iconName: string;
-  type: 'PRIMARY' | 'SECONDARY' | 'VITAL' | 'INFORMATIONAL';
-  baseValue?: number;
-  formula?: string;
-  tags?: string[];
-  group: string;
+  id: string; // Machine-readable ID, e.g., 'can_cot', 'radiation_resist'
+  name: string; // Display name, e.g., 'Căn Cốt', 'Kháng Xạ'
+  description: string; // Description for UI and AI context
+  iconName: string; // Icon from a predefined library
+  type: 'PRIMARY' | 'SECONDARY' | 'VITAL' | 'INFORMATIONAL'; // PRIMARY: base stat, SECONDARY: derived, VITAL: depletable (HP/MP), INFORMATIONAL: non-numeric (e.g., realm)
+  baseValue?: number; // Default starting value
+  formula?: string; // Formula for SECONDARY stats, e.g., "(can_cot * 5) + (ben_bi * 2)"
+  group: string; // The ID of the group this attribute belongs to
 }
 
 export interface AttributeGroupDefinition {
-    id: string;
-    name: string;
-    order: number;
+    id: string; // e.g., 'physical', 'survival_metrics'
+    name: string; // e.g., 'Tinh (精 - Nhục Thân)', 'Chỉ Số Sinh Tồn'
+    order: number; // Display order
 }
 
 export type CharacterAttributes = Record<string, {
