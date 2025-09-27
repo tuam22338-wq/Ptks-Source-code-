@@ -58,5 +58,22 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
         }
     }, specificApiKey);
 
-    return JSON.parse(response.text) as CombatActionDecision;
+    try {
+        if (!response.text || response.text.trim() === '') {
+            throw new Error('AI response is empty.');
+        }
+        const result = JSON.parse(response.text) as CombatActionDecision;
+        // Add a check to ensure the result is valid
+        if (result && result.action && result.narrative) {
+            return result;
+        }
+        throw new Error("Invalid combat action structure from AI.");
+    } catch (e) {
+        console.error("Lỗi phân tích JSON khi quyết định hành động NPC:", response.text, e);
+        // Fallback to a basic attack to prevent combat from stalling
+        return {
+            action: 'BASIC_ATTACK',
+            narrative: `${npc.identity.name} do dự một lúc rồi quyết định tấn công thường.`
+        };
+    }
 };

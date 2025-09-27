@@ -210,51 +210,65 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
         config: generationConfig
     }, specificApiKey);
 
-    const data = JSON.parse(response.text);
+    if (!response.text || response.text.trim() === '') {
+        console.warn("AI response for family generation was empty. Returning no family members.");
+        return { npcs: [], relationships: [] };
+    }
+
+    let data;
+    try {
+        data = JSON.parse(response.text);
+    } catch (e) {
+        console.error("Lỗi phân tích JSON khi tạo gia đình:", response.text, e);
+        throw new Error("AI đã trả về dữ liệu không hợp lệ khi tạo gia đình. Vui lòng thử lại.");
+    }
+
     const generatedNpcs: NPC[] = [];
     const generatedRelationships: PlayerNpcRelationship[] = [];
 
-    data.family_members.forEach((member: any) => {
-        const npcId = `family-npc-${Math.random().toString(36).substring(2, 9)}`;
-        const npc: NPC = {
-            id: npcId,
-            identity: {
-                name: member.name,
-                gender: member.gender,
-                appearance: member.description,
-                origin: `Người thân của ${identity.name} tại ${locationId}.`,
-                personality: member.personality,
-                age: member.age,
-                familyName: identity.familyName,
-            },
-            status: member.status,
-            attributes: {}, // They are mortals, few attributes needed
-            emotions: { trust: 70, fear: 10, anger: 5 }, // Family starts with high trust
-            memory: { shortTerm: [], longTerm: [] },
-            motivation: `Bảo vệ và chăm sóc cho gia đình.`,
-            goals: [`Mong ${identity.name} có một cuộc sống bình an.`],
-            currentPlan: null,
-            talents: [],
-            locationId: locationId,
-            cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
-            techniques: [],
-            inventory: { items: [], weightCapacity: 10 },
-            currencies: { 'Bạc': 10 + Math.floor(Math.random() * 50) },
-            equipment: {},
-            healthStatus: 'HEALTHY',
-            activeEffects: [],
-            tuoiTho: 80, // Mortal lifespan
-        };
-        generatedNpcs.push(npc);
+    if (data.family_members) {
+        data.family_members.forEach((member: any) => {
+            const npcId = `family-npc-${Math.random().toString(36).substring(2, 9)}`;
+            const npc: NPC = {
+                id: npcId,
+                identity: {
+                    name: member.name,
+                    gender: member.gender,
+                    appearance: member.description,
+                    origin: `Người thân của ${identity.name} tại ${locationId}.`,
+                    personality: member.personality,
+                    age: member.age,
+                    familyName: identity.familyName,
+                },
+                status: member.status,
+                attributes: {}, // They are mortals, few attributes needed
+                emotions: { trust: 70, fear: 10, anger: 5 }, // Family starts with high trust
+                memory: { shortTerm: [], longTerm: [] },
+                motivation: `Bảo vệ và chăm sóc cho gia đình.`,
+                goals: [`Mong ${identity.name} có một cuộc sống bình an.`],
+                currentPlan: null,
+                talents: [],
+                locationId: locationId,
+                cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true },
+                techniques: [],
+                inventory: { items: [], weightCapacity: 10 },
+                currencies: { 'Bạc': 10 + Math.floor(Math.random() * 50) },
+                equipment: {},
+                healthStatus: 'HEALTHY',
+                activeEffects: [],
+                tuoiTho: 80, // Mortal lifespan
+            };
+            generatedNpcs.push(npc);
 
-        const relationship: PlayerNpcRelationship = {
-            npcId: npcId,
-            type: member.relationship_type,
-            value: 80 + Math.floor(Math.random() * 20), // Start with high affinity
-            status: 'Tri kỷ',
-        };
-        generatedRelationships.push(relationship);
-    });
+            const relationship: PlayerNpcRelationship = {
+                npcId: npcId,
+                type: member.relationship_type,
+                value: 80 + Math.floor(Math.random() * 20), // Start with high affinity
+                status: 'Tri kỷ',
+            };
+            generatedRelationships.push(relationship);
+        });
+    }
 
     return { npcs: generatedNpcs, relationships: generatedRelationships };
 };

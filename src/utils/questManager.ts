@@ -52,8 +52,10 @@ export const checkForNewMainQuests = async (currentState: GameState): Promise<Qu
         if (gameDate.year >= event.year && !hasQuest) {
             try {
                 const questData = await generateMainQuestFromEvent(event, newState);
-                newState = addQuest(newState, questData, 'MAIN', questSourceId);
-                notifications.push(`Nhiệm vụ mới: ${questData.title}`);
+                if (questData.title) { // Check if a valid quest was returned
+                    newState = addQuest(newState, questData, 'MAIN', questSourceId);
+                    notifications.push(`Nhiệm vụ mới: ${questData.title}`);
+                }
             } catch (error) {
                 console.error(`Failed to generate main quest for event "${event.title}":`, error);
             }
@@ -76,8 +78,10 @@ export const checkForNewSideQuest = async (currentState: GameState, npc: NPC): P
         if (!hasQuest) {
             try {
                 const questData = await generateSideQuestFromNpc(npc, relationship, newState);
-                newState = addQuest(newState, questData, 'SIDE', questSourceId);
-                notifications.push(`Nhiệm vụ mới từ ${npc.identity.name}: ${questData.title}`);
+                if (questData.title) { // Check if a valid quest was returned
+                    newState = addQuest(newState, questData, 'SIDE', questSourceId);
+                    notifications.push(`Nhiệm vụ mới từ ${npc.identity.name}: ${questData.title}`);
+                }
             } catch (error) {
                 console.error(`Failed to generate side quest for NPC "${npc.identity.name}":`, error);
             }
@@ -97,8 +101,10 @@ export const checkForNewSystemQuest = async (currentState: GameState): Promise<Q
 
     try {
         const questData = await generateSystemQuest(newState);
-        newState = addQuest(newState, questData, 'SYSTEM', 'system');
-        notifications.push(`[Hệ Thống] Nhiệm vụ mới: ${questData.title}`);
+        if (questData.title) { // Check if a valid quest was returned
+            newState = addQuest(newState, questData, 'SYSTEM', 'system');
+            notifications.push(`[Hệ Thống] Nhiệm vụ mới: ${questData.title}`);
+        }
     } catch (error) {
         console.error(`Failed to generate system quest:`, error);
     }

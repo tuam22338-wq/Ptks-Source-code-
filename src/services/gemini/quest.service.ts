@@ -78,7 +78,17 @@ export const generateMainQuestFromEvent = async (event: MajorEvent, gameState: G
         }
     }, specificApiKey);
 
-    return JSON.parse(response.text);
+    if (!response.text || response.text.trim() === '') {
+        console.warn(`AI response for main quest generation for event "${event.title}" was empty.`);
+        return {};
+    }
+
+    try {
+        return JSON.parse(response.text);
+    } catch (e) {
+        console.error(`Lỗi phân tích JSON khi tạo nhiệm vụ chính cho sự kiện "${event.title}":`, response.text, e);
+        return {}; // Return empty object to prevent crash
+    }
 };
 
 
@@ -113,7 +123,17 @@ export const generateSideQuestFromNpc = async (npc: NPC, relationship: PlayerNpc
         }
     }, specificApiKey);
 
-    return JSON.parse(response.text);
+    if (!response.text || response.text.trim() === '') {
+        console.warn(`AI response for side quest generation for NPC "${npc.identity.name}" was empty.`);
+        return {};
+    }
+
+    try {
+        return JSON.parse(response.text);
+    } catch (e) {
+        console.error(`Lỗi phân tích JSON khi tạo nhiệm vụ phụ từ NPC "${npc.identity.name}":`, response.text, e);
+        return {};
+    }
 };
 
 export const generateSystemQuest = async (gameState: GameState): Promise<Partial<ActiveQuest>> => {
@@ -144,5 +164,15 @@ export const generateSystemQuest = async (gameState: GameState): Promise<Partial
         }
     }, specificApiKey);
 
-    return JSON.parse(response.text);
+    if (!response.text || response.text.trim() === '') {
+        console.warn("AI response for system quest generation was empty.");
+        return {};
+    }
+
+    try {
+        return JSON.parse(response.text);
+    } catch (e) {
+        console.error("Lỗi phân tích JSON khi tạo nhiệm vụ hệ thống:", response.text, e);
+        return {};
+    }
 };

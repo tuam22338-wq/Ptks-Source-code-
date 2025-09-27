@@ -96,7 +96,7 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
                              <input type="number" value={attr.value} onChange={e => setPlayerAttrs((p: CharacterAttributes) => ({...p, [id]: { ...p[id], value: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
                              {attr.maxValue !== undefined && (
                                 // FIX: Explicitly typing the updater function's parameter 'p' to resolve the 'unknown' type error.
-                                <input type="number" value={attr.maxValue} onChange={e => setPlayerAttrs((p: CharacterAttributes) => ({...p, [id]: { value: p[id]?.value ?? 0, maxValue: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                <input type="number" value={attr.maxValue} onChange={e => setPlayerAttrs((p: CharacterAttributes) => ({...p, [id]: { ...p[id], maxValue: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
                              )}
                         </div>
                     </div>
@@ -134,7 +134,7 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
                             <div key={id}>
                                 <label className="text-xs text-gray-400">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
                                 {/* FIX: Explicitly typing the updater function's parameter 'p' to resolve the 'unknown' type error. */}
-                                <input type="number" value={attr.value} onChange={e => setNpcAttrs((p) => p ? ({...p, [id]: { ...p[id], value: parseInt(e.target.value, 10) || 0 }}) : null)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                <input type="number" value={attr.value} onChange={e => setNpcAttrs((p: CharacterAttributes | null) => p ? ({...p, [id]: { ...p[id], value: parseInt(e.target.value, 10) || 0 }}) : null)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
                             </div>
                         ))}
                         <button onClick={handleApplyNpcChanges} className="w-full mt-2 px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-sm flex items-center justify-center gap-2"><FaSave /> Áp Dụng</button>

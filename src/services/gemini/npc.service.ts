@@ -1,6 +1,7 @@
 
 
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes } from '../../types';
@@ -112,7 +113,18 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
         }
     }, specificApiKey);
 
-    const npcsData = JSON.parse(response.text);
+    if (!response.text || response.text.trim() === '') {
+        console.warn("AI response for dynamic NPC generation was empty. Returning empty NPC list.");
+        return [];
+    }
+
+    let npcsData;
+    try {
+        npcsData = JSON.parse(response.text);
+    } catch(e) {
+        console.error("Lỗi phân tích JSON khi tạo NPC động:", response.text, e);
+        throw new Error("AI đã trả về dữ liệu không hợp lệ khi tạo chúng sinh. Vui lòng thử lại.");
+    }
 
     return npcsData.map((npcData: any): NPC => {
         const { name, gender, description, origin, personality, talents, realmName, currency, element, initialEmotions, motivation, goals, ...stats } = npcData;

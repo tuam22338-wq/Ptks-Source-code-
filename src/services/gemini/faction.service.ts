@@ -58,10 +58,20 @@ export const generateDynamicWorldEventFromAI = async (gameState: GameState): Pro
         }
     }, specificApiKey);
 
-    const result = JSON.parse(response.text);
-    if (result.shouldCreateEvent && result.title && result.description && result.duration) {
-        const { shouldCreateEvent, ...eventData } = result;
-        return eventData;
+    if (!response.text || response.text.trim() === '') {
+        console.warn("AI response for world event generation was empty.");
+        return null;
     }
+
+    try {
+        const result = JSON.parse(response.text);
+        if (result.shouldCreateEvent && result.title && result.description && result.duration) {
+            const { shouldCreateEvent, ...eventData } = result;
+            return eventData;
+        }
+    } catch (e) {
+        console.error("Lỗi phân tích JSON khi tạo sự kiện thế giới:", response.text, e);
+    }
+    
     return null;
 };

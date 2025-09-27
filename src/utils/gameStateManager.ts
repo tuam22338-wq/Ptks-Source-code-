@@ -413,9 +413,7 @@ export const createNewGameState = async (
     ]);
     const { npcs: familyNpcs, relationships: familyRelationships } = familyResult;
     playerCharacter.relationships = familyRelationships;
-    if (!generatedNpcs || generatedNpcs.length === 0) {
-        throw new Error("AI không thể tạo ra chúng sinh. Vui lòng kiểm tra API Key.");
-    }
+
     const allNpcs = [...initialNpcsFromData, ...familyNpcs, ...generatedNpcs];
     
     const tempGameStateForOpening = {
