@@ -1,9 +1,10 @@
 import React, { memo, useRef } from 'react';
-import type { GameSettings, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity } from '../../../types';
+// FIX: Import 'NarrativeStyle' to resolve TypeScript error.
+import type { GameSettings, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, NarrativeStyle } from '../../../types';
 import { FaDownload, FaUpload } from 'react-icons/fa';
 import {
     AI_CREATIVITY_LEVELS, NARRATIVE_PACING_LEVELS, PLAYER_AGENCY_LEVELS, AI_MEMORY_DEPTH_LEVELS,
-    NPC_COMPLEXITY_LEVELS, WORLD_EVENT_FREQUENCY_LEVELS, WORLD_REACTIVITY_LEVELS
+    NPC_COMPLEXITY_LEVELS, WORLD_EVENT_FREQUENCY_LEVELS, WORLD_REACTIVITY_LEVELS, NARRATIVE_STYLES
 } from '../../../constants';
 
 interface SettingsSectionProps {
@@ -69,6 +70,17 @@ const AiCustomizationSettings: React.FC<AiCustomizationSettingsProps> = ({ setti
     return (
         <>
             <SettingsSection title="Phong Cách Tường Thuật">
+                 <SettingsRow label="Phong Cách Tường Thuật" description="Chọn văn phong và giọng điệu cho AI kể chuyện, hỗ trợ nhiều thể loại từ tiên hiệp đến khoa-fi.">
+                    <select 
+                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" 
+                        value={settings.narrativeStyle} 
+                        onChange={(e) => handleSettingChange('narrativeStyle', e.target.value as NarrativeStyle)}
+                    >
+                        {NARRATIVE_STYLES.map(style => (
+                            <option key={style.value} value={style.value}>{style.label}</option>
+                        ))}
+                    </select>
+                </SettingsRow>
                 <SettingsRow label="Mức Độ Sáng Tạo của AI" description={AI_CREATIVITY_LEVELS.find(o => o.value === settings.aiCreativityLevel)?.description || ''}>
                     <LevelButtonGroup options={AI_CREATIVITY_LEVELS} selectedValue={settings.aiCreativityLevel} onSelect={(v) => handleSettingChange('aiCreativityLevel', v as AiCreativityLevel)} />
                 </SettingsRow>

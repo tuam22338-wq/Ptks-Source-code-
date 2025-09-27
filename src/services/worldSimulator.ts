@@ -113,6 +113,7 @@ export const simulateWorldTurn = async (
         ...currentTurnState.worldState,
         rumors: [...currentTurnState.worldState.rumors, ...newRumors.filter((nr: Rumor) => !currentTurnState.worldState.rumors.some((r: Rumor) => r.text === nr.text))],
         dynamicEvents: currentTurnState.worldState.dynamicEvents || [], // ensure it exists
+        foreshadowedEvents: currentTurnState.worldState.foreshadowedEvents || [], // ensure it exists
     };
 
     return {

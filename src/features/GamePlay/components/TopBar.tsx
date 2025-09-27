@@ -7,12 +7,13 @@ interface TopBarProps {
     onBack: () => void;
     onSave: () => void;
     gameDate: GameDate;
+    currentLocationName: string;
     majorEvents: MajorEvent[];
     dynamicEvents?: DynamicWorldEvent[];
     foreshadowedEvents?: ForeshadowedEvent[];
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, dynamicEvents, foreshadowedEvents }) => {
+const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, currentLocationName, majorEvents, dynamicEvents, foreshadowedEvents }) => {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
     const handleFullscreen = () => {
@@ -62,7 +63,7 @@ const TopBar: React.FC<TopBarProps> = ({ onBack, onSave, gameDate, majorEvents, 
             </div>
 
             <div className="flex-grow flex justify-center">
-                <Timeline gameDate={gameDate} majorEvents={majorEvents} dynamicEvents={dynamicEvents} foreshadowedEvents={foreshadowedEvents} />
+                <Timeline gameDate={gameDate} majorEvents={majorEvents} dynamicEvents={dynamicEvents} foreshadowedEvents={foreshadowedEvents} currentLocationName={currentLocationName} />
             </div>
 
             <div className="w-48">

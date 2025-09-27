@@ -1,6 +1,6 @@
-import React, { useState, memo } from 'react';
-import type { GameState } from '../../../../types';
-import { FaTimes, FaUser, FaMapMarkedAlt, FaBook, FaBrain, FaQuestionCircle } from 'react-icons/fa';
+import React, { useState, memo, useMemo } from 'react';
+import type { GameState, GameSettings } from '../../../../types';
+import { FaTimes, FaUser, FaMapMarkedAlt, FaBook, FaBrain, FaQuestionCircle, FaVial } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
 
 // Import panel components
@@ -10,8 +10,9 @@ import QuestPanel from './panels/QuestPanel';
 import AiMemoryPanel from './panels/AiMemoryPanel';
 import GuidePanel from './panels/GuidePanel';
 import AiRulesPanel from './panels/AiRulesPanel';
+import LiveEditorPanel from './panels/LiveEditorPanel';
 
-type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'guide';
+type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'guide' | 'liveEditor';
 
 interface SidebarPanel {
     id: PanelId;
@@ -20,7 +21,7 @@ interface SidebarPanel {
     component: React.FC<any>;
 }
 
-const PANELS: SidebarPanel[] = [
+const BASE_PANELS: SidebarPanel[] = [
     { id: 'status', label: 'Trạng Thái', icon: FaUser, component: StatusPanel },
     { id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, component: MapView },
     { id: 'quests', label: 'Nhiệm Vụ', icon: FaBook, component: QuestPanel },
@@ -34,12 +35,21 @@ interface SidebarProps {
     isOpen: boolean;
     onClose: () => void;
     gameState: GameState;
+    settings: GameSettings;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings }) => {
     const [activePanelId, setActivePanelId] = useState<PanelId>('status');
 
-    const ActivePanel = PANELS.find(p => p.id === activePanelId)?.component;
+    const availablePanels = useMemo(() => {
+        const panels = [...BASE_PANELS];
+        if (settings.enableTestingMode) {
+            panels.push({ id: 'liveEditor', label: 'Thử Nghiệm', icon: FaVial, component: LiveEditorPanel });
+        }
+        return panels;
+    }, [settings.enableTestingMode]);
+
+    const ActivePanel = availablePanels.find(p => p.id === activePanelId)?.component;
     
     const panelProps = {
         status: { gameState: gameState },
@@ -48,13 +58,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
         memory: { gameState },
         rules: { gameState: gameState },
         guide: {},
+        liveEditor: { gameState: gameState },
     };
 
     return (
         <>
             <div className={`fixed top-0 right-0 h-full z-40 w-96 max-w-[90vw] bg-stone-900/90 backdrop-blur-md border-l border-gray-700 transform transition-transform duration-300 ease-in-out flex flex-row-reverse ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="w-16 flex-shrink-0 bg-black/30 flex flex-col items-center p-2 gap-2">
-                    {PANELS.map(panel => (
+                    {availablePanels.map(panel => (
                         <button
                             key={panel.id}
                             title={panel.label}
@@ -68,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState }) => {
                 <div className="flex-grow p-4 min-w-0">
                     <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-700">
                         <h2 className="text-2xl font-bold font-title text-amber-300">
-                            {PANELS.find(p => p.id === activePanelId)?.label}
+                            {availablePanels.find(p => p.id === activePanelId)?.label}
                         </h2>
                         <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
                     </div>

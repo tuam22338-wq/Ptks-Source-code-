@@ -1,4 +1,4 @@
-import type { FactionReputationStatus, DifficultyLevel, NpcDensity } from '../types';
+import type { FactionReputationStatus, DifficultyLevel, NpcDensity, QuickActionButtonConfig } from '../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../data/attributes';
 
 // FIX: Removed SystemShopItem type as it's not defined or used elsewhere. The type of SYSTEM_SHOP_ITEMS is inferred.
@@ -32,3 +32,9 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
 
 export const ALL_ATTRIBUTES = DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name);
 export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'spiritualQi'];
+
+export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
+    { id: 'cultivate', label: 'Tu Luyện', description: 'Hấp thụ linh khí để tăng tu vi', iconName: 'GiSprout', actionText: 'tu luyện' },
+    { id: 'inventory', label: 'Túi Đồ', description: 'Mở túi đồ của bạn', iconName: 'GiSwapBag', actionText: 'mở túi đồ' },
+    { id: 'dashboard', label: 'Bảng Điều Khiển', description: 'Mở Bảng Điều Khiển', iconName: 'FaUser', actionText: 'mở bảng điều khiển' },
+];

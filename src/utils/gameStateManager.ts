@@ -162,9 +162,11 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
     }
     dataToProcess.activeMods = activeMods;
 
-    const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
-    const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
-        ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
+    const modRealmSystemFromNamed = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems?.[0].realms;
+    const modRealmSystemFromLegacy = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
+    const modRealms = modRealmSystemFromNamed || modRealmSystemFromLegacy;
+    const realmSystemToUse = modRealms && modRealms.length > 0
+        ? modRealms.map(realm => ({...realm, id: realm.id || realm.name.toLowerCase().replace(/\s+/g, '_')}))
         : REALM_SYSTEM;
     dataToProcess.realmSystem = realmSystemToUse;
 
@@ -260,9 +262,11 @@ export const createNewGameState = async (
     }
     
     // Mod Data takes precedence
-    const modRealmSystem = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
-    const realmSystemToUse = modRealmSystem && modRealmSystem.length > 0
-        ? modRealmSystem.map(realm => ({...realm, id: realm.name.toLowerCase().replace(/\s+/g, '_')}))
+    const modRealmSystemFromNamed = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems?.[0].realms;
+    const modRealmSystemFromLegacy = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
+    const modRealms = modRealmSystemFromNamed || modRealmSystemFromLegacy;
+    const realmSystemToUse = modRealms && modRealms.length > 0
+        ? modRealms.map(realm => ({...realm, id: realm.id || realm.name.toLowerCase().replace(/\s+/g, '_')}))
         : REALM_SYSTEM;
         
     const modAttributeSystem = activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem;

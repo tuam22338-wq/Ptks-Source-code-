@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { FaPaperPlane, FaComment, FaBolt, FaBrain, FaChevronUp, FaChevronDown, FaUser, FaMapMarkedAlt } from 'react-icons/fa';
 import { GiSprout, GiSwapBag, GiStairsGoal, GiPerson } from 'react-icons/gi';
 import type { Location, GameState, QuickActionButtonConfig } from '../../../types';
-import { UI_ICONS } from '../../../constants';
+import { UI_ICONS, DEFAULT_BUTTONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 
@@ -35,12 +35,6 @@ const QuickActionButton: React.FC<{
         {children}
     </button>
 );
-
-const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
-    { id: 'cultivate', label: 'Tu Luyện', description: 'Hấp thụ linh khí để tăng tu vi', iconName: 'GiSprout', actionText: 'tu luyện' },
-    { id: 'inventory', label: 'Túi Đồ', description: 'Mở túi đồ của bạn', iconName: 'GiSwapBag', actionText: 'mở túi đồ' },
-    { id: 'dashboard', label: 'Bảng Điều Khiển', description: 'Mở Bảng Điều Khiển', iconName: 'FaUser', actionText: 'mở bảng điều khiển' },
-];
 
 const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, disabled, currentLocation, activeTab, setActiveTab, gameState, handleBreakthrough, onToggleSidebar }) => {
     const [inputText, setInputText] = useState('');

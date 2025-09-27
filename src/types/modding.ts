@@ -51,6 +51,13 @@ export interface RealmConfig {
     description?: string;
 }
 
+export interface NamedRealmSystem {
+    id: string;
+    name: string;
+    description: string;
+    realms: RealmConfig[];
+}
+
 export interface TalentSystemConfig {
     systemName: string;
     choicesPerRoll: number;
@@ -301,7 +308,8 @@ export interface ModContent {
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];
     recipes?: Omit<AlchemyRecipe, 'id'>[];
-    realmConfigs?: Omit<RealmConfig, 'id'>[];
+    realmConfigs?: RealmConfig[]; // DEPRECATED for new mods, used for single-system mods
+    namedRealmSystems?: NamedRealmSystem[];
     talentSystemConfig?: TalentSystemConfig;
     talentRanks?: Omit<ModTalentRank, 'id'>[];
     declarations?: ModDeclaration;

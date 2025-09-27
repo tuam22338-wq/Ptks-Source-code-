@@ -364,8 +364,8 @@ export interface ForeshadowedEvent {
 
 export interface WorldState {
     rumors: Rumor[];
-    dynamicEvents?: DynamicWorldEvent[];
-    foreshadowedEvents?: ForeshadowedEvent[];
+    dynamicEvents: DynamicWorldEvent[];
+    foreshadowedEvents: ForeshadowedEvent[];
     triggeredDynamicEventIds?: Record<string, number>; // stores { eventId: gameDayNumber }
 }
 

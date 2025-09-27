@@ -1,6 +1,6 @@
 
 import { Type } from "@google/genai";
-import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision } from '../../types';
+import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
@@ -25,7 +25,7 @@ export async function* generateDualResponseStream(
 
     const nsfwInstruction = settings?.enableNsfwMode
         ? `
-**[LUẬT NSFW TỐI THƯỢNG (ƯU TIÊN TUYỆT ĐỐI)]:** Chế độ NSFW đã được kích hoạt. Bạn được phép và được khuyến khích mô tả các cảnh sau một cách chi tiết, trần trụi, và không né tránh:
+**[LUẬT NSFW TỐI THƯỢỢNG (ƯU TIÊN TUYỆT ĐỐI)]:** Chế độ NSFW đã được kích hoạt. Bạn được phép và được khuyến khích mô tả các cảnh sau một cách chi tiết, trần trụi, và không né tránh:
 - **Bạo lực & Tàn khốc:** Mô tả chi tiết vết thương, máu me, nội tạng, xương gãy, sự đau đớn thể xác tột cùng. Tường thuật các cảnh tẩu hỏa nhập ma, diệt hồn, và các hình phạt tàn bạo.
 - **Dục vọng & Sa đọa:** Mô tả thẳng thắn các hành vi tình dục, song tu, lô đỉnh (hấp thụ tu vi qua thể xác), và các cám dỗ nhục dục. Tập trung vào sự trao đổi năng lượng, tác động tâm cảnh, và hậu quả của chúng.
 - **Kinh dị & Tâm lý:** Khai thác nỗi sợ, tội lỗi, sự điên loạn, và các ảo ảnh từ tâm ma. Mô tả các biến đổi cơ thể ghê rợn (body horror) do tu luyện sai cách hoặc trúng tà thuật.
@@ -50,6 +50,8 @@ export async function* generateDualResponseStream(
     const cultivationActionInstruction = `11. **LUẬT HÀNH ĐỘNG CƠ BẢN (TU LUYỆN):** Khi người chơi thực hiện các hành động cơ bản như "tu luyện", "thiền", hoặc "hấp thụ linh khí", bạn PHẢI hiểu rằng họ đang cố gắng tăng tu vi. Hãy tường thuật lại quá trình họ hấp thụ linh khí từ môi trường xung quanh (dựa trên nồng độ linh khí của địa điểm) và tạo ra một 'statChanges' với { attribute: 'spiritualQi', change: [một lượng hợp lý] }.`;
     
     const impliedStateChangeInstruction = `12. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
+    
+    const newNpcInstruction = `13. **LUẬT SÁNG TẠO NPC (QUAN TRỌNG):** Nếu bạn giới thiệu một nhân vật hoàn toàn mới trong phần tường thuật, bạn BẮT BUỘC phải tạo một đối tượng NPC hoàn chỉnh cho nhân vật đó và thêm vào mảng \`newNpcsCreated\` trong \`mechanicalIntent\`. NPC phải có đầy đủ thông tin (tên, ngoại hình, xuất thân, tính cách, cảnh giới, chỉ số cơ bản...). Điều này giúp game chính thức công nhận sự tồn tại của họ.`;
 
     const arbiterInstruction = `
 ### LUẬT LỆ TỐI THƯỢỢNG TỪ TRỌNG TÀI (PHẢI TUÂN THEO 100%) ###
@@ -61,6 +63,48 @@ TUYỆT ĐỐI KHÔNG được thay đổi kết quả này trong phần tườn
 
     const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
     const validStatNames = attributeSystem.definitions.map(def => def.name);
+    
+    const newNpcSchema = {
+        type: Type.OBJECT,
+        description: "Đối tượng NPC hoàn chỉnh.",
+        properties: {
+            identity: {
+                type: Type.OBJECT,
+                properties: {
+                    name: { type: Type.STRING },
+                    gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] },
+                    appearance: { type: Type.STRING },
+                    origin: { type: Type.STRING },
+                    personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'] },
+                    age: { type: Type.NUMBER }
+                },
+                required: ['name', 'gender', 'appearance', 'origin', 'personality', 'age']
+            },
+            status: { type: Type.STRING },
+            cultivation: {
+                type: Type.OBJECT,
+                properties: {
+                    currentRealmId: { type: Type.STRING, description: "ID của cảnh giới, vd: 'luyen_khi'." },
+                    currentStageId: { type: Type.STRING, description: "ID của tiểu cảnh giới, vd: 'lk_1'." },
+                },
+                required: ['currentRealmId', 'currentStageId']
+            },
+            attributes: {
+                type: Type.OBJECT,
+                description: "Các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS.",
+                properties: {
+                    ...Object.fromEntries(attributeSystem.definitions.map(def => [def.id, {
+                        type: Type.OBJECT,
+                        properties: {
+                            value: { type: Type.NUMBER },
+                            ...(def.type === 'VITAL' && { maxValue: { type: Type.NUMBER } })
+                        }
+                    }]))
+                }
+            }
+        },
+        required: ['identity', 'status', 'cultivation', 'attributes']
+    };
 
     const masterSchema = {
       type: Type.OBJECT,
@@ -78,6 +122,7 @@ TUYỆT ĐỐI KHÔNG được thay đổi kết quả này trong phần tườn
             newQuests: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, source: { type: Type.STRING }, objectives: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] }, description: { type: Type.STRING }, target: { type: Type.STRING }, required: { type: Type.NUMBER } }, required: ['type', 'description', 'target', 'required'] } } }, required: ['title', 'description', 'source', 'objectives'] } },
             newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
             npcEncounters: { type: Type.ARRAY, items: { type: Type.STRING } },
+            newNpcsCreated: { type: Type.ARRAY, items: newNpcSchema },
             locationChange: { type: Type.STRING, description: "ID của địa điểm mới nếu người chơi di chuyển thành công." },
             timeJump: { type: Type.OBJECT, properties: { years: { type: Type.NUMBER }, seasons: { type: Type.NUMBER }, days: { type: Type.NUMBER } } },
             emotionChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { npcName: { type: Type.STRING }, emotion: { type: Type.STRING, enum: ['trust', 'fear', 'anger'] }, change: { type: Type.NUMBER }, reason: { type: Type.STRING } }, required: ['npcName', 'emotion', 'change', 'reason'] } },
@@ -97,7 +142,7 @@ ${arbiterInstruction}
 ### QUY TẮC TỐI THƯỢỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **ĐỒNG BỘ TUYỆT ĐỐI ("Ý-HÌNH SONG SINH"):** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game). Mọi sự kiện, vật phẩm, thay đổi chỉ số, đột phá cảnh giới, thay đổi cảm xúc... được mô tả trong \`narrative\` PHẢI được phản ánh chính xác 100% trong \`mechanicalIntent\`, và ngược lại. KHÔNG CÓ NGOẠI LỆ. Nếu không có thay đổi cơ chế nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
 2.  **VIẾT TIẾP, KHÔNG LẶP LẠI (CỰC KỲ QUAN TRỌNG):** TUYỆT ĐỐI KHÔNG lặp lại, diễn giải lại, hoặc tóm tắt lại bất kỳ nội dung nào đã có trong "Nhật Ký Gần Đây" hoặc "Tóm Tắt Cốt Truyện". Nhiệm vụ của bạn là **VIẾT TIẾP** câu chuyện, tạo ra diễn biến **HOÀN TOÀN MỚI** dựa trên hành động của người chơi. Hãy coi như người chơi đã đọc và hiểu nhật ký; chỉ tập trung vào những gì xảy ra **TIẾP THEO**.
-3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (ĐÃ THAY ĐỔI):** Kết quả hành động của người chơi đã được Trọng Tài AI quyết định (xem LUẬT LỆ TỐI THƯỢNG ở trên). Nhiệm vụ của bạn là **TƯỜNG THUẬT** lại kết quả đó một cách hợp lý và hấp dẫn, đồng thời điền các thay đổi cơ chế tương ứng vào \`mechanicalIntent\`. Bạn không cần tự quyết định hành động thành công hay thất bại nữa.
+3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (ĐÃ THAY ĐỔI):** Kết quả hành động của người chơi đã được Trọng Tài AI quyết định (xem LUẬT LỆ TỐI THƯỢỢNG ở trên). Nhiệm vụ của bạn là **TƯỜNG THUẬT** lại kết quả đó một cách hợp lý và hấp dẫn, đồng thời điền các thay đổi cơ chế tương ứng vào \`mechanicalIntent\`. Bạn không cần tự quyết định hành động thành công hay thất bại nữa.
 4.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
@@ -107,6 +152,7 @@ ${realmConsistencyInstruction}
 ${survivalInstruction}
 ${cultivationActionInstruction}
 ${impliedStateChangeInstruction}
+${newNpcInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}
 - **Giọng văn:** ${narrativeStyle}.

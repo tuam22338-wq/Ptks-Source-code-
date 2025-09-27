@@ -1,4 +1,4 @@
-import type { GameDate, StoryEntry, CurrencyType, ItemType, ItemQuality, CultivationTechnique, ActiveEffect, ActiveQuest, EventChoice, StatBonus } from './';
+import type { GameDate, StoryEntry, CurrencyType, ItemType, ItemQuality, CultivationTechnique, ActiveEffect, ActiveQuest, EventChoice, StatBonus, NPC } from './';
 
 // --- AI Memory System Types ---
 export interface EntityReference {
@@ -75,6 +75,7 @@ export interface MechanicalIntent {
     newQuests?: Partial<ActiveQuest>[];
     newEffects?: Omit<ActiveEffect, 'id'>[];
     npcEncounters?: string[]; // Names of newly encountered NPCs
+    newNpcsCreated?: Omit<NPC, 'id'>[]; // AI can create new NPCs on the fly
     locationChange?: string; // New location ID
     timeJump?: { years?: number; seasons?: number; days?: number; };
     emotionChanges?: { npcName: string; emotion: 'trust' | 'fear' | 'anger'; change: number; reason: string; }[];

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronUp, FaDownload } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
-import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition, QuickActionBarConfig, QuickActionButtonConfig } from '../../../types';
+import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition, QuickActionBarConfig, QuickActionButtonConfig, NamedRealmSystem } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
-import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS } from '../../../constants';
+import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS, DEFAULT_BUTTONS } from '../../../constants';
 import AttributeEditorModal from './AttributeEditorModal';
 import RealmEditorModal from './RealmEditorModal';
 import QuickActionButtonEditorModal from './QuickActionButtonEditorModal';
@@ -35,9 +35,13 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         groups: JSON.parse(JSON.stringify(DEFAULT_ATTRIBUTE_GROUPS)),
         definitions: JSON.parse(JSON.stringify(DEFAULT_ATTRIBUTE_DEFINITIONS))
     });
-    const [realmConfigs, setRealmConfigs] = useState<RealmConfig[]>(JSON.parse(JSON.stringify(REALM_SYSTEM)));
+    const [namedRealmSystems, setNamedRealmSystems] = useState<NamedRealmSystem[]>([
+        { id: 'default_tu_chan', name: 'Hệ Thống Tu Chân Mặc Định', description: 'Hệ thống tu luyện tiên hiệp cổ điển, từ Phàm Nhân đến Thánh Nhân.', realms: JSON.parse(JSON.stringify(REALM_SYSTEM)) }
+    ]);
     const [isRealmSystemEnabled, setIsRealmSystemEnabled] = useState(true);
-    const [quickActionBars, setQuickActionBars] = useState<QuickActionBarConfig[]>([]);
+    const [quickActionBars, setQuickActionBars] = useState<QuickActionBarConfig[]>([
+        { id: 'default_game_actions', context: { type: 'DEFAULT', value: [] }, buttons: JSON.parse(JSON.stringify(DEFAULT_BUTTONS)) }
+    ]);
 
     // UI state
     const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +53,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'physical': true });
     const [isActionButtonModalOpen, setIsActionButtonModalOpen] = useState(false);
     const [editingButton, setEditingButton] = useState<{ button: QuickActionButtonConfig | null, barIndex: number }>({ button: null, barIndex: -1 });
+    const [editingSystemIndex, setEditingSystemIndex] = useState<number | null>(null);
 
 
     const handleGenerateWorld = async () => {
@@ -65,7 +70,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 prompts, 
                 aiHooks,
                 attributeSystem,
-                realmConfigs: isRealmSystemEnabled ? realmConfigs : [],
+                namedRealmSystems: isRealmSystemEnabled ? namedRealmSystems : [],
                 quickActionBars
             });
             const success = await onInstall(generatedMod);
@@ -94,7 +99,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 prompts,
                 aiHooks,
                 attributeSystem,
-                realmConfigs: isRealmSystemEnabled ? realmConfigs : [],
+                namedRealmSystems: isRealmSystemEnabled ? namedRealmSystems : [],
                 quickActionBars
             });
 
@@ -157,7 +162,18 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     };
 
     const handleSaveRealms = (updatedRealms: RealmConfig[]) => {
-        setRealmConfigs(updatedRealms);
+        if (editingSystemIndex !== null) {
+            setNamedRealmSystems(prev => {
+                const newSystems = [...prev];
+                newSystems[editingSystemIndex].realms = updatedRealms;
+                return newSystems;
+            });
+        }
+    };
+
+    const handleOpenRealmEditor = (index: number) => {
+        setEditingSystemIndex(index);
+        setIsRealmEditorOpen(true);
     };
     
     // --- Quick Action Bar Handlers ---
@@ -215,6 +231,33 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         }
     };
 
+    const handleAddRealmSystem = () => {
+        const newSystem: NamedRealmSystem = {
+            id: `system_${Date.now()}`,
+            name: "Hệ Thống Mới",
+            description: "Mô tả hệ thống sức mạnh mới.",
+            realms: [],
+        };
+        setNamedRealmSystems(prev => [...prev, newSystem]);
+    };
+
+    const handleDeleteRealmSystem = (index: number) => {
+        if (window.confirm("Bạn có chắc muốn xóa toàn bộ hệ thống tu luyện này?")) {
+            setNamedRealmSystems(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
+    const handleSystemInfoChange = (index: number, field: 'name' | 'description', value: string) => {
+        setNamedRealmSystems(prev => {
+            const newSystems = [...prev];
+            newSystems[index][field] = value;
+            if (field === 'name') {
+                 newSystems[index].id = value.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+            }
+            return newSystems;
+        });
+    };
+
     if (isLoading) {
         return <LoadingScreen message="AI đang dệt nên thế giới của bạn..." isGeneratingWorld={true} />;
     }
@@ -230,13 +273,15 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                     group={editingAttributeGroup}
                 />
             )}
-            <RealmEditorModal
-                isOpen={isRealmEditorOpen}
-                onClose={() => setIsRealmEditorOpen(false)}
-                onSave={handleSaveRealms}
-                initialRealms={realmConfigs}
-                attributeSystem={attributeSystem}
-            />
+            {editingSystemIndex !== null && (
+                <RealmEditorModal
+                    isOpen={isRealmEditorOpen}
+                    onClose={() => { setIsRealmEditorOpen(false); setEditingSystemIndex(null); }}
+                    onSave={handleSaveRealms}
+                    initialRealms={namedRealmSystems[editingSystemIndex].realms}
+                    attributeSystem={attributeSystem}
+                />
+            )}
             <QuickActionButtonEditorModal
                 isOpen={isActionButtonModalOpen}
                 onClose={() => setIsActionButtonModalOpen(false)}
@@ -251,7 +296,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 <p className="text-gray-400 max-w-3xl mx-auto mt-2 mb-6 text-center">
                     Trở thành đấng sáng thế. Tự tay thiết kế các quy luật, thuộc tính, cảnh giới, sau đó cung cấp ý tưởng cốt lõi để AI kiến tạo nên một vũ trụ chi tiết cho bạn.
                 </p>
-                {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4 w-full max-w-3xl">{error}</p>}
+                {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4 w-full max-w-4xl">{error}</p>}
                 <div className="w-full max-w-4xl space-y-6 overflow-y-auto pr-2 pb-4">
                     {/* Basic Info */}
                     <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
@@ -325,9 +370,21 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                                 </button>
                             </div>
                              {isRealmSystemEnabled && (
-                                <div className="mt-2 pt-2 border-t border-gray-600/50 text-center">
-                                     <button onClick={() => setIsRealmEditorOpen(true)} className="px-3 py-1.5 bg-cyan-700/80 text-white text-xs font-bold rounded-lg hover:bg-cyan-600/80 flex items-center gap-2 mx-auto">
-                                        <FaEdit /> Chỉnh sửa Hệ Thống Cảnh Giới
+                                <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-2">
+                                    {namedRealmSystems.map((system, index) => (
+                                        <div key={system.id} className="bg-black/25 rounded-lg border border-gray-800/80 p-3">
+                                            <div className="flex justify-between items-center">
+                                                <input value={system.name} onChange={e => handleSystemInfoChange(index, 'name', e.target.value)} className="font-bold text-lg bg-transparent border-0 text-gray-200 focus:ring-1 focus:ring-amber-500 focus:bg-gray-800 rounded px-1"/>
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => handleOpenRealmEditor(index)} className="p-1.5 text-gray-400 hover:text-white"><FaEdit /></button>
+                                                    <button onClick={() => handleDeleteRealmSystem(index)} className="p-1.5 text-gray-400 hover:text-red-400"><FaTrash /></button>
+                                                </div>
+                                            </div>
+                                             <textarea value={system.description} onChange={e => handleSystemInfoChange(index, 'description', e.target.value)} rows={1} className="w-full text-sm bg-transparent border-0 text-gray-400 focus:ring-1 focus:ring-amber-500 focus:bg-gray-800 rounded px-1 resize-none" placeholder="Mô tả hệ thống..."/>
+                                        </div>
+                                    ))}
+                                    <button onClick={handleAddRealmSystem} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
+                                        <FaPlus /> Thêm Hệ Thống Tu Luyện
                                     </button>
                                 </div>
                              )}

@@ -1,6 +1,6 @@
 import React, { memo, useRef } from 'react';
 import type { GameSettings } from '../../../types';
-import { FaDownload, FaUpload, FaExclamationTriangle } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaExclamationTriangle, FaVial } from 'react-icons/fa';
 import * as db from '../../../services/dbService';
 import { AI_SYNC_MODES } from '../../../constants';
 
@@ -133,6 +133,17 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                     <input type="checkbox" checked={settings.enableDeveloperConsole} onChange={e => handleSettingChange('enableDeveloperConsole', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
                     <span className="ml-3 text-sm text-gray-300">Bật Developer Console</span>
                 </label>
+            </SettingsRow>
+            <SettingsRow label="Chế độ Thử nghiệm (Live Editor)" description="Bật một bảng điều khiển đặc biệt trong game để chỉnh sửa trực tiếp chỉ số, NPC, và các dữ liệu khác. Cần tải lại game sau khi thay đổi.">
+                <div className="flex flex-col">
+                     <label className="flex items-center cursor-pointer">
+                        <input type="checkbox" checked={settings.enableTestingMode} onChange={e => handleSettingChange('enableTestingMode', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                        <span className="ml-3 text-sm font-bold text-amber-300 flex items-center gap-2"><FaVial /> Bật Chế Độ Thử Nghiệm</span>
+                    </label>
+                    <p className="mt-2 text-xs text-yellow-400 bg-yellow-900/30 border border-yellow-500/50 p-2 rounded-md">
+                        <strong>Cảnh báo:</strong> Chế độ này dành cho người dùng nâng cao và các nhà phát triển mod. Việc chỉnh sửa trực tiếp có thể gây ra lỗi không mong muốn hoặc phá vỡ trải nghiệm game.
+                    </p>
+                </div>
             </SettingsRow>
             <SettingsRow label="Chế độ hiệu suất" description="Tắt các hiệu ứng hình ảnh và chuyển động để cải thiện hiệu suất trên các thiết bị yếu.">
                  <label className="flex items-center cursor-pointer">

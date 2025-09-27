@@ -147,6 +147,32 @@ export const applyMechanicalChanges = (
         });
     }
 
+    if (intent.newNpcsCreated) {
+        intent.newNpcsCreated.forEach(npcData => {
+            if (!nextState.activeNpcs.some((n: NPC) => n.identity.name === npcData.identity.name)) {
+                const newNpc: NPC = {
+                    ...npcData,
+                    id: `npc-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                    locationId: pc.currentLocationId, // Assume they appear where the player is
+                    emotions: { trust: 50, fear: 10, anger: 10 },
+                    memory: { shortTerm: [], longTerm: [] },
+                    motivation: "Thực hiện vai trò được định sẵn trong câu chuyện.",
+                    goals: [],
+                    currentPlan: null,
+                    techniques: [],
+                    inventory: { items: [], weightCapacity: 10 },
+                    currencies: { 'Bạc': Math.floor(Math.random() * 50) },
+                    equipment: {},
+                    healthStatus: 'HEALTHY',
+                    activeEffects: [],
+                    tuoiTho: 100 + Math.floor(Math.random() * 200),
+                };
+                nextState.activeNpcs.push(newNpc);
+                showNotification(`Nhân vật mới xuất hiện: ${newNpc.identity.name}`);
+            }
+        });
+    }
+
     // --- UNIFIED ATTRIBUTE & CULTIVATION UPDATE ---
     const allStatChanges: Record<string, { change: number; changeMax: number }> = {};
     const addChange = (attrId: string, change: number, changeMax: number = 0) => {

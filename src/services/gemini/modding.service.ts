@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -350,12 +350,12 @@ interface WorldGenPrompts {
         on_action_evaluate?: string;
     };
     attributeSystem?: ModAttributeSystem;
-    realmConfigs?: RealmConfig[];
+    namedRealmSystems?: NamedRealmSystem[];
     quickActionBars?: QuickActionBarConfig[];
 }
 
 export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
-    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, realmConfigs, quickActionBars } = prompts;
+    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars } = prompts;
 
     const aiHooksText = (aiHooks?.on_world_build || '') + '\n' + (aiHooks?.on_action_evaluate || '');
     
@@ -363,9 +363,9 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         ? `### HỆ THỐNG THUỘC TÍNH (ĐÃ ĐỊNH NGHĨA SẴN) ###\nĐây là các thuộc tính của thế giới này. Hãy sử dụng chúng khi tạo NPC và các yếu tố khác.\n${attributeSystem.definitions.map(d => `- ${d.name}: ${d.description}`).join('\n')}\n### KẾT THÚC HỆ THỐNG THUỘC TÍNH ###`
         : '';
         
-    const realmContext = realmConfigs && realmConfigs.length > 0
-        ? `### HỆ THỐNG CẢNH GIỚI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nĐây là hệ thống tu luyện của thế giới này. Cảnh giới cao nhất là ${realmConfigs[realmConfigs.length - 1].name}.\n${realmConfigs.map(r => `- ${r.name}`).join(' -> ')}\n### KẾT THÚC HỆ THỐNG CẢNH GIỚI ###`
-        : "### HỆ THỐNG CẢNH GIỚI ###\nThế giới này không có hệ thống tu luyện cảnh giới truyền thống.";
+    const realmContext = namedRealmSystems && namedRealmSystems.length > 0
+        ? `### HỆ THỐNG CẢNH GIỚI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nThế giới này có ${namedRealmSystems.length} hệ thống tu luyện khác nhau. Hệ thống chính là "${namedRealmSystems[0].name}". AI không cần tạo thêm hệ thống tu luyện.\n### KẾT THÚC HỆ THỐNG CẢNH GIỚI ###`
+        : "### HỆ THỐNG CẢNH GIỚI ###\nAI tự do sáng tạo hệ thống tu luyện.";
 
     // Clone the base schema to modify it
     const dynamicWorldSchema = JSON.parse(JSON.stringify(worldSchema));
@@ -374,7 +374,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     if (attributeSystem) {
         delete dynamicWorldSchema.properties.content.properties.attributeSystem;
     }
-    if (realmConfigs) {
+    if (namedRealmSystems && namedRealmSystems.length > 0) {
         delete dynamicWorldSchema.properties.content.properties.realmConfigs;
     }
 
@@ -401,7 +401,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         -   Thiết kế Bản đồ (\`initialLocations\`).
         -   Tạo Nhân vật (\`initialNpcs\`). Đặt họ vào các địa điểm (\`locationId\`) phù hợp bằng cách sử dụng TÊN của địa điểm đã tạo.
     3.  **\`items\` (Tùy chọn):** Tạo ra 1-2 vật phẩm khởi đầu hoặc vật phẩm quan trọng liên quan đến cốt truyện.
-    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại \`realmConfigs\` hay \`attributeSystem\` nếu chúng đã được cung cấp.
+    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại hệ thống tu luyện hay thuộc tính nếu chúng đã được cung cấp.
     5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
@@ -440,8 +440,8 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         if (attributeSystem) {
             finalMod.content.attributeSystem = attributeSystem;
         }
-        if (realmConfigs) {
-            finalMod.content.realmConfigs = realmConfigs;
+        if (namedRealmSystems) {
+            finalMod.content.namedRealmSystems = namedRealmSystems;
         }
         if (quickActionBars && quickActionBars.length > 0) {
             finalMod.content.quickActionBars = quickActionBars;

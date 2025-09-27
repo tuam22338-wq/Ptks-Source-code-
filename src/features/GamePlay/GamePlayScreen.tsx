@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter, EventChoice } from '../../types';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter, EventChoice, GameSettings } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -268,11 +268,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
         await handlePlayerAction(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act', 1, showNotification);
     }, [handlePlayerAction, showNotification]);
     
-    const allPlayerTechniques = useMemo(() => {
-        if (!gameState) return [];
-        return gameState.playerCharacter.techniques || [];
-    }, [gameState]);
-
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
     const { playerCharacter, combatState, activeStory, discoveredLocations, worldState, dialogueChoices } = gameState;
@@ -293,7 +288,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
         <div className="flex-grow w-full flex flex-col">
             <NotificationArea notifications={notifications} onDismiss={dismissNotification} />
             <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
-            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} gameState={gameState} />
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} gameState={gameState} settings={settings} />
             <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} />
             <InventoryModal isOpen={isInventoryOpen} />
             <InnerDemonTrialModal isOpen={!!activeInnerDemonTrial} trial={activeInnerDemonTrial} onChoice={handleInnerDemonChoice} />
@@ -305,14 +300,14 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 majorEvents={gameState.majorEvents}
                 dynamicEvents={worldState.dynamicEvents}
                 foreshadowedEvents={worldState.foreshadowedEvents}
+                currentLocationName={currentLocation?.name || 'Vô Định'}
              />
             
             <div className={`flex-grow w-full flex min-h-0 relative min-h-0`}>
                 <main className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:mr-96' : ''}`}>
                     <StoryLog 
                         pageEntries={storyPages[currentPage] || []} 
-                        inventoryItems={playerCharacter.inventory.items} 
-                        techniques={allPlayerTechniques} 
+                        gameState={gameState}
                         onSpeak={speak} 
                     />
                     

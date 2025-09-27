@@ -1,12 +1,12 @@
 import React, { useState, memo, useMemo } from 'react';
 import type { GameDate, MajorEvent, DynamicWorldEvent, ForeshadowedEvent, Season } from '../types';
-// FIX: Replaced non-existent GiExclamationMark with FaExclamationTriangle from react-icons/fa
 import { GiScrollUnfurled, GiGalaxy, GiStairsGoal } from 'react-icons/gi';
 import { SEASON_ICONS, WEATHER_INFO, TIMEOFDAY_DETAILS, SHICHEN_TO_TIME_MAP } from '../constants';
-import { FaQuestionCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { FaQuestionCircle, FaExclamationTriangle, FaMapPin } from 'react-icons/fa';
 
 interface TimelineProps {
   gameDate: GameDate;
+  currentLocationName: string;
   majorEvents: MajorEvent[];
   dynamicEvents?: DynamicWorldEvent[];
   foreshadowedEvents?: ForeshadowedEvent[];
@@ -21,7 +21,7 @@ const EventSection: React.FC<{ title: string; icon: React.ElementType; children:
     </div>
 );
 
-const Timeline: React.FC<TimelineProps> = ({ gameDate, majorEvents, dynamicEvents, foreshadowedEvents }) => {
+const Timeline: React.FC<TimelineProps> = ({ gameDate, currentLocationName, majorEvents, dynamicEvents, foreshadowedEvents }) => {
   const [isEventsVisible, setIsEventsVisible] = useState(false);
   
   const timeOfDayDetails = TIMEOFDAY_DETAILS[gameDate.shichen];
@@ -87,6 +87,11 @@ const Timeline: React.FC<TimelineProps> = ({ gameDate, majorEvents, dynamicEvent
                 {westernTime} ({timeOfDayDetails.name})
             </p>
         </div>
+        <div className="w-px h-8 bg-gray-600/70 hidden sm:block"></div>
+        <div className="text-center font-semibold text-gray-300 hidden sm:flex items-center gap-2" title="Vị trí hiện tại">
+            <FaMapPin className="text-cyan-400" />
+            <p className="text-sm sm:text-base leading-tight truncate max-w-[150px]">{currentLocationName}</p>
+        </div>
       </div>
       
       <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[550px] max-w-[90vw] p-4 bg-black/80 backdrop-blur-sm border border-amber-500/50 rounded-lg shadow-2xl shadow-black/50 transition-all duration-300 ease-in-out ${isEventsVisible ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
@@ -113,7 +118,6 @@ const Timeline: React.FC<TimelineProps> = ({ gameDate, majorEvents, dynamicEvent
                         return (
                             <div key={event.id} className="p-2 rounded-md bg-red-900/20 border border-red-500/30 animate-fade-in" style={{animationDuration: '500ms'}}>
                                 <div className="flex justify-between items-baseline">
-                                    {/* FIX: Replaced non-existent GiExclamationMark with FaExclamationTriangle */}
                                     <p className="font-bold text-gray-200 flex items-center gap-2"><FaExclamationTriangle className="text-red-400"/>{event.title}</p>
                                     <p className="text-xs font-semibold text-red-300">{remainingDays > 0 ? `Còn ${remainingDays} ngày` : 'Sắp kết thúc'}</p>
                                 </div>

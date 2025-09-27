@@ -21,6 +21,12 @@ export const NARRATIVE_STYLES: { value: NarrativeStyle; label: string }[] = [
     { value: 'concise', label: 'Súc tích, ngắn gọn' },
     { value: 'er_gen_style', label: 'Phong cách Nhĩ Căn' },
     { value: 'fenghuo_style', label: 'Phong cách Phong Hỏa' },
+    { value: 'cyberpunk', label: 'Cyberpunk / Khoa-fi' },
+    { value: 'noir_detective', label: 'Trinh thám / Noir' },
+    { value: 'epic_fantasy', label: 'Sử thi / Fantasy' },
+    { value: 'lovecraftian_horror', label: 'Kinh dị Lovecraft' },
+    { value: 'comedic', label: 'Hài hước / Châm biếm' },
+    { value: 'slice_of_life', label: 'Đời thường Hiện đại' },
 ];
 
 export const FONT_OPTIONS: { value: string; label: string }[] = [
