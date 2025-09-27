@@ -257,7 +257,18 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                     db.getAllAssets()
                 ]);
 
-                const finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
+                const playlist = [
+                    'https://files.catbox.moe/f86nal.mp3',
+                    'https://files.catbox.moe/uckxqm.mp3'
+                ];
+                let finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
+
+                if (!finalSettings.backgroundMusicUrl || finalSettings.backgroundMusicUrl === 'https://files.catbox.moe/f86nal.mp3') {
+                    const randomIndex = Math.floor(Math.random() * playlist.length);
+                    finalSettings.backgroundMusicUrl = playlist[randomIndex];
+                    finalSettings.backgroundMusicName = 'Nhạc Nền Mặc Định';
+                }
+
                 dispatch({ type: 'SET_SETTINGS', payload: finalSettings });
                 dispatch({ type: 'SET_ALL_CACHED_BACKGROUNDS', payload: cachedAssets });
 
