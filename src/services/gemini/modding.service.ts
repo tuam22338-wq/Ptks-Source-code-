@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -351,10 +351,11 @@ interface WorldGenPrompts {
     };
     attributeSystem?: ModAttributeSystem;
     realmConfigs?: RealmConfig[];
+    quickActionBars?: QuickActionBarConfig[];
 }
 
 export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
-    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, realmConfigs } = prompts;
+    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, realmConfigs, quickActionBars } = prompts;
 
     const aiHooksText = (aiHooks?.on_world_build || '') + '\n' + (aiHooks?.on_action_evaluate || '');
     
@@ -441,6 +442,9 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         }
         if (realmConfigs) {
             finalMod.content.realmConfigs = realmConfigs;
+        }
+        if (quickActionBars && quickActionBars.length > 0) {
+            finalMod.content.quickActionBars = quickActionBars;
         }
         // Ensure user-provided AI Hooks take precedence
         if (aiHooks) {

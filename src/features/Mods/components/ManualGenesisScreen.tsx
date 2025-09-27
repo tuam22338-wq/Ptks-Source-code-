@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronUp, FaDownload } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
-import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition } from '../../../types';
+import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition, QuickActionBarConfig, QuickActionButtonConfig } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS } from '../../../constants';
 import AttributeEditorModal from './AttributeEditorModal';
 import RealmEditorModal from './RealmEditorModal';
+import QuickActionButtonEditorModal from './QuickActionButtonEditorModal';
 
 interface ManualGenesisScreenProps {
     onBack: () => void;
@@ -36,6 +37,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     });
     const [realmConfigs, setRealmConfigs] = useState<RealmConfig[]>(JSON.parse(JSON.stringify(REALM_SYSTEM)));
     const [isRealmSystemEnabled, setIsRealmSystemEnabled] = useState(true);
+    const [quickActionBars, setQuickActionBars] = useState<QuickActionBarConfig[]>([]);
 
     // UI state
     const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +47,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const [editingAttribute, setEditingAttribute] = useState<AttributeDefinition | null>(null);
     const [editingAttributeGroup, setEditingAttributeGroup] = useState<AttributeGroupDefinition | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'physical': true });
+    const [isActionButtonModalOpen, setIsActionButtonModalOpen] = useState(false);
+    const [editingButton, setEditingButton] = useState<{ button: QuickActionButtonConfig | null, barIndex: number }>({ button: null, barIndex: -1 });
 
 
     const handleGenerateWorld = async () => {
@@ -61,7 +65,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 prompts, 
                 aiHooks,
                 attributeSystem,
-                realmConfigs: isRealmSystemEnabled ? realmConfigs : []
+                realmConfigs: isRealmSystemEnabled ? realmConfigs : [],
+                quickActionBars
             });
             const success = await onInstall(generatedMod);
             if (success) {
@@ -89,7 +94,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 prompts,
                 aiHooks,
                 attributeSystem,
-                realmConfigs: isRealmSystemEnabled ? realmConfigs : []
+                realmConfigs: isRealmSystemEnabled ? realmConfigs : [],
+                quickActionBars
             });
 
             const jsonString = JSON.stringify(generatedMod, null, 2);
@@ -153,6 +159,61 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const handleSaveRealms = (updatedRealms: RealmConfig[]) => {
         setRealmConfigs(updatedRealms);
     };
+    
+    // --- Quick Action Bar Handlers ---
+    const handleAddActionBar = () => {
+        const newBar: QuickActionBarConfig = {
+            id: `bar_${Date.now()}`,
+            context: { type: 'DEFAULT', value: [] },
+            buttons: []
+        };
+        setQuickActionBars(prev => [...prev, newBar]);
+    };
+
+    const handleDeleteActionBar = (barIndex: number) => {
+        if (window.confirm("Bạn có chắc muốn xóa thanh hành động này?")) {
+            setQuickActionBars(prev => prev.filter((_, i) => i !== barIndex));
+        }
+    };
+
+    const handleBarChange = (barIndex: number, field: 'type' | 'value', value: any) => {
+        const newBars = [...quickActionBars];
+        if (field === 'type') {
+            newBars[barIndex].context.type = value;
+            newBars[barIndex].context.value = []; // Reset value when type changes
+        } else if (field === 'value') {
+            newBars[barIndex].context.value = value.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+        setQuickActionBars(newBars);
+    };
+
+    const handleOpenButtonModal = (button: QuickActionButtonConfig | null, barIndex: number) => {
+        setEditingButton({ button, barIndex });
+        setIsActionButtonModalOpen(true);
+    };
+
+    const handleSaveButton = (button: QuickActionButtonConfig) => {
+        const newBars = [...quickActionBars];
+        const bar = newBars[editingButton.barIndex];
+        const originalId = editingButton.button ? editingButton.button.id : button.id;
+        const buttonIndex = bar.buttons.findIndex(b => b.id === originalId);
+        
+        if (buttonIndex > -1) {
+            bar.buttons[buttonIndex] = button;
+        } else {
+            bar.buttons.push(button);
+        }
+        setQuickActionBars(newBars);
+        setIsActionButtonModalOpen(false);
+    };
+
+    const handleDeleteButton = (barIndex: number, buttonIndex: number) => {
+         if (window.confirm("Bạn có chắc muốn xóa nút này?")) {
+            const newBars = [...quickActionBars];
+            newBars[barIndex].buttons.splice(buttonIndex, 1);
+            setQuickActionBars(newBars);
+        }
+    };
 
     if (isLoading) {
         return <LoadingScreen message="AI đang dệt nên thế giới của bạn..." isGeneratingWorld={true} />;
@@ -175,6 +236,12 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 onSave={handleSaveRealms}
                 initialRealms={realmConfigs}
                 attributeSystem={attributeSystem}
+            />
+            <QuickActionButtonEditorModal
+                isOpen={isActionButtonModalOpen}
+                onClose={() => setIsActionButtonModalOpen(false)}
+                onSave={handleSaveButton}
+                button={editingButton.button}
             />
             <div className="flex-shrink-0 mb-4">
                 <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4"><FaArrowLeft /> Quay Lại Menu</button>
@@ -285,6 +352,63 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                         <Field label="Luật Lệ Tình Huống (on_action_evaluate)" description="Các quy tắc được AI xem xét và áp dụng cho kết quả của mỗi hành động người chơi. Mỗi quy tắc một dòng.">
                             <textarea name="on_action_evaluate" value={aiHooks.on_action_evaluate} onChange={e => setAiHooks(p => ({...p, on_action_evaluate: e.target.value}))} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 resize-y font-mono text-sm" placeholder="Vd: Nếu người chơi ở nơi có âm khí nồng đậm, tốc độ tu luyện ma công tăng gấp đôi."/>
                         </Field>
+                    </div>
+                    
+                    {/* Quick Action Bars */}
+                    <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
+                        <h4 className="text-xl font-semibold font-title text-cyan-300">5. Thiết Kế Hành Động Nhanh (Tùy chọn)</h4>
+                        <p className="text-sm text-gray-500 -mt-2">Tạo các nút hành động nhanh cho người chơi trong các bối cảnh cụ thể.</p>
+                        <div className="space-y-3">
+                            {quickActionBars.map((bar, barIndex) => (
+                                <div key={bar.id} className="bg-black/25 rounded-lg border border-gray-800/80 p-3">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h5 className="font-semibold text-gray-300">Thanh Hành Động #{barIndex + 1}</h5>
+                                        <button onClick={() => handleDeleteActionBar(barIndex)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-400">Bối cảnh</label>
+                                            <select value={bar.context.type} onChange={(e) => handleBarChange(barIndex, 'type', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200">
+                                                <option value="DEFAULT">Mặc định</option>
+                                                <option value="LOCATION">Địa điểm</option>
+                                            </select>
+                                        </div>
+                                        {bar.context.type === 'LOCATION' && (
+                                            <div>
+                                                <label className="text-xs text-gray-400">ID Địa điểm (cách nhau bằng dấu phẩy)</label>
+                                                <input value={bar.context.value.join(', ')} onChange={(e) => handleBarChange(barIndex, 'value', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200 font-mono"/>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="mt-3 pt-3 border-t border-gray-700/60">
+                                        <h6 className="text-sm font-semibold text-gray-400 mb-2">Các Nút</h6>
+                                        <div className="space-y-2">
+                                            {bar.buttons.map((button, buttonIndex) => {
+                                                const Icon = UI_ICONS[button.iconName] || (() => <span />);
+                                                return (
+                                                    <div key={button.id} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                                        <div className="flex items-center gap-2">
+                                                            <Icon className="text-lg text-cyan-300" />
+                                                            <span className="text-sm font-semibold">{button.label}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button onClick={() => handleOpenButtonModal(button, barIndex)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>
+                                                            <button onClick={() => handleDeleteButton(barIndex, buttonIndex)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <button onClick={() => handleOpenButtonModal(null, barIndex)} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
+                                            <FaPlus /> Thêm Nút
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={handleAddActionBar} className="w-full mt-3 text-base text-amber-300/80 hover:text-amber-200 flex items-center justify-center gap-2 p-2 bg-amber-900/30 rounded border border-amber-500/30">
+                            <FaPlus /> Thêm Thanh Hành Động
+                        </button>
                     </div>
 
                 </div>
