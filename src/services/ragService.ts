@@ -1,8 +1,3 @@
-
-
-
-
-
 import type Dexie from 'dexie';
 import type { RagSource, RagEmbedding } from '../types';
 import * as db from './dbService';
@@ -68,7 +63,12 @@ export const indexSource = async (sourceId: string): Promise<void> => {
     }
     await db.db.ragSources.update(sourceId, { status: 'INDEXING' });
     try {
-        const chunks = chunkText(source.content);
+        const settings = await db.getSettings();
+        const chunkSize = settings?.ragChunkSize || 512;
+        const chunkOverlap = settings?.ragChunkOverlap || 50;
+
+        const chunks = chunkText(source.content, chunkSize, chunkOverlap);
+        
         // This is where you would call the real Gemini embedding API in a backend environment.
         // For frontend simulation, we use a placeholder.
         const embeddings = await embedText(chunks);

@@ -44,6 +44,18 @@ const RagSettings: React.FC<RagSettingsProps> = ({ settings, handleSettingChange
                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.ragTopK}</span>
                 </div>
             </SettingsRow>
+            <SettingsRow label="Kích thước Chunk" description="Kích thước (số ký tự) của mỗi đoạn văn bản khi lập chỉ mục. Giá trị nhỏ hơn giúp truy xuất chính xác hơn nhưng tốn nhiều tài nguyên hơn.">
+                <div className="flex items-center gap-4">
+                   <input type="range" min="128" max="1024" step="32" value={settings.ragChunkSize} onChange={(e) => handleSettingChange('ragChunkSize', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                   <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.ragChunkSize}</span>
+                </div>
+            </SettingsRow>
+             <SettingsRow label="Độ chồng chéo Chunk" description="Số ký tự chồng chéo giữa các chunk. Giúp duy trì ngữ cảnh giữa các đoạn văn bản được cắt.">
+                <div className="flex items-center gap-4">
+                   <input type="range" min="0" max="128" step="8" value={settings.ragChunkOverlap} onChange={(e) => handleSettingChange('ragChunkOverlap', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                   <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.ragChunkOverlap}</span>
+                </div>
+            </SettingsRow>
             <SettingsRow label="Quản lý Nguồn Tri Thức" description="Thêm, xóa, và quản lý các nguồn tri thức cho AI, bao gồm lore mặc định, lore từ mod, và các ghi chép của riêng bạn.">
                  <button onClick={onOpenRagManager} className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2">
                     <FaSearchPlus /> Mở Bảng Quản Lý

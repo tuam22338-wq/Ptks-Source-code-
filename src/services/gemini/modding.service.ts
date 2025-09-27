@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -361,10 +361,13 @@ interface WorldGenPrompts {
     attributeSystem?: ModAttributeSystem;
     namedRealmSystems?: NamedRealmSystem[];
     quickActionBars?: QuickActionBarConfig[];
+    factions?: Faction[];
+    locations?: ModLocation[];
+    npcs?: ModNpc[];
 }
 
 export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
-    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars } = prompts;
+    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars, factions, locations, npcs } = prompts;
 
     const aiHooksText = (aiHooks?.on_world_build || '') + '\n' + (aiHooks?.on_action_evaluate || '');
     
@@ -375,6 +378,11 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     const realmContext = namedRealmSystems && namedRealmSystems.length > 0
         ? `### HỆ THỐNG CẢNH GIỚI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nThế giới này có ${namedRealmSystems.length} hệ thống tu luyện khác nhau. Hệ thống chính là "${namedRealmSystems[0].name}". AI không cần tạo thêm hệ thống tu luyện.\n### KẾT THÚC HỆ THỐNG CẢNH GIỚI ###`
         : "### HỆ THỐNG CẢNH GIỚI ###\nAI tự do sáng tạo hệ thống tu luyện.";
+    
+    const factionContext = factions && factions.length > 0 ? `### PHE PHÁI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nNgười dùng đã định nghĩa các phe phái sau. Hãy xây dựng thế giới xoay quanh chúng:\n${factions.map(f => `- ${f.name}: ${f.description}`).join('\n')}\n` : '';
+    const locationContext = locations && locations.length > 0 ? `### ĐỊA ĐIỂM (ĐÃ ĐỊNH NGHĨA SẴN) ###\nNgười dùng đã định nghĩa các địa điểm sau. Đây là các địa điểm chính của thế giới. Hãy tạo ra các sự kiện và NPC phù hợp với những nơi này:\n${locations.map(l => `- ${l.name}: ${l.description}`).join('\n')}\n` : '';
+    const npcContext = npcs && npcs.length > 0 ? `### NHÂN VẬT (ĐÃ ĐỊNH NGHĨA SẴN) ###\nNgười dùng đã định nghĩa các nhân vật sau. Hãy đặt họ vào thế giới và tạo ra các sự kiện liên quan đến họ:\n${npcs.map(n => `- ${n.name}: ${n.description}`).join('\n')}\n` : '';
+
 
     // Clone the base schema to modify it
     const dynamicWorldSchema = JSON.parse(JSON.stringify(worldSchema));
@@ -386,6 +394,11 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     if (namedRealmSystems && namedRealmSystems.length > 0) {
         delete dynamicWorldSchema.properties.content.properties.realmConfigs;
     }
+    // If user provides these, AI should not generate them from scratch
+    if (factions && factions.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.factions;
+    if (locations && locations.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialLocations;
+    if (npcs && npcs.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialNpcs;
+
 
     const masterPrompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những ý tưởng cốt lõi thành một thế giới game có cấu trúc hoàn chỉnh.
     Nhiệm vụ của bạn là đọc và phân tích các ý tưởng do người dùng cung cấp, sau đó mở rộng, chi tiết hóa và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
@@ -401,16 +414,17 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     
     ${attributeContext}
     ${realmContext}
+    ${factionContext}
+    ${locationContext}
+    ${npcContext}
 
     **Quy trình Sáng Tạo & Suy Luận:**
     1.  **\`modInfo\`:** Sử dụng thông tin \`name\` và \`id\` được cung cấp. Tạo một mô tả ngắn gọn dựa trên bối cảnh.
     2.  **\`worldData\`:** Đây là phần quan trọng nhất. Dựa trên Bối Cảnh, Mục Tiêu và Quy Luật:
         -   Sáng tạo Lịch sử & Sự kiện (\`majorEvents\`).
-        -   Sáng tạo Phe phái (\`factions\`).
-        -   Thiết kế Bản đồ (\`initialLocations\`).
-        -   Tạo Nhân vật (\`initialNpcs\`). Đặt họ vào các địa điểm (\`locationId\`) phù hợp bằng cách sử dụng TÊN của địa điểm đã tạo.
+        -   Nếu người dùng chưa cung cấp, hãy sáng tạo Phe phái (\`factions\`), Bản đồ (\`initialLocations\`), và Nhân vật (\`initialNpcs\`). Nếu người dùng ĐÃ cung cấp, hãy xây dựng thế giới dựa trên chúng.
     3.  **\`items\` (Tùy chọn):** Tạo ra 1-2 vật phẩm khởi đầu hoặc vật phẩm quan trọng liên quan đến cốt truyện.
-    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại hệ thống tu luyện hay thuộc tính nếu chúng đã được cung cấp.
+    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại hệ thống tu luyện, thuộc tính, phe phái, địa điểm, hoặc NPC nếu chúng đã được cung cấp.
     5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
@@ -471,6 +485,32 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
                 on_action_evaluate: aiHooks.on_action_evaluate ? aiHooks.on_action_evaluate.split('\n').filter(Boolean) : finalMod.content.aiHooks?.on_action_evaluate,
             };
         }
+        
+        // Ensure worldData structure exists
+        if (!finalMod.content.worldData || finalMod.content.worldData.length === 0) {
+            finalMod.content.worldData = [{
+                name: finalMod.modInfo.name,
+                description: generatedJson.content?.worldData?.[0]?.description || finalMod.modInfo.description || '',
+                startingYear: generatedJson.content?.worldData?.[0]?.startingYear || 1,
+                eraName: generatedJson.content?.worldData?.[0]?.eraName || 'Kỷ Nguyên Mới',
+                majorEvents: generatedJson.content?.worldData?.[0]?.majorEvents || [],
+                factions: [],
+                initialLocations: [],
+                initialNpcs: [],
+            }];
+        }
+        
+        // Overwrite with user-defined data
+        if (factions && factions.length > 0) {
+            finalMod.content.worldData[0].factions = factions;
+        }
+        if (locations && locations.length > 0) {
+            finalMod.content.worldData[0].initialLocations = locations;
+        }
+        if (npcs && npcs.length > 0) {
+            finalMod.content.worldData[0].initialNpcs = npcs;
+        }
+
 
         // Post-processing to add IDs where names are used as references
         if (finalMod.content?.worldData?.[0]) {
@@ -479,7 +519,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
             
             if (world.initialLocations) {
                 world.initialLocations = world.initialLocations.map((loc: any) => {
-                    const id = loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+                    const id = loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
                     locationNameIdMap.set(loc.name, id);
                     return { ...loc, id: id };
                 });

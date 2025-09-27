@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
@@ -409,7 +410,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, [cancelSpeech]);
 
     const handleGameStart = useCallback(async (gameStartData: GameStartData) => {
-        if (state.currentSlotId === null) return;
+        if (state.currentSlotId === null) {
+            throw new Error("Chưa chọn ô lưu.");
+        }
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang khởi tạo thế giới mới...' } });
         try {
             const modLibrary = await db.getModLibrary();
@@ -422,11 +425,10 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             await db.saveGameState(state.currentSlotId, newGameState);
             await loadSaveSlots();
             const hydratedGameState = await migrateGameState(newGameState);
-            dispatch({ type: 'UPDATE_GAME_STATE', payload: hydratedGameState });
+            dispatch({ type: 'LOAD_GAME', payload: { gameState: hydratedGameState, slotId: state.currentSlotId } });
         } catch (error) {
-            alert(`Lỗi tạo thế giới: ${(error as Error).message}.`);
-        } finally {
-            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+            // Re-throw the error so the calling UI component can catch it and display it.
+            throw error;
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
 

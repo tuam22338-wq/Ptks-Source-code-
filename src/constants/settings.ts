@@ -81,6 +81,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
     narrativeHarmonizerModel: 'gemini-2.5-flash',
     autoSummaryFrequency: 50,
     ragTopK: 5,
+    ragChunkSize: 512,
+    ragChunkOverlap: 50,
     historyTokenLimit: 8192,
     summarizeBeforePruning: true,
     itemsPerPage: 10,

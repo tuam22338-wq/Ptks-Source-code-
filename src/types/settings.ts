@@ -68,6 +68,8 @@ export interface GameSettings {
     narrativeHarmonizerModel: AIModel;
     autoSummaryFrequency: number;
     ragTopK: number;
+    ragChunkSize: number;
+    ragChunkOverlap: number;
     historyTokenLimit: number;
     summarizeBeforePruning: boolean;
     itemsPerPage: number;

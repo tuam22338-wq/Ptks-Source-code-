@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, memo, useMemo, useEffect } from 'react';
 import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency, ModAttributeSystem, FullMod } from '../../types';
 import { FaArrowLeft, FaDiceD20, FaCheck, FaSyncAlt } from 'react-icons/fa';
@@ -41,7 +42,7 @@ const StepIndicator: React.FC<{ currentStep: CreationStep }> = ({ currentStep })
 };
 
 export const CharacterCreationScreen: React.FC = memo(() => {
-    const { state, handleNavigate, handleGameStart } = useAppContext();
+    const { state, handleNavigate, handleGameStart, dispatch } = useAppContext();
     
     const [step, setStep] = useState<CreationStep>('identity');
     
@@ -122,16 +123,22 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const handleFinalize = async () => {
         if (!generatedResult) return;
         
-        await handleGameStart({
-            identity: generatedResult.identity,
-            spiritualRoot: generatedResult.spiritualRoot,
-            initialBonuses: generatedResult.initialBonuses,
-            initialItems: generatedResult.initialItems,
-            initialCurrency: generatedResult.initialCurrency,
-            npcDensity,
-            difficulty,
-            danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
-        });
+        try {
+            await handleGameStart({
+                identity: generatedResult.identity,
+                spiritualRoot: generatedResult.spiritualRoot,
+                initialBonuses: generatedResult.initialBonuses,
+                initialItems: generatedResult.initialItems,
+                initialCurrency: generatedResult.initialCurrency,
+                npcDensity,
+                difficulty,
+                danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
+            });
+        } catch (error: any) {
+            console.error("World Creation Failed:", error);
+            setGenerationError(`Lỗi tạo thế giới: ${error.message}. Vui lòng thử lại hoặc thay đổi thông tin đầu vào.`);
+            setStep('identity'); // Go back to the identity step so user can retry
+        }
     };
     
     const handleIdentityChange = useCallback((updatedIdentity: Partial<CharacterIdentity>) => {
@@ -141,13 +148,13 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const renderHeader = () => (
         <div className="flex justify-between items-center mb-6">
             <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button>
-            <div className="text-center flex-grow"><Timeline gameDate={{ era: 'Tiên Phong Thần', year: 1, season: 'Xuân', day: 1, timeOfDay: 'Buổi Sáng', shichen: 'Tỵ', weather: 'SUNNY', actionPoints: 4, maxActionPoints: 4 }} majorEvents={majorEventsForTimeline} /></div>
+            <div className="text-center flex-grow"><Timeline gameDate={{ era: 'Tiên Phong Thần', year: 1, season: 'Xuân', day: 1, timeOfDay: 'Buổi Sáng', shichen: 'Tỵ', weather: 'SUNNY', actionPoints: 4, maxActionPoints: 4 }} majorEvents={majorEventsForTimeline} currentLocationName={'...'} /></div>
             <div className="w-9 h-9"></div>
         </div>
     );
 
     const renderStepContent = () => {
-        if (isGenerating) return <LoadingSpinner message="Thiên cơ đang hiển lộ, diễn giải số mệnh của bạn..." size="lg" />;
+        if (isGenerating || state.isLoading) return <LoadingSpinner message={state.loadingMessage || "Thiên cơ đang hiển lộ, diễn giải số mệnh của bạn..."} size="lg" />;
         
         switch (step) {
             case 'identity': 
@@ -239,6 +246,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
             {renderHeader()}
             <StepIndicator currentStep={step} />
             <div className="flex-grow min-h-0 overflow-y-auto pr-2">
+                {/* FIX: Renamed function call to match definition. */}
                 {renderStepContent()}
             </div>
         </div>

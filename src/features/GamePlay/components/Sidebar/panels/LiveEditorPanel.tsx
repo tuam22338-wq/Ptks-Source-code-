@@ -1,3 +1,4 @@
+
 import React, { memo, useState, useEffect } from 'react';
 import type { GameState, CharacterAttributes, Currency, NPC } from '../../../../../types';
 import { useAppContext } from '../../../../../contexts/AppContext';
@@ -19,25 +20,22 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
     const { dispatch } = useAppContext();
     const { showNotification } = useGameUIContext();
     
-    // Local state for forms
-    const [playerAttrs, setPlayerAttrs] = useState<CharacterAttributes>(gameState.playerCharacter.attributes);
-    const [playerCult, setPlayerCult] = useState({ spiritualQi: gameState.playerCharacter.cultivation.spiritualQi });
-    const [playerCurr, setPlayerCurr] = useState<Currency>(gameState.playerCharacter.currencies);
+    // Local state for forms, initialized from gameState props on mount/key change.
+    const [playerAttrs, setPlayerAttrs] = useState<CharacterAttributes>(() => JSON.parse(JSON.stringify(gameState.playerCharacter.attributes)));
+    const [playerCult, setPlayerCult] = useState(() => ({ spiritualQi: gameState.playerCharacter.cultivation.spiritualQi }));
+    const [playerCurr, setPlayerCurr] = useState<Currency>(() => JSON.parse(JSON.stringify(gameState.playerCharacter.currencies)));
 
     const [selectedNpcId, setSelectedNpcId] = useState<string>('');
     const [npcAttrs, setNpcAttrs] = useState<CharacterAttributes | null>(null);
 
     const npcsInLocation = gameState.activeNpcs.filter(n => n.locationId === gameState.playerCharacter.currentLocationId);
 
-    // Sync local state when game state changes
+    // This effect now ONLY handles the NPC selection change.
+    // It will reset the NPC form when a new NPC is selected from the dropdown.
     useEffect(() => {
-        setPlayerAttrs(gameState.playerCharacter.attributes);
-        setPlayerCult({ spiritualQi: gameState.playerCharacter.cultivation.spiritualQi });
-        setPlayerCurr(gameState.playerCharacter.currencies);
-
         const selectedNpc = gameState.activeNpcs.find(n => n.id === selectedNpcId);
-        setNpcAttrs(selectedNpc ? selectedNpc.attributes : null);
-    }, [gameState, selectedNpcId]);
+        setNpcAttrs(selectedNpc ? JSON.parse(JSON.stringify(selectedNpc.attributes)) : null);
+    }, [selectedNpcId, gameState.activeNpcs]);
     
     const handleApplyPlayerChanges = () => {
         dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
@@ -88,7 +86,6 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
             </div>
             
             <Section title="Nhân Vật Chính">
-                 {/* FIX: Use Object.keys to iterate, ensuring correct type inference for 'attr' and fixing 'unknown' type errors. */}
                  {Object.keys(playerAttrs).map((id) => {
                     const attr = playerAttrs[id];
                     if (!attr) return null;
@@ -133,7 +130,6 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
                 </select>
                 {selectedNpcId && npcAttrs && (
                     <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
-                        {/* FIX: Use Object.keys to iterate, ensuring correct type inference for 'attr' and fixing 'unknown' type errors. */}
                         {Object.keys(npcAttrs).map((id) => {
                              const attr = npcAttrs[id];
                              if (!attr) return null;
