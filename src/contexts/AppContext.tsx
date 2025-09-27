@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency } from '../types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
@@ -43,6 +43,10 @@ interface AppContextType {
     speak: (text: string, force?: boolean) => void;
     cancelSpeech: () => void;
     handleDialogueChoice: (choice: EventChoice) => void;
+    // New Mod Handlers
+    handleInstallMod: (modData: FullMod) => Promise<boolean>;
+    handleToggleMod: (modId: string) => Promise<void>;
+    handleDeleteModFromLibrary: (modId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -66,6 +70,7 @@ const initialState: AppState = {
     storageUsage: { usageString: '0 B / 0 B', percentage: 0 },
     activeWorldId: 'phong_than_dien_nghia',
     backgrounds: { status: {}, urls: {} },
+    installedMods: [],
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
@@ -251,26 +256,32 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         const loadInitialData = async () => {
             if (state.isMigratingData) return;
             try {
-                const [savedSettings, worldId, cachedAssets] = await Promise.all([
+                const [savedSettings, worldId, cachedAssets, modLibrary] = await Promise.all([
                     db.getSettings(),
                     db.getActiveWorldId(),
-                    db.getAllAssets()
+                    db.getAllAssets(),
+                    db.getModLibrary()
                 ]);
 
-                const playlist = [
+                const oldPlaylist = [
                     'https://files.catbox.moe/f86nal.mp3',
                     'https://files.catbox.moe/uckxqm.mp3'
                 ];
+                const newPlaylist = [
+                    'https://archive.org/download/Chinese-instrumental-music/Chinese-instrumental-music.mp3',
+                    'https://archive.org/download/ChineseTraditionalMusic/Chinese-Traditional-Music-Guqin-Meditation.mp3'
+                ];
                 let finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
 
-                if (!finalSettings.backgroundMusicUrl || finalSettings.backgroundMusicUrl === 'https://files.catbox.moe/f86nal.mp3') {
-                    const randomIndex = Math.floor(Math.random() * playlist.length);
-                    finalSettings.backgroundMusicUrl = playlist[randomIndex];
+                if (!finalSettings.backgroundMusicUrl || oldPlaylist.includes(finalSettings.backgroundMusicUrl)) {
+                    const randomIndex = Math.floor(Math.random() * newPlaylist.length);
+                    finalSettings.backgroundMusicUrl = newPlaylist[randomIndex];
                     finalSettings.backgroundMusicName = 'Nhạc Nền Mặc Định';
                 }
 
                 dispatch({ type: 'SET_SETTINGS', payload: finalSettings });
                 dispatch({ type: 'SET_ALL_CACHED_BACKGROUNDS', payload: cachedAssets });
+                dispatch({ type: 'SET_INSTALLED_MODS', payload: modLibrary });
 
                 apiKeyManager.updateKeys(finalSettings.apiKeys || []);
                 apiKeyManager.updateModelRotationSetting(finalSettings.enableAutomaticModelRotation);
@@ -284,23 +295,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         loadInitialData();
     }, [state.isMigratingData, loadSaveSlots]);
 
-    useEffect(() => {
-        if (state.view === 'gamePlay' && state.gameState && state.currentSlotId !== null) {
-            const debounceSave = setTimeout(async () => {
-                try {
-                    const gameStateToSave: GameState = { ...state.gameState!, lastSaved: new Date().toISOString() };
-                    await db.saveGameState(state.currentSlotId!, gameStateToSave);
-                    dispatch({ type: 'UPDATE_GAME_STATE', payload: gameStateToSave });
-                    console.log(`Đã tự động lưu vào ô ${state.currentSlotId}`);
-                    await updateStorageUsage();
-                } catch (error) {
-                    console.error("Tự động lưu thất bại", error);
-                }
-            }, 2500);
-            return () => clearTimeout(debounceSave);
-        }
-    }, [state.gameState, state.view, state.currentSlotId, updateStorageUsage]);
-    
     useEffect(() => {
         const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, layoutMode, enablePerformanceMode } = state.settings;
         if (!audioRef.current) {
@@ -498,11 +492,68 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         });
     }, []);
 
+    // --- New Mod Management Handlers ---
+    const handleInstallMod = useCallback(async (newModData: FullMod): Promise<boolean> => {
+        if (!newModData.modInfo?.id || !newModData.modInfo?.name) {
+            alert("Tệp mod không hợp lệ. Thiếu thông tin 'modInfo' hoặc ID/tên.");
+            return false;
+        }
+        if (state.installedMods.some(m => m.modInfo.id === newModData.modInfo.id)) {
+            alert(`Mod có ID "${newModData.modInfo.id}" đã được cài đặt.`);
+            return false;
+        }
+
+        try {
+            const newMod: ModInLibrary = {
+                modInfo: newModData.modInfo,
+                isEnabled: true,
+            };
+            await db.saveModToLibrary(newMod);
+            await db.saveModContent(newModData.modInfo.id, newModData);
+            dispatch({ type: 'ADD_INSTALLED_MOD', payload: newMod });
+            return true;
+        } catch (error) {
+            console.error("Lỗi khi cài đặt mod:", error);
+            alert("Lỗi khi cài đặt mod.");
+            return false;
+        }
+    }, [state.installedMods]);
+
+    const handleToggleMod = useCallback(async (modId: string) => {
+        const updatedMods = state.installedMods.map(mod => 
+            mod.modInfo.id === modId ? { ...mod, isEnabled: !mod.isEnabled } : mod
+        );
+        dispatch({ type: 'UPDATE_INSTALLED_MODS', payload: updatedMods });
+        try {
+            await db.saveModLibrary(updatedMods);
+        } catch (error) {
+            console.error("Không thể lưu thay đổi trạng thái mod:", error);
+            alert("Không thể lưu thay đổi trạng thái mod.");
+            // Revert UI state on failure
+            dispatch({ type: 'SET_INSTALLED_MODS', payload: state.installedMods });
+        }
+    }, [state.installedMods]);
+
+    const handleDeleteModFromLibrary = useCallback(async (modId: string) => {
+        const modToDelete = state.installedMods.find(m => m.modInfo.id === modId);
+        if (window.confirm(`Bạn có chắc muốn xóa vĩnh viễn mod "${modToDelete?.modInfo.name}"?`)) {
+            try {
+                await db.deleteModFromLibrary(modId);
+                await db.deleteModContent(modId);
+                dispatch({ type: 'REMOVE_INSTALLED_MOD', payload: modId });
+            } catch (error) {
+                console.error("Không thể xóa mod:", error);
+                alert("Không thể xóa mod.");
+            }
+        }
+    }, [state.installedMods]);
+
     const contextValue: AppContextType = {
         state, dispatch, handleNavigate, handleSettingChange, handleDynamicBackgroundChange, handleSettingsSave,
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
-        handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice
+        handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice,
+        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary
     };
 
     return (

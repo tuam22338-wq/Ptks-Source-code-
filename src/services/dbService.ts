@@ -13,7 +13,8 @@ import type {
     MemoryFragment,
     GraphEdge,
     RagSource,
-    RagEmbedding
+    RagEmbedding,
+    ModInLibrary
 } from '../types';
 
 export interface DbSaveSlot {
@@ -26,11 +27,6 @@ export interface DbSetting {
   value: any;
 }
 
-export interface DbModInLibrary {
-    modInfo: ModInfo;
-    isEnabled: boolean;
-}
-
 export interface DbModContent {
     id: string; // modInfo.id
     mod: FullMod;
@@ -39,7 +35,7 @@ export interface DbModContent {
 export class MyDatabase extends Dexie {
   saveSlots!: Table<DbSaveSlot, number>;
   settings!: Table<DbSetting, string>;
-  modLibrary!: Table<DbModInLibrary, string>; // primary key is modInfo.id
+  modLibrary!: Table<ModInLibrary, string>; // primary key is modInfo.id
   modContent!: Table<DbModContent, string>; // primary key is id
   modDrafts!: Table<{id: string, data: any}, string>;
   misc!: Table<{key: string, value: any}, string>;
@@ -200,15 +196,15 @@ export const saveSettings = async (settings: GameSettings): Promise<void> => {
 
 
 // --- Mod Service ---
-export const getModLibrary = async (): Promise<DbModInLibrary[]> => {
+export const getModLibrary = async (): Promise<ModInLibrary[]> => {
     return await db.modLibrary.toArray();
 };
 
-export const saveModToLibrary = async (mod: DbModInLibrary): Promise<void> => {
+export const saveModToLibrary = async (mod: ModInLibrary): Promise<void> => {
     await db.modLibrary.put(mod);
 }
 
-export const saveModLibrary = async (library: DbModInLibrary[]): Promise<void> => {
+export const saveModLibrary = async (library: ModInLibrary[]): Promise<void> => {
     // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();

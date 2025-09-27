@@ -285,6 +285,8 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
     7. **\`dynamicEvents\` (Sự kiện động):** Dựa trên lore và các địa điểm, hãy tạo ra 1-3 sự kiện động đơn giản để làm thế giới thêm sống động. Ví dụ, tạo một sự kiện thưởng cho người chơi một vật phẩm bí mật khi họ lần đầu bước vào một hang động cổ xưa, hoặc một sự kiện lễ hội diễn ra vào một ngày cụ thể.
     8.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
+    **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
+
     Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
 
     const settings = await db.getSettings();
@@ -302,7 +304,14 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
     }, specificApiKey);
     
     try {
-        const json = JSON.parse(response.text.trim());
+        let cleanedString = response.text.trim();
+        if (cleanedString.startsWith("```json")) {
+            cleanedString = cleanedString.substring(7);
+            if (cleanedString.endsWith("```")) {
+                cleanedString = cleanedString.slice(0, -3);
+            }
+        }
+        const json = JSON.parse(cleanedString);
         // Post-processing to add IDs where names are used as references
         if (json.content?.worldData?.[0]) {
             const world = json.content.worldData[0];
@@ -404,6 +413,8 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại hệ thống tu luyện hay thuộc tính nếu chúng đã được cung cấp.
     5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
+    **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
+
     Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
 
     const settings = await db.getSettings();
@@ -421,7 +432,14 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     }, specificApiKey);
     
     try {
-        const generatedJson = JSON.parse(response.text.trim());
+        let cleanedString = response.text.trim();
+        if (cleanedString.startsWith("```json")) {
+            cleanedString = cleanedString.substring(7);
+            if (cleanedString.endsWith("```")) {
+                cleanedString = cleanedString.slice(0, -3);
+            }
+        }
+        const generatedJson = JSON.parse(cleanedString);
         
         // Start building the final mod object
         const finalMod: FullMod = {

@@ -171,6 +171,11 @@ export interface ModInfo {
     version?: string;
 }
 
+export interface ModInLibrary {
+    modInfo: ModInfo;
+    isEnabled: boolean;
+}
+
 // --- UPDATED TECHNIQUE MODDING TYPES ---
 export type AuxiliaryTechniqueType = 'Tâm Pháp' | 'Độn Thuật' | 'Luyện Thể' | 'Kiếm Quyết' | 'Thần Thông';
 // FIX: Renamed to avoid conflict with gameplay CultivationTechnique type.

@@ -88,19 +88,22 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
             </div>
             
             <Section title="Nhân Vật Chính">
-                 {Object.entries(playerAttrs).map(([id, attr]) => (
-                    <div key={id}>
-                        <label className="text-xs text-gray-400">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
-                        <div className="flex gap-2">
-                            {/* FIX: Explicitly typing the updater function's parameter 'p' to resolve the 'unknown' type error. */}
-                             <input type="number" value={attr.value} onChange={e => setPlayerAttrs((p: CharacterAttributes) => ({...p, [id]: { ...p[id], value: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
-                             {attr.maxValue !== undefined && (
-                                // FIX: Explicitly typing the updater function's parameter 'p' to resolve the 'unknown' type error.
-                                <input type="number" value={attr.maxValue} onChange={e => setPlayerAttrs((p: CharacterAttributes) => ({...p, [id]: { ...p[id], maxValue: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
-                             )}
+                 {/* FIX: Use Object.keys to iterate, ensuring correct type inference for 'attr' and fixing 'unknown' type errors. */}
+                 {Object.keys(playerAttrs).map((id) => {
+                    const attr = playerAttrs[id];
+                    if (!attr) return null;
+                    return (
+                        <div key={id}>
+                            <label className="text-xs text-gray-400">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
+                            <div className="flex gap-2">
+                                <input type="number" value={attr.value} onChange={e => setPlayerAttrs(p => ({...p, [id]: { ...p[id]!, value: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                {attr.maxValue !== undefined && (
+                                    <input type="number" value={attr.maxValue} onChange={e => setPlayerAttrs(p => ({...p, [id]: { ...p[id]!, maxValue: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                 })}
                  <div>
                     <label className="text-xs text-gray-400">Linh Khí</label>
                     <input type="number" value={playerCult.spiritualQi} onChange={e => setPlayerCult({ spiritualQi: parseInt(e.target.value, 10) || 0 })} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
@@ -130,13 +133,17 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
                 </select>
                 {selectedNpcId && npcAttrs && (
                     <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
-                        {Object.entries(npcAttrs).map(([id, attr]) => (
-                            <div key={id}>
-                                <label className="text-xs text-gray-400">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
-                                {/* FIX: Explicitly typing the updater function's parameter 'p' to resolve the 'unknown' type error. */}
-                                <input type="number" value={attr.value} onChange={e => setNpcAttrs((p: CharacterAttributes | null) => p ? ({...p, [id]: { ...p[id], value: parseInt(e.target.value, 10) || 0 }}) : null)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
-                            </div>
-                        ))}
+                        {/* FIX: Use Object.keys to iterate, ensuring correct type inference for 'attr' and fixing 'unknown' type errors. */}
+                        {Object.keys(npcAttrs).map((id) => {
+                             const attr = npcAttrs[id];
+                             if (!attr) return null;
+                             return (
+                                <div key={id}>
+                                    <label className="text-xs text-gray-400">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
+                                    <input type="number" value={attr.value} onChange={e => setNpcAttrs(p => p ? ({...p, [id]: { ...p[id]!, value: parseInt(e.target.value, 10) || 0 }}) : null)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                </div>
+                            );
+                        })}
                         <button onClick={handleApplyNpcChanges} className="w-full mt-2 px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-sm flex items-center justify-center gap-2"><FaSave /> Áp Dụng</button>
                     </div>
                 )}

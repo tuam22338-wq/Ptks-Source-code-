@@ -1,21 +1,14 @@
-
-
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
     FaArrowLeft, FaTrash, FaCloudDownloadAlt, FaFileSignature, FaUpload, FaBookOpen, FaSearch, FaBrain
 } from 'react-icons/fa';
-import type { FullMod, ModInfo, CommunityMod } from '../../types';
+import type { FullMod, ModInfo, CommunityMod, ModInLibrary } from '../../types';
 import * as db from '../../services/dbService';
 import { fetchCommunityMods } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAppContext } from '../../contexts/AppContext';
 import AiGenesisScreen from './components/AiGenesisScreen';
 import ManualGenesisScreen from './components/ManualGenesisScreen';
-
-interface ModInLibrary {
-    modInfo: ModInfo;
-    isEnabled: boolean;
-}
 
 type LibraryView = 'main' | 'library' | 'genesis' | 'manualGenesis';
 type ModFilter = 'all' | 'installed' | 'community';
@@ -48,7 +41,11 @@ const MenuButton: React.FC<{
     </button>
 ));
 
-const ModLibrary: React.FC<{ onBack: () => void, installedMods: ModInLibrary[], setInstalledMods: React.Dispatch<React.SetStateAction<ModInLibrary[]>> }> = ({ onBack, installedMods, setInstalledMods }) => {
+const ModLibrary: React.FC<{ 
+    onBack: () => void;
+}> = ({ onBack }) => {
+    const { state, handleInstallMod, handleToggleMod, handleDeleteModFromLibrary } = useAppContext();
+    const { installedMods } = state;
     const [communityMods, setCommunityMods] = useState<CommunityMod[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -62,64 +59,16 @@ const ModLibrary: React.FC<{ onBack: () => void, installedMods: ModInLibrary[], 
             .catch(err => setError(err.message || 'Không thể tải mod.'))
             .finally(() => setIsLoading(false));
     }, []);
-
-    const handleImportOrInstallMod = async (newModData: FullMod) => {
-        if (!newModData.modInfo?.id || !newModData.modInfo?.name) {
-            alert("Tệp mod không hợp lệ. Thiếu thông tin 'modInfo' hoặc ID/tên.");
-            return;
-        }
-        if (installedMods.some(m => m.modInfo.id === newModData.modInfo.id)) {
-            alert(`Mod có ID "${newModData.modInfo.id}" đã được cài đặt.`);
-            return;
-        }
-
-        try {
-            const newMod: ModInLibrary = {
-                modInfo: newModData.modInfo,
-                isEnabled: true,
-            };
-            await db.saveModToLibrary(newMod);
-            await db.saveModContent(newModData.modInfo.id, newModData);
-            setInstalledMods(prev => [...prev, newMod]);
-            alert(`Mod "${newMod.modInfo.name}" đã được thêm thành công!`);
-        } catch (error) {
-            console.error("Error installing mod:", error);
-            alert("Lỗi khi cài đặt mod.");
-        }
-    };
-
-    const handleToggleMod = async (id: string) => {
-        const updatedMods = installedMods.map(mod => mod.modInfo.id === id ? { ...mod, isEnabled: !mod.isEnabled } : mod);
-        setInstalledMods(updatedMods);
-        try {
-            await db.saveModLibrary(updatedMods);
-        } catch (error) {
-             console.error("Error saving mod library:", error);
-             alert("Không thể lưu thay đổi trạng thái mod.");
-             setInstalledMods(installedMods);
-        }
-    };
-
-    const handleDeleteMod = async (id: string) => {
-        const modToDelete = installedMods.find(m => m.modInfo.id === id);
-        if (window.confirm(`Bạn có chắc muốn xóa vĩnh viễn mod "${modToDelete?.modInfo.name}"?`)) {
-            try {
-                await db.deleteModFromLibrary(id);
-                await db.deleteModContent(id);
-                setInstalledMods(mods => mods.filter(mod => mod.modInfo.id !== id));
-            } catch (error) {
-                console.error("Error deleting mod:", error);
-                alert("Không thể xóa mod.");
-            }
-        }
-    };
-
+    
     const handleInstallCommunityMod = async (modToInstall: CommunityMod) => {
         try {
             const response = await fetch(modToInstall.downloadUrl);
             if (!response.ok) throw new Error('Lỗi mạng khi tải tệp mod.');
             const modData: FullMod = await response.json();
-            await handleImportOrInstallMod(modData);
+            const success = await handleInstallMod(modData);
+            if (success) {
+                alert(`Mod "${modToInstall.modInfo.name}" đã được cài đặt thành công!`);
+            }
         } catch (err) {
             alert(`Lỗi khi cài đặt mod "${modToInstall.modInfo.name}": ${(err as Error).message}`);
         }
@@ -209,7 +158,7 @@ const ModLibrary: React.FC<{ onBack: () => void, installedMods: ModInLibrary[], 
                                         <input type="checkbox" checked={mod.isEnabled} onChange={() => handleToggleMod(mod.modInfo.id)} className="sr-only peer" />
                                         <div className="w-14 h-7 bg-gray-700 rounded-full border border-gray-600 peer peer-focus:ring-2 peer-focus:ring-gray-500/50 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--primary-accent-color)]"></div>
                                     </label>
-                                    <button onClick={() => handleDeleteMod(mod.modInfo.id)} className="p-2 text-gray-400 hover:text-red-400 transition-colors" title="Xóa Mod">
+                                    <button onClick={() => handleDeleteModFromLibrary(mod.modInfo.id)} className="p-2 text-gray-400 hover:text-red-400 transition-colors" title="Xóa Mod">
                                         <FaTrash />
                                     </button>
                                 </>
@@ -233,60 +182,23 @@ const ModLibrary: React.FC<{ onBack: () => void, installedMods: ModInLibrary[], 
 
 
 const ModsScreen: React.FC = () => {
-    const { handleNavigate } = useAppContext();
-    const [installedMods, setInstalledMods] = useState<ModInLibrary[]>([]);
+    const { handleNavigate, handleInstallMod } = useAppContext();
     const [view, setView] = useState<LibraryView>('main');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        const loadMods = async () => {
-            try {
-                const mods = await db.getModLibrary();
-                setInstalledMods(mods);
-            } catch (error) {
-                console.error("Failed to load mods from DB", error);
-            }
-        };
-        loadMods();
-    }, []);
-    
-    const handleInstallMod = async (newModData: FullMod) => {
-        if (!newModData.modInfo?.id || !newModData.modInfo?.name) {
-            alert("Tệp mod không hợp lệ. Thiếu thông tin 'modInfo' hoặc ID/tên.");
-            return false;
-        }
-        if (installedMods.some(m => m.modInfo.id === newModData.modInfo.id)) {
-            alert(`Mod có ID "${newModData.modInfo.id}" đã tồn tại.`);
-            return false;
-        }
-
-        try {
-            const newMod: ModInLibrary = {
-                modInfo: newModData.modInfo,
-                isEnabled: true,
-            };
-            await db.saveModToLibrary(newMod);
-            await db.saveModContent(newModData.modInfo.id, newModData);
-            setInstalledMods(prev => [...prev, newMod]);
-            alert(`Mod "${newMod.modInfo.name}" đã được thêm thành công!`);
-            return true;
-        } catch (error) {
-            console.error("Error installing mod:", error);
-            alert("Lỗi khi cài đặt mod.");
-            return false;
-        }
-    };
-
-    const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const text = e.target?.result as string;
                 const newModData: FullMod = JSON.parse(text);
-                handleInstallMod(newModData);
+                const success = await handleInstallMod(newModData);
+                if (success) {
+                    alert(`Mod "${newModData.modInfo.name}" đã được thêm thành công!`);
+                }
             } catch (error: any) {
                 alert(`Lỗi khi nhập mod: ${error.message}`);
             }
@@ -333,7 +245,7 @@ const ModsScreen: React.FC = () => {
             case 'genesis':
                 return <AiGenesisScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
             case 'library':
-                return <ModLibrary onBack={() => setView('main')} installedMods={installedMods} setInstalledMods={setInstalledMods} />;
+                return <ModLibrary onBack={() => setView('main')} />;
             case 'main':
             default:
                 return renderMainView();

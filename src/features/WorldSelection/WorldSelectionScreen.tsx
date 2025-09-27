@@ -1,8 +1,6 @@
-
-
-import React, { useState, useEffect, memo } from 'react';
-import { FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
-import type { FullMod, ModWorldData } from '../../types';
+import React, { useState, useEffect, memo, useRef } from 'react';
+import { FaArrowLeft, FaCheckCircle, FaUpload, FaDownload } from 'react-icons/fa';
+import type { FullMod, ModWorldData, ModInLibrary } from '../../types';
 import * as db from '../../services/dbService';
 import { DEFAULT_WORLDS_INFO } from '../../constants';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -43,9 +41,10 @@ const WorldCard: React.FC<{ world: WorldInfo; isActive: boolean; onSelect: () =>
 
 
 const WorldSelectionScreen: React.FC = () => {
-    const { handleNavigate, state, handleSetActiveWorldId } = useAppContext();
+    const { handleNavigate, state, handleSetActiveWorldId, handleInstallMod } = useAppContext();
     const [worlds, setWorlds] = useState<WorldInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const loadWorlds = async () => {
@@ -54,8 +53,8 @@ const WorldSelectionScreen: React.FC = () => {
 
             const modWorlds: WorldInfo[] = [];
             try {
-                const modLibrary = await db.getModLibrary();
-                for (const modInLib of modLibrary) {
+                // Use the globally managed installed mods from context
+                for (const modInLib of state.installedMods) {
                     if (!modInLib.isEnabled) continue;
                     const modContent = await db.getModContent(modInLib.modInfo.id);
                     if (modContent?.content.worldData) {
@@ -77,20 +76,94 @@ const WorldSelectionScreen: React.FC = () => {
             setIsLoading(false);
         };
         loadWorlds();
-    }, []);
+    }, [state.installedMods]);
 
     const handleSelectWorld = async (worldId: string) => {
         await handleSetActiveWorldId(worldId);
         alert(`Đã chọn thế giới: ${worlds.find(w => w.id === worldId)?.name}`);
     };
 
+    const handleExportWorld = async () => {
+        if (!state.activeWorldId) {
+            alert('Vui lòng chọn một thế giới để xuất.');
+            return;
+        }
+        const worldInfo = worlds.find(w => w.id === state.activeWorldId);
+        if (!worldInfo || worldInfo.source !== 'mod') {
+            alert('Chỉ có thể xuất các thế giới được tạo từ mod.');
+            return;
+        }
+
+        let modToExport: FullMod | null = null;
+        for (const installedMod of state.installedMods) {
+            const modContent = await db.getModContent(installedMod.modInfo.id);
+            if (modContent?.content.worldData?.some(w => w.name === state.activeWorldId)) {
+                modToExport = modContent;
+                break;
+            }
+        }
+
+        if (modToExport) {
+            try {
+                const jsonString = JSON.stringify(modToExport, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${modToExport.modInfo.id}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Xuất file thế giới thất bại.');
+                console.error("Failed to export world:", error);
+            }
+        } else {
+            alert('Không tìm thấy dữ liệu mod cho thế giới đã chọn.');
+        }
+    };
+
+    const handleImportFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const text = e.target?.result as string;
+                const modData: FullMod = JSON.parse(text);
+                const success = await handleInstallMod(modData);
+                if (success) {
+                    alert(`Mod/Thế giới "${modData.modInfo.name}" đã được nhập và cài đặt thành công!`);
+                }
+            } catch (error: any) {
+                alert(`Lỗi khi nhập mod: ${error.message}`);
+            }
+        };
+        reader.onerror = () => alert('Không thể đọc tệp tin.');
+        reader.readAsText(file);
+        if(importInputRef.current) importInputRef.current.value = "";
+    };
+
     return (
         <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold font-title">Lựa Chọn Thế Giới</h2>
-                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
-                    <FaArrowLeft className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
+                        <FaArrowLeft className="w-5 h-5" />
+                    </button>
+                    <h2 className="text-3xl font-bold font-title">Lựa Chọn Thế Giới</h2>
+                </div>
+                <div className="flex items-center gap-3">
+                    <input type="file" accept=".json" ref={importInputRef} onChange={handleImportFileSelected} className="hidden" />
+                    <button onClick={() => importInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-teal-700/80 text-white text-sm font-bold rounded-lg hover:bg-teal-600/80">
+                        <FaUpload /> Nhập Thế Giới
+                    </button>
+                    <button onClick={handleExportWorld} className="flex items-center gap-2 px-4 py-2 bg-amber-700/80 text-white text-sm font-bold rounded-lg hover:bg-amber-600/80">
+                        <FaDownload /> Xuất Thế Giới
+                    </button>
+                </div>
             </div>
             <p className="text-center mb-10" style={{color: 'var(--text-muted-color)'}}>
                 Mỗi thế giới mang đến một bối cảnh, nhân vật và dòng sự kiện khác nhau. Lựa chọn của bạn sẽ quyết định khởi đầu cho hành trình mới.

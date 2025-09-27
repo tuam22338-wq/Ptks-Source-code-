@@ -1,4 +1,4 @@
-import type { GameState, SaveSlot, GameSettings, BackgroundState } from '../types';
+import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary } from '../types';
 import type { View } from './AppContext';
 import { sanitizeGameState } from '../utils/gameStateSanitizer';
 
@@ -16,6 +16,7 @@ export interface AppState {
     storageUsage: { usageString: string; percentage: number };
     activeWorldId: string;
     backgrounds: BackgroundState;
+    installedMods: ModInLibrary[];
 }
 
 // Define action types
@@ -35,7 +36,11 @@ export type Action =
   | { type: 'LOAD_BACKGROUND_START'; payload: { themeId: string } }
   | { type: 'LOAD_BACKGROUND_SUCCESS'; payload: { themeId: string; urls: any } }
   | { type: 'LOAD_BACKGROUND_ERROR'; payload: { themeId: string } }
-  | { type: 'SET_ALL_CACHED_BACKGROUNDS'; payload: Record<string, any> };
+  | { type: 'SET_ALL_CACHED_BACKGROUNDS'; payload: Record<string, any> }
+  | { type: 'SET_INSTALLED_MODS'; payload: ModInLibrary[] }
+  | { type: 'ADD_INSTALLED_MOD'; payload: ModInLibrary }
+  | { type: 'UPDATE_INSTALLED_MODS'; payload: ModInLibrary[] }
+  | { type: 'REMOVE_INSTALLED_MOD'; payload: string }; // payload is modId
 
 
 // The reducer function
@@ -121,6 +126,18 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
                 newStatus[themeId] = 'loaded';
             });
             return { ...state, backgrounds: { urls: action.payload, status: { ...state.backgrounds.status, ...newStatus } } };
+        
+        case 'SET_INSTALLED_MODS':
+            return { ...state, installedMods: action.payload };
+
+        case 'ADD_INSTALLED_MOD':
+            return { ...state, installedMods: [...state.installedMods, action.payload] };
+
+        case 'UPDATE_INSTALLED_MODS':
+            return { ...state, installedMods: action.payload };
+
+        case 'REMOVE_INSTALLED_MOD':
+            return { ...state, installedMods: state.installedMods.filter(mod => mod.modInfo.id !== action.payload) };
 
         default:
             return state;
