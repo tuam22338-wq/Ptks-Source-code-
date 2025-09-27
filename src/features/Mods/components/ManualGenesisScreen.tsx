@@ -1,19 +1,23 @@
-import React, { useState } from 'react';
-import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaToggleOn, FaToggleOff, FaChevronDown, FaChevronUp, FaDownload } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaDownload } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
-import type { FullMod, ModInfo, ModAttributeSystem, RealmConfig, AttributeDefinition, AttributeGroupDefinition, QuickActionBarConfig, QuickActionButtonConfig, NamedRealmSystem } from '../../../types';
+import type { FullMod, ModInfo, ModAttributeSystem, NamedRealmSystem, QuickActionBarConfig, Faction, ModLocation, ModNpc } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS, DEFAULT_BUTTONS } from '../../../constants';
 import AttributeEditorModal from './AttributeEditorModal';
 import RealmEditorModal from './RealmEditorModal';
 import QuickActionButtonEditorModal from './QuickActionButtonEditorModal';
+import AccordionSection from './AccordionSection';
+import FactionEditorModal from './FactionEditorModal';
+import LocationEditorModal from './LocationEditorModal';
+import NpcEditorModal from './NpcEditorModal';
 
 interface ManualGenesisScreenProps {
     onBack: () => void;
     onInstall: (mod: FullMod) => Promise<boolean>;
+    initialModData?: FullMod | null;
 }
 
-// Reusable components
 const Field: React.FC<{ label: string; description: string; children: React.ReactNode }> = ({ label, description, children }) => (
     <div>
         <label className="block text-lg font-semibold font-title text-gray-300">{label}</label>
@@ -22,70 +26,65 @@ const Field: React.FC<{ label: string; description: string; children: React.Reac
     </div>
 );
 
-// --- MAIN COMPONENT ---
-const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onInstall }) => {
-    // Basic mod info
+const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onInstall, initialModData }) => {
+    // State for all form fields
     const [modInfo, setModInfo] = useState({ name: '', id: '', author: '' });
-    // AI prompts
     const [prompts, setPrompts] = useState({ setting: '', mainGoal: '', openingStory: '' });
-    const [aiHooks, setAiHooks] = useState({ on_world_build: '', on_action_evaluate: '' });
+    const [factions, setFactions] = useState<Faction[]>([]);
+    const [locations, setLocations] = useState<ModLocation[]>([]);
+    const [npcs, setNpcs] = useState<ModNpc[]>([]);
     
-    // User-defined systems
-    const [attributeSystem, setAttributeSystem] = useState<ModAttributeSystem>({
-        groups: JSON.parse(JSON.stringify(DEFAULT_ATTRIBUTE_GROUPS)),
-        definitions: JSON.parse(JSON.stringify(DEFAULT_ATTRIBUTE_DEFINITIONS))
-    });
-    const [namedRealmSystems, setNamedRealmSystems] = useState<NamedRealmSystem[]>([
-        { id: 'default_tu_chan', name: 'Hệ Thống Tu Chân Mặc Định', description: 'Hệ thống tu luyện tiên hiệp cổ điển, từ Phàm Nhân đến Thánh Nhân.', realms: JSON.parse(JSON.stringify(REALM_SYSTEM)) }
-    ]);
-    const [isRealmSystemEnabled, setIsRealmSystemEnabled] = useState(true);
-    const [quickActionBars, setQuickActionBars] = useState<QuickActionBarConfig[]>([
-        { id: 'default_game_actions', context: { type: 'DEFAULT', value: [] }, buttons: JSON.parse(JSON.stringify(DEFAULT_BUTTONS)) }
-    ]);
-
     // UI state
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
-    const [isRealmEditorOpen, setIsRealmEditorOpen] = useState(false);
-    const [editingAttribute, setEditingAttribute] = useState<AttributeDefinition | null>(null);
-    const [editingAttributeGroup, setEditingAttributeGroup] = useState<AttributeGroupDefinition | null>(null);
-    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ 'physical': true });
-    const [isActionButtonModalOpen, setIsActionButtonModalOpen] = useState(false);
-    const [editingButton, setEditingButton] = useState<{ button: QuickActionButtonConfig | null, barIndex: number }>({ button: null, barIndex: -1 });
-    const [editingSystemIndex, setEditingSystemIndex] = useState<number | null>(null);
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+        basicInfo: true,
+        manualDb: false,
+        aiPrompts: false,
+    });
+    const [isFactionModalOpen, setFactionModalOpen] = useState(false);
+    const [editingFaction, setEditingFaction] = useState<Faction | null>(null);
+    const [isLocationModalOpen, setLocationModalOpen] = useState(false);
+    const [editingLocation, setEditingLocation] = useState<ModLocation | null>(null);
+    const [isNpcModalOpen, setNpcModalOpen] = useState(false);
+    const [editingNpc, setEditingNpc] = useState<ModNpc | null>(null);
 
-
-    const handleGenerateWorld = async () => {
-        if (!modInfo.name.trim() || !modInfo.id.trim() || !prompts.setting.trim()) {
-            setError("Tên Mod, ID Mod, và Bối Cảnh là bắt buộc.");
-            return;
-        }
-        setIsLoading(true);
-        setError(null);
-        try {
-            const fullModInfo: Omit<ModInfo, 'description' | 'version'> = { ...modInfo };
-            const generatedMod = await generateWorldFromPrompts({ 
-                modInfo: fullModInfo, 
-                prompts, 
-                aiHooks,
-                attributeSystem,
-                namedRealmSystems: isRealmSystemEnabled ? namedRealmSystems : [],
-                quickActionBars
+     useEffect(() => {
+        if (initialModData) {
+            // FIX: Argument of type 'ModInfo' is not assignable to parameter of type '{ name: string; id: string; author: string; }'.
+            // Ensure the object passed to setModInfo matches the state's type, providing a default for the optional 'author' property.
+            setModInfo({
+                name: initialModData.modInfo.name,
+                id: initialModData.modInfo.id,
+                author: initialModData.modInfo.author || '',
             });
-            const success = await onInstall(generatedMod);
-            if (success) {
-                alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và cài đặt thành công!`);
-                onBack();
-            }
-        } catch (e: any) {
-            setError(`Lỗi khi tạo thế giới: ${e.message}`);
-        } finally {
-            setIsLoading(false);
+            setFactions(initialModData.content.worldData?.[0]?.factions || []);
+            // FIX: Argument of type '(Omit<ModLocation, "id"> & { id?: string; })[]' is not assignable to type 'ModLocation[]'.
+            // Sanitize locations from mod data to ensure each has a required 'id' and 'tags' before setting state.
+            const initialLocationsData = initialModData.content.worldData?.[0]?.initialLocations || [];
+            const sanitizedLocations = initialLocationsData.map((loc): ModLocation => ({
+                ...loc,
+                id: loc.id || (loc.name || `loc_${Date.now()}`).toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+                tags: loc.tags || [],
+            })) as ModLocation[];
+            setLocations(sanitizedLocations);
+            // FIX: Argument of type '(Omit<ModNpc, "id"> & { id?: string; })[]' is not assignable to type 'ModNpc[]'.
+            // Sanitize NPCs from mod data to ensure each has a required 'id' and 'tags' before setting state.
+            const initialNpcsData = initialModData.content.worldData?.[0]?.initialNpcs || [];
+            const sanitizedNpcs = initialNpcsData.map((npc): ModNpc => ({
+                ...npc,
+                id: npc.id || (npc.name || `npc_${Date.now()}`).toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+                tags: npc.tags || [],
+            })) as ModNpc[];
+            setNpcs(sanitizedNpcs);
         }
+    }, [initialModData]);
+
+    const handleToggleSection = (sectionId: string) => {
+        setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
     };
 
-    const handleGenerateAndExport = async () => {
+    const handleGenerateWorld = async (install: boolean) => {
         if (!modInfo.name.trim() || !modInfo.id.trim() || !prompts.setting.trim()) {
             setError("Tên Mod, ID Mod, và Bối Cảnh là bắt buộc.");
             return;
@@ -93,29 +92,29 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         setIsLoading(true);
         setError(null);
         try {
-            const fullModInfo: Omit<ModInfo, 'description' | 'version'> = { ...modInfo };
             const generatedMod = await generateWorldFromPrompts({
-                modInfo: fullModInfo,
-                prompts,
-                aiHooks,
-                attributeSystem,
-                namedRealmSystems: isRealmSystemEnabled ? namedRealmSystems : [],
-                quickActionBars
+                modInfo, prompts, factions, locations, npcs
             });
 
-            const jsonString = JSON.stringify(generatedMod, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${generatedMod.modInfo.id}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và xuất file thành công!`);
-
+            if (install) {
+                const success = await onInstall(generatedMod);
+                if (success) {
+                    alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và cài đặt thành công!`);
+                    onBack();
+                }
+            } else {
+                 const jsonString = JSON.stringify(generatedMod, null, 2);
+                 const blob = new Blob([jsonString], { type: 'application/json' });
+                 const url = URL.createObjectURL(blob);
+                 const link = document.createElement('a');
+                 link.href = url;
+                 link.download = `${generatedMod.modInfo.id}.json`;
+                 document.body.appendChild(link);
+                 link.click();
+                 document.body.removeChild(link);
+                 URL.revokeObjectURL(url);
+                 alert(`Thế giới "${generatedMod.modInfo.name}" đã được tạo và xuất file thành công!`);
+            }
         } catch (e: any) {
             setError(`Lỗi khi tạo thế giới: ${e.message}`);
         } finally {
@@ -123,360 +122,131 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         }
     };
     
-    // --- Attribute Modal Handlers ---
-    const handleOpenAttributeModal = (attr: AttributeDefinition | null, group: AttributeGroupDefinition) => {
-        setEditingAttribute(attr);
-        setEditingAttributeGroup(group);
-        setIsAttributeModalOpen(true);
-    };
-
-    const handleCloseAttributeModal = () => {
-        setIsAttributeModalOpen(false);
-        setEditingAttribute(null);
-        setEditingAttributeGroup(null);
-    };
-
-    const handleSaveAttribute = (savedAttr: AttributeDefinition) => {
-        setAttributeSystem(prev => {
-            const newDefinitions = [...prev.definitions];
-            const originalId = editingAttribute ? editingAttribute.id : savedAttr.id;
-            const index = newDefinitions.findIndex(d => d.id === originalId);
-
-            if (index > -1) {
-                newDefinitions[index] = savedAttr;
-            } else {
-                newDefinitions.push(savedAttr);
-            }
-            return { ...prev, definitions: newDefinitions };
-        });
-        handleCloseAttributeModal();
-    };
-
-    const handleDeleteAttribute = (attrId: string) => {
-        if (window.confirm("Bạn có chắc muốn xóa thuộc tính này? Hành động này không thể hoàn tác.")) {
-            setAttributeSystem(prev => ({
-                ...prev,
-                definitions: prev.definitions.filter(d => d.id !== attrId)
-            }));
-        }
-    };
-
-    const handleSaveRealms = (updatedRealms: RealmConfig[]) => {
-        if (editingSystemIndex !== null) {
-            setNamedRealmSystems(prev => {
-                const newSystems = [...prev];
-                newSystems[editingSystemIndex].realms = updatedRealms;
-                return newSystems;
-            });
-        }
-    };
-
-    const handleOpenRealmEditor = (index: number) => {
-        setEditingSystemIndex(index);
-        setIsRealmEditorOpen(true);
-    };
-    
-    // --- Quick Action Bar Handlers ---
-    const handleAddActionBar = () => {
-        const newBar: QuickActionBarConfig = {
-            id: `bar_${Date.now()}`,
-            context: { type: 'DEFAULT', value: [] },
-            buttons: []
-        };
-        setQuickActionBars(prev => [...prev, newBar]);
-    };
-
-    const handleDeleteActionBar = (barIndex: number) => {
-        if (window.confirm("Bạn có chắc muốn xóa thanh hành động này?")) {
-            setQuickActionBars(prev => prev.filter((_, i) => i !== barIndex));
-        }
-    };
-
-    const handleBarChange = (barIndex: number, field: 'type' | 'value', value: any) => {
-        const newBars = [...quickActionBars];
-        if (field === 'type') {
-            newBars[barIndex].context.type = value;
-            newBars[barIndex].context.value = []; // Reset value when type changes
-        } else if (field === 'value') {
-            newBars[barIndex].context.value = value.split(',').map((s: string) => s.trim()).filter(Boolean);
-        }
-        setQuickActionBars(newBars);
-    };
-
-    const handleOpenButtonModal = (button: QuickActionButtonConfig | null, barIndex: number) => {
-        setEditingButton({ button, barIndex });
-        setIsActionButtonModalOpen(true);
-    };
-
-    const handleSaveButton = (button: QuickActionButtonConfig) => {
-        const newBars = [...quickActionBars];
-        const bar = newBars[editingButton.barIndex];
-        const originalId = editingButton.button ? editingButton.button.id : button.id;
-        const buttonIndex = bar.buttons.findIndex(b => b.id === originalId);
-        
-        if (buttonIndex > -1) {
-            bar.buttons[buttonIndex] = button;
+    // Faction Handlers
+    const handleSaveFaction = (faction: Faction) => {
+        const index = factions.findIndex(f => f.name === (editingFaction?.name || ''));
+        if (index > -1) {
+            setFactions(factions.map((f, i) => i === index ? faction : f));
         } else {
-            bar.buttons.push(button);
+            setFactions([...factions, faction]);
         }
-        setQuickActionBars(newBars);
-        setIsActionButtonModalOpen(false);
+        setFactionModalOpen(false);
+        setEditingFaction(null);
     };
+    const handleDeleteFaction = (name: string) => setFactions(factions.filter(f => f.name !== name));
 
-    const handleDeleteButton = (barIndex: number, buttonIndex: number) => {
-         if (window.confirm("Bạn có chắc muốn xóa nút này?")) {
-            const newBars = [...quickActionBars];
-            newBars[barIndex].buttons.splice(buttonIndex, 1);
-            setQuickActionBars(newBars);
+    // Location Handlers
+    const handleSaveLocation = (location: ModLocation) => {
+        const index = locations.findIndex(l => l.id === editingLocation?.id);
+        if (index > -1) {
+            setLocations(locations.map((l, i) => (i === index ? location : l)));
+        } else {
+            setLocations([...locations, { ...location, id: `loc_${Date.now()}` }]);
         }
+        setLocationModalOpen(false);
+        setEditingLocation(null);
     };
+    const handleDeleteLocation = (id: string) => setLocations(locations.filter(l => l.id !== id));
 
-    const handleAddRealmSystem = () => {
-        const newSystem: NamedRealmSystem = {
-            id: `system_${Date.now()}`,
-            name: "Hệ Thống Mới",
-            description: "Mô tả hệ thống sức mạnh mới.",
-            realms: [],
-        };
-        setNamedRealmSystems(prev => [...prev, newSystem]);
-    };
-
-    const handleDeleteRealmSystem = (index: number) => {
-        if (window.confirm("Bạn có chắc muốn xóa toàn bộ hệ thống tu luyện này?")) {
-            setNamedRealmSystems(prev => prev.filter((_, i) => i !== index));
+    // NPC Handlers
+    const handleSaveNpc = (npc: ModNpc) => {
+        const index = npcs.findIndex(n => n.id === editingNpc?.id);
+        if (index > -1) {
+            setNpcs(npcs.map((n, i) => (i === index ? npc : n)));
+        } else {
+            setNpcs([...npcs, { ...npc, id: `npc_${Date.now()}` }]);
         }
+        setNpcModalOpen(false);
+        setEditingNpc(null);
     };
+    const handleDeleteNpc = (id: string) => setNpcs(npcs.filter(n => n.id !== id));
 
-    const handleSystemInfoChange = (index: number, field: 'name' | 'description', value: string) => {
-        setNamedRealmSystems(prev => {
-            const newSystems = [...prev];
-            newSystems[index][field] = value;
-            if (field === 'name') {
-                 newSystems[index].id = value.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
-            }
-            return newSystems;
-        });
-    };
 
-    if (isLoading) {
-        return <LoadingScreen message="AI đang dệt nên thế giới của bạn..." isGeneratingWorld={true} />;
-    }
+    if (isLoading) return <LoadingScreen message="AI đang dệt nên thế giới của bạn..." isGeneratingWorld={true} />;
 
     return (
         <div className="flex-grow flex flex-col min-h-0 animate-fade-in">
-             {isAttributeModalOpen && editingAttributeGroup && (
-                <AttributeEditorModal
-                    isOpen={isAttributeModalOpen}
-                    onClose={handleCloseAttributeModal}
-                    onSave={handleSaveAttribute}
-                    attribute={editingAttribute}
-                    group={editingAttributeGroup}
-                />
-            )}
-            {editingSystemIndex !== null && (
-                <RealmEditorModal
-                    isOpen={isRealmEditorOpen}
-                    onClose={() => { setIsRealmEditorOpen(false); setEditingSystemIndex(null); }}
-                    onSave={handleSaveRealms}
-                    initialRealms={namedRealmSystems[editingSystemIndex].realms}
-                    attributeSystem={attributeSystem}
-                />
-            )}
-            <QuickActionButtonEditorModal
-                isOpen={isActionButtonModalOpen}
-                onClose={() => setIsActionButtonModalOpen(false)}
-                onSave={handleSaveButton}
-                button={editingButton.button}
-            />
+             <FactionEditorModal isOpen={isFactionModalOpen} onClose={() => setFactionModalOpen(false)} onSave={handleSaveFaction} faction={editingFaction} />
+             <LocationEditorModal isOpen={isLocationModalOpen} onClose={() => setLocationModalOpen(false)} onSave={handleSaveLocation} location={editingLocation} />
+             <NpcEditorModal isOpen={isNpcModalOpen} onClose={() => setNpcModalOpen(false)} onSave={handleSaveNpc} npc={editingNpc} />
             <div className="flex-shrink-0 mb-4">
                 <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4"><FaArrowLeft /> Quay Lại Menu</button>
             </div>
             <div className="flex-grow flex flex-col items-center">
-                <h3 className="text-4xl font-bold font-title text-amber-300">Công Cụ Sáng Thế</h3>
+                 <h3 className="text-4xl font-bold font-title text-amber-300">{initialModData ? 'Giám Sát Thiên Cơ' : 'Công Cụ Sáng Thế'}</h3>
                 <p className="text-gray-400 max-w-3xl mx-auto mt-2 mb-6 text-center">
-                    Trở thành đấng sáng thế. Tự tay thiết kế các quy luật, thuộc tính, cảnh giới, sau đó cung cấp ý tưởng cốt lõi để AI kiến tạo nên một vũ trụ chi tiết cho bạn.
+                    {initialModData ? 'Xem lại và tinh chỉnh thế giới do AI tạo ra. Bạn có toàn quyền quyết định cuối cùng.' : 'Tự tay thiết kế các nền tảng, sau đó cung cấp ý tưởng cốt lõi để AI kiến tạo nên một vũ trụ chi tiết cho bạn.'}
                 </p>
                 {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4 w-full max-w-4xl">{error}</p>}
-                <div className="w-full max-w-4xl space-y-6 overflow-y-auto pr-2 pb-4">
-                    {/* Basic Info */}
-                    <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
-                        <h4 className="text-xl font-semibold font-title text-gray-300">1. Thông Tin Cơ Bản (Bắt buộc)</h4>
+                
+                <div className="w-full max-w-4xl space-y-4 overflow-y-auto pr-2 pb-4">
+                    <AccordionSection title="1. Thông Tin Cơ Bản (Bắt buộc)" isOpen={openSections.basicInfo} onToggle={() => handleToggleSection('basicInfo')}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Tên Mod</label>
-                                <input name="name" value={modInfo.name} onChange={e => setModInfo(p => ({...p, name: e.target.value}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50" placeholder="Vd: Thế Giới Cyber-Tu Chân"/>
+                                <input name="name" value={modInfo.name} onChange={e => setModInfo(p => ({...p, name: e.target.value}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Vd: Thế Giới Cyber-Tu Chân"/>
                             </div>
-                            <div>
+                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">ID Mod (không dấu, không cách)</label>
-                                <input name="id" value={modInfo.id} onChange={e => setModInfo(p => ({...p, id: e.target.value.toLowerCase().replace(/\s+/g, '_')}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50" placeholder="vd: cyber_tu_chan"/>
+                                <input name="id" value={modInfo.id} onChange={e => setModInfo(p => ({...p, id: e.target.value.toLowerCase().replace(/\s+/g, '_')}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="vd: cyber_tu_chan"/>
                             </div>
                         </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Tác Giả</label>
-                            <input name="author" value={modInfo.author} onChange={e => setModInfo(p => ({...p, author: e.target.value}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50" placeholder="Tên của bạn"/>
+                            <input name="author" value={modInfo.author} onChange={e => setModInfo(p => ({...p, author: e.target.value}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Tên của bạn"/>
                         </div>
-                    </div>
+                    </AccordionSection>
 
-                    {/* System Design */}
-                    <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
-                        <h4 className="text-xl font-semibold font-title text-cyan-300">2. Thiết Kế Hệ Thống (Tùy chỉnh)</h4>
-                        <p className="text-sm text-gray-500 -mt-2">Chỉnh sửa các quy luật cốt lõi của thế giới. Bạn có thể dùng hệ thống mặc định làm nền tảng.</p>
-                        
-                        <div className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
-                            <h5 className="font-bold text-gray-300 mb-2">Hệ Thống Thuộc Tính</h5>
-                            <div className="space-y-2">
-                                {attributeSystem.groups.map(group => (
-                                    <div key={group.id} className="bg-black/25 rounded-md border border-gray-800/80">
-                                        <button onClick={() => setExpandedGroups(p => ({...p, [group.id]: !p[group.id]}))} className="w-full flex justify-between items-center p-2 text-left hover:bg-gray-800/50">
-                                            <span className="font-semibold text-gray-300">{group.name}</span>
-                                            {expandedGroups[group.id] ? <FaChevronUp /> : <FaChevronDown />}
-                                        </button>
-                                        {expandedGroups[group.id] && (
-                                            <div className="p-2 border-t border-gray-800/80 space-y-2">
-                                                {attributeSystem.definitions.filter(d => d.group === group.id).map(attr => {
-                                                    const Icon = UI_ICONS[attr.iconName] || (() => <span />);
-                                                    return (
-                                                        <div key={attr.id} className="flex justify-between items-center p-2 bg-black/30 rounded">
-                                                            <div className="flex items-center gap-2">
-                                                                <Icon className="text-lg text-cyan-300" />
-                                                                <span className="text-sm font-semibold">{attr.name}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => handleOpenAttributeModal(attr, group)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>
-                                                                <button onClick={() => handleDeleteAttribute(attr.id)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                })}
-                                                <button onClick={() => handleOpenAttributeModal(null, group)} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
-                                                    <FaPlus /> Thêm Thuộc Tính
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        <div className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h5 className="font-bold text-gray-300">Hệ Thống Cảnh Giới</h5>
-                                    <p className="text-xs text-gray-400">Định nghĩa các cấp bậc sức mạnh. Tắt đi nếu thế giới không có hệ thống cấp bậc.</p>
-                                </div>
-                                <button onClick={() => setIsRealmSystemEnabled(!isRealmSystemEnabled)} className="flex items-center gap-2 text-sm text-gray-300">
-                                    {isRealmSystemEnabled ? <FaToggleOn className="text-green-400 text-xl" /> : <FaToggleOff className="text-gray-500 text-xl" />}
-                                    {isRealmSystemEnabled ? 'Đang Bật' : 'Đã Tắt'}
-                                </button>
-                            </div>
-                             {isRealmSystemEnabled && (
-                                <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-2">
-                                    {namedRealmSystems.map((system, index) => (
-                                        <div key={system.id} className="bg-black/25 rounded-lg border border-gray-800/80 p-3">
-                                            <div className="flex justify-between items-center">
-                                                <input value={system.name} onChange={e => handleSystemInfoChange(index, 'name', e.target.value)} className="font-bold text-lg bg-transparent border-0 text-gray-200 focus:ring-1 focus:ring-amber-500 focus:bg-gray-800 rounded px-1"/>
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => handleOpenRealmEditor(index)} className="p-1.5 text-gray-400 hover:text-white"><FaEdit /></button>
-                                                    <button onClick={() => handleDeleteRealmSystem(index)} className="p-1.5 text-gray-400 hover:text-red-400"><FaTrash /></button>
-                                                </div>
-                                            </div>
-                                             <textarea value={system.description} onChange={e => handleSystemInfoChange(index, 'description', e.target.value)} rows={1} className="w-full text-sm bg-transparent border-0 text-gray-400 focus:ring-1 focus:ring-amber-500 focus:bg-gray-800 rounded px-1 resize-none" placeholder="Mô tả hệ thống..."/>
-                                        </div>
-                                    ))}
-                                    <button onClick={handleAddRealmSystem} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
-                                        <FaPlus /> Thêm Hệ Thống Tu Luyện
-                                    </button>
-                                </div>
-                             )}
-                        </div>
-                    </div>
-
-                    {/* AI Content Prompts */}
-                    <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
-                        <h4 className="text-xl font-semibold font-title text-amber-300">3. Gợi Ý Cho AI</h4>
-                         <Field label="Bối Cảnh (Bắt buộc)" description="Mô tả tổng quan về thế giới, môi trường, không khí, và các đặc điểm chính.">
-                            <textarea name="setting" value={prompts.setting} onChange={e => setPrompts(p => ({...p, setting: e.target.value}))} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 resize-y" placeholder="Vd: Một vương quốc tu tiên lơ lửng trên những hòn đảo bay..."/>
-                        </Field>
-                        {/* Other prompt fields can be added here */}
-                    </div>
-
-                     {/* AI Hooks */}
-                    <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
-                        <h4 className="text-xl font-semibold font-title text-cyan-300">4. Luật Lệ AI (Nâng cao)</h4>
-                        <Field label="Luật Lệ Vĩnh Cửu (on_world_build)" description="Các quy tắc cốt lõi, không thay đổi của thế giới mà AI phải luôn tuân theo. Mỗi quy tắc một dòng.">
-                            <textarea name="on_world_build" value={aiHooks.on_world_build} onChange={e => setAiHooks(p => ({...p, on_world_build: e.target.value}))} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 resize-y font-mono text-sm" placeholder="Vd: Trong thế giới này, yêu tộc và nhân tộc có mối thù truyền kiếp."/>
-                        </Field>
-                        <Field label="Luật Lệ Tình Huống (on_action_evaluate)" description="Các quy tắc được AI xem xét và áp dụng cho kết quả của mỗi hành động người chơi. Mỗi quy tắc một dòng.">
-                            <textarea name="on_action_evaluate" value={aiHooks.on_action_evaluate} onChange={e => setAiHooks(p => ({...p, on_action_evaluate: e.target.value}))} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 resize-y font-mono text-sm" placeholder="Vd: Nếu người chơi ở nơi có âm khí nồng đậm, tốc độ tu luyện ma công tăng gấp đôi."/>
-                        </Field>
-                    </div>
-                    
-                    {/* Quick Action Bars */}
-                    <div className="p-4 bg-black/20 rounded-lg border border-gray-700 space-y-4">
-                        <h4 className="text-xl font-semibold font-title text-cyan-300">5. Thiết Kế Hành Động Nhanh (Tùy chọn)</h4>
-                        <p className="text-sm text-gray-500 -mt-2">Tạo các nút hành động nhanh cho người chơi trong các bối cảnh cụ thể.</p>
-                        <div className="space-y-3">
-                            {quickActionBars.map((bar, barIndex) => (
-                                <div key={bar.id} className="bg-black/25 rounded-lg border border-gray-800/80 p-3">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <h5 className="font-semibold text-gray-300">Thanh Hành Động #{barIndex + 1}</h5>
-                                        <button onClick={() => handleDeleteActionBar(barIndex)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="text-xs text-gray-400">Bối cảnh</label>
-                                            <select value={bar.context.type} onChange={(e) => handleBarChange(barIndex, 'type', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200">
-                                                <option value="DEFAULT">Mặc định</option>
-                                                <option value="LOCATION">Địa điểm</option>
-                                            </select>
-                                        </div>
-                                        {bar.context.type === 'LOCATION' && (
-                                            <div>
-                                                <label className="text-xs text-gray-400">ID Địa điểm (cách nhau bằng dấu phẩy)</label>
-                                                <input value={bar.context.value.join(', ')} onChange={(e) => handleBarChange(barIndex, 'value', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200 font-mono"/>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="mt-3 pt-3 border-t border-gray-700/60">
-                                        <h6 className="text-sm font-semibold text-gray-400 mb-2">Các Nút</h6>
-                                        <div className="space-y-2">
-                                            {bar.buttons.map((button, buttonIndex) => {
-                                                const Icon = UI_ICONS[button.iconName] || (() => <span />);
-                                                return (
-                                                    <div key={button.id} className="flex justify-between items-center p-2 bg-black/30 rounded">
-                                                        <div className="flex items-center gap-2">
-                                                            <Icon className="text-lg text-cyan-300" />
-                                                            <span className="text-sm font-semibold">{button.label}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <button onClick={() => handleOpenButtonModal(button, barIndex)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>
-                                                            <button onClick={() => handleDeleteButton(barIndex, buttonIndex)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                        <button onClick={() => handleOpenButtonModal(null, barIndex)} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
-                                            <FaPlus /> Thêm Nút
-                                        </button>
-                                    </div>
+                    <AccordionSection title="2. Thiết Kế Thế Giới (Thủ công)" secondaryText="Tạo nền tảng cho AI" isOpen={openSections.manualDb} onToggle={() => handleToggleSection('manualDb')}>
+                        {/* Factions */}
+                        <div className="space-y-2">
+                           <h4 className="font-semibold text-gray-300">Phe Phái</h4>
+                            {factions.map(f => (
+                                <div key={f.name} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                    <span className="text-sm font-semibold">{f.name}</span>
+                                    <div><button onClick={() => { setEditingFaction(f); setFactionModalOpen(true); }}><FaEdit/></button><button onClick={() => handleDeleteFaction(f.name)}><FaTrash/></button></div>
                                 </div>
                             ))}
+                            <button onClick={() => {setEditingFaction(null); setFactionModalOpen(true);}} className="w-full text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus/> Thêm Phe Phái</button>
                         </div>
-                        <button onClick={handleAddActionBar} className="w-full mt-3 text-base text-amber-300/80 hover:text-amber-200 flex items-center justify-center gap-2 p-2 bg-amber-900/30 rounded border border-amber-500/30">
-                            <FaPlus /> Thêm Thanh Hành Động
-                        </button>
-                    </div>
-
+                         {/* Locations */}
+                        <div className="space-y-2">
+                           <h4 className="font-semibold text-gray-300">Địa Điểm</h4>
+                            {locations.map(l => (
+                                <div key={l.id} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                    <span className="text-sm font-semibold">{l.name}</span>
+                                    <div><button onClick={() => { setEditingLocation(l); setLocationModalOpen(true); }}><FaEdit/></button><button onClick={() => handleDeleteLocation(l.id)}><FaTrash/></button></div>
+                                </div>
+                            ))}
+                            <button onClick={() => {setEditingLocation(null); setLocationModalOpen(true);}} className="w-full text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus/> Thêm Địa Điểm</button>
+                        </div>
+                         {/* NPCs */}
+                        <div className="space-y-2">
+                           <h4 className="font-semibold text-gray-300">Nhân Vật</h4>
+                            {npcs.map(n => (
+                                <div key={n.id} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                    <span className="text-sm font-semibold">{n.name}</span>
+                                    <div><button onClick={() => { setEditingNpc(n); setNpcModalOpen(true); }}><FaEdit/></button><button onClick={() => handleDeleteNpc(n.id)}><FaTrash/></button></div>
+                                </div>
+                            ))}
+                            <button onClick={() => {setEditingNpc(null); setNpcModalOpen(true);}} className="w-full text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus/> Thêm Nhân Vật</button>
+                        </div>
+                    </AccordionSection>
+                    
+                     <AccordionSection title="3. Gợi Ý Cho AI" isOpen={openSections.aiPrompts} onToggle={() => handleToggleSection('aiPrompts')}>
+                         <Field label="Bối Cảnh (Bắt buộc)" description="Mô tả tổng quan về thế giới, môi trường, không khí, và các đặc điểm chính.">
+                            <textarea name="setting" value={prompts.setting} onChange={e => setPrompts(p => ({...p, setting: e.target.value}))} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y" placeholder="Vd: Một vương quốc tu tiên lơ lửng trên những hòn đảo bay..."/>
+                        </Field>
+                    </AccordionSection>
                 </div>
                 <div className="pt-4 mt-auto flex-shrink-0 flex flex-col sm:flex-row justify-center items-center gap-4">
-                    <button onClick={handleGenerateAndExport} disabled={!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()} className="w-full sm:w-auto px-6 py-3 text-lg font-bold rounded-lg bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--bg-interactive-hover)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:bg-gray-800 disabled:cursor-not-allowed disabled:text-gray-500">
+                     <button onClick={() => handleGenerateWorld(false)} disabled={isLoading || (!initialModData && (!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()))} className="w-full sm:w-auto px-6 py-3 text-lg font-bold rounded-lg bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--bg-interactive-hover)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:opacity-50">
                         <FaDownload className="inline-block mr-2"/>
-                        Tạo & Xuất File
+                        {initialModData ? 'Lưu & Xuất File' : 'Tạo & Xuất File'}
                     </button>
-                    <button onClick={handleGenerateWorld} disabled={!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()} className="w-full sm:w-auto px-8 py-4 text-xl font-bold rounded-lg bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:bg-gray-600 disabled:cursor-not-allowed">
+                    <button onClick={() => handleGenerateWorld(true)} disabled={isLoading || (!initialModData && (!prompts.setting.trim() || !modInfo.name.trim() || !modInfo.id.trim()))} className="w-full sm:w-auto px-8 py-4 text-xl font-bold rounded-lg bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 disabled:opacity-50">
                         <FaBrain className="inline-block mr-3"/>
-                        Kiến Tạo & Cài Đặt
+                        {initialModData ? 'Lưu & Cài Đặt' : 'Kiến Tạo & Cài Đặt'}
                     </button>
                 </div>
             </div>

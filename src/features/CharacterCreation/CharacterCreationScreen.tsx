@@ -1,7 +1,5 @@
-
-
 import React, { useState, useCallback, memo, useMemo, useEffect } from 'react';
-import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency, ModAttributeSystem, FullMod } from '../../types';
+import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency, ModAttributeSystem, FullMod, GenerationMode } from '../../types';
 import { FaArrowLeft, FaDiceD20, FaCheck, FaSyncAlt } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill, GiStairsGoal, GiSparkles, GiFamilyTree } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
@@ -11,6 +9,7 @@ import CharacterIdentityDisplay from './CharacterIdentityDisplay';
 import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
 import * as db from '../../services/dbService';
+import LoadingScreen from '../../components/LoadingScreen';
 
 
 type CreationStep = 'identity' | 'summary';
@@ -41,6 +40,12 @@ const StepIndicator: React.FC<{ currentStep: CreationStep }> = ({ currentStep })
     );
 };
 
+const modeOptions: { id: GenerationMode; label: string; description: string; color: string }[] = [
+    { id: 'fast', label: 'Nhanh', description: 'Tạo thế giới nhanh chóng, ít chi tiết phức tạp.', color: 'border-sky-500' },
+    { id: 'deep', label: 'Chuyên Sâu', description: 'AI sẽ dành nhiều thời gian hơn để tạo ra NPC và cốt truyện có chiều sâu.', color: 'border-amber-500' },
+    { id: 'super_deep', label: 'Siêu Chuyên Sâu', description: 'Tối đa hóa sự sáng tạo của AI, tạo ra một thế giới cực kỳ chi tiết. Mất nhiều thời gian nhất.', color: 'border-red-600' },
+];
+
 export const CharacterCreationScreen: React.FC = memo(() => {
     const { state, handleNavigate, handleGameStart, dispatch } = useAppContext();
     
@@ -58,6 +63,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const [generationError, setGenerationError] = useState<string | null>(null);
     const [npcDensity, setNpcDensity] = useState<'medium'>('medium');
     const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
+    const [generationMode, setGenerationMode] = useState<GenerationMode>('fast');
 
     const [activeAttributeSystem, setActiveAttributeSystem] = useState<ModAttributeSystem | null>(null);
 
@@ -133,6 +139,7 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                 npcDensity,
                 difficulty,
                 danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
+                generationMode,
             });
         } catch (error: any) {
             console.error("World Creation Failed:", error);
@@ -154,7 +161,8 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     );
 
     const renderStepContent = () => {
-        if (isGenerating || state.isLoading) return <LoadingSpinner message={state.loadingMessage || "Thiên cơ đang hiển lộ, diễn giải số mệnh của bạn..."} size="lg" />;
+        if (state.isLoading) return <LoadingScreen message={state.loadingMessage} isGeneratingWorld={true} generationMode={generationMode} />;
+        if (isGenerating) return <LoadingSpinner message="Thiên cơ đang hiển lộ, diễn giải số mệnh của bạn..." size="lg" />;
         
         switch (step) {
             case 'identity': 
@@ -227,6 +235,17 @@ export const CharacterCreationScreen: React.FC = memo(() => {
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-black/20 rounded-lg border border-gray-700/60">
+                            <p className="text-lg font-bold font-title text-center mb-2 text-gray-300">Chế Độ Sáng Thế</p>
+                            <div className="flex flex-col gap-3">
+                                {modeOptions.map(mode => (
+                                    <button key={mode.id} onClick={() => setGenerationMode(mode.id)} className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${generationMode === mode.id ? `${mode.color} bg-white/10` : 'bg-black/20 border-gray-700 hover:border-gray-500'}`}>
+                                        <div className="font-bold text-md text-white">{mode.label}</div>
+                                        <p className="text-sm text-gray-400 mt-1">{mode.description}</p>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                         <div className="text-center pt-4 flex justify-center items-center gap-4">

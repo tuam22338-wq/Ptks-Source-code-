@@ -16,40 +16,28 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>
-                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Thiên Cơ Vận Chuyển</p>
+                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Linh Hoạt Thế Giới</p>
                 </div>
 
                 <div className="text-gray-300 space-y-3 my-4 max-h-[50vh] overflow-y-auto pr-2">
-                    <p>Chào mừng quý đạo hữu đã quay trở lại! Phiên bản 1.1.0 "Thiên Cơ Vận Chuyển" mang đến những thay đổi đột phá, biến thế giới trở nên sống động và có chiều sâu hơn bao giờ hết:</p>
+                    <p>Chào mừng quý đạo hữu! Phiên bản 1.1.1 "Linh Hoạt Thế Giới" tập trung vào việc trao cho bạn nhiều quyền kiểm soát hơn đối với vũ trụ của mình, cùng với các cải tiến chất lượng quan trọng:</p>
                     <ul className="list-disc list-inside space-y-3 pl-4">
                         <li>
-                            <strong className="text-amber-300">"Thiên Cơ Vận Chuyển" - Mô Phỏng Thế Giới Sống</strong>
+                            <strong className="text-amber-300">Nâng Cấp "Xuất Thế Giới"</strong>
                             <p className="text-sm text-gray-400 pl-2">
-                                Giới thiệu hệ thống mô phỏng xã hội toàn diện. NPC giờ đây có ý chí, mục tiêu và kế hoạch riêng. Các thế lực sẽ tự tạo ra sự kiện động (chiến tranh, thiên tai...), và các mối quan hệ sẽ tự phát triển, làm cho thế giới luôn biến đổi và sống động.
+                                Chức năng xuất thế giới mặc định ("Phong Thần", "Tây Du") đã được đại tu. File mod xuất ra giờ đây chứa đựng đầy đủ và chi tiết hơn các dữ liệu gốc, bao gồm cả mối quan hệ và thiên phú của NPC, giúp việc tùy chỉnh và tái nhập vào game trở nên dễ dàng và mạnh mẽ hơn.
                             </p>
                         </li>
                         <li>
-                            <strong className="text-amber-300">Chế Độ Thử Nghiệm (Live Editor)</strong>
+                            <strong className="text-amber-300">"Thời Thế" Linh Động Theo Mod</strong>
                              <p className="text-sm text-gray-400 pl-2">
-                                Thêm một bảng điều khiển mới cho phép người dùng nâng cao chỉnh sửa trực tiếp chỉ số nhân vật, NPC, và các dữ liệu game khác ngay trong lúc chơi mà không cần tạo mod.
+                                Màn hình "Thời Thế" (dòng lịch sử) đã được tái cấu trúc hoàn toàn. Hệ thống giờ đây sẽ ưu tiên tuyệt đối việc tải và hiển thị dòng lịch sử từ thế giới mod mà bạn đang kích hoạt, làm cho mỗi thế giới mod trở nên độc nhất và có chiều sâu hơn. Nếu không có, game sẽ tự động quay về lịch sử mặc định.
                             </p>
                         </li>
                          <li>
-                            <strong className="text-amber-300">Tooltip Thông Tin NPC Động</strong>
+                            <strong className="text-amber-300">Cải Thiện Trải Nghiệm & Sửa Lỗi</strong>
                             <p className="text-sm text-gray-400 pl-2">
-                                Khi AI kể chuyện tạo ra một nhân vật mới, tên của họ sẽ được tô sáng. Nhấp vào tên để xem ngay thông tin chi tiết về thuộc tính, cảnh giới, xuất thân... của họ.
-                            </p>
-                        </li>
-                        <li>
-                            <strong className="text-amber-300">Nâng Cấp Modding</strong>
-                            <p className="text-sm text-gray-400 pl-2">
-                                Thêm các hành động mặc định vào giao diện tạo mod để dễ dàng tùy biến. Hỗ trợ tạo và quản lý nhiều hệ thống tu luyện khác nhau trong cùng một bản mod.
-                            </p>
-                        </li>
-                        <li>
-                            <strong className="text-amber-300">Cải Tiến Nhỏ & Sửa Lỗi</strong>
-                            <p className="text-sm text-gray-400 pl-2">
-                                Hiển thị vị trí hiện tại trên thanh timeline, nâng cấp AI kể chuyện để linh hoạt hơn với nhiều thể loại, và sửa nhiều lỗi nhỏ để cải thiện sự ổn định.
+                                Tinh chỉnh lại logic tải dữ liệu và sửa một số lỗi nhỏ liên quan đến quản lý mod để đảm bảo trải nghiệm mượt mà và ổn định hơn.
                             </p>
                         </li>
                     </ul>

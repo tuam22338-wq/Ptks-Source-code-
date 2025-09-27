@@ -242,7 +242,7 @@ export const createNewGameState = async (
     activeWorldId: string,
     setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
-    const { identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong, initialCurrency } = gameStartData;
+    const { identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong, initialCurrency, generationMode = 'fast' } = gameStartData;
 
     let worldMapToUse: Location[], initialNpcsFromData: NPC[], majorEventsToUse, factionsToUse, startingYear, eraName, startingLocationId;
     
@@ -406,10 +406,10 @@ export const createNewGameState = async (
         },
     };
     
-    setLoadingMessage('Đang tạo ra gia đình và chúng sinh trong thế giới...');
+    setLoadingMessage('AI đang kiến tạo người thân và chúng sinh trong thế giới...');
     const [familyResult, generatedNpcs] = await Promise.all([
-        generateFamilyAndFriends(playerCharacter.identity, startingLocation.id),
-        generateDynamicNpcs(npcDensity, initialNpcsFromData.map(n => n.identity.name)),
+        generateFamilyAndFriends(playerCharacter.identity, startingLocation.id, generationMode),
+        generateDynamicNpcs(npcDensity, initialNpcsFromData.map(n => n.identity.name), generationMode),
     ]);
     const { npcs: familyNpcs, relationships: familyRelationships } = familyResult;
     playerCharacter.relationships = familyRelationships;
@@ -424,8 +424,8 @@ export const createNewGameState = async (
         attributeSystem: attributeSystemToUse,
         realmSystem: realmSystemToUse,
     };
-    setLoadingMessage('Đang viết nên chương truyện mở đầu cho bạn...');
-    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, activeWorldId);
+    setLoadingMessage('AI đang viết nên chương truyện mở đầu cho bạn...');
+    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, activeWorldId, generationMode);
     setLoadingMessage('Đang sắp đặt lại dòng thời gian...');
 
     const initialStory = [ { id: 1, type: 'narrative' as const, content: openingNarrative } ];

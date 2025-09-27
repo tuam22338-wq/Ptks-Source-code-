@@ -1,7 +1,8 @@
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem, GenerationMode } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -149,7 +150,7 @@ Khi gán "bonuses", bạn CHỈ ĐƯỢỢC PHÉP sử dụng tên thuộc tính
     };
 };
 
-export const generateFamilyAndFriends = async (identity: CharacterIdentity, locationId: string): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[] }> => {
+export const generateFamilyAndFriends = async (identity: CharacterIdentity, locationId: string, generationMode: GenerationMode): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[] }> => {
     const familySchema = {
         type: Type.OBJECT,
         properties: {
@@ -174,6 +175,20 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
         required: ['family_members'],
     };
 
+    let modeInstruction = '';
+    switch(generationMode) {
+        case 'deep':
+            modeInstruction = 'Tạo ra các nhân vật có thêm một chút chiều sâu, có thể có một chi tiết nhỏ về quá khứ hoặc mối quan hệ của họ.';
+            break;
+        case 'super_deep':
+            modeInstruction = 'Tạo ra các nhân vật có câu chuyện nền phức tạp hơn. Mối quan hệ giữa họ và người chơi có thể có những mâu thuẫn hoặc bí mật ngầm. Họ nên có tính cách rõ ràng và độc đáo hơn.';
+            break;
+        case 'fast':
+        default:
+            modeInstruction = 'Tạo ra các nhân vật một cách nhanh chóng và đơn giản, tập trung vào vai trò của họ.';
+            break;
+    }
+
     const prompt = `Dựa trên thông tin về nhân vật chính, hãy tạo ra các thành viên gia đình và bạn bè thân thiết cho họ.
     - **Bối cảnh:** Game tu tiên Tam Thiên Thế Giới, một thế giới huyền huyễn.
     - **Nhân vật chính:**
@@ -183,6 +198,7 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
         - Tính cách: ${identity.personality}
     
     Nhiệm vụ: Tạo ra 2 đến 4 NPC là người thân hoặc bạn bè gần gũi của nhân vật chính. Họ đều là PHÀM NHÂN, không phải tu sĩ. Họ nên sống cùng một địa điểm với người chơi.
+    **Yêu cầu theo chế độ sáng thế:** ${modeInstruction}
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.
     `;
     
@@ -273,7 +289,7 @@ export const generateFamilyAndFriends = async (identity: CharacterIdentity, loca
     return { npcs: generatedNpcs, relationships: generatedRelationships };
 };
 
-export const generateOpeningScene = async (gameState: GameState, worldId: string): Promise<string> => {
+export const generateOpeningScene = async (gameState: GameState, worldId: string, generationMode: GenerationMode): Promise<string> => {
     const { playerCharacter, discoveredLocations, activeNpcs } = gameState;
     const currentLocation = discoveredLocations.find(loc => loc.id === playerCharacter.currentLocationId);
     
@@ -287,6 +303,20 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     
     const settings = await db.getSettings();
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
+
+    let modeInstruction = '';
+    switch(generationMode) {
+        case 'deep':
+            modeInstruction = 'Đoạn văn nên dài khoảng 4-5 câu, tạo ra một không khí có chiều sâu và gợi mở.';
+            break;
+        case 'super_deep':
+            modeInstruction = 'Đoạn văn nên dài khoảng 5-7 câu. Hãy lồng ghép các chi tiết tinh tế, những điềm báo hoặc những yếu tố foreshadowing cho các sự kiện trong tương lai. Làm cho nó thật ấn tượng.';
+            break;
+        case 'fast':
+        default:
+            modeInstruction = 'Đoạn văn phải ngắn gọn, khoảng 2-3 câu, đi thẳng vào vấn đề.';
+            break;
+    }
     
     const prompt = `Bạn là người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Hãy viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
 
@@ -302,7 +332,9 @@ export const generateOpeningScene = async (gameState: GameState, worldId: string
     - **Gia đình & Người thân:**
     ${familyInfo || 'Không có ai thân thích.'}
 
-    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu khoảng 3-4 câu. Đoạn văn phải thiết lập bối cảnh nhân vật đang ở đâu, làm gì, và cảm xúc của họ. Nó phải phản ánh đúng xuất thân và nguồn gốc sức mạnh của họ.
+    Nhiệm vụ: Dựa vào thông tin trên, hãy viết một đoạn văn mở đầu.
+    **Yêu cầu độ dài và chiều sâu:** ${modeInstruction}
+    Đoạn văn phải thiết lập bối cảnh nhân vật đang ở đâu, làm gì, và cảm xúc của họ. Nó phải phản ánh đúng xuất thân và nguồn gốc sức mạnh của họ.
     
     Ví dụ:
     "Lý Thanh Vân đứng lặng trước tảng đá trắc linh đã nguội lạnh, trong lòng vẫn còn dư chấn từ kết quả 'Hỏa Thiên Linh Căn' ngoài sức tưởng tượng. Ánh mắt của vị trưởng lão, của những người trong gia tộc, có ngưỡng mộ, có ghen tị, tất cả đều đổ dồn về phía hắn, một thiếu niên từ chi thứ vốn không được ai chú ý."

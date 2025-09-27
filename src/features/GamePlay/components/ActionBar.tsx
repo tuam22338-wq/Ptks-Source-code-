@@ -10,6 +10,8 @@ type ActionType = 'say' | 'act' | 'ask';
 
 interface ActionBarProps {
     onInputSubmit: (text: string) => void;
+    // FIX: Add onContextualAction to props to handle location-specific actions.
+    onContextualAction: (actionId: string, actionLabel: string) => void;
     disabled: boolean;
     currentLocation: Location;
     activeTab: ActionType;
@@ -36,7 +38,7 @@ const QuickActionButton: React.FC<{
     </button>
 );
 
-const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, disabled, currentLocation, activeTab, setActiveTab, gameState, handleBreakthrough, onToggleSidebar }) => {
+const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState, handleBreakthrough, onToggleSidebar }) => {
     const [inputText, setInputText] = useState('');
     const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
     
@@ -142,6 +144,20 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, disabled, currentL
                                     title={button.description}
                                 >
                                     <Icon /> {button.label}
+                                </QuickActionButton>
+                            );
+                        })}
+                        {/* FIX: Render contextual actions from the current location. */}
+                        {currentLocation.contextualActions?.map(action => {
+                            const Icon = UI_ICONS[action.iconName as keyof typeof UI_ICONS] || FaBolt;
+                            return (
+                                <QuickActionButton
+                                    key={action.id}
+                                    onClick={() => onContextualAction(action.id, action.label)}
+                                    disabled={disabled}
+                                    title={action.description}
+                                >
+                                    <Icon /> {action.label}
                                 </QuickActionButton>
                             );
                         })}

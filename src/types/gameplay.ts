@@ -260,7 +260,7 @@ export interface QuestObjective {
 export interface QuestReward {
     spiritualQi?: number;
     currencies?: Currency;
-    items?: { name: string; quantity: number }[];
+    items?: { name: string, quantity: number }[];
     danhVong?: number;
     reputation?: { factionName: string; change: number; }[];
 }
@@ -409,6 +409,7 @@ export interface PlayerSect {
 // --- End Player-managed Sect Types ---
 
 export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
+export type GenerationMode = 'fast' | 'deep' | 'super_deep';
 
 export interface GameState {
     version?: string;

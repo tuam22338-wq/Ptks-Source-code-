@@ -2,15 +2,17 @@
 
 
 
+
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes } from '../../types';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode } from '../../types';
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { FaQuestionCircle } from "react-icons/fa";
 
-export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, existingNames: string[] = []): Promise<NPC[]> => {
+export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, existingNames: string[] = [], generationMode: GenerationMode): Promise<NPC[]> => {
     const count = typeof countOrDensity === 'number' ? countOrDensity : NPC_DENSITY_LEVELS.find(d => d.id === countOrDensity)?.count ?? 15;
     if (count <= 0) return [];
     
@@ -89,14 +91,28 @@ export const generateDynamicNpcs = async (countOrDensity: NpcDensity | number, e
         },
     };
     
+    let modeInstruction = '';
+    switch(generationMode) {
+        case 'deep':
+            modeInstruction = `2.  **"Linh Hồn" NPC:** Dựa trên tính cách và xuất thân, hãy gán cho họ một trạng thái cảm xúc, động lực (motivation), và các mục tiêu (goals) hợp lý và có chiều sâu hơn. Hãy cho họ quá khứ và mối quan hệ phức tạp hơn một chút.`;
+            break;
+        case 'super_deep':
+            modeInstruction = `2.  **"Linh Hồn" NPC:** Dựa trên tính cách và xuất thân, hãy gán cho họ một trạng thái cảm xúc, động lực (motivation), và các mục tiêu (goals) hợp lý và có chiều sâu TỐI ĐA. Hãy tạo cho họ những câu chuyện nền phức tạp, có thể có các mối quan hệ chằng chịt với nhau hoặc liên quan đến các sự kiện lớn của thế giới.`;
+            break;
+        case 'fast':
+        default:
+            modeInstruction = `2.  **"Linh Hồn" NPC:** Dựa trên tính cách và xuất thân, hãy gán cho họ một trạng thái cảm xúc, động lực (motivation), và các mục tiêu (goals) hợp lý. Tập trung vào việc tạo ra các NPC đa dạng một cách nhanh chóng, không cần quá phức tạp về quá khứ.`;
+            break;
+    }
+
     const prompt = `Tạo ra ${count} NPC (Non-Player Characters) độc đáo cho thế giới game tu tiên Tam Thiên Thế Giới.
     Các NPC này có thể là tu sĩ, yêu ma, dân thường, hoặc các sinh vật kỳ dị.
     Mỗi NPC cần có thông tin đầy đủ theo schema. Hãy sáng tạo và làm cho thế giới trở nên sống động.
     **QUAN TRỌNG:** KHÔNG tạo ra các NPC có tên trong danh sách sau đây: ${existingNames.join(', ')}.
     
     **Yêu cầu chi tiết:**
-    1.  **"Linh Hồn" NPC:** Dựa trên tính cách và xuất thân, hãy gán cho họ một trạng thái cảm xúc, động lực (motivation), và các mục tiêu (goals) hợp lý và có chiều sâu.
-    2.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu mới.
+    1.  **Chỉ số:** Dựa vào tính cách và xuất thân, hãy gán cho họ các chỉ số Thiên Hướng (Chinh Đạo, Ma Đạo) và chỉ số chiến đấu mới.
+    ${modeInstruction}
     3.  **Cảnh Giới:** Dựa trên mô tả sức mạnh và vai vế của NPC, hãy chọn một cảnh giới (realmName) phù hợp. "Phàm Nhân" cho người thường.
     4.  **Ngũ Hành:** Gán một thuộc tính ngũ hành (element) cho mỗi NPC.
     5.  **Tiên Tư:** Tạo ra 1-2 tiên tư (talents) độc đáo và phù hợp cho mỗi NPC tu sĩ.

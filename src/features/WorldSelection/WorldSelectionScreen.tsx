@@ -1,8 +1,13 @@
 import React, { useState, useEffect, memo, useRef } from 'react';
 import { FaArrowLeft, FaCheckCircle, FaUpload, FaDownload } from 'react-icons/fa';
-import type { FullMod, ModWorldData, ModInLibrary } from '../../types';
+import type { FullMod, ModWorldData, ModInLibrary, NPC, Location, ModNpc, ModLocation, NpcRelationshipInput } from '../../types';
 import * as db from '../../services/dbService';
-import { DEFAULT_WORLDS_INFO } from '../../constants';
+import { 
+    DEFAULT_WORLDS_INFO,
+    PT_MAJOR_EVENTS, PT_WORLD_MAP, PT_NPC_LIST, PT_FACTIONS,
+    JTTW_MAJOR_EVENTS, JTTW_WORLD_MAP, JTTW_NPC_LIST, JTTW_FACTIONS,
+    REALM_SYSTEM, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS
+} from '../../constants';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -89,18 +94,103 @@ const WorldSelectionScreen: React.FC = () => {
             return;
         }
         const worldInfo = worlds.find(w => w.id === state.activeWorldId);
-        if (!worldInfo || worldInfo.source !== 'mod') {
-            alert('Chỉ có thể xuất các thế giới được tạo từ mod.');
+        if (!worldInfo) {
+            alert('Không tìm thấy thông tin thế giới đã chọn.');
             return;
         }
 
         let modToExport: FullMod | null = null;
-        for (const installedMod of state.installedMods) {
-            const modContent = await db.getModContent(installedMod.modInfo.id);
-            if (modContent?.content.worldData?.some(w => w.name === state.activeWorldId)) {
-                modToExport = modContent;
-                break;
+
+        if (worldInfo.source === 'mod') {
+            for (const installedMod of state.installedMods) {
+                const modContent = await db.getModContent(installedMod.modInfo.id);
+                if (modContent?.content.worldData?.some(w => w.name === state.activeWorldId)) {
+                    modToExport = modContent;
+                    break;
+                }
             }
+        } else { // 'default' source
+            const defaultWorldInfo = DEFAULT_WORLDS_INFO[state.activeWorldId as keyof typeof DEFAULT_WORLDS_INFO];
+            if (!defaultWorldInfo) {
+                alert('Không tìm thấy dữ liệu cho thế giới mặc định này.');
+                return;
+            }
+
+            let events, npcs, locations, factions, year, era;
+            if (state.activeWorldId === 'phong_than_dien_nghia') {
+                events = PT_MAJOR_EVENTS;
+                npcs = PT_NPC_LIST;
+                locations = PT_WORLD_MAP;
+                factions = PT_FACTIONS;
+                year = 1;
+                era = 'Tiên Phong Thần';
+            } else if (state.activeWorldId === 'tay_du_ky') {
+                events = JTTW_MAJOR_EVENTS;
+                npcs = JTTW_NPC_LIST;
+                locations = JTTW_WORLD_MAP;
+                factions = JTTW_FACTIONS;
+                year = 627;
+                era = 'Đường Trinh Quán';
+            } else {
+                alert('Thế giới mặc định không được hỗ trợ để xuất.');
+                return;
+            }
+
+            const npcListForLookup = state.activeWorldId === 'phong_than_dien_nghia' ? PT_NPC_LIST : JTTW_NPC_LIST;
+
+            const mappedNpcs = npcs.map(npc => ({
+                id: npc.id,
+                name: npc.identity.name,
+                status: npc.status,
+                description: npc.identity.appearance,
+                origin: npc.identity.origin,
+                personality: npc.identity.personality,
+                locationId: npc.locationId,
+                faction: npc.faction,
+                talentNames: npc.talents?.map(t => t.name),
+                relationships: npc.relationships?.map((r): NpcRelationshipInput => ({
+                    targetNpcName: npcListForLookup.find(n => n.id === r.targetNpcId)?.identity.name || r.targetNpcId,
+                    type: r.type,
+                    description: r.description
+                }))
+            }));
+
+            const mappedLocations = locations.map(loc => {
+                const { contextualActions, shopIds, ...rest } = loc;
+                return { ...rest, tags: [] };
+            });
+
+            modToExport = {
+                modInfo: {
+                    id: `${state.activeWorldId}_exported_${Date.now()}`,
+                    name: `${defaultWorldInfo.name} (Exported)`,
+                    author: 'Player Export',
+                    description: `Một phiên bản xuất của thế giới mặc định '${defaultWorldInfo.name}'.`,
+                    version: '1.0.0',
+                },
+                content: {
+                    worldData: [{
+                        name: defaultWorldInfo.name,
+                        description: defaultWorldInfo.description,
+                        startingYear: year,
+                        eraName: era,
+                        majorEvents: events,
+                        factions: factions,
+                        initialLocations: mappedLocations,
+                        initialNpcs: mappedNpcs,
+                    }],
+                    namedRealmSystems: [{
+                        id: 'default_realm_system',
+                        name: 'Hệ Thống Tu Luyện Mặc Định',
+                        description: 'Hệ thống tu luyện gốc của game.',
+                        realms: REALM_SYSTEM,
+                    }],
+                    attributeSystem: {
+                        definitions: DEFAULT_ATTRIBUTE_DEFINITIONS,
+                        groups: DEFAULT_ATTRIBUTE_GROUPS,
+                    }
+                }
+            };
         }
 
         if (modToExport) {
@@ -115,6 +205,7 @@ const WorldSelectionScreen: React.FC = () => {
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+                alert(`Đã xuất thế giới "${modToExport.modInfo.name}" thành công!`);
             } catch (error) {
                 alert('Xuất file thế giới thất bại.');
                 console.error("Failed to export world:", error);

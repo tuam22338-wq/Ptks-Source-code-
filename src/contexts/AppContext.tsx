@@ -1,6 +1,7 @@
 
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary } from '../types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
@@ -20,6 +21,7 @@ export interface GameStartData {
     spiritualRoot: SpiritualRoot;
     danhVong: DanhVong;
     initialCurrency?: Currency;
+    generationMode: GenerationMode;
 }
 
 
@@ -364,7 +366,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 dispatch({ type: 'LOAD_GAME', payload: { gameState: selectedSlot.data!, slotId } });
             }, 500);
         } else {
-            dispatch({ type: 'START_CHARACTER_CREATION', payload: slotId });
+            if (window.confirm("Bạn có chắc muốn bắt đầu hành trình mới không?")) {
+                dispatch({ type: 'START_CHARACTER_CREATION', payload: slotId });
+            }
         }
     }, [state.saveSlots]);
 
