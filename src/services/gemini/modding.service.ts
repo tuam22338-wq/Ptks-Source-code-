@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc } from '../../types';
-import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS } from "../../constants";
+import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
@@ -274,6 +274,72 @@ const worldSchema = {
     required: ['modInfo', 'content']
 };
 
+const MAX_CHUNK_CHARS = 250000;
+
+const summarizeChunk = async (chunk: string, settings: any, specificApiKey: any): Promise<string> => {
+    const prompt = `Summarize the following text, which is part of a larger world-building document. Extract all key entities (characters, locations, factions, events, rules).
+
+    Text:
+    ---
+    ${chunk}
+    ---
+
+    Key Points Summary:`;
+    
+    const response = await generateWithRetry({
+        model: settings?.ragSummaryModel || 'gemini-2.5-flash',
+        contents: prompt,
+    }, specificApiKey);
+
+    return response.text.trim();
+};
+
+export const summarizeLargeTextForWorldGen = async (text: string): Promise<string> => {
+    if (text.length <= MAX_CHUNK_CHARS) {
+        return text;
+    }
+
+    console.log(`Text is too large (${text.length} chars). Starting map-reduce summarization...`);
+    
+    const chunks: string[] = [];
+    for (let i = 0; i < text.length; i += MAX_CHUNK_CHARS) {
+        chunks.push(text.substring(i, i + MAX_CHUNK_CHARS));
+    }
+
+    const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.ragSummaryModel;
+
+    const chunkSummaries = await Promise.all(
+        chunks.map(chunk => summarizeChunk(chunk, settings, specificApiKey))
+    );
+
+    const combinedSummaries = chunkSummaries.join('\n\n---\n\n');
+    
+    const finalSummaryPrompt = `You are a master summarizer AI. You have been given several summaries of a large world-building document. Your task is to combine them into a single, cohesive, and comprehensive summary that retains all the critical details for game world generation.
+
+    The final summary should include:
+    - Main characters and their roles.
+    - Key locations and brief descriptions.
+    - Factions and their relationships.
+    - The timeline of major historical events.
+    - Special rules or power systems of the world.
+
+    Combined Summaries:
+    ---
+    ${combinedSummaries}
+    ---
+
+    Final Cohesive Summary:`;
+    
+    const finalResponse = await generateWithRetry({
+        model: settings?.ragSummaryModel || 'gemini-2.5-flash',
+        contents: finalSummaryPrompt,
+    }, specificApiKey);
+
+    console.log("Map-reduce summarization complete.");
+    return finalResponse.text.trim();
+};
+
 export const generateWorldFromText = async (text: string, mode: 'fast' | 'deep' | 'super_deep'): Promise<FullMod> => {
     
     let modeInstructions = '';
@@ -299,12 +365,9 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
             break;
     }
 
-    // Simplify the schema for this task to improve reliability
     const generationSchema = JSON.parse(JSON.stringify(worldSchema));
     delete generationSchema.properties.content.properties.dynamicEvents;
     delete generationSchema.properties.content.properties.aiHooks;
-    // Keep attributeSystem in the generation schema
-    // generationSchema.properties.content.properties.attributeSystem = attributeSystemSchema; // Already in worldSchema
 
     const prompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những dòng văn bản tự do thành một thế giới game có cấu trúc hoàn chỉnh.
     Nhiệm vụ của bạn là đọc và phân tích sâu văn bản do người dùng cung cấp, sau đó trích xuất và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
@@ -327,7 +390,18 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         -   **\`initialNpcs\`:** Nhận diện tất cả các nhân vật được mô tả, trích xuất ngoại hình, tính cách, xuất thân. Quan trọng nhất, suy luận \`locationId\` (tên địa điểm) mà họ có khả năng xuất hiện nhất.
     4.  **\`items\` (Tùy chọn):** Nếu văn bản mô tả các vật phẩm đặc biệt (thần binh, bảo vật), hãy trích xuất chúng.
     5.  **\`realmConfigs\` (Hệ Thống Tu Luyện):** Phân tích kỹ lưỡng các đoạn văn mô tả hệ thống sức mạnh, cấp bậc, hoặc con đường tu luyện. Nếu có, hãy suy luận và tạo ra một cấu trúc \`realmConfigs\` hoàn chỉnh. Đảm bảo \`qiRequired\` tăng dần một cách logic và \`bonuses\` phù hợp với mô tả của từng cấp bậc.
-    6.  **\`attributeSystem\` (HỆ THỐNG THUỘC TÍNH - QUAN TRỌNG):** Dựa vào bối cảnh của văn bản (tu tiên, khoa huyễn, kiếm hiệp...), hãy sáng tạo một hệ thống thuộc tính (\`definitions\` và \`groups\`) hoàn toàn mới và phù hợp. Ví dụ: thế giới khoa huyễn có thể có chỉ số 'Sức Bền Máy Móc', 'Tốc Độ Xử Lý'; thế giới kiếm hiệp có thể có 'Nội Lực', 'Kiếm Pháp'. Đảm bảo các thuộc tính có logic và liên kết với nhau.
+    6.  **\`attributeSystem\` (HỆ THỐNG THUỘC TÍNH - QUAN TRỌNG):**
+        **QUY TẮC BẤT BIẾN:** Thế giới game có một bộ thuộc tính sinh tồn CỐ ĐỊNH mà bạn **TUYỆT ĐỐI KHÔNG ĐƯỢC XÓA BỎ**. Bạn có thể SÁNG TẠO và **THÊM VÀO** các thuộc tính mới, nhưng **PHẢI GIỮ LẠI** các thuộc tính cốt lõi sau đây trong \`definitions\`:
+        - id: 'sinh_menh', name: 'Sinh Mệnh', group: 'vitals'
+        - id: 'linh_luc', name: 'Linh Lực', group: 'vitals'
+        - id: 'hunger', name: 'Độ No', group: 'vitals'
+        - id: 'thirst', name: 'Độ Khát', group: 'vitals'
+        - id: 'tuoi_tho', name: 'Tuổi Thọ', group: 'cultivation'
+        
+        Nhiệm vụ của bạn là:
+        a. **GIỮ NGUYÊN** 5 thuộc tính cốt lõi trên.
+        b. **SÁNG TẠO** thêm các thuộc tính PRIMARY và SECONDARY mới phù hợp với lore được cung cấp.
+        c. **TỔ CHỨC** tất cả thuộc tính (cũ và mới) vào các \`groups\` một cách hợp lý. Nếu lore là khoa huyễn, hãy tạo các nhóm như 'Cybernetics', 'Năng Lượng Lõi'.
     7.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
@@ -365,7 +439,44 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
             }
         }
         const json = JSON.parse(cleanedString);
-        // Post-processing to add IDs where names are used as references
+        
+        if (json.content) {
+            const finalAttributeSystem = {
+                definitions: new Map<string, any>(),
+                groups: new Map<string, any>()
+            };
+        
+            // 1. Add all default attributes and groups first to establish a baseline.
+            DEFAULT_ATTRIBUTE_DEFINITIONS.forEach(def => finalAttributeSystem.definitions.set(def.id, def));
+            DEFAULT_ATTRIBUTE_GROUPS.forEach(group => finalAttributeSystem.groups.set(group.id, group));
+        
+            // 2. If AI provided a custom system, merge its creations.
+            if (json.content.attributeSystem) {
+                const coreVitalIds = new Set(['sinh_menh', 'linh_luc', 'hunger', 'thirst', 'tuoi_tho']);
+                
+                // Merge definitions, but explicitly prevent overwriting core vitals.
+                (json.content.attributeSystem.definitions || []).forEach((def: any) => {
+                    if (def.id && !coreVitalIds.has(def.id)) {
+                        finalAttributeSystem.definitions.set(def.id, def);
+                    }
+                });
+                
+                // Merge groups.
+                (json.content.attributeSystem.groups || []).forEach((group: any) => {
+                    if (group.id) {
+                        finalAttributeSystem.groups.set(group.id, group);
+                    }
+                });
+            }
+            
+            // 3. Assign the robustly merged system back to the JSON object.
+            json.content.attributeSystem = {
+                definitions: Array.from(finalAttributeSystem.definitions.values()),
+                groups: Array.from(finalAttributeSystem.groups.values())
+            };
+        }
+
+
         if (json.content?.worldData?.[0]) {
             const world = json.content.worldData[0];
             const locationNameIdMap = new Map<string, string>();

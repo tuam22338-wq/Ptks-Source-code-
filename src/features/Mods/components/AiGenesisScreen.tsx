@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { FaArrowLeft, FaFileUpload, FaBrain, FaBolt, FaSearch, FaInfinity, FaDownload } from 'react-icons/fa';
-import { generateWorldFromText } from '../../../services/geminiService';
+import { generateWorldFromText, summarizeLargeTextForWorldGen } from '../../../services/geminiService';
 import type { FullMod } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -51,7 +51,8 @@ const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) 
         setIsLoading(true);
         setError(null);
         try {
-            const generatedMod = await generateWorldFromText(fileContent, generationMode);
+            const summarizedContent = await summarizeLargeTextForWorldGen(fileContent);
+            const generatedMod = await generateWorldFromText(summarizedContent, generationMode);
             
             if (install) {
                 const success = await onInstall(generatedMod);
