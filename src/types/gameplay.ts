@@ -1,3 +1,4 @@
+
 import type {
     Gender, Element, StatBonus, CharacterAttributes, PhapBaoRank, ItemQuality, EquipmentSlot, InnateTalentRank,
     Season, TimeOfDay, Weather, TechniqueEffect, CultivationTechniqueType, CurrencyType,
@@ -7,7 +8,8 @@ import type {
 import type { SpiritualRoot, CharacterIdentity, InnateTalent } from './character';
 // FIX: Import EventOutcome to resolve type error.
 import type { FullMod, RealmConfig, ModAttributeSystem, ModEvent, EventChoice, EventOutcome } from './modding';
-import type { SystemInfo } from './settings';
+// FIX: Import NpcDensity to resolve type error.
+import type { SystemInfo, NpcDensity } from './settings';
 
 // --- New Asset Types ---
 export type AssetLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
@@ -439,6 +441,11 @@ export interface GameState {
     shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
     playerStall: PlayerStall | null;
     playerSect: PlayerSect | null;
+    isHydrated?: boolean;
+    creationData?: {
+        npcDensity: NpcDensity;
+        generationMode: GenerationMode;
+    };
 }
 
 // --- Gameplay Event Types ---

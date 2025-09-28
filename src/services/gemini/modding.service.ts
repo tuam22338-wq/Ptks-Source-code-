@@ -1,6 +1,6 @@
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc } from '../../types';
-import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL } from "../../constants";
+import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
@@ -134,6 +134,46 @@ const dynamicEventSchema = {
     }
 };
 
+const availableIconNames = Object.keys(UI_ICONS);
+const attributeSystemSchema = {
+    type: Type.OBJECT,
+    description: "Hệ thống thuộc tính tùy chỉnh cho thế giới mod. Phải phù hợp với bối cảnh của câu chuyện.",
+    properties: {
+        definitions: {
+            type: Type.ARRAY,
+            description: "Danh sách tất cả các định nghĩa thuộc tính.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    id: { type: Type.STRING, description: "ID duy nhất, không dấu, không khoảng trắng, vd: 'suc_ben_may_moc'." },
+                    name: { type: Type.STRING, description: "Tên hiển thị, vd: 'Sức Bền Máy Móc'." },
+                    description: { type: Type.STRING },
+                    iconName: { type: Type.STRING, enum: availableIconNames, description: "Tên icon từ danh sách có sẵn." },
+                    type: { type: Type.STRING, enum: ['PRIMARY', 'SECONDARY', 'VITAL', 'INFORMATIONAL'], description: "Loại thuộc tính." },
+                    baseValue: { type: Type.NUMBER, description: "Giá trị khởi điểm cho PRIMARY và VITAL." },
+                    formula: { type: Type.STRING, description: "Công thức tính cho SECONDARY, vd: '(suc_manh * 2)'." },
+                    group: { type: Type.STRING, description: "ID của nhóm mà thuộc tính này thuộc về." }
+                },
+                required: ['id', 'name', 'description', 'iconName', 'type', 'group']
+            }
+        },
+        groups: {
+            type: Type.ARRAY,
+            description: "Các nhóm để tổ chức thuộc tính trong UI.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    id: { type: Type.STRING, description: "ID duy nhất cho nhóm, vd: 'cybernetics'." },
+                    name: { type: Type.STRING, description: "Tên hiển thị của nhóm, vd: 'Chỉ Số Cybernetic'." },
+                    order: { type: Type.NUMBER, description: "Thứ tự hiển thị." }
+                },
+                required: ['id', 'name', 'order']
+            }
+        }
+    },
+    required: ['definitions', 'groups']
+};
+
 
 const worldSchema = {
     type: Type.OBJECT,
@@ -226,6 +266,7 @@ const worldSchema = {
                 realmConfigs: realmConfigSchema,
                 aiHooks: aiHooksSchema,
                 dynamicEvents: dynamicEventSchema,
+                attributeSystem: attributeSystemSchema,
             },
             required: ['worldData']
         }
@@ -242,23 +283,28 @@ export const generateWorldFromText = async (text: string, mode: 'fast' | 'deep' 
 **CHẾ ĐỘ PHÂN TÍCH: CHUYÊN SÂU**
 Bên cạnh việc trích xuất thông tin bề mặt, bạn PHẢI:
 1.  **Suy luận Quan hệ & Động cơ:** Đọc kỹ các tương tác giữa nhân vật để suy ra mối quan hệ (bạn, thù, đồng minh), động cơ ẩn, và mục tiêu cá nhân của họ.
-2.  **Phát hiện Quy luật Ngầm:** Tìm ra các quy luật độc đáo của thế giới (về ma thuật, xã hội, chính trị) và chuyển hóa chúng thành \`aiHooks\`.
-3.  **Chi tiết hóa Mô tả:** Làm cho các mô tả về địa điểm và nhân vật trở nên chi tiết và sống động hơn một chút dựa trên văn bản gốc.`;
+2.  **Chi tiết hóa Mô tả:** Làm cho các mô tả về địa điểm và nhân vật trở nên chi tiết và sống động hơn một chút dựa trên văn bản gốc.`;
             break;
         case 'super_deep':
             modeInstructions = `
 **CHẾ ĐỘ PHÂN TÍCH: SIÊU CHUYÊN SÂU (CHẤT LƯỢNG > TỐC ĐỘ)**
 Bạn không chỉ là một cỗ máy trích xuất, mà là một ĐỒNG SÁNG TẠO. Nhiệm vụ của bạn là:
 1.  **Đào sâu Tối đa:** Phân tích từng chi tiết nhỏ nhất trong văn bản để xây dựng một thế giới cực kỳ nhất quán và có chiều sâu. Suy luận mọi mối quan hệ, mọi âm mưu, mọi quy luật.
-2.  **Sáng tạo Mở rộng:** Dựa trên nền tảng của văn bản, hãy mạnh dạn SÁNG TẠO thêm các chi tiết nhỏ để làm thế giới thêm phong phú. Ví dụ: tạo thêm một vài NPC phụ có liên quan, một vài tin đồn, hoặc các sự kiện động (\`dynamicEvents\`) nhỏ gián tiếp liên quan đến cốt truyện chính.
-3.  **Tạo ra Sự kiện Phức tạp:** Trong \`dynamicEvents\`, hãy tạo ra các sự kiện có ý nghĩa hơn, có thể có nhiều kết quả hoặc ảnh hưởng đến nhiều phe phái.
-4.  **Chất lượng là Tuyệt đối:** Hãy dành nhiều thời gian hơn để đảm bảo mọi thứ liên kết với nhau một cách logic. Độ chi tiết và chiều sâu quan trọng hơn tốc độ.`;
+2.  **Sáng tạo Mở rộng:** Dựa trên nền tảng của văn bản, hãy mạnh dạn SÁNG TẠO thêm các chi tiết nhỏ để làm thế giới thêm phong phú. Ví dụ: tạo thêm một vài NPC phụ có liên quan hoặc một vài tin đồn gián tiếp liên quan đến cốt truyện chính.
+3.  **Chất lượng là Tuyệt đối:** Hãy dành nhiều thời gian hơn để đảm bảo mọi thứ liên kết với nhau một cách logic. Độ chi tiết và chiều sâu quan trọng hơn tốc độ.`;
             break;
         default: // 'fast' mode
             modeInstructions = `**CHẾ ĐỘ PHÂN TÍCH: NHANH**
 Tập trung vào việc trích xuất nhanh và chính xác các thực thể chính (nhân vật, địa điểm, phe phái, sự kiện) được đề cập rõ ràng trong văn bản.`;
             break;
     }
+
+    // Simplify the schema for this task to improve reliability
+    const generationSchema = JSON.parse(JSON.stringify(worldSchema));
+    delete generationSchema.properties.content.properties.dynamicEvents;
+    delete generationSchema.properties.content.properties.aiHooks;
+    // Keep attributeSystem in the generation schema
+    // generationSchema.properties.content.properties.attributeSystem = attributeSystemSchema; // Already in worldSchema
 
     const prompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những dòng văn bản tự do thành một thế giới game có cấu trúc hoàn chỉnh.
     Nhiệm vụ của bạn là đọc và phân tích sâu văn bản do người dùng cung cấp, sau đó trích xuất và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
@@ -281,9 +327,8 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         -   **\`initialNpcs\`:** Nhận diện tất cả các nhân vật được mô tả, trích xuất ngoại hình, tính cách, xuất thân. Quan trọng nhất, suy luận \`locationId\` (tên địa điểm) mà họ có khả năng xuất hiện nhất.
     4.  **\`items\` (Tùy chọn):** Nếu văn bản mô tả các vật phẩm đặc biệt (thần binh, bảo vật), hãy trích xuất chúng.
     5.  **\`realmConfigs\` (Hệ Thống Tu Luyện):** Phân tích kỹ lưỡng các đoạn văn mô tả hệ thống sức mạnh, cấp bậc, hoặc con đường tu luyện. Nếu có, hãy suy luận và tạo ra một cấu trúc \`realmConfigs\` hoàn chỉnh. Đảm bảo \`qiRequired\` tăng dần một cách logic và \`bonuses\` phù hợp với mô tả của từng cấp bậc.
-    6.  **\`aiHooks\` (Quy Luật Thế Giới - Cực Kỳ Quan Trọng):** Đọc kỹ văn bản để tìm ra các quy luật vật lý, ma thuật, hoặc xã hội độc nhất. Ví dụ, nếu thế giới có "ma thuật máu", một quy luật trong \`on_action_evaluate\` có thể là "Sử dụng ma thuật máu sẽ tiêu hao Sinh Mệnh thay vì Linh Lực". Nếu là một thế giới steampunk, một luật \`on_world_build\` có thể là "Tu luyện trong thế giới này thực chất là việc nâng cấp và tối ưu hóa các bộ phận máy móc trên cơ thể." Hãy sáng tạo và suy luận ra ít nhất 1-3 quy luật độc đáo.
-    7. **\`dynamicEvents\` (Sự kiện động):** Dựa trên lore và các địa điểm, hãy tạo ra 1-3 sự kiện động đơn giản để làm thế giới thêm sống động. Ví dụ, tạo một sự kiện thưởng cho người chơi một vật phẩm bí mật khi họ lần đầu bước vào một hang động cổ xưa, hoặc một sự kiện lễ hội diễn ra vào một ngày cụ thể.
-    8.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
+    6.  **\`attributeSystem\` (HỆ THỐNG THUỘC TÍNH - QUAN TRỌNG):** Dựa vào bối cảnh của văn bản (tu tiên, khoa huyễn, kiếm hiệp...), hãy sáng tạo một hệ thống thuộc tính (\`definitions\` và \`groups\`) hoàn toàn mới và phù hợp. Ví dụ: thế giới khoa huyễn có thể có chỉ số 'Sức Bền Máy Móc', 'Tốc Độ Xử Lý'; thế giới kiếm hiệp có thể có 'Nội Lực', 'Kiếm Pháp'. Đảm bảo các thuộc tính có logic và liên kết với nhau.
+    7.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
 
@@ -291,16 +336,24 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
 
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
+    
+    const generationConfig: any = {
+        responseMimeType: "application/json",
+        responseSchema: generationSchema,
+        temperature: 1.0,
+        topK: settings?.topK,
+        topP: settings?.topP,
+    };
+
+    if (mode === 'fast' && model === 'gemini-2.5-flash') {
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    }
+    
     const response = await generateWithRetry({
-        model: settings?.gameMasterModel || 'gemini-2.5-flash',
+        model,
         contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: JSON.parse(JSON.stringify(worldSchema)), // FIX: Use deep copy to prevent schema mutation issues
-            temperature: 1.0,
-            topK: settings?.topK,
-            topP: settings?.topP,
-        }
+        config: generationConfig,
     }, specificApiKey);
     
     try {
@@ -330,14 +383,6 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
             world.initialNpcs.forEach((npc: any) => {
                 npc.locationId = locationNameIdMap.get(npc.locationId) || npc.locationId;
             });
-
-            if (json.content.dynamicEvents) {
-                json.content.dynamicEvents.forEach((event: any) => {
-                    if (event.trigger.type === 'ON_ENTER_LOCATION' && event.trigger.details.locationId) {
-                        event.trigger.details.locationId = locationNameIdMap.get(event.trigger.details.locationId) || event.trigger.details.locationId;
-                    }
-                });
-            }
         }
         return json as FullMod;
     } catch (e) {

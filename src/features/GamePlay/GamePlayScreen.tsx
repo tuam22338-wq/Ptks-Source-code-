@@ -65,7 +65,7 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpda
 };
 
 const GamePlayScreenContent: React.FC = memo(() => {
-    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleDialogueChoice } = useAppContext();
+    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleDialogueChoice, hydrateWorldInBackground } = useAppContext();
     const { gameState, settings } = state;
     const { 
         notifications, dismissNotification, availablePaths,
@@ -116,6 +116,13 @@ const GamePlayScreenContent: React.FC = memo(() => {
     }, [storyPages.length]);
     // --- END PAGINATION LOGIC ---
 
+    useEffect(() => {
+        // Ensure hydration only runs once and if needed
+        if (gameState && !gameState.isHydrated) {
+            console.log("Game state is not fully hydrated. Triggering background world generation.");
+            hydrateWorldInBackground();
+        }
+    }, [gameState, hydrateWorldInBackground]);
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;

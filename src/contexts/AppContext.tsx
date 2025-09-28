@@ -1,9 +1,7 @@
-
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
-import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
+import { migrateGameState, createNewGameState, hydrateWorldData } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
 import { apiKeyManager } from '../services/gemini/gemini.core';
 import { gameReducer, AppState, Action } from './gameReducer';
@@ -50,6 +48,7 @@ interface AppContextType {
     handleInstallMod: (modData: FullMod) => Promise<boolean>;
     handleToggleMod: (modId: string) => Promise<void>;
     handleDeleteModFromLibrary: (modId: string) => Promise<void>;
+    hydrateWorldInBackground: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -436,6 +435,27 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
 
+    const hydrateWorldInBackground = useCallback(async () => {
+        if (!state.gameState || state.gameState.isHydrated || state.currentSlotId === null) {
+            return;
+        }
+
+        try {
+            const fullyHydratedState = await hydrateWorldData(state.gameState);
+            
+            // Silently update the state in the background
+            dispatch({ type: 'UPDATE_GAME_STATE', payload: fullyHydratedState });
+            
+            // Persist the fully hydrated state to the database
+            const gameStateToSave: GameState = { ...fullyHydratedState, version: CURRENT_GAME_VERSION, lastSaved: new Date().toISOString() };
+            await db.saveGameState(state.currentSlotId, gameStateToSave);
+            console.log("Background world hydration complete and saved.");
+
+        } catch (error) {
+            console.error("Background world hydration failed:", error);
+        }
+    }, [state.gameState, state.currentSlotId]);
+
     const handleSetActiveWorldId = async (worldId: string) => {
         await db.setActiveWorldId(worldId);
         dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
@@ -559,7 +579,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
         handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice,
-        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary
+        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary,
+        hydrateWorldInBackground,
     };
 
     return (

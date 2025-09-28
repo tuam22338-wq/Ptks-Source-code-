@@ -8,7 +8,7 @@ import {
     DEFAULT_ATTRIBUTE_GROUPS,
     CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
 } from "../constants";
-import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus } from "../types";
+import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode } from "../types";
 import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
@@ -236,6 +236,34 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
     };
 };
 
+export const hydrateWorldData = async (
+    partialGameState: GameState,
+): Promise<GameState> => {
+    if (partialGameState.isHydrated || !partialGameState.creationData) {
+        return partialGameState;
+    }
+
+    console.log("Starting background world hydration...");
+    const { npcDensity, generationMode } = partialGameState.creationData;
+    
+    const existingNames = partialGameState.activeNpcs.map(n => n.identity.name);
+    
+    console.log(`Hydrating world with ${npcDensity} density...`);
+    const generatedNpcs = await generateDynamicNpcs(npcDensity, existingNames, generationMode);
+    
+    // Create a copy to modify
+    const hydratedGameState: GameState = JSON.parse(JSON.stringify(partialGameState));
+    
+    hydratedGameState.activeNpcs.push(...generatedNpcs);
+    hydratedGameState.isHydrated = true;
+    delete hydratedGameState.creationData; // Clean up after hydration
+    
+    console.log(`World hydration complete. Added ${generatedNpcs.length} dynamic NPCs.`);
+    
+    return sanitizeGameState(hydratedGameState);
+};
+
+
 export const createNewGameState = async (
     gameStartData: GameStartData,
     activeMods: FullMod[],
@@ -406,15 +434,13 @@ export const createNewGameState = async (
         },
     };
     
-    setLoadingMessage('AI đang kiến tạo người thân và chúng sinh trong thế giới...');
-    const [familyResult, generatedNpcs] = await Promise.all([
-        generateFamilyAndFriends(playerCharacter.identity, startingLocation.id, generationMode),
-        generateDynamicNpcs(npcDensity, initialNpcsFromData.map(n => n.identity.name), generationMode),
-    ]);
+    setLoadingMessage('AI đang kiến tạo người thân...');
+    const familyResult = await generateFamilyAndFriends(playerCharacter.identity, startingLocation.id, generationMode);
+    
     const { npcs: familyNpcs, relationships: familyRelationships } = familyResult;
     playerCharacter.relationships = familyRelationships;
 
-    const allNpcs = [...initialNpcsFromData, ...familyNpcs, ...generatedNpcs];
+    const allNpcs = [...initialNpcsFromData, ...familyNpcs];
     
     const tempGameStateForOpening = {
         ...({} as GameState),
@@ -468,6 +494,8 @@ export const createNewGameState = async (
         shopStates: {},
         playerStall: null,
         playerSect: null,
+        isHydrated: false,
+        creationData: { npcDensity, generationMode },
     };
     
     return sanitizeGameState(newGameState);
