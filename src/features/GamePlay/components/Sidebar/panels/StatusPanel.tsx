@@ -1,7 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import type { GameState } from '../../../../../types';
 import { UI_ICONS } from '../../../../../constants';
-import { GiGoldBar } from 'react-icons/gi';
+import { GiGoldBar, GiFamilyTree } from 'react-icons/gi';
 
 // Helper component for displaying an attribute
 const AttributeRow: React.FC<{
@@ -124,6 +124,30 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
         );
     };
 
+    const renderRelationships = () => {
+        const { playerCharacter, activeNpcs } = gameState;
+        const relationships = playerCharacter.relationships;
+        if (!relationships || relationships.length === 0) return null;
+
+        return (
+            <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
+                <h4 className="font-bold text-amber-300 font-title mb-2 flex items-center gap-2"><GiFamilyTree /> Quan Hệ</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                    {relationships.map(rel => {
+                        const npc = activeNpcs.find(n => n.id === rel.npcId);
+                        if (!npc) return null;
+                        return (
+                            <div key={rel.npcId} className="text-sm">
+                                <p className="font-semibold">{npc.identity.name} - <span className="text-gray-400">{rel.type}</span></p>
+                                <p className="text-xs text-cyan-300">{rel.status} ({rel.value})</p>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
     const sortedGroups = [...attributeSystem.groups].sort((a, b) => a.order - b.order);
 
     return (
@@ -148,6 +172,8 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
             )}
             
             {renderCurrencies()}
+
+            {renderRelationships()}
             
             {/* Dynamic Attribute Groups */}
             {sortedGroups.map(group => renderAttributeGroup(group))}

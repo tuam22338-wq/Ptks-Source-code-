@@ -24,6 +24,7 @@ export type WorldReactivity = 'passive' | 'dynamic' | 'living';
 
 export type DeathPenalty = 'none' | 'resource_loss' | 'realm_loss' | 'permadeath';
 export type ValidationServiceCap = 'strict' | 'relaxed' | 'disabled';
+export type WorldInterruptionFrequency = 'none' | 'rare' | 'occasional' | 'frequent' | 'chaotic';
 
 
 export interface SafetySettings {
@@ -119,6 +120,7 @@ export interface GameSettings {
     validationServiceCap: ValidationServiceCap;
     narrateSystemChanges: boolean;
     enableAutomaticModelRotation: boolean;
+    worldInterruptionFrequency: WorldInterruptionFrequency;
 }
 
 export type SystemFeature = 'status' | 'quests' | 'store' | 'analysis';

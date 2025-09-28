@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
-import type { GameSettings, DeathPenalty, ValidationServiceCap } from '../../../types';
-import { DEATH_PENALTY_LEVELS, VALIDATION_CAP_LEVELS } from '../../../constants';
+import type { GameSettings, DeathPenalty, ValidationServiceCap, WorldInterruptionFrequency } from '../../../types';
+import { DEATH_PENALTY_LEVELS, VALIDATION_CAP_LEVELS, WORLD_INTERRUPTION_LEVELS } from '../../../constants';
 
 interface SettingsSectionProps {
     title: string;
@@ -66,6 +66,9 @@ const GameplaySettings: React.FC<GameplaySettingsProps> = ({ settings, handleSet
     return (
         <>
             <SettingsSection title="Cơ Chế Game & Nhân Vật">
+                 <SettingsRow label="Mức Độ Biến Hóa Của Thế Giới" description={WORLD_INTERRUPTION_LEVELS.find(o => o.value === settings.worldInterruptionFrequency)?.description || ''}>
+                     <LevelButtonGroup options={WORLD_INTERRUPTION_LEVELS} selectedValue={settings.worldInterruptionFrequency} onSelect={(v) => handleSettingChange('worldInterruptionFrequency', v as WorldInterruptionFrequency)} />
+                </SettingsRow>
                 <SettingsRow label="Tỷ Lệ Tu Vi Nhận Được" description="Điều chỉnh lượng tu vi nhận được từ mọi nguồn.">
                     <div className="flex items-center gap-4">
                         <input type="range" min="50" max="300" step="10" value={settings.cultivationRateMultiplier} onChange={(e) => handleSettingChange('cultivationRateMultiplier', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />

@@ -4,6 +4,8 @@
 
 
 
+
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
@@ -41,15 +43,15 @@ const EquipmentSlotComponent: React.FC<{
             <button 
                 onClick={() => item && onUnequip(slot)}
                 title={slotInfo.label} 
-                className={`relative w-14 h-14 bg-black/30 border-2 rounded-lg flex items-center justify-center text-4xl transition-all duration-200
+                className={`relative w-12 h-12 bg-black/30 border-2 rounded-lg flex items-center justify-center text-3xl transition-all duration-200
                     ${item ? 'border-amber-500/50' : 'border-gray-600/80'}
                     ${item ? 'cursor-pointer hover:border-amber-400 hover:bg-black/50' : 'cursor-default'}
                 `}
             >
                 {item ? (
-                    <span className="text-3xl" role="img" aria-label={item.name}>{item.icon}</span>
+                    <span className="text-2xl" role="img" aria-label={item.name}>{item.icon}</span>
                 ) : (
-                    <Icon className="text-gray-700" />
+                    <Icon className="text-3xl text-gray-700" />
                 )}
                  {item && <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>}
             </button>
@@ -331,9 +333,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     <div className="w-full lg:w-1/3 flex flex-col gap-4 flex-shrink-0">
                         <div className="p-3 rounded-lg border border-[var(--border-subtle)]">
                             <h4 className="text-lg font-bold font-title text-center mb-2">{playerCharacter.identity.name} - Trang Bị</h4>
-                            <div className="relative h-48 w-full flex items-center justify-center">
-                                <GiPerson className="text-9xl text-gray-800" />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-5 grid-rows-4 w-40 h-48">
+                            <div className="relative h-64 w-full flex items-center justify-center">
+                                <GiPerson className="text-8xl text-gray-800" />
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-5 grid-rows-4 w-60 h-64">
                                     {(Object.keys(EQUIPMENT_SLOTS) as EquipmentSlot[]).map(slot => (
                                         <EquipmentSlotComponent 
                                             key={slot}

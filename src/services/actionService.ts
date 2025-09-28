@@ -35,6 +35,21 @@ export const processPlayerAction = async (
         }
     }
 
+    // --- GIAI ĐOẠN 0.2: KIỂM TRA GIÁN ĐOẠN NGẪU NHIÊN ---
+    const WORLD_INTERRUPTION_CHANCE_MAP: Record<string, number> = {
+        'none': 0,
+        'rare': 0.10,
+        'occasional': 0.25,
+        'frequent': 0.50,
+        'chaotic': 0.75
+    };
+    const chance = WORLD_INTERRUPTION_CHANCE_MAP[settings.worldInterruptionFrequency] || 0.25;
+    const isInterruption = Math.random() < chance;
+
+    if (isInterruption) {
+        showNotification("Thế giới biến động...");
+    }
+
     // --- GIAI ĐOẠN 0.5: TƯ DUY NPC & TRUY XUẤT KÝ ỨC ---
     let thoughtBubble: string | undefined = undefined;
     const npcsHere = stateAfterSim.activeNpcs.filter(npc => npc.locationId === stateAfterSim.playerCharacter.currentLocationId);
@@ -47,14 +62,23 @@ export const processPlayerAction = async (
     // NEW STEP 1: Retrieve personalized memories (RAG) for the current save slot
     const memoryContext = await retrieveAndSynthesizeMemory(text, stateAfterSim, currentSlotId);
 
-    // NEW STEP 2: Get Arbiter's logical decision
+    // NEW STEP 2: Get Arbiter's logical decision (always run this for context, even if interrupted)
     const arbiterDecision = await decideActionOutcome(stateAfterSim, text);
 
     const playerActionEntry: Omit<StoryEntry, 'id'> = { type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
     
     // --- GIAI ĐOẠN 1: "Ý-HÌNH SONG SINH" ---
     // NEW STEP 3: Pass new context (arbiter's decision & memories) to the narrator
-    const stream = generateDualResponseStream(stateAfterSim, text, type, memoryContext, settings, arbiterDecision, thoughtBubble);
+    const stream = generateDualResponseStream(
+        stateAfterSim, 
+        text, 
+        type, 
+        memoryContext, 
+        settings, 
+        arbiterDecision, 
+        isInterruption, // Pass the interruption flag
+        thoughtBubble
+    );
 
     let fullResponseJsonString = '';
     for await (const chunk of stream) {

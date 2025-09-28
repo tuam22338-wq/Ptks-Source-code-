@@ -1,4 +1,4 @@
-import type { GameSettings, AIModel, ImageModel, RagEmbeddingModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, AiSyncMode, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap } from '../types';
+import type { GameSettings, AIModel, ImageModel, RagEmbeddingModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, AiSyncMode, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap, WorldInterruptionFrequency } from '../types';
 
 export const AI_SYNC_MODES: { value: AiSyncMode; label: string, description: string }[] = [
     { value: 'classic', label: 'Cổ Điển', description: 'AI chỉ trả về văn bản, hệ thống sẽ phân tích để cập nhật trạng thái. Nhanh hơn, nhưng có thể thiếu chính xác.' },
@@ -52,6 +52,13 @@ export const VALIDATION_CAP_LEVELS: { value: ValidationServiceCap; label: string
     { value: 'strict', label: 'Nghiêm ngặt', description: 'Giới hạn vật phẩm và chỉ số chặt chẽ theo cảnh giới.' },
     { value: 'relaxed', label: 'Nới lỏng', description: 'Cho phép nhận vật phẩm cao hơn 1-2 bậc so với cảnh giới.' },
     { value: 'disabled', label: 'Vô hiệu hóa', description: 'Tắt bộ lọc. Có thể nhận Thần khí từ cấp 1 (phá vỡ trải nghiệm).' },
+];
+export const WORLD_INTERRUPTION_LEVELS: { value: WorldInterruptionFrequency; label: string; description: string }[] = [
+    { value: 'none', label: 'Tĩnh Lặng', description: 'Thế giới sẽ không bao giờ tự tạo ra sự kiện ngẫu nhiên để làm gián đoạn bạn.' },
+    { value: 'rare', label: 'Hiếm Khi', description: 'Các sự kiện ngẫu nhiên xảy ra không thường xuyên, giữ cho câu chuyện tập trung vào bạn.' },
+    { value: 'occasional', label: 'Thỉnh Thoảng (Mặc định)', description: 'Cân bằng giữa việc đi theo kế hoạch của bạn và những bất ngờ từ thế giới.' },
+    { value: 'frequent', label: 'Thường Xuyên', description: 'Thế giới luôn biến động, kế hoạch của bạn thường xuyên bị thay đổi bởi các sự kiện bất ngờ.' },
+    { value: 'chaotic', label: 'Hỗn Loạn', description: 'Hồng trần cuồn cuộn, nhân quả khó lường. Rất khó để làm theo kế hoạch.' },
 ];
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -137,6 +144,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     validationServiceCap: 'strict',
     narrateSystemChanges: true,
     enableAutomaticModelRotation: true,
+    worldInterruptionFrequency: 'occasional',
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [

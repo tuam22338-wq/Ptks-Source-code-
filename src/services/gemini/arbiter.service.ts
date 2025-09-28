@@ -23,15 +23,34 @@ export const decideActionOutcome = async (gameState: GameState, userInput: strin
     };
 
     // Create a very condensed context for the arbiter
-    const { playerCharacter } = gameState;
+    const { playerCharacter, realmSystem } = gameState;
+    const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+    const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
+
+    let nextStageQiRequired = Infinity;
+    if (currentRealm && currentStage) {
+        const currentStageIndex = currentRealm.stages.findIndex(s => s.id === currentStage.id);
+        if (currentStageIndex < currentRealm.stages.length - 1) {
+            nextStageQiRequired = currentRealm.stages[currentStageIndex + 1].qiRequired;
+        } else {
+            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
+            if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
+                nextStageQiRequired = realmSystem[currentRealmIndex + 1].stages[0].qiRequired;
+            }
+        }
+    }
+
     const keyAttributes = `
-    - Lực Lượng: ${playerCharacter.attributes.luc_luong?.value || 10}
-    - Thân Pháp: ${playerCharacter.attributes.than_phap?.value || 10}
-    - Ngộ Tính: ${playerCharacter.attributes.ngo_tinh?.value || 10}
-    - Mị Lực: ${playerCharacter.attributes.mi_luc?.value || 10}
-    - Căn Cốt: ${playerCharacter.attributes.can_cot?.value || 10}
-    - Cơ Duyên: ${playerCharacter.attributes.co_duyen?.value || 10}
-    `;
+- Cảnh giới: ${currentRealm?.name || 'N/A'} - ${currentStage?.name || 'N/A'}
+- Linh khí: ${playerCharacter.cultivation.spiritualQi.toLocaleString()}
+- Linh khí cần cho đột phá tiếp theo: ${isFinite(nextStageQiRequired) ? nextStageQiRequired.toLocaleString() : 'MAX'}
+- Lực Lượng: ${playerCharacter.attributes.luc_luong?.value || 10}
+- Thân Pháp: ${playerCharacter.attributes.than_phap?.value || 10}
+- Ngộ Tính: ${playerCharacter.attributes.ngo_tinh?.value || 10}
+- Mị Lực: ${playerCharacter.attributes.mi_luc?.value || 10}
+- Căn Cốt: ${playerCharacter.attributes.can_cot?.value || 10}
+- Cơ Duyên: ${playerCharacter.attributes.co_duyen?.value || 10}
+`;
     
     const conditionalRules = playerCharacter.playerAiHooks?.on_conditional_rules;
     const conditionalRulesContext = conditionalRules 

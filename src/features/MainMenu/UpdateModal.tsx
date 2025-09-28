@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { FaTimes, FaBell } from 'react-icons/fa';
 import { CURRENT_GAME_VERSION } from '../../constants';
@@ -16,12 +14,18 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>
-                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Linh Hoạt Thế Giới</p>
+                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Hồng Trần Biến Số</p>
                 </div>
 
                 <div className="text-gray-300 space-y-3 my-4 max-h-[50vh] overflow-y-auto pr-2">
-                    <p>Chào mừng quý đạo hữu! Phiên bản 1.1.1 "Linh Hoạt Thế Giới" tập trung vào việc trao cho bạn nhiều quyền kiểm soát hơn đối với vũ trụ của mình, cùng với các cải tiến chất lượng quan trọng:</p>
+                    <p>Chào mừng quý đạo hữu! Phiên bản này mang đến một luồng sinh khí mới cho thế giới, khiến nó trở nên khó lường và sống động hơn:</p>
                     <ul className="list-disc list-inside space-y-3 pl-4">
+                        <li>
+                            <strong className="text-amber-300">Thế Giới Năng Động (Tính Năng Mới!)</strong>
+                            <p className="text-sm text-gray-400 pl-2">
+                                Thêm một cài đặt mới trong mục "Lối Chơi" cho phép bạn điều chỉnh tần suất các sự kiện ngẫu nhiên xảy ra. Khi được kích hoạt, thế giới sẽ trở nên sống động hơn, đôi khi các NPC hoặc tình huống bất ngờ sẽ làm gián đoạn hành động của bạn, tạo ra những ngã rẽ khó lường cho câu chuyện. Hãy tùy chỉnh để có trải nghiệm phù hợp nhất!
+                            </p>
+                        </li>
                         <li>
                             <strong className="text-amber-300">Nâng Cấp "Xuất Thế Giới"</strong>
                             <p className="text-sm text-gray-400 pl-2">

@@ -1,4 +1,3 @@
-
 import { Type } from "@google/genai";
 import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -14,6 +13,7 @@ export async function* generateDualResponseStream(
     memoryContext: string,
     settings: GameSettings,
     arbiterDecision: ArbiterDecision,
+    isInterruption: boolean,
     thoughtBubble?: string
 ): AsyncIterable<string> {
     const { playerCharacter, difficulty, activeMods, attributeSystem } = gameState;
@@ -52,6 +52,14 @@ export async function* generateDualResponseStream(
     const impliedStateChangeInstruction = `12. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
     
     const newNpcInstruction = `13. **LUẬT SÁNG TẠO NPC (QUAN TRỌNG):** Nếu bạn giới thiệu một nhân vật hoàn toàn mới trong phần tường thuật, bạn BẮT BUỘC phải tạo một đối tượng NPC hoàn chỉnh cho nhân vật đó và thêm vào mảng \`newNpcsCreated\` trong \`mechanicalIntent\`. NPC phải có đầy đủ thông tin (tên, ngoại hình, xuất thân, tính cách, cảnh giới, chỉ số cơ bản...). Điều này giúp game chính thức công nhận sự tồn tại của họ.`;
+
+    const interruptionInstruction = `
+    ### LUẬT LỆ TỐI THƯỢỢNG: GIÁN ĐOẠN BẤT NGỜ (PHẢI TUÂN THEO 100%) ###
+    Thế giới này luôn biến động. Thay vì thực hiện trực tiếp hành động của người chơi, bạn BẮT BUỘC phải tạo ra một sự kiện bất ngờ, ngẫu nhiên để **GIÁN ĐOẠN** họ.
+    - **Hành động gốc của người chơi (chỉ để làm bối cảnh):** "${userInput}"
+    - **Nhiệm vụ của bạn:** Sáng tạo một sự kiện làm gián đoạn hành động trên. Sự kiện phải hợp lý với bối cảnh hiện tại (vị trí, NPC xung quanh, thời gian). Ví dụ: một NPC quen biết đột nhiên xuất hiện, một cơn mưa bất chợt, một tên cướp chặn đường, một con yêu thú tấn công, một thương nhân chào hàng...
+    - **QUAN TRỌNG:** KHÔNG được cho người chơi thực hiện hành động gốc của họ. Hãy tường thuật sự kiện gián đoạn và các thay đổi cơ chế liên quan. Ví dụ, nếu người chơi định đi đến quán trà và bị một thương nhân chặn lại, hãy mô tả thương nhân và tạo ra 'dialogueChoices' để người chơi tương tác với thương nhân đó, thay vì để họ đến quán trà.
+    `;
 
     const arbiterInstruction = `
 ### LUẬT LỆ TỐI THƯỢỢNG TỪ TRỌNG TÀI (PHẢI TUÂN THEO 100%) ###
@@ -138,7 +146,7 @@ TUYỆT ĐỐI KHÔNG được thay đổi kết quả này trong phần tườn
 
     const prompt = `
 Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Nhiệm vụ của bạn là tiếp nối câu chuyện một cách hấp dẫn, logic và tạo ra các thay đổi cơ chế game tương ứng.
-${arbiterInstruction}
+${isInterruption ? interruptionInstruction : arbiterInstruction}
 ### QUY TẮC TỐI THƯỢỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **ĐỒNG BỘ TUYỆT ĐỐI ("Ý-HÌNH SONG SINH"):** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game). Mọi sự kiện, vật phẩm, thay đổi chỉ số, đột phá cảnh giới, thay đổi cảm xúc... được mô tả trong \`narrative\` PHẢI được phản ánh chính xác 100% trong \`mechanicalIntent\`, và ngược lại. KHÔNG CÓ NGOẠI LỆ. Nếu không có thay đổi cơ chế nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
 2.  **VIẾT TIẾP, KHÔNG LẶP LẠI (CỰC KỲ QUAN TRỌNG):** TUYỆT ĐỐI KHÔNG lặp lại, diễn giải lại, hoặc tóm tắt lại bất kỳ nội dung nào đã có trong "Nhật Ký Gần Đây" hoặc "Tóm Tắt Cốt Truyện". Nhiệm vụ của bạn là **VIẾT TIẾP** câu chuyện, tạo ra diễn biến **HOÀN TOÀN MỚI** dựa trên hành động của người chơi. Hãy coi như người chơi đã đọc và hiểu nhật ký; chỉ tập trung vào những gì xảy ra **TIẾP THEO**.
@@ -161,8 +169,7 @@ ${lengthInstruction}
 - **LUẬT CẢM XÚC NPC:** Lời nói và hành động của NPC **PHẢI** phản ánh chính xác tâm trạng và ký ức của họ được cung cấp trong bối cảnh.
 ${aiHooksInstruction}
 
-### HÀNH ĐỘNG CỦA NGƯỜI CHƠI ###
-${playerActionText}
+${isInterruption ? '' : `### HÀNH ĐỘNG CỦA NGƯỜI CHƠI ###\n${playerActionText}`}
 
 ${context}
 
@@ -336,7 +343,7 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealm:
     - Tên: ${playerCharacter.identity.name}
     - Tính cách: ${playerCharacter.identity.personality}
     - Xuất thân: ${playerCharacter.identity.origin}
-    - Tóm tắt cốt truyện gần đây: ${gameState.storySummary || "Chưa có sự kiện gì đáng chú ý."}
+    - Tóm tắt cốt truyện gần đây: ${gameState.storySummary || "Chưa có sự kiện gì đáng chú chú ý."}
 
     **Bối cảnh đột phá:**
     - Đang cố gắng đột phá lên: ${targetRealm.name} - ${targetStageName}
