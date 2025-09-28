@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo, useRef } from 'react';
-import { FaArrowLeft, FaCheckCircle, FaUpload, FaDownload } from 'react-icons/fa';
+import { FaArrowLeft, FaCheckCircle, FaUpload, FaDownload, FaEdit } from 'react-icons/fa';
 import type { FullMod, ModWorldData, ModInLibrary, NPC, Location, ModNpc, ModLocation, NpcRelationshipInput } from '../../types';
 import * as db from '../../services/dbService';
 import { 
@@ -46,7 +46,7 @@ const WorldCard: React.FC<{ world: WorldInfo; isActive: boolean; onSelect: () =>
 
 
 const WorldSelectionScreen: React.FC = () => {
-    const { handleNavigate, state, handleSetActiveWorldId, handleInstallMod } = useAppContext();
+    const { state, handleNavigate, handleSetActiveWorldId, handleInstallMod, dispatch } = useAppContext();
     const [worlds, setWorlds] = useState<WorldInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const importInputRef = useRef<HTMLInputElement>(null);
@@ -86,6 +86,86 @@ const WorldSelectionScreen: React.FC = () => {
     const handleSelectWorld = async (worldId: string) => {
         await handleSetActiveWorldId(worldId);
         alert(`Đã chọn thế giới: ${worlds.find(w => w.id === worldId)?.name}`);
+    };
+    
+    const handleEditWorld = async () => {
+        if (!state.activeWorldId) {
+            alert('Vui lòng chọn một thế giới để chỉnh sửa.');
+            return;
+        }
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang chuẩn bị dữ liệu thế giới...' } });
+        
+        const worldInfo = worlds.find(w => w.id === state.activeWorldId);
+        if (!worldInfo) {
+            alert('Không tìm thấy thông tin thế giới đã chọn.');
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+            return;
+        }
+
+        let modDataToEdit: FullMod | null = null;
+        
+        try {
+            if (worldInfo.source === 'mod') {
+                for (const installedMod of state.installedMods) {
+                    const modContent = await db.getModContent(installedMod.modInfo.id);
+                    if (modContent?.content.worldData?.some(w => w.name === state.activeWorldId)) {
+                        modDataToEdit = modContent;
+                        break;
+                    }
+                }
+            } else { // 'default' source
+                 const defaultWorldInfo = DEFAULT_WORLDS_INFO[state.activeWorldId as keyof typeof DEFAULT_WORLDS_INFO];
+                if (!defaultWorldInfo) throw new Error('Không tìm thấy dữ liệu cho thế giới mặc định này.');
+
+                let events, npcs, locations, factions, year, era;
+                if (state.activeWorldId === 'phong_than_dien_nghia') {
+                    events = PT_MAJOR_EVENTS; npcs = PT_NPC_LIST; locations = PT_WORLD_MAP; factions = PT_FACTIONS; year = 1; era = 'Tiên Phong Thần';
+                } else { // tay_du_ky
+                    events = JTTW_MAJOR_EVENTS; npcs = JTTW_NPC_LIST; locations = JTTW_WORLD_MAP; factions = JTTW_FACTIONS; year = 627; era = 'Đường Trinh Quán';
+                }
+
+                const npcListForLookup = state.activeWorldId === 'phong_than_dien_nghia' ? PT_NPC_LIST : JTTW_NPC_LIST;
+                const mappedNpcs = npcs.map(npc => ({
+                    id: npc.id, name: npc.identity.name, status: npc.status, description: npc.identity.appearance, origin: npc.identity.origin,
+                    personality: npc.identity.personality, locationId: npc.locationId, faction: npc.faction,
+                    talentNames: npc.talents?.map(t => t.name),
+                    relationships: npc.relationships?.map((r): NpcRelationshipInput => ({
+                        targetNpcName: npcListForLookup.find(n => n.id === r.targetNpcId)?.identity.name || r.targetNpcId,
+                        type: r.type, description: r.description
+                    }))
+                }));
+                const mappedLocations = locations.map(loc => { const { contextualActions, shopIds, ...rest } = loc; return { ...rest, tags: [] }; });
+
+                modDataToEdit = {
+                    modInfo: {
+                        id: state.activeWorldId, name: defaultWorldInfo.name, author: 'Chỉnh sửa từ bản gốc',
+                        description: `Một phiên bản tùy chỉnh của thế giới mặc định '${defaultWorldInfo.name}'.`, version: '1.0.0',
+                    },
+                    content: {
+                        worldData: [{
+                            name: defaultWorldInfo.name, description: defaultWorldInfo.description, startingYear: year, eraName: era,
+                            majorEvents: events, factions: factions, initialLocations: mappedLocations, initialNpcs: mappedNpcs,
+                        }],
+                        namedRealmSystems: [{
+                            id: 'default_realm_system', name: 'Hệ Thống Tu Luyện Mặc Định',
+                            description: 'Hệ thống tu luyện gốc của game.', realms: REALM_SYSTEM,
+                        }],
+                        attributeSystem: { definitions: DEFAULT_ATTRIBUTE_DEFINITIONS, groups: DEFAULT_ATTRIBUTE_GROUPS }
+                    }
+                };
+            }
+
+            if (modDataToEdit) {
+                dispatch({ type: 'SET_MOD_FOR_EDITING', payload: modDataToEdit });
+                handleNavigate('mods');
+            } else {
+                throw new Error('Không thể tải dữ liệu mod để chỉnh sửa.');
+            }
+        } catch(error: any) {
+            alert(`Lỗi khi chuẩn bị dữ liệu thế giới: ${error.message}`);
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+        }
     };
 
     const handleExportWorld = async () => {
@@ -249,10 +329,13 @@ const WorldSelectionScreen: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <input type="file" accept=".json" ref={importInputRef} onChange={handleImportFileSelected} className="hidden" />
                     <button onClick={() => importInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-teal-700/80 text-white text-sm font-bold rounded-lg hover:bg-teal-600/80">
-                        <FaUpload /> Nhập Thế Giới
+                        <FaUpload /> Nhập
+                    </button>
+                     <button onClick={handleEditWorld} disabled={!state.activeWorldId} className="flex items-center gap-2 px-4 py-2 bg-blue-700/80 text-white text-sm font-bold rounded-lg hover:bg-blue-600/80 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <FaEdit /> Chỉnh Sửa
                     </button>
                     <button onClick={handleExportWorld} className="flex items-center gap-2 px-4 py-2 bg-amber-700/80 text-white text-sm font-bold rounded-lg hover:bg-amber-600/80">
-                        <FaDownload /> Xuất Thế Giới
+                        <FaDownload /> Xuất
                     </button>
                 </div>
             </div>

@@ -72,7 +72,8 @@ export const processPlayerAction = async (
     
     // --- GIAI ĐOẠN 1.5: ĐIỀU CHỈNH CỦA HỆ THỐNG ---
     // If the action was a breakthrough, override AI's realm/stage change to ensure correctness.
-    if (text.includes("đột phá")) {
+    const breakthroughKeywords = ["đột phá", "thăng cấp", "thăng lên", "tiến vào", "xung kích", "vượt qua cảnh giới"];
+    if (breakthroughKeywords.some(keyword => text.toLowerCase().includes(keyword))) {
         const { playerCharacter, realmSystem } = stateAfterSim;
         const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
         

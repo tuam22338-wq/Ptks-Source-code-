@@ -36,13 +36,14 @@ export const FONT_OPTIONS: { value: string; label: string }[] = [
     { value: "'Ma Shan Zheng', cursive", label: 'Ma Shan Zheng' },
 ];
 
-export const THEME_OPTIONS: { value: Theme; label: string }[] = [
+export const THEME_OPTIONS: { value: Theme; label: string; premium?: boolean }[] = [
     { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch (Tối)' },
     { value: 'theme-sunrise-peak', label: 'Triêu Dương Đỉnh (Sáng)' },
     { value: 'theme-bich-du-cung', label: 'Bích Du Cung (Huyền ảo)' },
     { value: 'theme-ngoc-hu-cung', label: 'Ngọc Hư Cung (Trang nghiêm)' },
     { value: 'theme-huyet-sat-ma-dien', label: 'Huyết Sát Ma Điện (Hắc ám)' },
     { value: 'theme-thuy-mac-hoa', label: 'Thủy Mặc Họa (Tối giản)' },
+    { value: 'theme-dao-ton-premium', label: 'Đạo Tôn (Premium)', premium: true },
 ];
 
 export const DYNAMIC_BACKGROUND_OPTIONS: { id: string; name: string; thumbnailClass: string }[] = [

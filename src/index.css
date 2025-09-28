@@ -126,6 +126,28 @@
   --player-bubble-bg-color: rgb(220 220 220 / 0.8);
   --npc-bubble-bg-color: rgb(235 235 235 / 0.6);
 }
+.theme-dao-ton-premium {
+  --bg-color: #100c14;
+  --text-color: #e9d5ff;
+  --text-muted-color: #a8a29e;
+  --primary-accent-color: #facc15;
+  --primary-accent-text-color: #1c1917;
+  --secondary-accent-color: #a855f7;
+  --border-color: #44403c;
+  --panel-bg-color: rgba(28, 25, 23, 0.7);
+  --panel-border-color: rgba(250, 204, 21, 0.3);
+  --button-primary-bg: #facc15;
+  --button-primary-hover-bg: #fde047;
+  --button-primary-border: #d97706;
+  --primary-glow-color: rgba(250, 204, 21, 0.3);
+  --input-focus-ring-color: #facc15;
+  --bg-subtle: rgba(28, 25, 23, 0.85);
+  --bg-interactive: rgba(41, 37, 36, 0.7);
+  --bg-interactive-hover: rgba(68, 64, 60, 0.7);
+  --border-subtle: rgba(120, 113, 108, 0.4);
+  --player-bubble-bg-color: rgb(82, 82, 91, 0.8);
+  --npc-bubble-bg-color: rgba(41, 37, 36, 0.6);
+}
 
 body {
   font-family: 'Noto Serif', serif;

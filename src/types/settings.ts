@@ -8,7 +8,7 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise' | 'er_gen_style' | 'fenghuo_style' | 'cyberpunk' | 'noir_detective' | 'epic_fantasy' | 'lovecraftian_horror' | 'comedic' | 'slice_of_life';
-export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa';
+export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa' | 'theme-dao-ton-premium';
 export type AiSyncMode = 'classic' | 'intent_driven';
 export type TtsProvider = 'browser' | 'elevenlabs';
 
@@ -100,6 +100,7 @@ export interface GameSettings {
     ttsPitch: number;
     ttsVolume: number;
     aiSyncMode: AiSyncMode;
+    isPremium: boolean;
 
     // New Detailed Gameplay Settings
     aiCreativityLevel: AiCreativityLevel;

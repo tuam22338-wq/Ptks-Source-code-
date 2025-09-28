@@ -1,6 +1,6 @@
 import React, { memo, useRef } from 'react';
 import type { GameSettings } from '../../../types';
-import { FaDownload, FaUpload, FaExclamationTriangle, FaVial } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaExclamationTriangle, FaVial, FaTrophy } from 'react-icons/fa';
 import * as db from '../../../services/dbService';
 import { AI_SYNC_MODES } from '../../../constants';
 
@@ -114,6 +114,17 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
 
     return (
         <SettingsSection title="Nâng Cao">
+            <SettingsRow label="Gói Đạo Tôn (Premium)" description="Kích hoạt các tính năng cao cấp như model AI mạnh hơn và các tùy chỉnh giao diện độc quyền.">
+                <div className="flex flex-col">
+                    <label className="flex items-center cursor-pointer">
+                        <input type="checkbox" checked={settings.isPremium} onChange={e => handleSettingChange('isPremium', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                        <span className="ml-3 text-sm font-bold text-amber-300 flex items-center gap-2"><FaTrophy /> Kích hoạt Gói Đạo Tôn</span>
+                    </label>
+                    <p className="mt-2 text-xs text-gray-500">
+                        Đây là tính năng mô phỏng. Trong phiên bản thực tế, đây sẽ là gói trả phí để ủng hộ nhà phát triển.
+                    </p>
+                </div>
+            </SettingsRow>
             <SettingsRow label="Chế độ Đồng bộ AI" description="Chọn cách AI đồng bộ hóa trạng thái game. 'Thiên Cơ' được khuyến khích để đảm bảo tính nhất quán.">
                 <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
                     {AI_SYNC_MODES.map(mode => (

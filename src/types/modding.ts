@@ -8,7 +8,7 @@ import type {
 } from './core';
 import type { CharacterIdentity } from './character';
 // FIX: Correct imports to resolve circular dependencies and missing types.
-import type { MajorEvent, GameEvent, NPC, Location } from './gameplay';
+import type { MajorEvent, GameEvent, NPC, Location, ForeshadowedEvent } from './gameplay';
 
 export interface ModItem {
     id: string;
@@ -110,12 +110,20 @@ export type ModNpc = {
     tags: string[];
 };
 
+export interface ModForeshadowedEvent {
+  title: string;
+  description: string;
+  relativeTriggerDay: number; // Days from the start of the game
+  chance: 'Thấp' | 'Vừa' | 'Cao' | 'Chắc chắn';
+}
+
 
 export interface ModWorldData {
     id: string;
     name: string;
     description: string;
     majorEvents: MajorEvent[];
+    foreshadowedEvents?: ModForeshadowedEvent[];
     initialNpcs: (Omit<ModNpc, 'id'> & { id?: string })[];
     initialLocations: (Omit<ModLocation, 'id'> & { id?: string })[];
     factions: Faction[];

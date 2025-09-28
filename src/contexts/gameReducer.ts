@@ -1,4 +1,4 @@
-import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary } from '../types';
+import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary, FullMod } from '../types';
 import type { View } from './AppContext';
 import { sanitizeGameState } from '../utils/gameStateSanitizer';
 
@@ -17,6 +17,7 @@ export interface AppState {
     activeWorldId: string;
     backgrounds: BackgroundState;
     installedMods: ModInLibrary[];
+    modBeingEdited: FullMod | null;
 }
 
 // Define action types
@@ -40,7 +41,8 @@ export type Action =
   | { type: 'SET_INSTALLED_MODS'; payload: ModInLibrary[] }
   | { type: 'ADD_INSTALLED_MOD'; payload: ModInLibrary }
   | { type: 'UPDATE_INSTALLED_MODS'; payload: ModInLibrary[] }
-  | { type: 'REMOVE_INSTALLED_MOD'; payload: string }; // payload is modId
+  | { type: 'REMOVE_INSTALLED_MOD'; payload: string } // payload is modId
+  | { type: 'SET_MOD_FOR_EDITING'; payload: FullMod | null };
 
 
 // The reducer function
@@ -117,6 +119,7 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             }};
 
         case 'LOAD_BACKGROUND_ERROR':
+            // FIX: Corrected the nested object update syntax. The original syntax was invalid and caused a type error.
             return { ...state, backgrounds: { ...state.backgrounds, status: { ...state.backgrounds.status, [action.payload.themeId]: 'error' } } };
             
         case 'SET_ALL_CACHED_BACKGROUNDS':
@@ -138,6 +141,9 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
 
         case 'REMOVE_INSTALLED_MOD':
             return { ...state, installedMods: state.installedMods.filter(mod => mod.modInfo.id !== action.payload) };
+
+        case 'SET_MOD_FOR_EDITING':
+            return { ...state, modBeingEdited: action.payload };
 
         default:
             return state;

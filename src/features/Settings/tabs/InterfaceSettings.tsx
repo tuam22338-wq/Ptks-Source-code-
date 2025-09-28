@@ -3,7 +3,7 @@ import type { GameSettings } from '../../../types';
 import { LAYOUT_MODES, THEME_OPTIONS, FONT_OPTIONS, DYNAMIC_BACKGROUND_OPTIONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
-import { FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
+import { FaCheckCircle, FaExclamationTriangle, FaCrown } from 'react-icons/fa';
 
 interface SettingsSectionProps {
     title: string;
@@ -53,9 +53,14 @@ const InterfaceSettings: React.FC<InterfaceSettingsProps> = ({ settings, handleS
                 </SettingsRow>
                  <SettingsRow label="Chủ đề (Theme)" description="Thay đổi giao diện sáng/tối và bảng màu tổng thể.">
                     <select className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" value={settings.theme} onChange={(e) => handleSettingChange('theme', e.target.value)}>
-                        {THEME_OPTIONS.map(theme => (
-                            <option key={theme.value} value={theme.value}>{theme.label}</option>
-                        ))}
+                        {THEME_OPTIONS.map(theme => {
+                            const isPremium = theme.premium && !settings.isPremium;
+                            return (
+                                <option key={theme.value} value={theme.value} disabled={isPremium} className={isPremium ? 'text-gray-500' : ''}>
+                                    {theme.label} {isPremium ? '👑' : ''}
+                                </option>
+                            );
+                        })}
                     </select>
                 </SettingsRow>
                  <SettingsRow label="Font chữ" description="Thay đổi font chữ chính của trò chơi.">

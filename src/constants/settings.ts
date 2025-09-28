@@ -118,6 +118,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ttsPitch: 1,
     ttsVolume: 1,
     aiSyncMode: 'intent_driven',
+    isPremium: false,
 
     // New Detailed Gameplay Settings Defaults
     aiCreativityLevel: 'balanced',
@@ -140,7 +141,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Premium)' },
     { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
     { value: 'gemini-2.5-flash-lite-preview-06-17', label: 'Gemini 2.5 Flash Lite (Preview 06-17)' },
     { value: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash (Preview 05-20)' },

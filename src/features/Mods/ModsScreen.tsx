@@ -182,9 +182,15 @@ const ModLibrary: React.FC<{
 
 
 const ModsScreen: React.FC = () => {
-    const { handleNavigate, handleInstallMod } = useAppContext();
+    const { state, handleNavigate, handleInstallMod, dispatch } = useAppContext();
     const [view, setView] = useState<LibraryView>('main');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (state.modBeingEdited) {
+            setView('manualGenesis');
+        }
+    }, [state.modBeingEdited]);
 
     const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -206,6 +212,12 @@ const ModsScreen: React.FC = () => {
         reader.onerror = () => alert('Không thể đọc tệp tin.');
         reader.readAsText(file);
         event.target.value = '';
+    };
+
+    const handleBackFromGenesis = () => {
+        setView('main');
+        // Clean up the editing state when returning to the main mod menu
+        dispatch({ type: 'SET_MOD_FOR_EDITING', payload: null });
     };
 
     const renderMainView = () => (
@@ -241,7 +253,7 @@ const ModsScreen: React.FC = () => {
     const renderContent = () => {
         switch(view) {
             case 'manualGenesis':
-                return <ManualGenesisScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
+                return <ManualGenesisScreen onBack={handleBackFromGenesis} onInstall={handleInstallMod} />;
             case 'genesis':
                 return <AiGenesisScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
             case 'library':

@@ -1,5 +1,5 @@
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from "../../constants";
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -274,7 +274,7 @@ const worldSchema = {
     required: ['modInfo', 'content']
 };
 
-const MAX_CHUNK_CHARS = 250000;
+const MAX_CHUNK_CHARS = 1000000;
 
 const summarizeChunk = async (chunk: string, settings: any, specificApiKey: any): Promise<string> => {
     const prompt = `Summarize the following text, which is part of a larger world-building document. Extract all key entities (characters, locations, factions, events, rules).
@@ -520,10 +520,12 @@ interface WorldGenPrompts {
     factions?: Faction[];
     locations?: ModLocation[];
     npcs?: ModNpc[];
+    majorEvents?: MajorEvent[];
+    foreshadowedEvents?: ModForeshadowedEvent[];
 }
 
 export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
-    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars, factions, locations, npcs } = prompts;
+    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars, factions, locations, npcs, majorEvents, foreshadowedEvents } = prompts;
 
     const aiHooksText = (aiHooks?.on_world_build || '') + '\n' + (aiHooks?.on_action_evaluate || '');
     
@@ -554,6 +556,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     if (factions && factions.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.factions;
     if (locations && locations.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialLocations;
     if (npcs && npcs.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialNpcs;
+    if (majorEvents && majorEvents.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.majorEvents;
 
 
     const masterPrompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những ý tưởng cốt lõi thành một thế giới game có cấu trúc hoàn chỉnh.
@@ -577,10 +580,9 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     **Quy trình Sáng Tạo & Suy Luận:**
     1.  **\`modInfo\`:** Sử dụng thông tin \`name\` và \`id\` được cung cấp. Tạo một mô tả ngắn gọn dựa trên bối cảnh.
     2.  **\`worldData\`:** Đây là phần quan trọng nhất. Dựa trên Bối Cảnh, Mục Tiêu và Quy Luật:
-        -   Sáng tạo Lịch sử & Sự kiện (\`majorEvents\`).
-        -   Nếu người dùng chưa cung cấp, hãy sáng tạo Phe phái (\`factions\`), Bản đồ (\`initialLocations\`), và Nhân vật (\`initialNpcs\`). Nếu người dùng ĐÃ cung cấp, hãy xây dựng thế giới dựa trên chúng.
+        -   Nếu người dùng chưa cung cấp, hãy sáng tạo Lịch sử & Sự kiện (\`majorEvents\`), Phe phái (\`factions\`), Bản đồ (\`initialLocations\`), và Nhân vật (\`initialNpcs\`). Nếu người dùng ĐÃ cung cấp, hãy xây dựng thế giới dựa trên chúng.
     3.  **\`items\` (Tùy chọn):** Tạo ra 1-2 vật phẩm khởi đầu hoặc vật phẩm quan trọng liên quan đến cốt truyện.
-    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại hệ thống tu luyện, thuộc tính, phe phái, địa điểm, hoặc NPC nếu chúng đã được cung cấp.
+    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại hệ thống tu luyện, thuộc tính, phe phái, địa điểm, sự kiện hoặc NPC nếu chúng đã được cung cấp.
     5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
 
     **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
@@ -649,7 +651,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
                 description: generatedJson.content?.worldData?.[0]?.description || finalMod.modInfo.description || '',
                 startingYear: generatedJson.content?.worldData?.[0]?.startingYear || 1,
                 eraName: generatedJson.content?.worldData?.[0]?.eraName || 'Kỷ Nguyên Mới',
-                majorEvents: generatedJson.content?.worldData?.[0]?.majorEvents || [],
+                majorEvents: [],
                 factions: [],
                 initialLocations: [],
                 initialNpcs: [],
@@ -657,15 +659,11 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         }
         
         // Overwrite with user-defined data
-        if (factions && factions.length > 0) {
-            finalMod.content.worldData[0].factions = factions;
-        }
-        if (locations && locations.length > 0) {
-            finalMod.content.worldData[0].initialLocations = locations;
-        }
-        if (npcs && npcs.length > 0) {
-            finalMod.content.worldData[0].initialNpcs = npcs;
-        }
+        if (factions && factions.length > 0) finalMod.content.worldData[0].factions = factions;
+        if (locations && locations.length > 0) finalMod.content.worldData[0].initialLocations = locations;
+        if (npcs && npcs.length > 0) finalMod.content.worldData[0].initialNpcs = npcs;
+        if (majorEvents && majorEvents.length > 0) finalMod.content.worldData[0].majorEvents = majorEvents;
+        if (foreshadowedEvents && foreshadowedEvents.length > 0) finalMod.content.worldData[0].foreshadowedEvents = foreshadowedEvents;
 
 
         // Post-processing to add IDs where names are used as references

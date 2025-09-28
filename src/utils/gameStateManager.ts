@@ -8,7 +8,7 @@ import {
     DEFAULT_ATTRIBUTE_GROUPS,
     CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
 } from "../constants";
-import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode } from "../types";
+import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent } from "../types";
 import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
@@ -466,7 +466,21 @@ export const createNewGameState = async (
         actionPoints: 4,
         maxActionPoints: 4,
     };
+    
     const initialWorldState: WorldState = { rumors: [], dynamicEvents: [], foreshadowedEvents: [], triggeredDynamicEventIds: {} };
+    // Process foreshadowed events from mod data
+    if (modWorldData?.foreshadowedEvents) {
+        const totalStartDays = ((startingYear - 1) * 4 * 30) + 1;
+        initialWorldState.foreshadowedEvents = modWorldData.foreshadowedEvents.map((fe, index): ForeshadowedEvent => ({
+            id: `fe_${modWorldData.name}_${index}`,
+            title: fe.title,
+            description: fe.description,
+            chance: fe.chance,
+            turnStart: totalStartDays,
+            potentialTriggerDay: totalStartDays + fe.relativeTriggerDay,
+        }));
+    }
+
     const discoveredLocations: Location[] = [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))];
 
     const newGameState: GameState = {

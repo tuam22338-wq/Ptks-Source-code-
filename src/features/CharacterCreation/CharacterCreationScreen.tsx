@@ -1,12 +1,12 @@
 import React, { useState, useCallback, memo, useMemo, useEffect } from 'react';
-import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency, ModAttributeSystem, FullMod, GenerationMode } from '../../types';
+import type { CharacterIdentity, StatBonus, DifficultyLevel, SpiritualRoot, Currency, ModAttributeSystem, FullMod, GenerationMode, MajorEvent, GameDate } from '../../types';
 import { FaArrowLeft, FaDiceD20, FaCheck, FaSyncAlt } from 'react-icons/fa';
 import { GiGalaxy, GiPerson, GiScrollQuill, GiStairsGoal, GiSparkles, GiFamilyTree } from "react-icons/gi";
 import Timeline from '../../components/Timeline';
 import { generateCharacterFromPrompts } from '../../services/geminiService';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import CharacterIdentityDisplay from './CharacterIdentityDisplay';
-import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../../constants';
+import { PT_MAJOR_EVENTS, JTTW_MAJOR_EVENTS, DIFFICULTY_LEVELS, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, DEFAULT_WORLDS_INFO } from '../../constants';
 import { useAppContext } from '../../contexts/AppContext';
 import * as db from '../../services/dbService';
 import LoadingScreen from '../../components/LoadingScreen';
@@ -66,6 +66,8 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const [generationMode, setGenerationMode] = useState<GenerationMode>('fast');
 
     const [activeAttributeSystem, setActiveAttributeSystem] = useState<ModAttributeSystem | null>(null);
+    const [worldTimelineInfo, setWorldTimelineInfo] = useState<{ gameDate: GameDate, events: MajorEvent[] } | null>(null);
+
 
     useEffect(() => {
         const loadModSystems = async () => {
@@ -97,7 +99,40 @@ export const CharacterCreationScreen: React.FC = memo(() => {
         loadModSystems();
     }, []);
 
-    const majorEventsForTimeline = useMemo(() => state.activeWorldId === 'tay_du_ky' ? JTTW_MAJOR_EVENTS : PT_MAJOR_EVENTS, [state.activeWorldId]);
+    useEffect(() => {
+        const loadWorldTimeline = async () => {
+            let year = 1;
+            let era = 'Tiên Phong Thần';
+            let events = PT_MAJOR_EVENTS;
+
+            const defaultWorld = DEFAULT_WORLDS_INFO[state.activeWorldId as keyof typeof DEFAULT_WORLDS_INFO];
+            if (defaultWorld) {
+                if (state.activeWorldId === 'tay_du_ky') {
+                    year = 627;
+                    era = 'Đường Trinh Quán';
+                    events = JTTW_MAJOR_EVENTS;
+                }
+            } else {
+                for (const modInLib of state.installedMods) {
+                    if (!modInLib.isEnabled) continue;
+                    const modContent = await db.getModContent(modInLib.modInfo.id);
+                    const worldData = modContent?.content.worldData?.find(w => w.name === state.activeWorldId);
+                    if (worldData) {
+                        year = worldData.startingYear;
+                        era = worldData.eraName;
+                        events = worldData.majorEvents;
+                        break;
+                    }
+                }
+            }
+            
+            setWorldTimelineInfo({
+                gameDate: { era, year, season: 'Xuân', day: 1, timeOfDay: 'Buổi Sáng', shichen: 'Tỵ', weather: 'SUNNY', actionPoints: 4, maxActionPoints: 4 },
+                events,
+            });
+        };
+        loadWorldTimeline();
+    }, [state.activeWorldId, state.installedMods]);
 
     const isStep1Complete = useMemo(() => !!(draftIdentity.name.trim() && raceInput.trim() && backgroundInput.trim()), [draftIdentity.name, raceInput, backgroundInput]);
 
@@ -155,7 +190,15 @@ export const CharacterCreationScreen: React.FC = memo(() => {
     const renderHeader = () => (
         <div className="flex justify-between items-center mb-6">
             <button onClick={onBack} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Quay Lại"><FaArrowLeft className="w-5 h-5" /></button>
-            <div className="text-center flex-grow"><Timeline gameDate={{ era: 'Tiên Phong Thần', year: 1, season: 'Xuân', day: 1, timeOfDay: 'Buổi Sáng', shichen: 'Tỵ', weather: 'SUNNY', actionPoints: 4, maxActionPoints: 4 }} majorEvents={majorEventsForTimeline} currentLocationName={'...'} /></div>
+            <div className="text-center flex-grow">
+                {worldTimelineInfo ? (
+                    <Timeline 
+                        gameDate={worldTimelineInfo.gameDate} 
+                        majorEvents={worldTimelineInfo.events} 
+                        currentLocationName={'...'} 
+                    />
+                ) : <LoadingSpinner size="sm" />}
+            </div>
             <div className="w-9 h-9"></div>
         </div>
     );

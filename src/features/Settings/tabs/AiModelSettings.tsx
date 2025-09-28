@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import type { GameSettings, AssignableModel } from '../../../types';
 import { AI_MODELS, IMAGE_AI_MODELS, RAG_EMBEDDING_MODELS } from '../../../constants';
-import { FaKey, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaKey, FaPlus, FaTrash, FaCrown } from 'react-icons/fa';
 
 interface SettingsSectionProps {
     title: string;
@@ -91,33 +91,40 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
             </SettingsRow>
             <SettingsRow label="Phân công Model" description="Chọn Model và API Key cho từng tác vụ cụ thể để tối ưu hóa hiệu suất và quản lý hạn ngạch. 'Tự động' sẽ sử dụng cơ chế xoay vòng qua tất cả các key.">
                 <div className="grid grid-cols-1 gap-4">
-                    {modelConfigs.map(config => (
-                        <div key={config.id} className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
-                            <p className="font-semibold text-gray-300">{config.label}</p>
-                            <p className="text-xs text-gray-500 mb-2">{config.description}</p>
-                            <div className="flex items-center gap-2">
-                                <select 
-                                    value={(settings as any)[config.id] || ''}
-                                    onChange={e => handleSettingChange(config.id, e.target.value)}
-                                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none flex-grow"
-                                >
-                                    {config.modelType === 'image' ? IMAGE_AI_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
-                                     config.modelType === 'rag' ? RAG_EMBEDDING_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
-                                     AI_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                                </select>
-                                <select 
-                                    value={settings.modelApiKeyAssignments[config.id] || 'auto'}
-                                    onChange={e => handleSettingChange('modelApiKeyAssignments', { ...settings.modelApiKeyAssignments, [config.id]: e.target.value })}
-                                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none w-40"
-                                >
-                                    <option value="auto">Tự động</option>
-                                    {settings.apiKeys.map((key, index) => (
-                                        <option key={key} value={key}>Key {index + 1} (...{key.slice(-4)})</option>
-                                    ))}
-                                </select>
+                    {modelConfigs.map(config => {
+                        let modelsToShow = AI_MODELS;
+                        if (config.modelType === 'text') {
+                            modelsToShow = AI_MODELS.filter(m => settings.isPremium || m.value !== 'gemini-2.5-pro');
+                        }
+
+                        return (
+                            <div key={config.id} className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
+                                <p className="font-semibold text-gray-300">{config.label}</p>
+                                <p className="text-xs text-gray-500 mb-2">{config.description}</p>
+                                <div className="flex items-center gap-2">
+                                    <select 
+                                        value={(settings as any)[config.id] || ''}
+                                        onChange={e => handleSettingChange(config.id, e.target.value)}
+                                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none flex-grow"
+                                    >
+                                        {config.modelType === 'image' ? IMAGE_AI_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
+                                         config.modelType === 'rag' ? RAG_EMBEDDING_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
+                                         modelsToShow.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                                    </select>
+                                    <select 
+                                        value={settings.modelApiKeyAssignments[config.id] || 'auto'}
+                                        onChange={e => handleSettingChange('modelApiKeyAssignments', { ...settings.modelApiKeyAssignments, [config.id]: e.target.value })}
+                                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none w-40"
+                                    >
+                                        <option value="auto">Tự động</option>
+                                        {settings.apiKeys.map((key, index) => (
+                                            <option key={key} value={key}>Key {index + 1} (...{key.slice(-4)})</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </SettingsRow>
         </SettingsSection>

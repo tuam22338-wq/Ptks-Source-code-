@@ -48,6 +48,7 @@ interface AppContextType {
     handleInstallMod: (modData: FullMod) => Promise<boolean>;
     handleToggleMod: (modId: string) => Promise<void>;
     handleDeleteModFromLibrary: (modId: string) => Promise<void>;
+    handleEditWorld: (worldId: string) => Promise<void>;
     hydrateWorldInBackground: () => Promise<void>;
 }
 
@@ -73,6 +74,7 @@ const initialState: AppState = {
     activeWorldId: 'phong_than_dien_nghia',
     backgrounds: { status: {}, urls: {} },
     installedMods: [],
+    modBeingEdited: null,
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
@@ -518,30 +520,47 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         });
     }, []);
 
-    // --- New Mod Management Handlers ---
     const handleInstallMod = useCallback(async (newModData: FullMod): Promise<boolean> => {
         if (!newModData.modInfo?.id || !newModData.modInfo?.name) {
             alert("Tệp mod không hợp lệ. Thiếu thông tin 'modInfo' hoặc ID/tên.");
             return false;
         }
-        if (state.installedMods.some(m => m.modInfo.id === newModData.modInfo.id)) {
-            alert(`Mod có ID "${newModData.modInfo.id}" đã được cài đặt.`);
-            return false;
-        }
 
-        try {
-            const newMod: ModInLibrary = {
-                modInfo: newModData.modInfo,
-                isEnabled: true,
-            };
-            await db.saveModToLibrary(newMod);
-            await db.saveModContent(newModData.modInfo.id, newModData);
-            dispatch({ type: 'ADD_INSTALLED_MOD', payload: newMod });
-            return true;
-        } catch (error) {
-            console.error("Lỗi khi cài đặt mod:", error);
-            alert("Lỗi khi cài đặt mod.");
-            return false;
+        const existingModIndex = state.installedMods.findIndex(m => m.modInfo.id === newModData.modInfo.id);
+
+        if (existingModIndex > -1) {
+            if (!window.confirm(`Mod có ID "${newModData.modInfo.id}" đã tồn tại. Bạn có muốn ghi đè lên nó không?`)) {
+                return false;
+            }
+            try {
+                const updatedModInLibrary = { ...state.installedMods[existingModIndex], modInfo: newModData.modInfo };
+                await db.saveModToLibrary(updatedModInLibrary);
+                await db.saveModContent(newModData.modInfo.id, newModData);
+                const updatedMods = [...state.installedMods];
+                updatedMods[existingModIndex] = updatedModInLibrary;
+                dispatch({ type: 'UPDATE_INSTALLED_MODS', payload: updatedMods });
+                alert(`Mod "${newModData.modInfo.name}" đã được cập nhật thành công!`);
+                return true;
+            } catch (error) {
+                console.error("Lỗi khi cập nhật mod:", error);
+                alert("Lỗi khi cập nhật mod.");
+                return false;
+            }
+        } else {
+            try {
+                const newMod: ModInLibrary = {
+                    modInfo: newModData.modInfo,
+                    isEnabled: true,
+                };
+                await db.saveModToLibrary(newMod);
+                await db.saveModContent(newModData.modInfo.id, newModData);
+                dispatch({ type: 'ADD_INSTALLED_MOD', payload: newMod });
+                return true;
+            } catch (error) {
+                console.error("Lỗi khi cài đặt mod:", error);
+                alert("Lỗi khi cài đặt mod.");
+                return false;
+            }
         }
     }, [state.installedMods]);
 
@@ -573,13 +592,19 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             }
         }
     }, [state.installedMods]);
+    
+    const handleEditWorld = useCallback(async (worldId: string) => {
+        // This function's implementation will be in WorldSelectionScreen for now to avoid bloating context
+        // But the logic to load the data into a state for editing will be triggered from here.
+        console.log("Placeholder for handleEditWorld, logic to be implemented in calling component", worldId);
+    }, []);
 
     const contextValue: AppContextType = {
         state, dispatch, handleNavigate, handleSettingChange, handleDynamicBackgroundChange, handleSettingsSave,
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
         handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice,
-        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary,
+        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary, handleEditWorld,
         hydrateWorldInBackground,
     };
 
