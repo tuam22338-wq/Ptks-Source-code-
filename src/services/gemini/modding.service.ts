@@ -1,7 +1,7 @@
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from "../../constants";
-import { generateWithRetry } from './gemini.core';
+import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 import * as db from '../dbService';
 
 export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
@@ -26,6 +26,39 @@ export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
         }];
     }
 };
+
+export async function* chatWithGameMaster(
+    history: { role: 'user' | 'model', content: string }[]
+): AsyncIterable<string> {
+    const settings = await db.getSettings();
+    if (!settings) throw new Error("Settings not found");
+
+    const systemPrompt = `You are GameMasterAI, a helpful and creative assistant for building fantasy worlds for a TTRPG/video game. Your goal is to talk with the user, understand their vision, ask clarifying questions, and help them flesh out their ideas into a rich, detailed lore document through conversation. Be encouraging and imaginative. Consolidate their descriptions and your suggestions into your responses. Structure your responses clearly. Use markdown for formatting.`;
+    
+    const contents = history.map(h => ({
+        role: h.role,
+        parts: [{ text: h.content }]
+    }));
+
+    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    
+    const stream = await generateWithRetryStream({
+        model,
+        contents,
+        config: {
+            systemInstruction: systemPrompt,
+            temperature: 1.0, 
+            topK: settings.topK,
+            topP: settings.topP,
+        }
+    }, specificApiKey);
+    
+    for await (const chunk of stream) {
+        yield chunk.text;
+    }
+}
+
 
 const realmConfigSchema = {
     type: Type.ARRAY,
@@ -186,6 +219,7 @@ const worldSchema = {
                 author: { type: Type.STRING, description: "Tên tác giả (để trống nếu không có)." },
                 description: { type: Type.STRING, description: "Một mô tả ngắn gọn về bản mod." },
                 version: { type: Type.STRING, description: "Phiên bản, mặc định là '1.0.0'." },
+                tags: { type: Type.ARRAY, description: "Một danh sách tối đa 3 thể loại phù hợp với thế giới. Vd: ['Huyền Huyễn', 'Hắc Ám', 'Sinh Tồn']", items: { type: Type.STRING } },
             },
             required: ['id', 'name']
         },
@@ -266,6 +300,19 @@ const worldSchema = {
                 realmConfigs: realmConfigSchema,
                 aiHooks: aiHooksSchema,
                 dynamicEvents: dynamicEventSchema,
+                tagDefinitions: {
+                    type: Type.ARRAY,
+                    description: "Nếu thế giới có một thể loại rất độc đáo, hãy tạo ra một định nghĩa cho nó ở đây. Nếu không, để trống.",
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            id: { type: Type.STRING, description: "ID của thể loại, vd: 'vingroup_dystopia'." },
+                            name: { type: Type.STRING, description: "Tên thể loại, vd: 'Vingroup Dystopia'." },
+                            description: { type: Type.STRING, description: "Mô tả ý nghĩa của thể loại này." }
+                        },
+                        required: ['id', 'name', 'description']
+                    }
+                },
                 attributeSystem: attributeSystemSchema,
             },
             required: ['worldData']
@@ -381,7 +428,7 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
 
     **Quy trình Phân Tích & Suy Luận:**
     1.  **Đọc Tổng Thể:** Đọc toàn bộ văn bản để nắm bắt tông màu, chủ đề chính, và các khái niệm cốt lõi của thế giới.
-    2.  **\`modInfo\`:** Suy ra \`id\` và \`name\` phù hợp từ văn bản. \`id\` phải là chuỗi không dấu, không khoảng trắng.
+    2.  **\`modInfo\`:** Suy ra \`id\` và \`name\` phù hợp từ văn bản. \`id\` phải là chuỗi không dấu, không khoảng trắng. Suy ra tối đa 3 \`tags\` (thể loại) phù hợp nhất với bối cảnh.
     3.  **\`worldData\`:** Đây là phần quan trọng nhất.
         -   **\`name\`, \`description\`, \`eraName\`, \`startingYear\`:** Trích xuất trực tiếp từ các mô tả tổng quan.
         -   **\`majorEvents\`:** Tìm các đoạn văn mô tả các sự kiện lịch sử, chiến tranh, hoặc các biến cố lớn và điền vào.
@@ -403,6 +450,7 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         b. **SÁNG TẠO** thêm các thuộc tính PRIMARY và SECONDARY mới phù hợp với lore được cung cấp.
         c. **TỔ CHỨC** tất cả thuộc tính (cũ và mới) vào các \`groups\` một cách hợp lý. Nếu lore là khoa huyễn, hãy tạo các nhóm như 'Cybernetics', 'Năng Lượng Lõi'.
     7.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
+    8.  **\`tagDefinitions\` (Tùy chọn):** Nếu bạn tạo ra một tag rất độc đáo và mới lạ (ví dụ 'Vin-Corp Dystopia' cho thế giới Vingroup cai trị), hãy tạo một định nghĩa cho nó. Đối với các tag phổ biến như 'Huyền Huyễn', 'Hắc Ám', không cần tạo định nghĩa.
 
     **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
 
@@ -522,10 +570,11 @@ interface WorldGenPrompts {
     npcs?: ModNpc[];
     majorEvents?: MajorEvent[];
     foreshadowedEvents?: ModForeshadowedEvent[];
+    tagDefinitions?: ModTagDefinition[];
 }
 
 export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
-    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars, factions, locations, npcs, majorEvents, foreshadowedEvents } = prompts;
+    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars, factions, locations, npcs, majorEvents, foreshadowedEvents, tagDefinitions } = prompts;
 
     const aiHooksText = (aiHooks?.on_world_build || '') + '\n' + (aiHooks?.on_action_evaluate || '');
     
@@ -557,6 +606,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     if (locations && locations.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialLocations;
     if (npcs && npcs.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialNpcs;
     if (majorEvents && majorEvents.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.majorEvents;
+    if (tagDefinitions && tagDefinitions.length > 0) delete dynamicWorldSchema.properties.content.properties.tagDefinitions;
 
 
     const masterPrompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những ý tưởng cốt lõi thành một thế giới game có cấu trúc hoàn chỉnh.
@@ -565,6 +615,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     **Ý Tưởng Cốt Lõi từ Người Dùng:**
     ---
     - **Tên Mod:** ${modInfo.name}
+    - **Thể Loại:** ${modInfo.tags.join(', ')}
     - **Bối Cảnh (Setting):** ${userPrompts.setting}
     - **Mục Tiêu Chính (Nếu có):** ${userPrompts.mainGoal || "AI tự do sáng tạo."}
     - **Quy Luật Thế Giới (AI Hooks):** ${aiHooksText.trim() || "Không có quy luật đặc biệt, AI tự do sáng tạo."}
@@ -578,7 +629,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     ${npcContext}
 
     **Quy trình Sáng Tạo & Suy Luận:**
-    1.  **\`modInfo\`:** Sử dụng thông tin \`name\` và \`id\` được cung cấp. Tạo một mô tả ngắn gọn dựa trên bối cảnh.
+    1.  **\`modInfo\`:** Sử dụng thông tin \`name\`, \`id\`, và \`tags\` được cung cấp. Tạo một mô tả ngắn gọn dựa trên bối cảnh.
     2.  **\`worldData\`:** Đây là phần quan trọng nhất. Dựa trên Bối Cảnh, Mục Tiêu và Quy Luật:
         -   Nếu người dùng chưa cung cấp, hãy sáng tạo Lịch sử & Sự kiện (\`majorEvents\`), Phe phái (\`factions\`), Bản đồ (\`initialLocations\`), và Nhân vật (\`initialNpcs\`). Nếu người dùng ĐÃ cung cấp, hãy xây dựng thế giới dựa trên chúng.
     3.  **\`items\` (Tùy chọn):** Tạo ra 1-2 vật phẩm khởi đầu hoặc vật phẩm quan trọng liên quan đến cốt truyện.
@@ -635,6 +686,9 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         }
         if (quickActionBars && quickActionBars.length > 0) {
             finalMod.content.quickActionBars = quickActionBars;
+        }
+        if (tagDefinitions && tagDefinitions.length > 0) {
+            finalMod.content.tagDefinitions = tagDefinitions;
         }
         // Ensure user-provided AI Hooks take precedence
         if (aiHooks) {

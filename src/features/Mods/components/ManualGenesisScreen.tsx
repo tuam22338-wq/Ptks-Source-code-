@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaDownload, FaBolt } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
 // FIX: Add QuickActionButtonConfig to type imports
-import type { FullMod, ModInfo, ModAttributeSystem, NamedRealmSystem, QuickActionBarConfig, QuickActionButtonConfig, Faction, ModLocation, ModNpc, AttributeDefinition, AttributeGroupDefinition, RealmConfig, MajorEvent, ModForeshadowedEvent } from '../../../types';
+import type { FullMod, ModInfo, ModAttributeSystem, NamedRealmSystem, QuickActionBarConfig, QuickActionButtonConfig, Faction, ModLocation, ModNpc, AttributeDefinition, AttributeGroupDefinition, RealmConfig, MajorEvent, ModForeshadowedEvent, ModTagDefinition } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS, DEFAULT_BUTTONS, ATTRIBUTE_TEMPLATES } from '../../../constants';
 import AttributeEditorModal from './AttributeEditorModal';
@@ -15,6 +15,7 @@ import NpcEditorModal from './NpcEditorModal';
 import { useAppContext } from '../../../contexts/AppContext';
 import MajorEventEditorModal from './MajorEventEditorModal';
 import ForeshadowedEventEditorModal from './ForeshadowedEventEditorModal';
+import TagDefinitionEditorModal from './TagDefinitionEditorModal';
 
 interface ManualGenesisScreenProps {
     onBack: () => void;
@@ -65,7 +66,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const initialModData = state.modBeingEdited;
 
     // State for all form fields
-    const [modInfo, setModInfo] = useState({ name: '', id: '', author: '' });
+    const [modInfo, setModInfo] = useState({ name: '', id: '', author: '', tags: '' });
     const [prompts, setPrompts] = useState({ setting: '', mainGoal: '', openingStory: '' });
     const [aiHooks, setAiHooks] = useState({ on_world_build: '', on_action_evaluate: '' });
     const [attributeSystem, setAttributeSystem] = useState<ModAttributeSystem>({
@@ -88,6 +89,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const [npcs, setNpcs] = useState<ModNpc[]>([]);
     const [majorEvents, setMajorEvents] = useState<MajorEvent[]>([]);
     const [foreshadowedEvents, setForeshadowedEvents] = useState<ModForeshadowedEvent[]>([]);
+    const [tagDefinitions, setTagDefinitions] = useState<ModTagDefinition[]>([]);
     
     // UI state
     const [isLoading, setIsLoading] = useState(false);
@@ -97,6 +99,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         aiPrompts: true,
         manualDb: false,
         events: false,
+        tagDefinitions: false,
         systems: false,
     });
     const [isFactionModalOpen, setFactionModalOpen] = useState(false);
@@ -115,6 +118,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const [isForeshadowedEventModalOpen, setForeshadowedEventModalOpen] = useState(false);
     const [editingForeshadowedEvent, setEditingForeshadowedEvent] = useState<ModForeshadowedEvent | null>(null);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [isTagDefModalOpen, setTagDefModalOpen] = useState(false);
+    const [editingTagDef, setEditingTagDef] = useState<ModTagDefinition | null>(null);
 
 
      useEffect(() => {
@@ -124,6 +129,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 name: initialModData.modInfo.name,
                 id: initialModData.modInfo.id,
                 author: initialModData.modInfo.author || '',
+                tags: initialModData.modInfo.tags?.join(', ') || '',
             });
             // When editing, AI prompts are not directly available, they are inferred.
             setPrompts({
@@ -141,6 +147,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
             setAttributeSystem(initialModData.content.attributeSystem || { definitions: DEFAULT_ATTRIBUTE_DEFINITIONS, groups: DEFAULT_ATTRIBUTE_GROUPS });
             setNamedRealmSystems(initialModData.content.namedRealmSystems || []);
             setQuickActionBars(initialModData.content.quickActionBars || []);
+            setTagDefinitions(initialModData.content.tagDefinitions || []);
             setFactions(worldData?.factions || []);
             setMajorEvents(worldData?.majorEvents || []);
             setForeshadowedEvents(worldData?.foreshadowedEvents || []);
@@ -167,6 +174,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                 aiPrompts: true,
                 manualDb: (factions.length > 0 || locations.length > 0 || npcs.length > 0),
                 events: (majorEvents.length > 0 || foreshadowedEvents.length > 0),
+                tagDefinitions: (tagDefinitions.length > 0),
                 systems: true,
             });
         }
@@ -185,8 +193,14 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         setError(null);
         try {
             const generatedMod = await generateWorldFromPrompts({
-                modInfo, prompts, factions, locations, npcs, majorEvents, foreshadowedEvents,
-                attributeSystem, namedRealmSystems, quickActionBars, aiHooks
+                modInfo: {
+                    name: modInfo.name,
+                    id: modInfo.id,
+                    author: modInfo.author,
+                    tags: modInfo.tags.split(',').map(t => t.trim()).filter(Boolean),
+                },
+                prompts, factions, locations, npcs, majorEvents, foreshadowedEvents,
+                attributeSystem, namedRealmSystems, quickActionBars, aiHooks, tagDefinitions
             });
 
             if (install) {
@@ -255,6 +269,21 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         setForeshadowedEventModalOpen(false); setEditingForeshadowedEvent(null);
     };
     const handleDeleteForeshadowedEvent = (title: string) => setForeshadowedEvents(foreshadowedEvents.filter(e => e.title !== title));
+    
+    const handleSaveTagDef = (tagDef: ModTagDefinition) => {
+        const index = tagDefinitions.findIndex(t => t.id === (editingTagDef?.id || ''));
+        if (index > -1) {
+            setTagDefinitions(tagDefinitions.map((t, i) => i === index ? tagDef : t));
+        } else {
+            setTagDefinitions([...tagDefinitions, tagDef]);
+        }
+        setTagDefModalOpen(false);
+        setEditingTagDef(null);
+    };
+
+    const handleDeleteTagDef = (id: string) => {
+        setTagDefinitions(tagDefinitions.filter(t => t.id !== id));
+    };
 
 
     // Systems Handlers
@@ -310,6 +339,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
              <MajorEventEditorModal isOpen={isMajorEventModalOpen} onClose={() => setMajorEventModalOpen(false)} onSave={handleSaveMajorEvent} event={editingMajorEvent} />
              <ForeshadowedEventEditorModal isOpen={isForeshadowedEventModalOpen} onClose={() => setForeshadowedEventModalOpen(false)} onSave={handleSaveForeshadowedEvent} event={editingForeshadowedEvent} />
              <TemplateSelectionModal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} onSelect={handleSelectTemplate} />
+             <TagDefinitionEditorModal isOpen={isTagDefModalOpen} onClose={() => setTagDefModalOpen(false)} onSave={handleSaveTagDef} tagDef={editingTagDef} />
 
 
             <div className="flex-shrink-0 mb-4">
@@ -334,9 +364,15 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                                 <input name="id" value={modInfo.id} onChange={e => setModInfo(p => ({...p, id: e.target.value.toLowerCase().replace(/\s+/g, '_')}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="vd: cyber_tu_chan" disabled={!!initialModData}/>
                             </div>
                         </div>
-                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Tác Giả</label>
-                            <input name="author" value={modInfo.author} onChange={e => setModInfo(p => ({...p, author: e.target.value}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Tên của bạn"/>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Tác Giả</label>
+                                <input name="author" value={modInfo.author} onChange={e => setModInfo(p => ({...p, author: e.target.value}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Tên của bạn"/>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Thể Loại (Tags)</label>
+                                <input name="tags" value={modInfo.tags} onChange={e => setModInfo(p => ({...p, tags: e.target.value}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Huyền Huyễn, Hắc Ám, Sinh Tồn..."/>
+                            </div>
                         </div>
                     </AccordionSection>
 
@@ -419,8 +455,26 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                             </div>
                         </div>
                     </AccordionSection>
+
+                    <AccordionSection title="5. Định Nghĩa Thể Loại (Tùy chọn)" secondaryText="Tạo thể loại riêng cho mod của bạn" isOpen={openSections.tagDefinitions} onToggle={() => handleToggleSection('tagDefinitions')}>
+                        <div className="space-y-2">
+                            {tagDefinitions.map((def, index) => (
+                                <div key={index} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                    <div className="truncate">
+                                        <p className="text-sm font-semibold" title={def.name}>{def.name} ({def.id})</p>
+                                        <p className="text-xs text-gray-400 truncate" title={def.description}>{def.description}</p>
+                                    </div>
+                                    <div className='flex gap-2'>
+                                        <button onClick={() => { setEditingTagDef(def); setTagDefModalOpen(true); }}><FaEdit/></button>
+                                        <button onClick={() => handleDeleteTagDef(def.id)}><FaTrash/></button>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={() => {setEditingTagDef(null); setTagDefModalOpen(true);}} className="w-full text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus/> Thêm Định Nghĩa</button>
+                        </div>
+                    </AccordionSection>
                     
-                     <AccordionSection title="5. Quy Luật & Hệ Thống (Nâng cao)" secondaryText="Tùy chỉnh sâu cơ chế game" isOpen={openSections.systems} onToggle={() => handleToggleSection('systems')}>
+                     <AccordionSection title="6. Quy Luật & Hệ Thống (Nâng cao)" secondaryText="Tùy chỉnh sâu cơ chế game" isOpen={openSections.systems} onToggle={() => handleToggleSection('systems')}>
                         <div className="space-y-6">
                             {/* AI Hooks */}
                             <div className="space-y-4">

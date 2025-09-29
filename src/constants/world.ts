@@ -19,6 +19,7 @@ export const DEFAULT_WORLDS_INFO = {
         author: 'Nhà phát triển',
         majorEvents: PT_MAJOR_EVENTS,
         source: 'default' as const,
+        tags: ['Huyền Huyễn', 'Thần Thoại Trung Hoa', 'Chiến Tranh'],
     },
     tay_du_ky: {
         id: 'tay_du_ky',
@@ -27,6 +28,7 @@ export const DEFAULT_WORLDS_INFO = {
         author: 'Nhà phát triển',
         majorEvents: JTTW_MAJOR_EVENTS,
         source: 'default' as const,
+        tags: ['Huyền Huyễn', 'Phiêu Lưu', 'Thần Thoại Trung Hoa'],
     }
 };
 

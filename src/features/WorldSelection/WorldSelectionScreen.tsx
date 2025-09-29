@@ -17,6 +17,7 @@ interface WorldInfo {
     description: string;
     source: 'default' | 'mod';
     author?: string;
+    tags?: string[];
 }
 
 
@@ -40,6 +41,15 @@ const WorldCard: React.FC<{ world: WorldInfo; isActive: boolean; onSelect: () =>
                 {world.source === 'default' ? 'Mặc Định' : `MOD CỦA ${world.author || 'VÔ DANH'}`}
             </p>
             <p className="text-sm text-gray-400 mt-2 mb-4 flex-grow">{world.description}</p>
+            {world.tags && world.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-auto">
+                    {world.tags.slice(0, 3).map(tag => (
+                        <span key={tag} className="px-2 py-1 text-xs font-semibold text-cyan-200 bg-cyan-800/50 rounded-full">
+                            {tag}
+                        </span>
+                    ))}
+                </div>
+            )}
         </button>
     );
 });
@@ -64,11 +74,13 @@ const WorldSelectionScreen: React.FC = () => {
                     const modContent = await db.getModContent(modInLib.modInfo.id);
                     if (modContent?.content.worldData) {
                         for (const worldData of modContent.content.worldData) {
+                             const tags = modContent.modInfo.tags || worldData.tags;
                             modWorlds.push({
                                 ...worldData,
                                 id: worldData.name, // Use name as ID for selection
                                 source: 'mod',
                                 author: modContent.modInfo.author,
+                                tags: tags,
                             });
                         }
                     }
@@ -140,11 +152,13 @@ const WorldSelectionScreen: React.FC = () => {
                     modInfo: {
                         id: state.activeWorldId, name: defaultWorldInfo.name, author: 'Chỉnh sửa từ bản gốc',
                         description: `Một phiên bản tùy chỉnh của thế giới mặc định '${defaultWorldInfo.name}'.`, version: '1.0.0',
+                        tags: defaultWorldInfo.tags,
                     },
                     content: {
                         worldData: [{
                             name: defaultWorldInfo.name, description: defaultWorldInfo.description, startingYear: year, eraName: era,
                             majorEvents: events, factions: factions, initialLocations: mappedLocations, initialNpcs: mappedNpcs,
+                            tags: defaultWorldInfo.tags,
                         }],
                         namedRealmSystems: [{
                             id: 'default_realm_system', name: 'Hệ Thống Tu Luyện Mặc Định',
@@ -247,6 +261,7 @@ const WorldSelectionScreen: React.FC = () => {
                     author: 'Player Export',
                     description: `Một phiên bản xuất của thế giới mặc định '${defaultWorldInfo.name}'.`,
                     version: '1.0.0',
+                    tags: defaultWorldInfo.tags,
                 },
                 content: {
                     worldData: [{
@@ -258,6 +273,7 @@ const WorldSelectionScreen: React.FC = () => {
                         factions: factions,
                         initialLocations: mappedLocations,
                         initialNpcs: mappedNpcs,
+                        tags: defaultWorldInfo.tags,
                     }],
                     namedRealmSystems: [{
                         id: 'default_realm_system',

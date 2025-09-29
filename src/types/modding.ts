@@ -10,6 +10,12 @@ import type { CharacterIdentity } from './character';
 // FIX: Correct imports to resolve circular dependencies and missing types.
 import type { MajorEvent, GameEvent, NPC, Location, ForeshadowedEvent } from './gameplay';
 
+export interface ModTagDefinition {
+    id: string; // e.g., 'cyberpunk_tu_chan'
+    name: string; // 'Cyberpunk Tu Chân'
+    description: string;
+}
+
 export interface ModItem {
     id: string;
     name: string;
@@ -177,6 +183,7 @@ export interface ModInfo {
     author?: string;
     description?: string;
     version?: string;
+    tags?: string[];
 }
 
 export interface ModInLibrary {
@@ -333,6 +340,7 @@ export interface ModContent {
     aiHooks?: AiHooks;
     attributeSystem?: ModAttributeSystem;
     quickActionBars?: QuickActionBarConfig[];
+    tagDefinitions?: ModTagDefinition[];
 }
 
 export interface FullMod {

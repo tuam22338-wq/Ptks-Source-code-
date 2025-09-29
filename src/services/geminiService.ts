@@ -13,3 +13,4 @@ export * from './gemini/interaction.service';
 export * from './gemini/planning.service';
 export * from './gemini/arbiter.service';
 export * from './gemini/faction.service';
+export * from './gemini/novel.service';

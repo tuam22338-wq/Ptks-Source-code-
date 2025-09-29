@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { 
-    FaArrowLeft, FaFileSignature, FaBrain, FaFilePdf
+    FaArrowLeft, FaFileSignature, FaBrain, FaFilePdf, FaFileUpload
 } from 'react-icons/fa';
 import type { FullMod } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import AiGenesisScreen from './components/AiGenesisScreen';
 import ManualGenesisScreen from './components/ManualGenesisScreen';
 import PdfConverterScreen from './components/PdfConverterScreen';
+import GameMasterAiScreen from './components/GameMasterAiScreen';
 
-type ModView = 'main' | 'genesis' | 'manualGenesis' | 'pdfConverter';
+type ModView = 'main' | 'genesis' | 'manualGenesis' | 'pdfConverter' | 'gameMasterAi';
 
 const MenuButton: React.FC<{
     icon: React.ElementType;
@@ -48,7 +49,7 @@ const ModsScreen: React.FC = () => {
     };
 
     const renderMainView = () => (
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in lg:max-w-7xl mx-auto">
+        <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in lg:max-w-4xl mx-auto">
               <MenuButton 
                 icon={FaFileSignature}
                 title="Sáng Tạo Dẫn Hướng"
@@ -57,6 +58,12 @@ const ModsScreen: React.FC = () => {
             />
              <MenuButton 
                 icon={FaBrain}
+                title="Game Master AI"
+                description="Trò chuyện với AI để cùng sáng tạo một thế giới mới từ ý tưởng của bạn."
+                onClick={() => setView('gameMasterAi')}
+            />
+            <MenuButton 
+                icon={FaFileUpload}
                 title="Sáng Thế từ File TXT"
                 description="Tải lên file .txt chứa lore để AI tự động tạo ra một thế giới hoàn chỉnh."
                 onClick={() => setView('genesis')}
@@ -76,6 +83,8 @@ const ModsScreen: React.FC = () => {
                 return <ManualGenesisScreen onBack={handleBackFromGenesis} onInstall={handleInstallMod} />;
             case 'genesis':
                 return <AiGenesisScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
+            case 'gameMasterAi':
+                return <GameMasterAiScreen onBack={() => setView('main')} onInstall={handleInstallMod} />;
             case 'pdfConverter':
                 return <PdfConverterScreen onBack={() => setView('main')} onUseForGenesis={handleUsePdfTextForGenesis} />;
             case 'main':
