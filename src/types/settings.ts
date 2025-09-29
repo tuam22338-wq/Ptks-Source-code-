@@ -40,7 +40,8 @@ export type AssignableModel =
     | 'dataParsingModel' | 'imageGenerationModel' | 'ragSummaryModel' | 'ragSourceIdModel'
     | 'ragEmbeddingModel' | 'ragOrchestratorModel'
     | 'memorySynthesisModel'
-    | 'narrativeHarmonizerModel';
+    | 'narrativeHarmonizerModel'
+    | 'novelistModel';
 
 export interface GameSettings {
     layoutMode: LayoutMode;
@@ -67,6 +68,8 @@ export interface GameSettings {
     ragOrchestratorModel: AIModel;
     memorySynthesisModel: AIModel;
     narrativeHarmonizerModel: AIModel;
+    novelistModel: AIModel;
+    novelistWordCount: number;
     autoSummaryFrequency: number;
     ragTopK: number;
     ragChunkSize: number;

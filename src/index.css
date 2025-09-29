@@ -294,3 +294,135 @@ input[type="color"]::-webkit-color-swatch {
 .slot-giay { grid-area: 4 / 3 / 5 / 4; }
 .slot-phu-kien-1 { grid-area: 2 / 5 / 3 / 6; }
 .slot-phu-kien-2 { grid-area: 3 / 5 / 4 / 6; }
+
+/* --- GEMINI UI THEME FOR NOVELIST --- */
+.gemini-theme {
+    --gemini-bg: #131314;
+    --gemini-text: #e3e3e3;
+    --gemini-text-muted: #94999d;
+    --gemini-surface: #1e1f20;
+    --gemini-surface-subtle: #18191a;
+    --gemini-input-bg: #1e1f20;
+    --gemini-border: #3c4043;
+    --gemini-accent: #8ab4f8;
+}
+
+.gemini-theme {
+    background-color: var(--gemini-bg);
+    color: var(--gemini-text);
+    font-family: 'Noto Serif', sans-serif;
+}
+
+.gemini-title-gradient {
+    background: -webkit-linear-gradient(135deg, #4285f4, #9b72cb, #d96570, #f2994a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.gemini-prompt-card {
+    background-color: var(--gemini-surface);
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--gemini-border);
+    text-align: left;
+    transition: background-color 0.2s;
+    font-size: 0.875rem;
+}
+.gemini-prompt-card:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.gemini-message-container .prose {
+    color: var(--gemini-text);
+    max-width: 100%;
+    font-size: 1rem;
+    line-height: 1.75;
+}
+.gemini-message-container .prose h1,
+.gemini-message-container .prose h2,
+.gemini-message-container .prose h3 {
+    color: var(--gemini-text);
+    border-bottom: 1px solid var(--gemini-border);
+    padding-bottom: 0.5em;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+}
+.gemini-message-container .prose strong {
+    color: #f0f0f0;
+}
+.gemini-message-container .prose ul {
+    list-style-position: inside;
+    padding-left: 0;
+}
+.gemini-message-container .prose ul li {
+    margin-top: 0.25em;
+}
+
+.gemini-input-container {
+    padding: 0.5rem 1rem 1rem 1rem;
+    width: 100%;
+    max-width: 56rem; /* 896px */
+    margin: 0 auto;
+}
+
+.gemini-input-bar {
+    display: flex;
+    align-items: flex-end;
+    background-color: var(--gemini-input-bg);
+    border: 1px solid var(--gemini-border);
+    border-radius: 1.5rem; /* 24px */
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+}
+
+.gemini-textarea {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--gemini-text);
+    font-size: 1rem;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.gemini-textarea::placeholder {
+    color: var(--gemini-text-muted);
+}
+.gemini-textarea:disabled {
+    background-color: transparent;
+}
+
+.gemini-send-button {
+    flex-shrink: 0;
+    width: 2.5rem; /* 40px */
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--gemini-surface);
+    transition: background-color 0.2s;
+    border: none;
+}
+.gemini-send-button:not(:disabled) {
+    background-color: var(--gemini-accent);
+    color: var(--gemini-bg);
+    cursor: pointer;
+}
+.gemini-send-button:disabled {
+    cursor: not-allowed;
+    color: var(--gemini-text-muted);
+}
+
+.gemini-loader {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--gemini-text-muted);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

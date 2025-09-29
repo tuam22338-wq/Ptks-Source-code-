@@ -86,6 +86,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ragOrchestratorModel: 'gemini-2.5-flash',
     memorySynthesisModel: 'gemini-2.5-flash',
     narrativeHarmonizerModel: 'gemini-2.5-flash',
+    novelistModel: 'gemini-2.5-flash',
+    novelistWordCount: 3000,
     autoSummaryFrequency: 50,
     ragTopK: 5,
     ragChunkSize: 512,

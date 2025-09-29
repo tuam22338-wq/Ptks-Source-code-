@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import type { GameSettings } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaBrain } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaBrain, FaPenFancy } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import RagSourceManagerModal from './RagSourceManagerModal';
@@ -13,6 +13,7 @@ import SafetySettings from './tabs/SafetySettings';
 import GameplaySettings from './tabs/GameplaySettings';
 import AdvancedSettings from './tabs/AdvancedSettings';
 import AiCustomizationSettings from './tabs/AiCustomizationSettings';
+import NovelistSettings from './tabs/NovelistSettings';
 
 type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'gameplay' | 'advanced' | 'ai_customization';
 
@@ -49,7 +50,7 @@ export const SettingsPanel: React.FC = () => {
                 <div className="w-9 h-9"></div> {/* Spacer */}
             </div>
 
-            <div className="flex-shrink-0 grid grid-cols-4 lg:flex lg:items-center gap-2 p-2 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
+            <div className="flex-shrink-0 grid grid-cols-3 sm:grid-cols-5 lg:flex lg:items-center gap-2 p-2 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
                 <TabButton tabId="sound" activeTab={activeTab} onClick={setActiveTab} icon={FaVolumeUp} label="Âm Thanh" />
                 <TabButton tabId="gameplay" activeTab={activeTab} onClick={setActiveTab} icon={FaGamepad} label="Lối Chơi" />
