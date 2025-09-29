@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
-import type { GameSettings } from '../../../types';
-import { AI_MODELS } from '../../../constants';
+import type { GameSettings, NarrativeStyle } from '../../../types';
+import { AI_MODELS, NARRATIVE_STYLES } from '../../../constants';
 import { FaCrown } from 'react-icons/fa';
 
 interface SettingsSectionProps {
@@ -57,6 +57,17 @@ const NovelistSettings: React.FC<NovelistSettingsProps> = ({ settings, handleSet
                     })}
                 </select>
             </SettingsRow>
+            <SettingsRow label="Văn Phong Tường Thuật" description="Chọn văn phong và giọng điệu cho AI, ảnh hưởng lớn đến kết quả sáng tác.">
+                <select 
+                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" 
+                    value={settings.novelistNarrativeStyle} 
+                    onChange={(e) => handleSettingChange('novelistNarrativeStyle', e.target.value as NarrativeStyle)}
+                >
+                    {NARRATIVE_STYLES.map(style => (
+                        <option key={style.value} value={style.value}>{style.label}</option>
+                    ))}
+                </select>
+            </SettingsRow>
             <SettingsRow label="Độ dài mỗi chương (Số từ)" description="Đặt độ dài mong muốn cho mỗi lần AI viết tiếp câu chuyện.">
                 <div className="flex items-center gap-4">
                     <input 
@@ -69,6 +80,36 @@ const NovelistSettings: React.FC<NovelistSettingsProps> = ({ settings, handleSet
                         className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" 
                     />
                     <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-24 text-center">{settings.novelistWordCount}</span>
+                </div>
+            </SettingsRow>
+             <SettingsRow label="Nhiệt độ (Temperature)" description="Kiểm soát mức độ sáng tạo/ngẫu nhiên của AI. Giá trị cao hơn cho kết quả đa dạng, giá trị thấp hơn cho kết quả nhất quán hơn.">
+                <div className="flex items-center gap-4">
+                    <input type="range" min="0" max="2" step="0.1" value={settings.novelistTemperature} onChange={(e) => handleSettingChange('novelistTemperature', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.novelistTemperature.toFixed(1)}</span>
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Top-K" description="Giới hạn số lượng token có khả năng cao nhất mà AI xem xét ở mỗi bước.">
+                <div className="flex items-center gap-4">
+                    <input type="range" min="1" max="128" step="1" value={settings.novelistTopK} onChange={(e) => handleSettingChange('novelistTopK', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.novelistTopK}</span>
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Top-P" description="Chọn các token có xác suất tích lũy đạt đến một ngưỡng nhất định.">
+                <div className="flex items-center gap-4">
+                    <input type="range" min="0" max="1" step="0.05" value={settings.novelistTopP} onChange={(e) => handleSettingChange('novelistTopP', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.novelistTopP.toFixed(2)}</span>
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Bật 'Suy Nghĩ' (Thinking)" description="Cho phép model suy nghĩ trước khi trả lời để có chất lượng cao hơn (chỉ cho gemini-2.5-flash).">
+                <label className="flex items-center cursor-pointer">
+                    <input type="checkbox" checked={settings.novelistEnableThinking} onChange={e => handleSettingChange('novelistEnableThinking', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                    <span className="ml-3 text-sm text-gray-300">Bật Thinking</span>
+                </label>
+            </SettingsRow>
+            <SettingsRow label="Ngân sách 'Suy Nghĩ' (Thinking Budget)" description="Lượng token tối đa mà model có thể dùng để 'suy nghĩ'. Giá trị cao hơn có thể cải thiện chất lượng nhưng tăng độ trễ." disabled={!settings.novelistEnableThinking}>
+                <div className="flex items-center gap-4">
+                    <input type="range" min="0" max="2000" step="50" value={settings.novelistThinkingBudget} onChange={(e) => handleSettingChange('novelistThinkingBudget', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" disabled={!settings.novelistEnableThinking}/>
+                    <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.novelistThinkingBudget}</span>
                 </div>
             </SettingsRow>
         </SettingsSection>

@@ -171,7 +171,7 @@ const AppContent: React.FC = () => {
         ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col p-4 sm:p-6 lg:p-8'
         : 'w-full flex-grow flex flex-col';
     
-    const panelClasses = 'bg-[var(--panel-bg-color)] backdrop-blur-md border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50';
+    const panelClasses = 'panel-bg backdrop-blur-md rounded-xl shadow-2xl shadow-black/50';
 
     return (
         <div className="relative w-full h-full flex flex-col items-center">

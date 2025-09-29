@@ -40,9 +40,8 @@ export const THEME_OPTIONS: { value: Theme; label: string; premium?: boolean }[]
     { value: 'theme-bamboo-forest', label: 'Trúc Lâm U Tịch (Tối)' },
     { value: 'theme-sunrise-peak', label: 'Triêu Dương Đỉnh (Sáng)' },
     { value: 'theme-bich-du-cung', label: 'Bích Du Cung (Huyền ảo)' },
-    { value: 'theme-ngoc-hu-cung', label: 'Ngọc Hư Cung (Trang nghiêm)' },
     { value: 'theme-huyet-sat-ma-dien', label: 'Huyết Sát Ma Điện (Hắc ám)' },
-    { value: 'theme-thuy-mac-hoa', label: 'Thủy Mặc Họa (Tối giản)' },
+    { value: 'theme-cyber-cultivation-city', label: 'Thành Phố Cyber-Tu Chân' },
     { value: 'theme-dao-ton-premium', label: 'Đạo Tôn (Premium)', premium: true },
 ];
 
@@ -53,6 +52,7 @@ export const DYNAMIC_BACKGROUND_OPTIONS: { id: string; name: string; thumbnailCl
     { id: 'mystic_violet', name: 'Huyền Tím', thumbnailClass: 'bg-thumbnail-mystic_violet' },
     { id: 'blood_moon', name: 'Huyết Nguyệt', thumbnailClass: 'bg-thumbnail-blood_moon' },
     { id: 'jade_forest', name: 'Ngọc Lâm', thumbnailClass: 'bg-thumbnail-jade_forest' },
+    { id: 'cyber_cultivation_city', name: 'Cyberpunk', thumbnailClass: 'bg-thumbnail-cyber-cultivation-city' },
 ];
 
 export const LAYOUT_MODES: { value: LayoutMode; label: string }[] = [

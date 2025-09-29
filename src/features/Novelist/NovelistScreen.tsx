@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaArrowLeft, FaPlus, FaDownload, FaUserCircle, FaPaperPlane, FaTrash, FaCog, FaBars, FaCrown } from 'react-icons/fa';
+// FIX: Add FaTimes to the import list to resolve missing component error.
+import { FaArrowLeft, FaPlus, FaDownload, FaUserCircle, FaPaperPlane, FaTrash, FaCog, FaBars, FaTimes } from 'react-icons/fa';
 import { GiSparkles } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import { db } from '../../services/dbService';
 import type { Novel, NovelContentEntry, GameSettings } from '../../types';
 import { generateNovelChapter } from '../../services/gemini/novel.service';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { AI_MODELS } from '../../constants';
+import NovelistSettings from '../Settings/tabs/NovelistSettings';
 
 // Simple Markdown-like parser
 const parseContent = (text: string) => {
@@ -43,51 +44,17 @@ const SettingsModal: React.FC<{
 }> = ({ isOpen, onClose, settings, handleSettingChange }) => {
     if (!isOpen) return null;
 
-    const novelistModels = AI_MODELS.filter(m => m.value === 'gemini-2.5-flash' || m.value === 'gemini-2.5-pro');
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
-            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg m-4 p-6" onClick={e => e.stopPropagation()}>
-                <h3 className="text-xl font-bold mb-4 text-amber-300">Cài Đặt Tiểu Thuyết Gia AI</h3>
-                <div className="space-y-6">
-                    <div>
-                        <label className="block font-semibold text-gray-200">Model Sáng Tác</label>
-                        <p className="text-sm text-gray-500 mt-1 mb-2">Chọn model AI để sử dụng. Model Pro cho chất lượng cao hơn nhưng yêu cầu Gói Đạo Tôn.</p>
-                         <select 
-                            className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50" 
-                            value={settings.novelistModel} 
-                            onChange={(e) => handleSettingChange('novelistModel', e.target.value)}
-                        >
-                            {novelistModels.map(model => {
-                                const isPremium = model.value.includes('pro');
-                                const isDisabled = isPremium && !settings.isPremium;
-                                return (
-                                    <option key={model.value} value={model.value} disabled={isDisabled} className={isDisabled ? 'text-gray-500' : ''}>
-                                        {model.label} {isPremium && <FaCrown className="inline-block" />}
-                                    </option>
-                                );
-                            })}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block font-semibold text-gray-200">Độ dài mỗi chương (Số từ)</label>
-                        <p className="text-sm text-gray-500 mt-1 mb-2">Đặt độ dài mong muốn cho mỗi lần AI viết tiếp câu chuyện.</p>
-                        <div className="flex items-center gap-4">
-                            <input 
-                                type="range" 
-                                min="100" 
-                                max="7000" 
-                                step="100" 
-                                value={settings.novelistWordCount} 
-                                onChange={(e) => handleSettingChange('novelistWordCount', parseInt(e.target.value))} 
-                                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" 
-                            />
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-24 text-center">{settings.novelistWordCount}</span>
-                        </div>
-                    </div>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70" onClick={onClose}>
+            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-amber-300">Cài Đặt Tiểu Thuyết Gia AI</h3>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-full">
+                        <FaTimes/>
+                    </button>
                 </div>
-                <div className="mt-6 flex justify-end">
-                    <button onClick={onClose} className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500">Đóng</button>
+                <div className="p-4 overflow-y-auto">
+                    <NovelistSettings settings={settings} handleSettingChange={handleSettingChange} />
                 </div>
             </div>
         </div>
@@ -141,6 +108,7 @@ const NovelistScreen: React.FC = () => {
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const contentEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const loadNovels = async () => {
@@ -151,7 +119,13 @@ const NovelistScreen: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        contentEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const container = chatContainerRef.current;
+        if (container) {
+            const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 150;
+            if (isScrolledToBottom) {
+                contentEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
     }, [activeNovel?.content]);
 
     useEffect(() => {
@@ -325,7 +299,7 @@ const NovelistScreen: React.FC = () => {
                 <main className="flex-grow flex flex-col relative">
                     {activeNovel ? (
                         <>
-                            <div className="flex-grow overflow-y-auto p-4 md:p-6">
+                            <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-4 md:p-6">
                                 <div className="max-w-4xl mx-auto">
                                     {activeNovel.content.map(entry => (
                                         <div key={entry.id} className="gemini-message-container py-4">
@@ -354,10 +328,10 @@ const NovelistScreen: React.FC = () => {
                             <h2 className="text-4xl font-bold gemini-title-gradient">Tiểu Thuyết Gia</h2>
                             <p className="mt-2 text-gemini-text-muted">Cộng sự AI cho hành trình sáng tác của bạn</p>
                             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full">
-                                <button onClick={() => setUserInput('Viết chương mở đầu cho một câu chuyện về một tu sĩ mất đi linh căn')} className="gemini-prompt-card">Viết chương mở đầu cho một câu chuyện về một tu sĩ mất đi linh căn</button>
-                                <button onClick={() => setUserInput('Tạo ra một đoạn hội thoại căng thẳng giữa hai vị tông chủ')} className="gemini-prompt-card">Tạo ra một đoạn hội thoại căng thẳng giữa hai vị tông chủ</button>
-                                <button onClick={() => setUserInput('Mô tả một pháp bảo có khả năng nghịch chuyển thời gian')} className="gemini-prompt-card">Mô tả một pháp bảo có khả năng nghịch chuyển thời gian</button>
-                                <button onClick={() => setUserInput('Kể về một bí cảnh ẩn giấu trong một sa mạc chết chóc')} className="gemini-prompt-card">Kể về một bí cảnh ẩn giấu trong một sa mạc chết chóc</button>
+                                <button onClick={() => { setUserInput('Viết chương mở đầu cho một câu chuyện về một tu sĩ mất đi linh căn'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Viết chương mở đầu cho một câu chuyện về một tu sĩ mất đi linh căn</button>
+                                <button onClick={() => { setUserInput('Tạo ra một đoạn hội thoại căng thẳng giữa hai vị tông chủ'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Tạo ra một đoạn hội thoại căng thẳng giữa hai vị tông chủ</button>
+                                <button onClick={() => { setUserInput('Mô tả một pháp bảo có khả năng nghịch chuyển thời gian'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Mô tả một pháp bảo có khả năng nghịch chuyển thời gian</button>
+                                <button onClick={() => { setUserInput('Kể về một bí cảnh ẩn giấu trong một sa mạc chết chóc'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Kể về một bí cảnh ẩn giấu trong một sa mạc chết chóc</button>
                             </div>
                         </div>
                     )}
@@ -369,7 +343,7 @@ const NovelistScreen: React.FC = () => {
                                 onChange={e => setUserInput(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitPrompt(); } }}
                                 disabled={isGenerating || !activeNovel}
-                                placeholder="Nhập một gợi ý ở đây"
+                                placeholder={activeNovel ? "Viết tiếp câu chuyện..." : "Chọn hoặc tạo một dự án mới để bắt đầu..."}
                                 rows={1}
                                 className="gemini-textarea"
                             />
