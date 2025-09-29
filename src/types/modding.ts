@@ -44,6 +44,7 @@ export interface RealmStage {
     id: string;
     name: string;
     qiRequired: number;
+    breakthroughRequirements?: string; // Descriptive text for AI, e.g., "Cần hấp thụ một 'Hồn Hoàn' vạn năm."
     bonuses: StatBonus[];
     description?: string;
 }
@@ -61,6 +62,8 @@ export interface NamedRealmSystem {
     id: string;
     name: string;
     description: string;
+    resourceName: string; // Vd: 'Linh Khí', 'Hồn Lực', 'Điểm Kinh Nghiệm'
+    resourceUnit: string; // Vd: 'điểm', 'năm', 'vòng'
     realms: RealmConfig[];
 }
 

@@ -1,35 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaEdit, FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import type { RealmConfig, RealmStage, ModAttributeSystem } from '../../../types';
+import type { RealmConfig, RealmStage, ModAttributeSystem, NamedRealmSystem } from '../../../types';
 import RealmStageEditorModal from './RealmStageEditorModal';
 
 interface RealmEditorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (realms: RealmConfig[]) => void;
-    initialRealms: RealmConfig[];
+    onSave: (systems: NamedRealmSystem[]) => void;
+    initialSystems: NamedRealmSystem[];
     attributeSystem: ModAttributeSystem;
 }
 
-const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, onSave, initialRealms, attributeSystem }) => {
+const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, onSave, initialSystems, attributeSystem }) => {
     const [realms, setRealms] = useState<RealmConfig[]>([]);
+    const [systemInfo, setSystemInfo] = useState({ name: '', description: '', resourceName: 'Linh Khí', resourceUnit: 'điểm' });
     const [expandedRealms, setExpandedRealms] = useState<Record<string, boolean>>({});
     const [isStageModalOpen, setIsStageModalOpen] = useState(false);
     const [editingStage, setEditingStage] = useState<{ stage: RealmStage | null; realmIndex: number }>({ stage: null, realmIndex: -1 });
 
     useEffect(() => {
         if (isOpen) {
-            setRealms(JSON.parse(JSON.stringify(initialRealms)));
-            const initialExpanded = initialRealms.reduce((acc, realm, index) => {
+            const mainSystem = initialSystems.length > 0 ? initialSystems[0] : null;
+            setRealms(mainSystem ? JSON.parse(JSON.stringify(mainSystem.realms)) : []);
+            setSystemInfo({
+                name: mainSystem?.name || 'Hệ Thống Tu Luyện Chính',
+                description: mainSystem?.description || 'Hệ thống tu luyện mặc định.',
+                resourceName: mainSystem?.resourceName || 'Linh Khí',
+                resourceUnit: mainSystem?.resourceUnit || 'điểm',
+            });
+            const initialExpanded = (mainSystem?.realms || []).reduce((acc, realm, index) => {
                 acc[realm.id || index] = index === 0;
                 return acc;
             }, {} as Record<string, boolean>);
             setExpandedRealms(initialExpanded);
         }
-    }, [initialRealms, isOpen]);
+    }, [initialSystems, isOpen]);
+    
+    const handleSystemInfoChange = (field: keyof typeof systemInfo, value: string) => {
+        setSystemInfo(prev => ({ ...prev, [field]: value }));
+    };
 
     const handleSaveAndClose = () => {
-        onSave(realms);
+        onSave([{ ...systemInfo, id: 'main_system', realms }]);
         onClose();
     };
 
@@ -88,11 +100,22 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                 onSave={handleSaveStage}
                 stage={editingStage.stage}
                 attributeDefinitions={attributeSystem.definitions}
+                resourceName={systemInfo.resourceName}
+                resourceUnit={systemInfo.resourceUnit}
             />
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
                 <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-3xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                    <h3 className="text-xl font-bold p-4 border-b border-gray-700 text-amber-300">Chỉnh Sửa Hệ Thống Cảnh Giới</h3>
+                    <h3 className="text-xl font-bold p-4 border-b border-gray-700 text-amber-300">Chỉnh Sửa Hệ Thống Tu Luyện</h3>
                     <div className="p-4 overflow-y-auto space-y-3">
+                        <div className="p-3 bg-black/25 rounded-lg border border-gray-800/80 mb-3 space-y-3">
+                            <h4 className="font-bold text-gray-200">Thông Tin Hệ Thống</h4>
+                            <input value={systemInfo.name} onChange={e => handleSystemInfoChange('name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Tên Hệ Thống (Vd: Hệ Thống Hồn Sư)"/>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input value={systemInfo.resourceName} onChange={e => handleSystemInfoChange('resourceName', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Tên Tài Nguyên (Vd: Hồn Lực)"/>
+                                <input value={systemInfo.resourceUnit} onChange={e => handleSystemInfoChange('resourceUnit', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Đơn Vị (Vd: năm, cấp)"/>
+                            </div>
+                            <textarea value={systemInfo.description} onChange={e => handleSystemInfoChange('description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y" placeholder="Mô tả hệ thống..."/>
+                        </div>
                         {realms.map((realm, realmIndex) => (
                             <div key={realm.id || realmIndex} className="bg-black/25 rounded-lg border border-gray-800/80">
                                 <button onClick={() => setExpandedRealms(p => ({...p, [realm.id || realmIndex]: !p[realm.id || realmIndex]}))} className="w-full flex justify-between items-center p-3 text-left hover:bg-gray-800/50">
@@ -111,7 +134,7 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                                 <div key={stage.id || stageIndex} className="flex justify-between items-center p-2 bg-black/30 rounded">
                                                     <div>
                                                         <p className="text-sm font-semibold">{stage.name}</p>
-                                                        <p className="text-xs text-gray-400">Linh khí: {stage.qiRequired === null || !isFinite(stage.qiRequired) ? 'Vô Hạn' : stage.qiRequired.toLocaleString()}</p>
+                                                        <p className="text-xs text-gray-400">{systemInfo.resourceName}: {stage.qiRequired === null || !isFinite(stage.qiRequired) ? 'Vô Hạn' : stage.qiRequired.toLocaleString()}</p>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <button onClick={() => handleOpenStageModal(stage, realmIndex)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>

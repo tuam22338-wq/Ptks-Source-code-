@@ -77,6 +77,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         id: 'main_system',
         name: 'Hệ Thống Tu Luyện Chính',
         description: 'Hệ thống tu luyện mặc định.',
+        resourceName: 'Linh Khí',
+        resourceUnit: 'điểm',
         realms: REALM_SYSTEM,
     }]);
     const [quickActionBars, setQuickActionBars] = useState<QuickActionBarConfig[]>([{
@@ -297,13 +299,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         setAttributeModalOpen(false); setEditingAttribute(null);
     };
     
-    const handleSaveRealms = (updatedRealms: RealmConfig[]) => {
-        setNamedRealmSystems(prev => {
-            const newSystems = [...prev];
-            if (newSystems.length > 0) newSystems[0].realms = updatedRealms;
-            else newSystems.push({ id: 'main_system', name: 'Hệ Thống Tu Luyện Chính', description: 'Hệ thống tu luyện được tạo.', realms: updatedRealms });
-            return newSystems;
-        });
+    const handleSaveRealms = (updatedSystems: NamedRealmSystem[]) => {
+        setNamedRealmSystems(updatedSystems);
         setRealmModalOpen(false);
     };
     
@@ -334,7 +331,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
              <LocationEditorModal isOpen={isLocationModalOpen} onClose={() => setLocationModalOpen(false)} onSave={handleSaveLocation} location={editingLocation} />
              <NpcEditorModal isOpen={isNpcModalOpen} onClose={() => setNpcModalOpen(false)} onSave={handleSaveNpc} npc={editingNpc} />
              {editingAttribute && <AttributeEditorModal isOpen={isAttributeModalOpen} onClose={() => setAttributeModalOpen(false)} onSave={handleSaveAttribute} attribute={editingAttribute.attribute} group={editingAttribute.group} />}
-             <RealmEditorModal isOpen={isRealmModalOpen} onClose={() => setRealmModalOpen(false)} onSave={handleSaveRealms} initialRealms={namedRealmSystems[0]?.realms || []} attributeSystem={attributeSystem} />
+             <RealmEditorModal isOpen={isRealmModalOpen} onClose={() => setRealmModalOpen(false)} onSave={handleSaveRealms} initialSystems={namedRealmSystems} attributeSystem={attributeSystem} />
              <QuickActionButtonEditorModal isOpen={isQuickActionModalOpen} onClose={() => setQuickActionModalOpen(false)} onSave={handleSaveQuickAction} button={editingQuickAction} />
              <MajorEventEditorModal isOpen={isMajorEventModalOpen} onClose={() => setMajorEventModalOpen(false)} onSave={handleSaveMajorEvent} event={editingMajorEvent} />
              <ForeshadowedEventEditorModal isOpen={isForeshadowedEventModalOpen} onClose={() => setForeshadowedEventModalOpen(false)} onSave={handleSaveForeshadowedEvent} event={editingForeshadowedEvent} />

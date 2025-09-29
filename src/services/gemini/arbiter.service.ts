@@ -23,27 +23,41 @@ export const decideActionOutcome = async (gameState: GameState, userInput: strin
     };
 
     // Create a very condensed context for the arbiter
-    const { playerCharacter, realmSystem } = gameState;
+    const { playerCharacter, realmSystem, realmSystemInfo } = gameState;
     const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
     const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
 
-    let nextStageQiRequired = Infinity;
+    // Determine next stage/realm requirements
+    let breakthroughReqText = 'Đã đạt cảnh giới cao nhất.';
     if (currentRealm && currentStage) {
         const currentStageIndex = currentRealm.stages.findIndex(s => s.id === currentStage.id);
+        let nextStage;
         if (currentStageIndex < currentRealm.stages.length - 1) {
-            nextStageQiRequired = currentRealm.stages[currentStageIndex + 1].qiRequired;
+            nextStage = currentRealm.stages[currentStageIndex + 1];
         } else {
             const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
-            if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
-                nextStageQiRequired = realmSystem[currentRealmIndex + 1].stages[0].qiRequired;
+            if (currentRealmIndex < realmSystem.length - 1) {
+                const nextRealm = realmSystem[currentRealmIndex + 1];
+                if (nextRealm && nextRealm.stages.length > 0) {
+                    nextStage = nextRealm.stages[0];
+                }
+            }
+        }
+
+        if (nextStage) {
+            if (nextStage.breakthroughRequirements) {
+                breakthroughReqText = nextStage.breakthroughRequirements;
+            } else {
+                breakthroughReqText = `Cần ${nextStage.qiRequired.toLocaleString()} ${realmSystemInfo.resourceName}.`;
             }
         }
     }
 
+
     const keyAttributes = `
 - Cảnh giới: ${currentRealm?.name || 'N/A'} - ${currentStage?.name || 'N/A'}
-- Linh khí: ${playerCharacter.cultivation.spiritualQi.toLocaleString()}
-- Linh khí cần cho đột phá tiếp theo: ${isFinite(nextStageQiRequired) ? nextStageQiRequired.toLocaleString() : 'MAX'}
+- ${realmSystemInfo.resourceName}: ${playerCharacter.cultivation.spiritualQi.toLocaleString()}
+- Yêu cầu đột phá tiếp theo: ${breakthroughReqText}
 - Lực Lượng: ${playerCharacter.attributes.luc_luong?.value || 10}
 - Thân Pháp: ${playerCharacter.attributes.than_phap?.value || 10}
 - Ngộ Tính: ${playerCharacter.attributes.ngo_tinh?.value || 10}
@@ -59,6 +73,12 @@ export const decideActionOutcome = async (gameState: GameState, userInput: strin
 
     const prompt = `Bạn là một AI "Trọng Tài" logic và công bằng trong game. Nhiệm vụ của bạn là quyết định kết quả của một hành động dựa trên chỉ số của người chơi và các quy luật của thế giới.
     
+    **QUY TẮC TỐI QUAN TRỌNG VỀ ĐỘT PHÁ:**
+    Nếu hành động của người chơi có liên quan đến việc "đột phá", "thăng cấp", "vượt cảnh giới", bạn PHẢI so sánh hành động và trạng thái của người chơi với "Yêu cầu đột phá tiếp theo".
+    - Nếu yêu cầu là một mô tả (ví dụ: cần 'Hồn Hoàn vạn năm'), hãy xem hành động của người chơi có đề cập đến việc đáp ứng điều kiện đó không. Phán định một cách logic.
+    - Nếu yêu cầu là một con số (ví dụ: cần 100,000 Linh Khí), hãy so sánh với chỉ số hiện tại của người chơi.
+    - Nếu người chơi không đủ điều kiện, hành động đột phá phải **thất bại**.
+
     **Chỉ số của người chơi:**
     ${keyAttributes}
 

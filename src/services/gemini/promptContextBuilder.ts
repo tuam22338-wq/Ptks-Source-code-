@@ -4,7 +4,7 @@ import { createModContextSummary } from '../../utils/modManager';
 
 // FIX: Add 'settings' parameter to the function signature and remove the incorrect access from gameState.
 export const createFullGameStateContext = (gameState: GameState, settings: GameSettings, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
-  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, realmSystem } = gameState;
+  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, realmSystem, realmSystemInfo } = gameState;
   const playerAiHooks = gameState.playerCharacter.playerAiHooks;
   let playerRulesContext = '';
   if (playerAiHooks) {
@@ -123,24 +123,45 @@ NPC mà người chơi đang tương tác có suy nghĩ nội tâm sau: "${thoug
 ${attributeSystem.definitions.map(def => `- **${def.name}:** ${def.description}`).join('\n')}
 `;
   
-  let cultivationContext = '';
-  if (realmSystem && realmSystem.length > 0) {
-      const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
-      const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
-      
-      const currentRealmStagesInfo = currentRealm 
-        ? `Các tiểu cảnh giới của ${currentRealm.name} là: ${currentRealm.stages.map(s => s.name).join(', ')}.`
-        : '';
+    const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+    const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
 
-      cultivationContext = `
+    let nextStageInfo = 'Đã đạt cảnh giới cao nhất.';
+    if (currentRealm && currentStage) {
+        const currentStageIndex = currentRealm.stages.findIndex(s => s.id === currentStage.id);
+        if (currentStageIndex !== -1) {
+            let nextStage = null;
+            let nextRealmName = currentRealm.name;
+            if (currentStageIndex < currentRealm.stages.length - 1) {
+                nextStage = currentRealm.stages[currentStageIndex + 1];
+            } else {
+                const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
+                if (currentRealmIndex < realmSystem.length - 1) {
+                    const nextRealm = realmSystem[currentRealmIndex + 1];
+                    if (nextRealm && nextRealm.stages.length > 0) {
+                        nextStage = nextRealm.stages[0];
+                        nextRealmName = nextRealm.name;
+                    }
+                }
+            }
+            if (nextStage) {
+                if (nextStage.breakthroughRequirements) {
+                    nextStageInfo = `Để đột phá lên ${nextRealmName} - ${nextStage.name}, cần: ${nextStage.breakthroughRequirements}.`;
+                } else {
+                    nextStageInfo = `Cần ${nextStage.qiRequired.toLocaleString()} ${realmSystemInfo.resourceUnit} ${realmSystemInfo.resourceName} để đột phá lên ${nextRealmName} - ${nextStage.name}.`;
+                }
+            }
+        }
+    }
+
+
+  let cultivationContext = `
 - **Tu Luyện (CỰC KỲ QUAN TRỌNG):**
-  - Cảnh giới hiện tại: ${currentRealm?.name || 'Không rõ'} - ${currentStage?.name || 'Không rõ'}. ${currentRealmStagesInfo}
-  - Linh khí: ${playerCharacter.cultivation.spiritualQi.toLocaleString()}.
-- **Toàn bộ hệ thống cảnh giới (để tham khảo):** ${realmSystem.map(r => r.name).join(' -> ')}.
+  - Hệ thống: ${realmSystemInfo.name}
+  - Cảnh giới hiện tại: ${currentRealm?.name || 'Không rõ'} - ${currentStage?.name || 'Không rõ'}.
+  - ${realmSystemInfo.resourceName}: ${playerCharacter.cultivation.spiritualQi.toLocaleString()} ${realmSystemInfo.resourceUnit}.
+  - Mục tiêu tiếp theo: ${nextStageInfo}
 `;
-  } else {
-      cultivationContext = `- **Hệ thống sức mạnh:** Thế giới này không sử dụng hệ thống tu luyện cảnh giới truyền thống.`;
-  }
 
   const context = `
 ${modContext}${playerRulesContext}### TOÀN BỘ BỐI CẢNH GAME ###

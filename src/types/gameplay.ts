@@ -1,5 +1,3 @@
-
-
 import type {
     Gender, Element, StatBonus, CharacterAttributes, PhapBaoRank, ItemQuality, EquipmentSlot, InnateTalentRank,
     Season, TimeOfDay, Weather, TechniqueEffect, CultivationTechniqueType, CurrencyType,
@@ -430,7 +428,12 @@ export interface GameState {
     encounteredNpcIds: string[];
     activeMods: FullMod[];
     activeModIds?: string[];
-    realmSystem: RealmConfig[]; // Now dynamic
+    realmSystem: RealmConfig[];
+    realmSystemInfo: {
+        name: string;
+        resourceName: string;
+        resourceUnit: string;
+    };
     attributeSystem: ModAttributeSystem; // Now dynamic
     majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;

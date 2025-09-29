@@ -49,7 +49,6 @@ interface AppContextType {
     handleToggleMod: (modId: string) => Promise<void>;
     handleDeleteModFromLibrary: (modId: string) => Promise<void>;
     handleEditWorld: (worldId: string) => Promise<void>;
-    hydrateWorldInBackground: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -429,38 +428,27 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const activeMods: FullMod[] = (await Promise.all(
                 enabledModsInfo.map(modInfo => db.getModContent(modInfo.modInfo.id))
             )).filter((mod): mod is FullMod => mod !== undefined);
+
+            const setLoading = (msg: string) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } });
             
-            const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
-            await db.saveGameState(state.currentSlotId, newGameState);
+            // Create the initial, un-hydrated state
+            const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, setLoading);
+            
+            // Immediately hydrate the state fully, showing progress on the loading screen
+            const fullyHydratedState = await hydrateWorldData(newGameState, setLoading);
+
+            // Save the fully hydrated state
+            await db.saveGameState(state.currentSlotId, fullyHydratedState);
             await loadSaveSlots();
-            const hydratedGameState = await migrateGameState(newGameState);
-            dispatch({ type: 'LOAD_GAME', payload: { gameState: hydratedGameState, slotId: state.currentSlotId } });
+
+            // Run migration for sanitation and load the game
+            const finalGameState = await migrateGameState(fullyHydratedState);
+            dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: state.currentSlotId } });
         } catch (error) {
             // Re-throw the error so the calling UI component can catch it and display it.
             throw error;
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
-
-    const hydrateWorldInBackground = useCallback(async () => {
-        if (!state.gameState || state.gameState.isHydrated || state.currentSlotId === null) {
-            return;
-        }
-
-        try {
-            const fullyHydratedState = await hydrateWorldData(state.gameState);
-            
-            // Silently update the state in the background
-            dispatch({ type: 'UPDATE_GAME_STATE', payload: fullyHydratedState });
-            
-            // Persist the fully hydrated state to the database
-            const gameStateToSave: GameState = { ...fullyHydratedState, version: CURRENT_GAME_VERSION, lastSaved: new Date().toISOString() };
-            await db.saveGameState(state.currentSlotId, gameStateToSave);
-            console.log("Background world hydration complete and saved.");
-
-        } catch (error) {
-            console.error("Background world hydration failed:", error);
-        }
-    }, [state.gameState, state.currentSlotId]);
 
     const handleSetActiveWorldId = async (worldId: string) => {
         await db.setActiveWorldId(worldId);
@@ -621,8 +609,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
         handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice,
-        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary, handleEditWorld,
-        hydrateWorldInBackground,
+        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary, handleEditWorld
     };
 
     return (

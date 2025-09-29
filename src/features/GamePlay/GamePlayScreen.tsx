@@ -65,7 +65,7 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpda
 };
 
 const GamePlayScreenContent: React.FC = memo(() => {
-    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleDialogueChoice, hydrateWorldInBackground } = useAppContext();
+    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleDialogueChoice } = useAppContext();
     const { gameState, settings } = state;
     const { 
         notifications, dismissNotification, availablePaths,
@@ -115,14 +115,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
         setCurrentPage(storyPages.length > 0 ? storyPages.length - 1 : 0);
     }, [storyPages.length]);
     // --- END PAGINATION LOGIC ---
-
-    useEffect(() => {
-        // Ensure hydration only runs once and if needed
-        if (gameState && !gameState.isHydrated) {
-            console.log("Game state is not fully hydrated. Triggering background world generation.");
-            hydrateWorldInBackground();
-        }
-    }, [gameState, hydrateWorldInBackground]);
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
@@ -202,55 +194,33 @@ const GamePlayScreenContent: React.FC = memo(() => {
 
     const handleBreakthrough = useCallback(async () => {
         if (!gameState) return;
-        const { playerCharacter, realmSystem } = gameState;
-        const { cultivation } = playerCharacter;
-
-        const currentRealmData = realmSystem.find(r => r.id === cultivation.currentRealmId);
-        if (!currentRealmData) {
-            showNotification("Lỗi: Không tìm thấy dữ liệu cảnh giới hiện tại.");
-            return;
-        }
-
-        const currentStageIndex = currentRealmData.stages.findIndex(s => s.id === cultivation.currentStageId);
-        const isLastStage = currentStageIndex === currentRealmData.stages.length - 1;
-        
-        let targetRealm = currentRealmData;
-        let targetStageName = "Unknown Stage";
-
-        if (isLastStage) {
-            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealmData.id);
-            const nextRealmData = realmSystem[currentRealmIndex + 1];
-            if (nextRealmData) {
-                targetRealm = nextRealmData;
-                targetStageName = nextRealmData.stages[0]?.name || "Sơ Kỳ";
-            } else {
-                showNotification("Bạn đã đạt đến cảnh giới cao nhất!");
-                return;
-            }
-        } else {
-            const nextStageData = currentRealmData.stages[currentStageIndex + 1];
-            if(nextStageData) {
-                targetStageName = nextStageData.name;
-            }
-        }
         
         addStoryEntry({ type: 'system', content: `Bắt đầu đột phá...` });
         
-        const isDefaultFrameworkWorld = state.activeWorldId === 'phong_than_dien_nghia' || state.activeWorldId === 'tay_du_ky';
+        const { playerCharacter, realmSystem } = gameState;
+        const currentRealmData = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+        const isLastStage = currentRealmData ? playerCharacter.cultivation.currentStageId === currentRealmData.stages[currentRealmData.stages.length - 1].id : false;
         
-        if (isDefaultFrameworkWorld && targetRealm.hasTribulation && isLastStage) {
-            try {
-                const trial = await generateInnerDemonTrial(gameState, targetRealm, targetStageName);
-                openInnerDemonTrial(trial);
-            } catch(error) {
-                showNotification("Đột phá thất bại! Thiên cơ hỗn loạn.");
-                addStoryEntry({ type: 'system', content: 'Thiên cơ hỗn loạn, không thể dẫn động tâm ma kiếp.' });
-            }
-        } else {
-            // Handle normal breakthrough via AI narration
-            handlePlayerAction("Ta bắt đầu vận công, nỗ lực đột phá cảnh giới tiếp theo.", 'act', 1, showNotification);
+        // If it's a major realm breakthrough and it has a defined tribulation, trigger the modal
+        if (currentRealmData?.hasTribulation && isLastStage) {
+             const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealmData.id);
+             const nextRealmData = realmSystem[currentRealmIndex + 1];
+             if(nextRealmData) {
+                try {
+                    const trial = await generateInnerDemonTrial(gameState, nextRealmData, nextRealmData.stages[0].name);
+                    openInnerDemonTrial(trial);
+                } catch(error) {
+                    showNotification("Đột phá thất bại! Thiên cơ hỗn loạn.");
+                    addStoryEntry({ type: 'system', content: 'Thiên cơ hỗn loạn, không thể dẫn động tâm ma kiếp.' });
+                }
+                return; // Stop here, the modal will handle the next action
+             }
         }
-    }, [gameState, state.activeWorldId, addStoryEntry, showNotification, openInnerDemonTrial, handlePlayerAction]);
+        
+        // For all other cases (minor stages or realms without tribulations), let the AI narrate it.
+        handlePlayerAction("Ta bắt đầu vận công, nỗ lực đột phá cảnh giới tiếp theo.", 'act', 1, showNotification);
+
+    }, [gameState, addStoryEntry, showNotification, openInnerDemonTrial, handlePlayerAction]);
 
     const handleInnerDemonChoice = useCallback((choice: { text: string; isCorrect: boolean; }) => {
         closeInnerDemonTrial();
@@ -353,7 +323,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             activeTab={activeActionTab}
                             setActiveTab={setActiveActionTab}
                             gameState={gameState}
-                            handleBreakthrough={handleBreakthrough}
                             onToggleSidebar={() => setIsSidebarOpen(v => !v)}
                         />
                     )}

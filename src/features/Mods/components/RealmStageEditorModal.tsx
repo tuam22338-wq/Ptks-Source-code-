@@ -8,10 +8,12 @@ interface RealmStageEditorModalProps {
     onSave: (stage: RealmStage) => void;
     stage: RealmStage | null;
     attributeDefinitions: AttributeDefinition[];
+    resourceName: string;
+    resourceUnit: string;
 }
 
-const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, onClose, onSave, stage, attributeDefinitions }) => {
-    const [formData, setFormData] = useState<RealmStage>({ id: '', name: '', qiRequired: 0, bonuses: [] });
+const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, onClose, onSave, stage, attributeDefinitions, resourceName, resourceUnit }) => {
+    const [formData, setFormData] = useState<RealmStage>({ id: '', name: '', qiRequired: 0, bonuses: [], breakthroughRequirements: '' });
     const [newBonus, setNewBonus] = useState<{ attribute: string; value: number }>({ attribute: '', value: 0 });
 
     useEffect(() => {
@@ -19,7 +21,7 @@ const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, o
             const isInfinite = stage?.qiRequired === null || stage?.qiRequired === Infinity;
             const initialQi = isInfinite ? Infinity : (stage?.qiRequired || 0);
 
-            setFormData(stage ? { ...stage, qiRequired: initialQi } : { id: `stage_${Date.now()}`, name: '', qiRequired: 0, bonuses: [] });
+            setFormData(stage ? { ...stage, qiRequired: initialQi } : { id: `stage_${Date.now()}`, name: '', qiRequired: 0, bonuses: [], breakthroughRequirements: '' });
             
             if (attributeDefinitions.length > 0) {
                 const defaultAttr = attributeDefinitions[0]?.name || '';
@@ -28,7 +30,7 @@ const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, o
         }
     }, [stage, isOpen, attributeDefinitions]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         if (name === 'qiRequired') {
             if (value.trim().toLowerCase() === 'infinity' || value.trim().toLowerCase() === 'vô hạn') {
@@ -76,7 +78,7 @@ const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, o
                         <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Linh Khí Yêu Cầu</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">{resourceName} Yêu Cầu ({resourceUnit})</label>
                         <input
                             name="qiRequired"
                             type="text"
@@ -84,6 +86,17 @@ const RealmStageEditorModal: React.FC<RealmStageEditorModalProps> = ({ isOpen, o
                             onChange={handleChange}
                             className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200"
                             placeholder="Nhập số, hoặc 'Infinity'"
+                        />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Điều Kiện Đột Phá (Mô tả cho AI)</label>
+                        <textarea
+                            name="breakthroughRequirements"
+                            value={formData.breakthroughRequirements || ''}
+                            onChange={handleChange}
+                            rows={3}
+                            className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y"
+                            placeholder="Nếu được điền, quy tắc này sẽ được ưu tiên hơn yêu cầu về tài nguyên. Vd: Cần hấp thụ một 'Hồn Hoàn' vạn năm."
                         />
                     </div>
                     <div>

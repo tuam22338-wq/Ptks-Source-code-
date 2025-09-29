@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, lazy, Suspense } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
 import { SettingsPanel } from './features/Settings/SettingsPanel';
@@ -14,6 +14,18 @@ import WorldSelectionScreen from './features/WorldSelection/WorldSelectionScreen
 import SpecialEffectsOverlay from './components/SpecialEffectsOverlay';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import NovelistScreen from './features/Novelist/NovelistScreen'; // Import a tela mới
+
+// --- Lazy Loaded Components ---
+const LazySettingsPanel = lazy(() => import('./features/Settings/SettingsPanel').then(module => ({ default: module.SettingsPanel })));
+const LazyCharacterCreationScreen = lazy(() => import('./features/CharacterCreation/CharacterCreationScreen').then(module => ({ default: module.CharacterCreationScreen })));
+const LazySaveSlotScreen = lazy(() => import('./features/MainMenu/SaveSlotScreen'));
+const LazyModsScreen = lazy(() => import('./features/Mods/ModsScreen'));
+const LazyGamePlayScreen = lazy(() => import('./features/GamePlay/GamePlayScreen').then(module => ({ default: module.GamePlayScreen })));
+const LazyThoiTheScreen = lazy(() => import('./features/Lore/LoreScreen'));
+const LazyInfoScreen = lazy(() => import('./features/Info/InfoScreen'));
+const LazyWorldSelectionScreen = lazy(() => import('./features/WorldSelection/WorldSelectionScreen'));
+const LazyNovelistScreen = lazy(() => import('./features/Novelist/NovelistScreen'));
+
 
 const BackgroundOverlay: React.FC = () => {
     const { state } = useAppContext();
@@ -140,26 +152,26 @@ const AppContent: React.FC = () => {
           case 'mainMenu':
             return <MainMenu />;
           case 'saveSlots':
-            return <SaveSlotScreen />;
+            return <LazySaveSlotScreen />;
           case 'characterCreation':
-            return <CharacterCreationScreen />;
+            return <LazyCharacterCreationScreen />;
           case 'settings':
-            return <SettingsPanel />;
+            return <LazySettingsPanel />;
           case 'mods':
-            return <ModsScreen />;
+            return <LazyModsScreen />;
           case 'thoiThe':
-            return <ThoiTheScreen />;
+            return <LazyThoiTheScreen />;
           case 'info':
-            return <InfoScreen />;
+            return <LazyInfoScreen />;
           case 'worldSelection':
-            return <WorldSelectionScreen />;
+            return <LazyWorldSelectionScreen />;
           case 'novelist': // Thêm case mới
-            return <NovelistScreen />;
+            return <LazyNovelistScreen />;
           case 'gamePlay':
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
             }
-            return <GamePlayScreen />;
+            return <LazyGamePlayScreen />;
           default:
             return <MainMenu />;
         }
@@ -187,7 +199,9 @@ const AppContent: React.FC = () => {
             )}
       
             <main className={`${containerClasses} min-h-0 ${isPanelScreen ? panelClasses : ''}`}>
-              {renderContent()}
+                <Suspense fallback={<LoadingScreen message="Đang tải..." />}>
+                    {renderContent()}
+                </Suspense>
             </main>
             
             {settings.enableDeveloperConsole && <DeveloperConsole />}

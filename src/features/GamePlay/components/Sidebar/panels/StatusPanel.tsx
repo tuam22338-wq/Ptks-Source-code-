@@ -34,7 +34,7 @@ const ProgressBar: React.FC<{ current: number; max: number; colorClass: string }
 };
 
 const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
-    const { playerCharacter, realmSystem, attributeSystem } = gameState;
+    const { playerCharacter, realmSystem, attributeSystem, realmSystemInfo } = gameState;
     
     const currentRealm = useMemo(() => realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId), [playerCharacter, realmSystem]);
     const currentStage = useMemo(() => currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId), [playerCharacter, currentRealm]);
@@ -155,12 +155,12 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
             {/* Cultivation Progress (if realm system exists) */}
             {realmSystem.length > 0 && (
                 <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                    <h4 className="font-bold text-amber-300 font-title">Tu Luyện</h4>
+                    <h4 className="font-bold text-amber-300 font-title">{realmSystemInfo.name}</h4>
                     <p className="text-lg font-semibold text-cyan-300">{currentRealm?.name} - {currentStage?.name}</p>
                     <div className="mt-2">
                         <div className="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>Linh Khí</span>
-                            <span>{playerCharacter.cultivation.spiritualQi.toLocaleString()} / {(isFinite(qiToNextStage) ? qiToNextStage.toLocaleString() : 'MAX')}</span>
+                            <span>{realmSystemInfo.resourceName}</span>
+                            <span>{playerCharacter.cultivation.spiritualQi.toLocaleString()} / {(isFinite(qiToNextStage) ? qiToNextStage.toLocaleString() : 'MAX')} {realmSystemInfo.resourceUnit}</span>
                         </div>
                         <ProgressBar 
                             current={playerCharacter.cultivation.spiritualQi} 

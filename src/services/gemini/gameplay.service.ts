@@ -16,7 +16,7 @@ export async function* generateDualResponseStream(
     isInterruption: boolean,
     thoughtBubble?: string
 ): AsyncIterable<string> {
-    const { playerCharacter, difficulty, activeMods, attributeSystem } = gameState;
+    const { playerCharacter, difficulty, activeMods, attributeSystem, realmSystemInfo } = gameState;
     
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
     const difficultyText = `Độ khó hiện tại là "${difficulty || 'Trung Bình'}".`;
@@ -40,14 +40,8 @@ export async function* generateDualResponseStream(
     const narrateSystemChangesInstruction = settings.narrateSystemChanges
         ? `7. **TƯỜNG THUẬT CƠ CHẾ:** Bạn PHẢI lồng ghép các thay đổi cơ chế (nhận vật phẩm, tăng chỉ số) vào trong đoạn văn tường thuật một cách tự nhiên. Ví dụ, thay vì chỉ nói "bạn nhặt được vật phẩm", hãy mô tả "tay bạn chạm vào một vật lạnh lẽo, đó là một thanh [Thiết Kiếm]".`
         : '';
-
-    const realmConsistencyInstruction = `9. **LUẬT BẤT BIẾN VỀ CẢNH GIỚI:** Cảnh giới tu luyện của người chơi đã được cung cấp trong Bối Cảnh. Bạn TUYỆT ĐỐI KHÔNG được hạ thấp hoặc mô tả sai cảnh giới của họ trong phần tường thuật. Ví dụ: Nếu Bối Cảnh ghi người chơi là Luyện Khí Kỳ, không được mô tả họ là 'phàm nhân'.`;
-    
-    const survivalInstruction = settings.enableSurvivalMechanics
-        ? `10. **LUẬT SINH TỒN THEO CẢNH GIỚI:** Cảnh giới tu luyện càng cao, khả năng chống chọi đói và khát càng mạnh. Khi người chơi đột phá đại cảnh giới (ví dụ từ Luyện Khí lên Trúc Cơ), cơ thể họ sẽ được tôi luyện, cho phép họ nhịn đói và khát lâu hơn rất nhiều. Hãy phản ánh điều này bằng cách tăng GIỚI HẠN TỐI ĐA (sử dụng 'changeMax') của chỉ số 'hunger' và 'thirst' trong 'statChanges'.`
-        : `10. **LUẬT SINH TỒN (ĐÃ TẮT):** Người chơi đã tắt cơ chế sinh tồn. TUYỆT ĐỐI KHÔNG đề cập đến đói hoặc khát trong phần tường thuật.`;
         
-    const cultivationActionInstruction = `11. **LUẬT HÀNH ĐỘNG CƠ BẢN (TU LUYỆN):** Khi người chơi thực hiện các hành động cơ bản như "tu luyện", "thiền", hoặc "hấp thụ linh khí", bạn PHẢI hiểu rằng họ đang cố gắng tăng tu vi. Hãy tường thuật lại quá trình họ hấp thụ linh khí từ môi trường xung quanh (dựa trên nồng độ linh khí của địa điểm) và tạo ra một 'statChanges' với { attribute: 'spiritualQi', change: [một lượng hợp lý] }.`;
+    const cultivationActionInstruction = `11. **LUẬT HÀNH ĐỘNG CƠ BẢN (TU LUYỆN):** Khi người chơi thực hiện các hành động cơ bản như "tu luyện", "thiền", hoặc "hấp thụ linh khí", bạn PHẢI hiểu rằng họ đang cố gắng tăng ${realmSystemInfo.resourceName}. Hãy tường thuật lại quá trình họ hấp thụ năng lượng từ môi trường xung quanh (dựa trên nồng độ linh khí của địa điểm) và tạo ra một 'statChanges' với { attribute: 'spiritualQi', change: [một lượng hợp lý] }.`;
     
     const impliedStateChangeInstruction = `12. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
     
@@ -155,9 +149,9 @@ ${isInterruption ? interruptionInstruction : arbiterInstruction}
 5.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 6.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
 ${narrateSystemChangesInstruction}
-8.  **LUẬT ĐỘT PHÁ CẢNH GIỚI (Cập nhật):** Khi người chơi đột phá cảnh giới (ví dụ, đủ Linh Khí và thực hiện hành động đột phá), bạn PHẢI cập nhật cả \`realmChange\` (ID cảnh giới mới) và \`stageChange\` (ID tiểu cảnh giới mới). Hệ thống sẽ tự động áp dụng các bonus thuộc tính MẶC ĐỊNH từ cảnh giới mới. Nếu trong tường thuật có mô tả kỳ ngộ đặc biệt nào đó mang lại bonus **thêm**, bạn CÓ THỂ thêm phần bonus **thêm** đó vào \`statChanges\`.
-${realmConsistencyInstruction}
-${survivalInstruction}
+8.  **LUẬT ĐỘT PHÁ CẢNH GIỚI (Cập nhật):** Khi người chơi đột phá cảnh giới (theo quyết định của Trọng Tài), bạn PHẢI cập nhật cả \`realmChange\` (ID cảnh giới mới) và \`stageChange\` (ID tiểu cảnh giới mới). Hệ thống sẽ tự động áp dụng các bonus thuộc tính MẶC ĐỊNH từ cảnh giới mới. Nếu trong tường thuật có mô tả kỳ ngộ đặc biệt nào đó mang lại bonus **thêm**, bạn CÓ THỂ thêm phần bonus **thêm** đó vào \`statChanges\`.
+9.  **LUẬT ĐỘT PHÁ TÙY CHỈNH (CỰC KỲ QUAN TRỌNG):** Bối cảnh game đã cung cấp "Mục tiêu tiếp theo" cho việc đột phá. Khi người chơi đột phá thành công (theo quyết định của Trọng Tài AI), bạn PHẢI tường thuật lại quá trình đó. Nếu họ đột phá nhờ đáp ứng một yêu cầu mô tả (ví dụ: hấp thụ Hồn Hoàn), hãy mô tả cảnh đó. Nếu họ đột phá nhờ tích lũy đủ ${realmSystemInfo.resourceName}, hãy mô tả cảnh năng lượng bùng nổ. Luôn làm cho câu chuyện khớp với luật lệ của thế giới.
+10. **LUẬT SINH TỒN THEO CẢNH GIỚI:** Cảnh giới tu luyện càng cao, khả năng chống chọi đói và khát càng mạnh. Khi người chơi đột phá đại cảnh giới (ví dụ từ Luyện Khí lên Trúc Cơ), cơ thể họ sẽ được tôi luyện, cho phép họ nhịn đói và khát lâu hơn rất nhiều. Hãy phản ánh điều này bằng cách tăng GIỚI HẠN TỐI ĐA (sử dụng 'changeMax') của chỉ số 'hunger' và 'thirst' trong 'statChanges'.
 ${cultivationActionInstruction}
 ${impliedStateChangeInstruction}
 ${newNpcInstruction}

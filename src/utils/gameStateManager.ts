@@ -8,7 +8,7 @@ import {
     DEFAULT_ATTRIBUTE_GROUPS,
     CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
 } from "../constants";
-import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent } from "../types";
+import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent, NamedRealmSystem } from "../types";
 import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
@@ -161,14 +161,32 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
         )).filter((mod): mod is FullMod => mod !== undefined);
     }
     dataToProcess.activeMods = activeMods;
+    
+    // --- Realm System Hydration (with new flexible system) ---
+    const modNamedSystems = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems;
+    const modLegacyRealms = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
 
-    const modRealmSystemFromNamed = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems?.[0].realms;
-    const modRealmSystemFromLegacy = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
-    const modRealms = modRealmSystemFromNamed || modRealmSystemFromLegacy;
-    const realmSystemToUse = modRealms && modRealms.length > 0
-        ? modRealms.map(realm => ({...realm, id: realm.id || realm.name.toLowerCase().replace(/\s+/g, '_')}))
-        : REALM_SYSTEM;
-    dataToProcess.realmSystem = realmSystemToUse;
+    if (modNamedSystems && modNamedSystems.length > 0) {
+        const mainSystem = modNamedSystems[0];
+        dataToProcess.realmSystem = mainSystem.realms.map(r => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
+        dataToProcess.realmSystemInfo = {
+            name: mainSystem.name,
+            resourceName: mainSystem.resourceName || 'Linh Khí',
+            resourceUnit: mainSystem.resourceUnit || 'điểm',
+        };
+    } else {
+        dataToProcess.realmSystem = (modLegacyRealms && modLegacyRealms.length > 0 ? modLegacyRealms : REALM_SYSTEM).map(r => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
+        dataToProcess.realmSystemInfo = {
+            name: 'Hệ Thống Tu Luyện Mặc Định',
+            resourceName: 'Linh Khí',
+            resourceUnit: 'điểm',
+        };
+    }
+     // Fallback for very old saves that don't have this field
+    if (!dataToProcess.realmSystemInfo) {
+        dataToProcess.realmSystemInfo = { name: 'Hệ Thống Tu Luyện Mặc Định', resourceName: 'Linh Khí', resourceUnit: 'điểm' };
+    }
+
 
     // Add attribute system
     const modAttributeSystem = activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem;
@@ -238,12 +256,12 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 
 export const hydrateWorldData = async (
     partialGameState: GameState,
+    setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
     if (partialGameState.isHydrated || !partialGameState.creationData) {
         return partialGameState;
     }
 
-    console.log("Starting background world hydration...");
     const { npcDensity, generationMode } = partialGameState.creationData;
     
     // Create a deep copy to modify safely
@@ -251,18 +269,18 @@ export const hydrateWorldData = async (
 
     // --- 1. Generate family and friends ---
     try {
-        console.log("Hydrating: Generating family...");
+        setLoadingMessage('Đang tạo dựng các mối quan hệ...');
         const familyResult = await generateFamilyAndFriends(hydratedGameState.playerCharacter.identity, hydratedGameState.playerCharacter.currentLocationId, generationMode);
         hydratedGameState.playerCharacter.relationships.push(...familyResult.relationships);
         hydratedGameState.activeNpcs.push(...familyResult.npcs);
     } catch (error) {
-        console.error("Background task [generateFamilyAndFriends] failed:", error);
+        console.error("Hydration task [generateFamilyAndFriends] failed:", error);
         // Don't stop the whole process, just log it. The world can exist without family.
     }
 
     // --- 2. Generate the opening scene ---
     try {
-        console.log("Hydrating: Generating opening scene...");
+        setLoadingMessage('Đang viết nên chương truyện mở đầu...');
         // Use a temporary state for opening scene context that includes the new family members
         const tempStateForOpening = JSON.parse(JSON.stringify(hydratedGameState));
         const openingNarrative = await generateOpeningScene(tempStateForOpening, hydratedGameState.activeWorldId, generationMode);
@@ -274,7 +292,7 @@ export const hydrateWorldData = async (
             hydratedGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
         }
     } catch (error) {
-        console.error("Background task [generateOpeningScene] failed:", error);
+        console.error("Hydration task [generateOpeningScene] failed:", error);
         if (hydratedGameState.storyLog.length > 0) {
              hydratedGameState.storyLog[0].content += "\n\n(Lỗi khi tạo dòng truyện mở đầu, một vài chi tiết có thể bị thiếu.)";
         }
@@ -282,20 +300,19 @@ export const hydrateWorldData = async (
 
     // --- 3. Generate dynamic NPCs to populate the world ---
     try {
-        console.log(`Hydrating: Generating dynamic NPCs with ${npcDensity} density...`);
+        setLoadingMessage(`Đang tạo ra chúng sinh (${npcDensity})...`);
         const existingNames = hydratedGameState.activeNpcs.map(n => n.identity.name);
         const generatedNpcs = await generateDynamicNpcs(npcDensity, existingNames, generationMode);
         hydratedGameState.activeNpcs.push(...generatedNpcs);
-        console.log(`Hydration: Added ${generatedNpcs.length} dynamic NPCs.`);
     } catch (error) {
-        console.error("Background task [generateDynamicNpcs] failed:", error);
+        console.error("Hydration task [generateDynamicNpcs] failed:", error);
     }
     
     // --- 4. Finalize ---
     hydratedGameState.isHydrated = true;
     delete hydratedGameState.creationData; // Clean up the creation data
     
-    console.log("Background world hydration complete.");
+    setLoadingMessage('Hoàn tất sáng thế!');
     
     return sanitizeGameState(hydratedGameState);
 };
@@ -326,14 +343,30 @@ export const createNewGameState = async (
         }
     }
     
-    // Mod Data takes precedence
-    const modRealmSystemFromNamed = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems?.[0].realms;
-    const modRealmSystemFromLegacy = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
-    const modRealms = modRealmSystemFromNamed || modRealmSystemFromLegacy;
-    const realmSystemToUse = modRealms && modRealms.length > 0
-        ? modRealms.map(realm => ({...realm, id: realm.id || realm.name.toLowerCase().replace(/\s+/g, '_')}))
-        : REALM_SYSTEM;
-        
+    // --- Realm System Loading ---
+    const modNamedSystems = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems;
+    const modLegacyRealms = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
+
+    let realmSystemToUse: RealmConfig[];
+    let realmSystemInfoToUse: GameState['realmSystemInfo'];
+
+    if (modNamedSystems && modNamedSystems.length > 0) {
+        const mainSystem = modNamedSystems[0];
+        realmSystemToUse = mainSystem.realms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
+        realmSystemInfoToUse = {
+            name: mainSystem.name,
+            resourceName: mainSystem.resourceName || 'Linh Khí',
+            resourceUnit: mainSystem.resourceUnit || 'điểm',
+        };
+    } else {
+        realmSystemToUse = (modLegacyRealms && modLegacyRealms.length > 0 ? modLegacyRealms : REALM_SYSTEM).map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
+        realmSystemInfoToUse = {
+            name: 'Hệ Thống Tu Luyện Mặc Định',
+            resourceName: 'Linh Khí',
+            resourceUnit: 'điểm',
+        };
+    }
+
     const modAttributeSystem = activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem;
     const attributeSystemToUse = modAttributeSystem || {
         definitions: DEFAULT_ATTRIBUTE_DEFINITIONS,
@@ -515,6 +548,7 @@ export const createNewGameState = async (
         encounteredNpcIds: [],
         activeMods: activeMods,
         realmSystem: realmSystemToUse,
+        realmSystemInfo: realmSystemInfoToUse,
         attributeSystem: attributeSystemToUse,
         activeStory: null,
         combatState: null,

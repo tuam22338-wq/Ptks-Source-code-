@@ -17,7 +17,6 @@ interface ActionBarProps {
     activeTab: ActionType;
     setActiveTab: (tab: ActionType) => void;
     gameState: GameState;
-    handleBreakthrough: () => void;
     onToggleSidebar: () => void;
 }
 
@@ -38,35 +37,15 @@ const QuickActionButton: React.FC<{
     </button>
 );
 
-const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState, handleBreakthrough, onToggleSidebar }) => {
+const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction, disabled, currentLocation, activeTab, setActiveTab, gameState, onToggleSidebar }) => {
     const [inputText, setInputText] = useState('');
     const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
     
     const { openInventoryModal, showNotification } = useGameUIContext();
     const { handlePlayerAction } = useAppContext();
 
-    const { playerCharacter, realmSystem, activeMods } = gameState;
-    const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
-    const currentStageIndex = currentRealm?.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId) ?? -1;
-    let canBreakthrough = false;
-    
-    if (currentRealm && currentStageIndex !== -1) {
-        if (currentStageIndex < currentRealm.stages.length - 1) {
-            const nextStage = currentRealm.stages[currentStageIndex + 1];
-            if (playerCharacter.cultivation.spiritualQi >= nextStage.qiRequired) {
-                canBreakthrough = true;
-            }
-        } else {
-            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
-            if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
-                 const nextRealm = realmSystem[currentRealmIndex + 1];
-                 if (playerCharacter.cultivation.spiritualQi >= nextRealm.stages[0].qiRequired) {
-                     canBreakthrough = true;
-                 }
-            }
-        }
-    }
-
+    const { activeMods } = gameState;
+   
     const buttonsToDisplay = useMemo((): QuickActionButtonConfig[] => {
         let locationSpecificBar = null;
         let modDefaultBar = null;
@@ -161,12 +140,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                                 </QuickActionButton>
                             );
                         })}
-
-                        {canBreakthrough && (
-                            <QuickActionButton onClick={handleBreakthrough} disabled={disabled} title="Đột phá cảnh giới tiếp theo!" className="animate-pulse bg-amber-600/50 border border-amber-400 col-span-full sm:col-span-1">
-                                <GiStairsGoal /> Đột Phá!
-                            </QuickActionButton>
-                        )}
                     </div>
                 )}
             </div>

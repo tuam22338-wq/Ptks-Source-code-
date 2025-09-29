@@ -160,9 +160,13 @@ const WorldSelectionScreen: React.FC = () => {
                             majorEvents: events, factions: factions, initialLocations: mappedLocations, initialNpcs: mappedNpcs,
                             tags: defaultWorldInfo.tags,
                         }],
+// FIX: Add missing 'resourceName' and 'resourceUnit' properties to match the 'NamedRealmSystem' type.
                         namedRealmSystems: [{
                             id: 'default_realm_system', name: 'Hệ Thống Tu Luyện Mặc Định',
-                            description: 'Hệ thống tu luyện gốc của game.', realms: REALM_SYSTEM,
+                            description: 'Hệ thống tu luyện gốc của game.',
+                            resourceName: 'Linh Khí',
+                            resourceUnit: 'điểm',
+                            realms: REALM_SYSTEM,
                         }],
                         attributeSystem: { definitions: DEFAULT_ATTRIBUTE_DEFINITIONS, groups: DEFAULT_ATTRIBUTE_GROUPS }
                     }
@@ -275,10 +279,13 @@ const WorldSelectionScreen: React.FC = () => {
                         initialNpcs: mappedNpcs,
                         tags: defaultWorldInfo.tags,
                     }],
+// FIX: Add missing 'resourceName' and 'resourceUnit' properties to match the 'NamedRealmSystem' type.
                     namedRealmSystems: [{
                         id: 'default_realm_system',
                         name: 'Hệ Thống Tu Luyện Mặc Định',
                         description: 'Hệ thống tu luyện gốc của game.',
+                        resourceName: 'Linh Khí',
+                        resourceUnit: 'điểm',
                         realms: REALM_SYSTEM,
                     }],
                     attributeSystem: {
