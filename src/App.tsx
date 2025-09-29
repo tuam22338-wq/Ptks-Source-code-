@@ -13,6 +13,7 @@ import DeveloperConsole from './components/DeveloperConsole';
 import WorldSelectionScreen from './features/WorldSelection/WorldSelectionScreen';
 import SpecialEffectsOverlay from './components/SpecialEffectsOverlay';
 import { AppProvider, useAppContext } from './contexts/AppContext';
+import NovelistScreen from './features/Novelist/NovelistScreen'; // Import a tela mới
 
 const BackgroundOverlay: React.FC = () => {
     const { state } = useAppContext();
@@ -152,6 +153,8 @@ const AppContent: React.FC = () => {
             return <InfoScreen />;
           case 'worldSelection':
             return <WorldSelectionScreen />;
+          case 'novelist': // Thêm case mới
+            return <NovelistScreen />;
           case 'gamePlay':
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
@@ -162,8 +165,8 @@ const AppContent: React.FC = () => {
         }
     };
     
-    const showHeader = view !== 'mainMenu' && view !== 'gamePlay' && !isLoading && !isMigratingData;
-    const isPanelScreen = !['mainMenu', 'gamePlay'].includes(view);
+    const showHeader = !['mainMenu', 'gamePlay', 'novelist'].includes(view) && !isLoading && !isMigratingData;
+    const isPanelScreen = !['mainMenu', 'gamePlay', 'novelist'].includes(view);
     const containerClasses = isPanelScreen 
         ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col p-4 sm:p-6 lg:p-8'
         : 'w-full flex-grow flex flex-col';

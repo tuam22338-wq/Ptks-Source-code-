@@ -1,4 +1,5 @@
 
+
 import type {
     Gender, Element, StatBonus, CharacterAttributes, PhapBaoRank, ItemQuality, EquipmentSlot, InnateTalentRank,
     Season, TimeOfDay, Weather, TechniqueEffect, CultivationTechniqueType, CurrencyType,
@@ -337,6 +338,7 @@ export interface StoryEntry {
     id: number;
     type: 'narrative' | 'dialogue' | 'action-result' | 'system' | 'player-action' | 'player-dialogue' | 'combat' | 'system-notification';
     content: string;
+    isPending?: boolean;
 }
 
 export interface Rumor {

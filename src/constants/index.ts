@@ -6,6 +6,7 @@ export * from '../data/cultivationPaths';
 export * from '../data/realmSystem';
 export * from '../data/cave';
 export * from '../data/attributes';
+export * from '../data/attributeTemplates';
 export * from '../data/uiIcons';
 export * from './character';
 export * from './game';

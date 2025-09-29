@@ -14,7 +14,8 @@ import type {
     GraphEdge,
     RagSource,
     RagEmbedding,
-    ModInLibrary
+    ModInLibrary,
+    Novel
 } from '../types';
 
 export interface DbSaveSlot {
@@ -43,13 +44,13 @@ export class MyDatabase extends Dexie {
   graphEdges!: Table<GraphEdge, number>;
   ragSources!: Table<RagSource, string>; // primary key is id
   ragEmbeddings!: Table<RagEmbedding, number>; // auto-incrementing primary key
-  assetCache!: Table<{id: string, data: any}, string>; // New table for AI-generated assets
+  assetCache!: Table<{id: string, data: any}, string>;
+  novels!: Table<Novel, number>; // Bảng mới cho tính năng Tiểu Thuyết Gia AI
 
   constructor() {
     super('PhongThanKySuDB');
-    // Version 4 adds RAG tables and the new assetCache
-    // FIX: Cast 'this' to Dexie to access inherited methods in subclass constructor.
-    (this as Dexie).version(4).stores({
+    // Version 5 thêm bảng novels
+    (this as Dexie).version(5).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
@@ -61,9 +62,9 @@ export class MyDatabase extends Dexie {
       ragSources: 'id, type, isEnabled',
       ragEmbeddings: '++id, sourceId',
       assetCache: 'id',
+      novels: '++id, title, lastModified', // Schema cho bảng novels
     });
-    // This will upgrade from version 3 to 4, creating the new tables.
-    // FIX: Cast 'this' to Dexie to access inherited methods in subclass constructor.
+    // This will upgrade from version 4 to 5, creating the new table.
     (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });
@@ -205,7 +206,6 @@ export const saveModToLibrary = async (mod: ModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: ModInLibrary[]): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
@@ -266,7 +266,6 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
 export const exportAllData = async (): Promise<Record<string, any>> => {
   const data: Record<string, any> = {};
   const allTables = db.getTables();
-  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
   await (db as Dexie).transaction('r', allTables, async () => {
     for (const table of allTables) {
       data[table.name] = await table.toArray();
@@ -298,7 +297,6 @@ export const importAllData = async (data: Record<string, any>): Promise<void> =>
   }
 
   const allTables = db.getTables();
-  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
   await (db as Dexie).transaction('rw', allTables, async () => {
     // Clear all tables first for a clean import
     await Promise.all(allTables.map(table => table.clear()));
@@ -333,7 +331,6 @@ export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<numb
 };
 
 export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.memoryFragments, db.graphEdges, async () => {
         await db.memoryFragments.where('slotId').equals(slotId).delete();
         await db.graphEdges.where('slotId').equals(slotId).delete();
@@ -372,7 +369,6 @@ export const getRelevantMemories = async (
   // Deduplicate and sort
   const uniqueFragments = Array.from(new Map(allFragments.map(f => [f.id, f])).values());
   
-  // FIX: Explicitly type sort function parameters to resolve 'unknown' type error.
   uniqueFragments.sort((a: MemoryFragment, b: MemoryFragment) => {
       if (a.gameDate.year !== b.gameDate.year) return b.gameDate.year - a.gameDate.year;
       const seasonOrder = ['Xuân', 'Hạ', 'Thu', 'Đông'];

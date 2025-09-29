@@ -3,6 +3,7 @@ import type { StoryEntry, NPC, GameState } from '../../../types';
 import { FaVolumeUp, FaTimes } from 'react-icons/fa';
 import { UI_ICONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
+import LoadingSpinner from '../../../components/LoadingSpinner';
 
 // --- NpcTooltip Component ---
 const AttributeRow: React.FC<{ label: string; value: string | number; icon: React.ElementType; description?: string; }> = ({ label, value, icon: Icon, description }) => (
@@ -170,12 +171,14 @@ const StoryLog: React.FC<{
 
                     case 'player-action':
                     case 'player-dialogue':
+                        const pendingClass = entry.isPending ? 'opacity-60' : '';
                         return (
-                            <div key={entry.id} style={animationStyle} className="group relative flex justify-end ml-10 sm:ml-20 animate-fade-in">
-                                <div className="bg-[var(--player-bubble-bg-color)] p-3 rounded-xl rounded-br-none">
+                            <div key={entry.id} style={animationStyle} className={`group relative flex justify-end ml-10 sm:ml-20 animate-fade-in transition-opacity ${pendingClass}`}>
+                                <div className="bg-[var(--player-bubble-bg-color)] p-3 rounded-xl rounded-br-none flex items-center gap-2">
                                     <p className={`text-lg leading-relaxed ${entry.type === 'player-action' ? 'text-lime-300 italic' : 'text-cyan-200'}`}>
                                         {renderContent()}
                                     </p>
+                                    {entry.isPending && <div className="w-4 h-4 border-2 border-dashed rounded-full animate-spin border-gray-400"></div>}
                                 </div>
                                  {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -left-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
@@ -185,10 +188,20 @@ const StoryLog: React.FC<{
                     case 'action-result':
                     case 'combat':
                     default:
+                        // Streamed narrative will have an empty content initially
+                        if (entry.content === '') {
+                            return (
+                                <div key={entry.id} className="flex justify-start mr-10 sm:mr-20">
+                                    <div className="bg-[var(--npc-bubble-bg-color)] p-3 rounded-xl rounded-bl-none">
+                                        <LoadingSpinner size="sm" />
+                                    </div>
+                                </div>
+                            );
+                        }
                         return (
                             <div key={entry.id} style={animationStyle} className="group relative flex justify-start mr-10 sm:mr-20 animate-fade-in">
                                 <div className="bg-[var(--npc-bubble-bg-color)] p-3 rounded-xl rounded-bl-none">
-                                    <p className="text-amber-200 text-lg leading-relaxed font-bold">{renderContent()}</p>
+                                    <p className="text-amber-200 text-lg leading-relaxed font-bold whitespace-pre-wrap">{renderContent()}</p>
                                 </div>
                                 {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>

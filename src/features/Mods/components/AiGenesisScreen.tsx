@@ -1,5 +1,6 @@
 
-import React, { useState, useCallback, useRef } from 'react';
+
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { FaArrowLeft, FaFileUpload, FaBrain, FaBolt, FaSearch, FaInfinity, FaDownload } from 'react-icons/fa';
 import { generateWorldFromText, summarizeLargeTextForWorldGen } from '../../../services/geminiService';
 import type { FullMod } from '../../../types';
@@ -20,8 +21,8 @@ const modeOptions: { id: GenerationMode; label: string; icon: React.ElementType;
 ];
 
 const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) => {
-    const { state, handleSettingChange } = useAppContext();
-    const { settings } = state;
+    const { state, handleSettingChange, dispatch } = useAppContext();
+    const { settings, pdfTextForGenesis } = state;
 
     const [fileContent, setFileContent] = useState<string>('');
     const [fileName, setFileName] = useState<string>('');
@@ -29,6 +30,14 @@ const AiGenesisScreen: React.FC<AiGenesisScreenProps> = ({ onBack, onInstall }) 
     const [error, setError] = useState<string | null>(null);
     const [generationMode, setGenerationMode] = useState<GenerationMode>('fast');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (pdfTextForGenesis) {
+            setFileContent(pdfTextForGenesis);
+            setFileName('Đã chuyển đổi từ PDF');
+            dispatch({ type: 'SET_PDF_TEXT_FOR_GENESIS', payload: null });
+        }
+    }, [pdfTextForGenesis, dispatch]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];

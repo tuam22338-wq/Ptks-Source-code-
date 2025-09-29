@@ -1,6 +1,6 @@
 import React, { memo, useRef } from 'react';
 import type { GameSettings } from '../../../types';
-import { FaDownload, FaUpload, FaExclamationTriangle, FaVial, FaTrophy } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaExclamationTriangle, FaVial, FaTrophy, FaPenFancy } from 'react-icons/fa';
 import * as db from '../../../services/dbService';
 import { AI_SYNC_MODES } from '../../../constants';
 
@@ -124,6 +124,11 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                         Đây là tính năng mô phỏng. Trong phiên bản thực tế, đây sẽ là gói trả phí để ủng hộ nhà phát triển.
                     </p>
                 </div>
+            </SettingsRow>
+             <SettingsRow label="Công Cụ Sáng Tạo" description="Mở công cụ viết tiểu thuyết bằng AI, tách biệt hoàn toàn với trò chơi.">
+                 <button onClick={() => (window as any).appContext.handleNavigate('novelist')} className="px-4 py-2 bg-purple-800 text-white border border-purple-600 rounded-lg font-semibold transition-colors duration-200 hover:bg-purple-700 flex items-center gap-2">
+                    <FaPenFancy /> Mở Tiểu Thuyết Gia AI
+                </button>
             </SettingsRow>
             <SettingsRow label="Chế độ Đồng bộ AI" description="Chọn cách AI đồng bộ hóa trạng thái game. 'Thiên Cơ' được khuyến khích để đảm bảo tính nhất quán.">
                 <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">

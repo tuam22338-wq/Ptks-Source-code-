@@ -246,19 +246,56 @@ export const hydrateWorldData = async (
     console.log("Starting background world hydration...");
     const { npcDensity, generationMode } = partialGameState.creationData;
     
-    const existingNames = partialGameState.activeNpcs.map(n => n.identity.name);
-    
-    console.log(`Hydrating world with ${npcDensity} density...`);
-    const generatedNpcs = await generateDynamicNpcs(npcDensity, existingNames, generationMode);
-    
-    // Create a copy to modify
+    // Create a deep copy to modify safely
     const hydratedGameState: GameState = JSON.parse(JSON.stringify(partialGameState));
+
+    // --- 1. Generate family and friends ---
+    try {
+        console.log("Hydrating: Generating family...");
+        const familyResult = await generateFamilyAndFriends(hydratedGameState.playerCharacter.identity, hydratedGameState.playerCharacter.currentLocationId, generationMode);
+        hydratedGameState.playerCharacter.relationships.push(...familyResult.relationships);
+        hydratedGameState.activeNpcs.push(...familyResult.npcs);
+    } catch (error) {
+        console.error("Background task [generateFamilyAndFriends] failed:", error);
+        // Don't stop the whole process, just log it. The world can exist without family.
+    }
+
+    // --- 2. Generate the opening scene ---
+    try {
+        console.log("Hydrating: Generating opening scene...");
+        // Use a temporary state for opening scene context that includes the new family members
+        const tempStateForOpening = JSON.parse(JSON.stringify(hydratedGameState));
+        const openingNarrative = await generateOpeningScene(tempStateForOpening, hydratedGameState.activeWorldId, generationMode);
+        
+        // Replace the placeholder intro with the real one
+        if (hydratedGameState.storyLog.length > 0) {
+             hydratedGameState.storyLog[0] = { ...hydratedGameState.storyLog[0], content: openingNarrative };
+        } else {
+            hydratedGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
+        }
+    } catch (error) {
+        console.error("Background task [generateOpeningScene] failed:", error);
+        if (hydratedGameState.storyLog.length > 0) {
+             hydratedGameState.storyLog[0].content += "\n\n(Lỗi khi tạo dòng truyện mở đầu, một vài chi tiết có thể bị thiếu.)";
+        }
+    }
+
+    // --- 3. Generate dynamic NPCs to populate the world ---
+    try {
+        console.log(`Hydrating: Generating dynamic NPCs with ${npcDensity} density...`);
+        const existingNames = hydratedGameState.activeNpcs.map(n => n.identity.name);
+        const generatedNpcs = await generateDynamicNpcs(npcDensity, existingNames, generationMode);
+        hydratedGameState.activeNpcs.push(...generatedNpcs);
+        console.log(`Hydration: Added ${generatedNpcs.length} dynamic NPCs.`);
+    } catch (error) {
+        console.error("Background task [generateDynamicNpcs] failed:", error);
+    }
     
-    hydratedGameState.activeNpcs.push(...generatedNpcs);
+    // --- 4. Finalize ---
     hydratedGameState.isHydrated = true;
-    delete hydratedGameState.creationData; // Clean up after hydration
+    delete hydratedGameState.creationData; // Clean up the creation data
     
-    console.log(`World hydration complete. Added ${generatedNpcs.length} dynamic NPCs.`);
+    console.log("Background world hydration complete.");
     
     return sanitizeGameState(hydratedGameState);
 };
@@ -434,27 +471,9 @@ export const createNewGameState = async (
         },
     };
     
-    setLoadingMessage('AI đang kiến tạo người thân...');
-    const familyResult = await generateFamilyAndFriends(playerCharacter.identity, startingLocation.id, generationMode);
+    const allNpcs = [...initialNpcsFromData];
     
-    const { npcs: familyNpcs, relationships: familyRelationships } = familyResult;
-    playerCharacter.relationships = familyRelationships;
-
-    const allNpcs = [...initialNpcsFromData, ...familyNpcs];
-    
-    const tempGameStateForOpening = {
-        ...({} as GameState),
-        playerCharacter,
-        activeNpcs: allNpcs,
-        discoveredLocations: [startingLocation],
-        attributeSystem: attributeSystemToUse,
-        realmSystem: realmSystemToUse,
-    };
-    setLoadingMessage('AI đang viết nên chương truyện mở đầu cho bạn...');
-    const openingNarrative = await generateOpeningScene(tempGameStateForOpening, activeWorldId, generationMode);
-    setLoadingMessage('Đang sắp đặt lại dòng thời gian...');
-
-    const initialStory = [ { id: 1, type: 'narrative' as const, content: openingNarrative } ];
+    const initialStory = [ { id: 1, type: 'narrative' as const, content: `Bạn bắt đầu hành trình của mình tại ${startingLocation.name}. Thế giới xung quanh đang dần được kiến tạo...` } ];
     const initialGameDate: GameDate = {
         era: eraName,
         year: startingYear,

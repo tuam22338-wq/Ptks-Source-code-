@@ -8,7 +8,7 @@ import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
 import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service';
 
-export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection';
+export type View = 'mainMenu' | 'saveSlots' | 'characterCreation' | 'settings' | 'mods' | 'gamePlay' | 'thoiThe' | 'info' | 'worldSelection' | 'novelist';
 
 export interface GameStartData {
     identity: PlayerCharacter['identity'];
@@ -75,6 +75,10 @@ const initialState: AppState = {
     backgrounds: { status: {}, urls: {} },
     installedMods: [],
     modBeingEdited: null,
+    pdfTextForGenesis: null,
+    // State for Novelist AI
+    novels: [],
+    activeNovelId: null,
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
@@ -473,7 +477,12 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
 
-        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Đạo đang suy diễn...' }});
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Cơ đang suy diễn...' }});
+        dispatch({ type: 'PLAYER_ACTION_PENDING', payload: { text, type } });
+
+        const onStreamUpdate = useCallback((content: string) => {
+            dispatch({ type: 'STREAMING_NARRATIVE_UPDATE', payload: content });
+        }, [dispatch]);
 
         try {
             const finalState = await processPlayerAction(
@@ -484,20 +493,28 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 state.settings, 
                 showNotification, 
                 abortControllerRef.current.signal,
-                state.currentSlotId
+                state.currentSlotId,
+                onStreamUpdate
             );
-            dispatch({ type: 'UPDATE_GAME_STATE', payload: finalState });
+            dispatch({ type: 'PLAYER_ACTION_RESOLVED', payload: finalState });
         } catch (error: any) {
             console.error("AI story generation failed:", error);
             const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${error.message}`;
+            // To properly handle the error, we need a way to resolve the pending state
+            // and show the error.
             dispatch({
                 type: 'UPDATE_GAME_STATE',
                 payload: (currentState) => {
                     if (!currentState) return null;
-                    const lastId = currentState.storyLog.length > 0 ? currentState.storyLog[currentState.storyLog.length - 1].id : 0;
-                    const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
-                    const errorEntry: StoryEntry = { id: lastId + 2, type: 'system', content: errorMessage };
-                    return { ...currentState, storyLog: [...currentState.storyLog, playerActionEntry, errorEntry] };
+                    const errorEntry: StoryEntry = { id: Date.now(), type: 'system', content: errorMessage };
+                    const finalLog = currentState.storyLog.map(entry => {
+                        if (entry.isPending) return { ...entry, isPending: false };
+                        // Remove the empty AI placeholder
+                        if (entry.type === 'narrative' && entry.content === '') return null;
+                        return entry;
+                    }).filter(Boolean) as StoryEntry[];
+                    
+                    return { ...currentState, storyLog: [...finalLog, errorEntry] };
                 }
             });
         } finally {

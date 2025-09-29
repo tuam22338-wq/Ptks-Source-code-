@@ -15,7 +15,9 @@ export const processPlayerAction = async (
     settings: GameSettings,
     showNotification: (message: string) => void,
     abortSignal: AbortController['signal'],
-    currentSlotId: number
+    currentSlotId: number,
+    // FIX: Add missing 'onStreamUpdate' parameter to support real-time UI updates.
+    onStreamUpdate: (content: string) => void
 ): Promise<GameState> => {
     
     // --- GIAI ĐOẠN 0: CHUẨN BỊ & MÔ PHỎNG THẾ GIỚI ---
@@ -84,6 +86,31 @@ export const processPlayerAction = async (
     for await (const chunk of stream) {
         if (abortSignal.aborted) throw new Error("Hành động đã bị hủy.");
         fullResponseJsonString += chunk;
+
+        // FIX: Implement logic to extract narrative from the streaming JSON and update the UI.
+        // This provides a real-time typing effect for the AI's response.
+        const narrativeKey = '"narrative": "';
+        const startIndex = fullResponseJsonString.indexOf(narrativeKey);
+        
+        if (startIndex !== -1) {
+            const contentStartIndex = startIndex + narrativeKey.length;
+            let content = fullResponseJsonString.substring(contentStartIndex);
+            
+            // The JSON is not complete, so we cannot reliably parse it.
+            // We just clean up the end a bit for a smoother streaming display.
+            const intentKey = '","mechanicalIntent":';
+            const intentIndex = content.lastIndexOf(intentKey);
+            if (intentIndex !== -1) {
+                content = content.substring(0, intentIndex);
+            }
+            
+            const unescapedContent = content
+                .replace(/\\n/g, '\n')
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\');
+            
+            onStreamUpdate(unescapedContent);
+        }
     }
 
     let aiPayload: AIResponsePayload;

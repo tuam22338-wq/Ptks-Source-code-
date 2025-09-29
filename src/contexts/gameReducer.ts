@@ -1,4 +1,4 @@
-import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary, FullMod } from '../types';
+import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary, FullMod, StoryEntry, Novel } from '../types';
 import type { View } from './AppContext';
 import { sanitizeGameState } from '../utils/gameStateSanitizer';
 
@@ -18,6 +18,10 @@ export interface AppState {
     backgrounds: BackgroundState;
     installedMods: ModInLibrary[];
     modBeingEdited: FullMod | null;
+    pdfTextForGenesis: string | null;
+    // State for Novelist AI feature
+    novels: Novel[];
+    activeNovelId: number | null;
 }
 
 // Define action types
@@ -42,7 +46,15 @@ export type Action =
   | { type: 'ADD_INSTALLED_MOD'; payload: ModInLibrary }
   | { type: 'UPDATE_INSTALLED_MODS'; payload: ModInLibrary[] }
   | { type: 'REMOVE_INSTALLED_MOD'; payload: string } // payload is modId
-  | { type: 'SET_MOD_FOR_EDITING'; payload: FullMod | null };
+  | { type: 'SET_MOD_FOR_EDITING'; payload: FullMod | null }
+  | { type: 'PLAYER_ACTION_PENDING'; payload: { text: string; type: 'say' | 'act' } }
+  | { type: 'STREAMING_NARRATIVE_UPDATE'; payload: string }
+  | { type: 'PLAYER_ACTION_RESOLVED'; payload: GameState }
+  | { type: 'SET_PDF_TEXT_FOR_GENESIS'; payload: string | null }
+  // Actions for Novelist AI
+  | { type: 'SET_NOVELS'; payload: Novel[] }
+  | { type: 'SET_ACTIVE_NOVEL_ID'; payload: number | null }
+  | { type: 'UPDATE_NOVEL'; payload: Novel };
 
 
 // The reducer function
@@ -119,7 +131,6 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             }};
 
         case 'LOAD_BACKGROUND_ERROR':
-            // FIX: Corrected the nested object update syntax. The original syntax was invalid and caused a type error.
             return { ...state, backgrounds: { ...state.backgrounds, status: { ...state.backgrounds.status, [action.payload.themeId]: 'error' } } };
             
         case 'SET_ALL_CACHED_BACKGROUNDS':
@@ -144,6 +155,68 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
 
         case 'SET_MOD_FOR_EDITING':
             return { ...state, modBeingEdited: action.payload };
+
+        case 'PLAYER_ACTION_PENDING':
+            if (!state.gameState) return state;
+            const lastId = state.gameState.storyLog.length > 0 ? state.gameState.storyLog[state.gameState.storyLog.length - 1].id : 0;
+            const playerActionEntry: StoryEntry = {
+                id: lastId + 1,
+                type: action.payload.type === 'say' ? 'player-dialogue' : 'player-action',
+                content: action.payload.text,
+                isPending: true,
+            };
+            const aiNarrativePlaceholder: StoryEntry = {
+                id: lastId + 2,
+                type: 'narrative',
+                content: '', // Start empty for streaming
+            };
+            return {
+                ...state,
+                gameState: {
+                    ...state.gameState,
+                    storyLog: [...state.gameState.storyLog, playerActionEntry, aiNarrativePlaceholder],
+                },
+            };
+
+        case 'STREAMING_NARRATIVE_UPDATE':
+            if (!state.gameState) return state;
+            const newStoryLog = [...state.gameState.storyLog];
+            const lastEntry = newStoryLog[newStoryLog.length - 1];
+            if (lastEntry) {
+                // Update the placeholder with streamed content
+                lastEntry.content = action.payload;
+            }
+            return {
+                ...state,
+                gameState: {
+                    ...state.gameState,
+                    storyLog: newStoryLog,
+                },
+            };
+        
+        case 'PLAYER_ACTION_RESOLVED':
+            return {
+                ...state,
+                gameState: action.payload,
+            };
+        
+        case 'SET_PDF_TEXT_FOR_GENESIS':
+            return { ...state, pdfTextForGenesis: action.payload };
+
+        case 'SET_NOVELS':
+            return { ...state, novels: action.payload };
+
+        case 'SET_ACTIVE_NOVEL_ID':
+            return { ...state, activeNovelId: action.payload };
+
+        case 'UPDATE_NOVEL':
+            const index = state.novels.findIndex(n => n.id === action.payload.id);
+            if (index > -1) {
+                const newNovels = [...state.novels];
+                newNovels[index] = action.payload;
+                return { ...state, novels: newNovels };
+            }
+            return { ...state, novels: [...state.novels, action.payload] };
 
         default:
             return state;

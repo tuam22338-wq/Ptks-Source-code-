@@ -4,7 +4,7 @@ import { generateWorldFromPrompts } from '../../../services/geminiService';
 // FIX: Add QuickActionButtonConfig to type imports
 import type { FullMod, ModInfo, ModAttributeSystem, NamedRealmSystem, QuickActionBarConfig, QuickActionButtonConfig, Faction, ModLocation, ModNpc, AttributeDefinition, AttributeGroupDefinition, RealmConfig, MajorEvent, ModForeshadowedEvent } from '../../../types';
 import LoadingScreen from '../../../components/LoadingScreen';
-import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS, DEFAULT_BUTTONS } from '../../../constants';
+import { DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM, UI_ICONS, DEFAULT_BUTTONS, ATTRIBUTE_TEMPLATES } from '../../../constants';
 import AttributeEditorModal from './AttributeEditorModal';
 import RealmEditorModal from './RealmEditorModal';
 import QuickActionButtonEditorModal from './QuickActionButtonEditorModal';
@@ -28,6 +28,37 @@ const Field: React.FC<{ label: string; description: string; children: React.Reac
         {children}
     </div>
 );
+
+const TemplateSelectionModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onSelect: (system: ModAttributeSystem) => void;
+}> = ({ isOpen, onClose, onSelect }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold p-4 border-b border-gray-700 text-amber-300">Chọn một Mẫu Hệ Thống Thuộc Tính</h3>
+                <div className="p-4 overflow-y-auto space-y-3">
+                    {ATTRIBUTE_TEMPLATES.map(template => (
+                        <button
+                            key={template.id}
+                            onClick={() => onSelect(template.system)}
+                            className="w-full text-left p-4 bg-black/20 rounded-lg border border-gray-700/60 hover:bg-gray-800/50 hover:border-cyan-400/50 transition-colors"
+                        >
+                            <h4 className="font-bold text-lg text-cyan-300">{template.name}</h4>
+                            <p className="text-sm text-gray-400 mt-1">{template.description}</p>
+                        </button>
+                    ))}
+                </div>
+                <div className="p-4 border-t border-gray-700 mt-auto">
+                    <button onClick={onClose} className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500">Đóng</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onInstall }) => {
     const { state } = useAppContext();
@@ -83,6 +114,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const [editingMajorEvent, setEditingMajorEvent] = useState<MajorEvent | null>(null);
     const [isForeshadowedEventModalOpen, setForeshadowedEventModalOpen] = useState(false);
     const [editingForeshadowedEvent, setEditingForeshadowedEvent] = useState<ModForeshadowedEvent | null>(null);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 
 
      useEffect(() => {
@@ -259,6 +291,11 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         setQuickActionModalOpen(false); setEditingQuickAction(null);
     };
 
+    const handleSelectTemplate = (system: ModAttributeSystem) => {
+        setAttributeSystem(system);
+        setIsTemplateModalOpen(false);
+    };
+
     if (isLoading) return <LoadingScreen message="AI đang dệt nên thế giới của bạn..." isGeneratingWorld={true} />;
 
     return (
@@ -272,6 +309,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
              <QuickActionButtonEditorModal isOpen={isQuickActionModalOpen} onClose={() => setQuickActionModalOpen(false)} onSave={handleSaveQuickAction} button={editingQuickAction} />
              <MajorEventEditorModal isOpen={isMajorEventModalOpen} onClose={() => setMajorEventModalOpen(false)} onSave={handleSaveMajorEvent} event={editingMajorEvent} />
              <ForeshadowedEventEditorModal isOpen={isForeshadowedEventModalOpen} onClose={() => setForeshadowedEventModalOpen(false)} onSave={handleSaveForeshadowedEvent} event={editingForeshadowedEvent} />
+             <TemplateSelectionModal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} onSelect={handleSelectTemplate} />
 
 
             <div className="flex-shrink-0 mb-4">
@@ -397,6 +435,9 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                             {/* Attribute System */}
                             <div>
                                 <h4 className="font-semibold text-gray-300 mb-2">Hệ Thống Thuộc Tính</h4>
+                                <button onClick={() => setIsTemplateModalOpen(true)} className="w-full text-center p-2 mb-3 bg-blue-900/30 rounded border border-blue-500/30 text-blue-300 hover:bg-blue-900/50">
+                                    Tải Mẫu Hệ Thống Thuộc Tính...
+                                </button>
                                 <div className="space-y-3">
                                     {attributeSystem.groups.map(group => (
                                         <div key={group.id} className="p-2 bg-black/30 rounded">
