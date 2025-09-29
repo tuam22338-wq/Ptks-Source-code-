@@ -447,7 +447,7 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         
         Nhiệm vụ của bạn là:
         a. **GIỮ NGUYÊN** 5 thuộc tính cốt lõi trên.
-        b. **SÁNG TẠO** thêm các thuộc tính PRIMARY và SECONDARY mới phù hợp với lore được cung cấp.
+        b. **SÁNG TẠO** thêm các thuộc tính PRIMARY và SECONDARY mới phù hợp với lore được cung cấp. NẾU thể loại của lore rõ ràng KHÔNG PHẢI là tu tiên (ví dụ: khoa huyễn, võ hiệp), hãy mạnh dạn THAY THẾ các thuộc tính tu tiên mặc định (trừ 5 thuộc tính cốt lõi) bằng những thuộc tính phù hợp hơn.
         c. **TỔ CHỨC** tất cả thuộc tính (cũ và mới) vào các \`groups\` một cách hợp lý. Nếu lore là khoa huyễn, hãy tạo các nhóm như 'Cybernetics', 'Năng Lượng Lõi'.
     7.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
     8.  **\`tagDefinitions\` (Tùy chọn):** Nếu bạn tạo ra một tag rất độc đáo và mới lạ (ví dụ 'Vin-Corp Dystopia' cho thế giới Vingroup cai trị), hãy tạo một định nghĩa cho nó. Đối với các tag phổ biến như 'Huyền Huyễn', 'Hắc Ám', không cần tạo định nghĩa.
