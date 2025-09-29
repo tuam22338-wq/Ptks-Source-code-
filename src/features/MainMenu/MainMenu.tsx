@@ -1,6 +1,7 @@
 
+
 import React, { memo, useState, useEffect } from 'react';
-import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy } from 'react-icons/fa';
+import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy, FaPenFancy } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import UpdateModal from './UpdateModal';
@@ -59,11 +60,12 @@ const menuItems = [
     { label: "Hành Trình Mới", icon: GiScrollUnfurled, view: 'saveSlots' as const, delay: 500 },
     { label: "Thế Giới", icon: FaGlobe, view: 'worldSelection' as const, delay: 650 },
     { label: "Mods", icon: FaTools, view: 'mods' as const, delay: 800 },
-    { label: "Thời Thế", icon: FaBookOpen, view: 'thoiThe' as const, delay: 950 },
-    { label: "Cài Đặt", icon: FaCog, view: 'settings' as const, delay: 1100 },
-    { label: "Thông Tin", icon: FaInfoCircle, view: 'info' as const, delay: 1250 },
-    { label: "Discord", icon: FaDiscord, href: 'https://discord.gg/sPq3Y37eR7', delay: 1400 },
-    { label: "Ủng Hộ", icon: FaHeart, action: 'donate' as const, delay: 1550 },
+    { label: "Tiểu Thuyết Gia AI", icon: FaPenFancy, view: 'novelist' as const, delay: 950 },
+    { label: "Thời Thế", icon: FaBookOpen, view: 'thoiThe' as const, delay: 1100 },
+    { label: "Cài Đặt", icon: FaCog, view: 'settings' as const, delay: 1250 },
+    { label: "Thông Tin", icon: FaInfoCircle, view: 'info' as const, delay: 1400 },
+    { label: "Discord", icon: FaDiscord, href: 'https://discord.gg/sPq3Y37eR7', delay: 1550 },
+    { label: "Ủng Hộ", icon: FaHeart, action: 'donate' as const, delay: 1700 },
 ];
 
 const MainMenu: React.FC = () => {
@@ -133,7 +135,7 @@ const MainMenu: React.FC = () => {
             </div>
         </div>
 
-        <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1700ms' }}>
+        <div className="absolute bottom-4 left-4 text-xs w-64 animate-menu-item" style={{ animationDelay: '1850ms' }}>
             <div className="flex items-center justify-between gap-2 text-text-muted mb-1">
                 <div className="flex items-center gap-1">
                     <FaDatabase />
