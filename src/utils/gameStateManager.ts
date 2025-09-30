@@ -9,7 +9,7 @@ import {
     CURRENT_GAME_VERSION, DIFFICULTY_LEVELS
 } from "../constants";
 import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent, NamedRealmSystem } from "../types";
-import { generateFamilyAndFriends, generateOpeningScene, generateDynamicNpcs } from '../services/geminiService';
+import { generateInitialWorldDetails } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
 import type { GameStartData } from '../contexts/AppContext';
@@ -261,53 +261,35 @@ export const hydrateWorldData = async (
     if (partialGameState.isHydrated || !partialGameState.creationData) {
         return partialGameState;
     }
-
-    const { npcDensity, generationMode } = partialGameState.creationData;
     
     // Create a deep copy to modify safely
     const hydratedGameState: GameState = JSON.parse(JSON.stringify(partialGameState));
 
-    // --- 1. Generate family and friends ---
     try {
-        setLoadingMessage('Đang tạo dựng các mối quan hệ...');
-        const familyResult = await generateFamilyAndFriends(hydratedGameState.playerCharacter.identity, hydratedGameState.playerCharacter.currentLocationId, generationMode);
-        hydratedGameState.playerCharacter.relationships.push(...familyResult.relationships);
-        hydratedGameState.activeNpcs.push(...familyResult.npcs);
-    } catch (error) {
-        console.error("Hydration task [generateFamilyAndFriends] failed:", error);
-        // Don't stop the whole process, just log it. The world can exist without family.
-    }
-
-    // --- 2. Generate the opening scene ---
-    try {
-        setLoadingMessage('Đang viết nên chương truyện mở đầu...');
-        // Use a temporary state for opening scene context that includes the new family members
-        const tempStateForOpening = JSON.parse(JSON.stringify(hydratedGameState));
-        const openingNarrative = await generateOpeningScene(tempStateForOpening, hydratedGameState.activeWorldId, generationMode);
+        setLoadingMessage('Đang tạo dựng thế giới, chúng sinh và viết nên chương mở đầu...');
         
+        const { npcs, relationships, openingNarrative } = await generateInitialWorldDetails(
+            hydratedGameState,
+            hydratedGameState.creationData.generationMode
+        );
+        
+        hydratedGameState.playerCharacter.relationships.push(...relationships);
+        hydratedGameState.activeNpcs.push(...npcs);
+
         // Replace the placeholder intro with the real one
         if (hydratedGameState.storyLog.length > 0) {
              hydratedGameState.storyLog[0] = { ...hydratedGameState.storyLog[0], content: openingNarrative };
         } else {
             hydratedGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
         }
+
     } catch (error) {
-        console.error("Hydration task [generateOpeningScene] failed:", error);
+        console.error("Hydration task [generateInitialWorldDetails] failed:", error);
         if (hydratedGameState.storyLog.length > 0) {
-             hydratedGameState.storyLog[0].content += "\n\n(Lỗi khi tạo dòng truyện mở đầu, một vài chi tiết có thể bị thiếu.)";
+             hydratedGameState.storyLog[0].content += "\n\n(Lỗi khi tạo thế giới, một vài chi tiết có thể bị thiếu.)";
         }
     }
 
-    // --- 3. Generate dynamic NPCs to populate the world ---
-    try {
-        setLoadingMessage(`Đang tạo ra chúng sinh (${npcDensity})...`);
-        const existingNames = hydratedGameState.activeNpcs.map(n => n.identity.name);
-        const generatedNpcs = await generateDynamicNpcs(npcDensity, existingNames, generationMode);
-        hydratedGameState.activeNpcs.push(...generatedNpcs);
-    } catch (error) {
-        console.error("Hydration task [generateDynamicNpcs] failed:", error);
-    }
-    
     // --- 4. Finalize ---
     hydratedGameState.isHydrated = true;
     delete hydratedGameState.creationData; // Clean up the creation data

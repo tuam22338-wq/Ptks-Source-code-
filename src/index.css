@@ -156,6 +156,33 @@
   --bg-interactive-hover: rgba(68, 64, 60, 0.7);
   --border-subtle: rgba(120, 113, 108, 0.4);
 }
+.theme-thon-phe-tinh-ha {
+  --font-family-body: 'Noto Serif', sans-serif;
+  --font-family-title: 'ZCOOL XiaoWei', serif;
+  --font-family-calligraphy: 'Ma Shan Zheng', cursive;
+  --bg-color: #000000;
+  --text-color: #f0f0f0;
+  --text-muted-color: #7a7a7a;
+  --primary-accent-color: #e53e3e; /* Crimson Red */
+  --primary-accent-text-color: #ffffff;
+  --secondary-accent-color: #00ffff; /* Cyan */
+  --border-color: #555555;
+  --panel-bg-color: rgba(10, 0, 0, 0.7);
+  --panel-bg-image: none;
+  --panel-border-image: linear-gradient(to right, #e53e3e, #ff0000, #e53e3e) 1;
+  --button-primary-bg: #e53e3e;
+  --button-primary-hover-bg: #ff6363;
+  --button-primary-border: #9b2c2c;
+  --button-box-shadow: 0 0 15px rgba(229, 62, 62, 0.5);
+  --primary-glow-color: rgba(229, 62, 62, 0.4);
+  --input-focus-ring-color: #00ffff;
+  --bg-subtle: rgba(10, 0, 0, 0.85);
+  --bg-interactive: rgba(30, 0, 0, 0.7);
+  --bg-interactive-hover: rgba(50, 0, 0, 0.7);
+  --border-subtle: rgba(229, 62, 62, 0.4);
+  --player-bubble-bg-color: rgb(0, 30, 30 / 0.8);
+  --npc-bubble-bg-color: rgb(30, 0, 0 / 0.6);
+}
 .theme-cyber-cultivation-city {
   --font-family-body: 'Noto Serif', sans-serif;
   --font-family-title: 'ZCOOL XiaoWei', serif;

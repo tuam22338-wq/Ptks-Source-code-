@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaDownload, FaBolt } from 'react-icons/fa';
+// FIX: Import missing FaTimes and FaSave icons.
+import { FaArrowLeft, FaBrain, FaPlus, FaTrash, FaEdit, FaDownload, FaBolt, FaTimes, FaSave } from 'react-icons/fa';
 import { generateWorldFromPrompts } from '../../../services/geminiService';
 // FIX: Add QuickActionButtonConfig to type imports
 import type { FullMod, ModInfo, ModAttributeSystem, NamedRealmSystem, QuickActionBarConfig, QuickActionButtonConfig, Faction, ModLocation, ModNpc, AttributeDefinition, AttributeGroupDefinition, RealmConfig, MajorEvent, ModForeshadowedEvent, ModTagDefinition } from '../../../types';
@@ -29,6 +30,60 @@ const Field: React.FC<{ label: string; description: string; children: React.Reac
         {children}
     </div>
 );
+
+const AttributeGroupEditorModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (group: AttributeGroupDefinition) => void;
+    group: AttributeGroupDefinition | null;
+}> = ({ isOpen, onClose, onSave, group }) => {
+    const [formData, setFormData] = useState({ id: '', name: '', order: 10 });
+    const isNew = !group;
+
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(group || { id: '', name: '', order: 10 });
+        }
+    }, [group, isOpen]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: name === 'order' ? parseInt(value) || 0 : value }));
+
+        if (name === 'name' && isNew) {
+            const newId = value.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+            setFormData(prev => ({ ...prev, id: newId }));
+        }
+    };
+
+    const handleSave = () => {
+        if (!formData.name.trim() || !formData.id.trim()) {
+            alert("Tên và ID không được để trống.");
+            return;
+        }
+        onSave(formData);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70" onClick={onClose}>
+            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg m-4" onClick={e => e.stopPropagation()}>
+                <h3 className="text-lg font-bold p-4 border-b border-gray-700 text-amber-300">{isNew ? 'Thêm Nhóm Thuộc Tính' : 'Chỉnh Sửa Nhóm'}</h3>
+                <div className="p-4 space-y-4">
+                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Tên Nhóm (Vd: Tinh Thần)" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" />
+                    <input name="id" value={formData.id} onChange={handleChange} placeholder="ID (vd: tinh_than)" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" disabled={!isNew} />
+                     <input name="order" type="number" value={formData.order} onChange={handleChange} placeholder="Thứ tự hiển thị" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" />
+                </div>
+                <div className="p-4 border-t border-gray-700 flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500"><FaTimes /> Hủy</button>
+                    <button onClick={handleSave} className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500"><FaSave /> Lưu</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const TemplateSelectionModal: React.FC<{
     isOpen: boolean;
@@ -122,6 +177,8 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const [isTagDefModalOpen, setTagDefModalOpen] = useState(false);
     const [editingTagDef, setEditingTagDef] = useState<ModTagDefinition | null>(null);
+    const [isGroupModalOpen, setGroupModalOpen] = useState(false);
+    const [editingGroup, setEditingGroup] = useState<AttributeGroupDefinition | null>(null);
 
 
      useEffect(() => {
@@ -298,6 +355,27 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
         });
         setAttributeModalOpen(false); setEditingAttribute(null);
     };
+
+    const handleDeleteAttribute = (attributeId: string) => {
+        setAttributeSystem(prev => ({ ...prev, definitions: prev.definitions.filter(d => d.id !== attributeId) }));
+    };
+
+    const handleSaveGroup = (group: AttributeGroupDefinition) => {
+        setAttributeSystem(prev => {
+            const newGroups = [...prev.groups];
+            const index = newGroups.findIndex(g => g.id === group.id);
+            if (index > -1) newGroups[index] = group; else newGroups.push(group);
+            return { ...prev, groups: newGroups.sort((a,b) => a.order - b.order) };
+        });
+        setGroupModalOpen(false);
+    };
+
+    const handleDeleteGroup = (groupId: string) => {
+        setAttributeSystem(prev => ({
+            groups: prev.groups.filter(g => g.id !== groupId),
+            definitions: prev.definitions.filter(d => d.group !== groupId),
+        }));
+    };
     
     const handleSaveRealms = (updatedSystems: NamedRealmSystem[]) => {
         setNamedRealmSystems(updatedSystems);
@@ -330,13 +408,14 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
              <FactionEditorModal isOpen={isFactionModalOpen} onClose={() => setFactionModalOpen(false)} onSave={handleSaveFaction} faction={editingFaction} />
              <LocationEditorModal isOpen={isLocationModalOpen} onClose={() => setLocationModalOpen(false)} onSave={handleSaveLocation} location={editingLocation} />
              <NpcEditorModal isOpen={isNpcModalOpen} onClose={() => setNpcModalOpen(false)} onSave={handleSaveNpc} npc={editingNpc} />
-             {editingAttribute && <AttributeEditorModal isOpen={isAttributeModalOpen} onClose={() => setAttributeModalOpen(false)} onSave={handleSaveAttribute} attribute={editingAttribute.attribute} group={editingAttribute.group} />}
+             {isAttributeModalOpen && editingAttribute && <AttributeEditorModal isOpen={isAttributeModalOpen} onClose={() => setAttributeModalOpen(false)} onSave={handleSaveAttribute} attribute={editingAttribute.attribute} group={editingAttribute.group} />}
              <RealmEditorModal isOpen={isRealmModalOpen} onClose={() => setRealmModalOpen(false)} onSave={handleSaveRealms} initialSystems={namedRealmSystems} attributeSystem={attributeSystem} />
              <QuickActionButtonEditorModal isOpen={isQuickActionModalOpen} onClose={() => setQuickActionModalOpen(false)} onSave={handleSaveQuickAction} button={editingQuickAction} />
              <MajorEventEditorModal isOpen={isMajorEventModalOpen} onClose={() => setMajorEventModalOpen(false)} onSave={handleSaveMajorEvent} event={editingMajorEvent} />
              <ForeshadowedEventEditorModal isOpen={isForeshadowedEventModalOpen} onClose={() => setForeshadowedEventModalOpen(false)} onSave={handleSaveForeshadowedEvent} event={editingForeshadowedEvent} />
              <TemplateSelectionModal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} onSelect={handleSelectTemplate} />
              <TagDefinitionEditorModal isOpen={isTagDefModalOpen} onClose={() => setTagDefModalOpen(false)} onSave={handleSaveTagDef} tagDef={editingTagDef} />
+             <AttributeGroupEditorModal isOpen={isGroupModalOpen} onClose={() => setGroupModalOpen(false)} onSave={handleSaveGroup} group={editingGroup}/>
 
 
             <div className="flex-shrink-0 mb-4">
@@ -485,19 +564,31 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
 
                             {/* Attribute System */}
                             <div>
-                                <h4 className="font-semibold text-gray-300 mb-2">Hệ Thống Thuộc Tính</h4>
-                                <button onClick={() => setIsTemplateModalOpen(true)} className="w-full text-center p-2 mb-3 bg-blue-900/30 rounded border border-blue-500/30 text-blue-300 hover:bg-blue-900/50">
-                                    Tải Mẫu Hệ Thống Thuộc Tính...
-                                </button>
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-semibold text-gray-300">Hệ Thống Thuộc Tính</h4>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setIsTemplateModalOpen(true)} className="text-xs px-2 py-1 bg-blue-900/50 text-blue-300 rounded hover:bg-blue-800/50">Tải Mẫu</button>
+                                        <button onClick={() => setAttributeSystem({ definitions: [], groups: [] })} className="text-xs px-2 py-1 bg-red-900/50 text-red-300 rounded hover:bg-red-800/50">Xóa Tất Cả</button>
+                                    </div>
+                                </div>
                                 <div className="space-y-3">
                                     {attributeSystem.groups.map(group => (
                                         <div key={group.id} className="p-2 bg-black/30 rounded">
-                                            <h5 className="font-bold text-sm text-amber-300">{group.name}</h5>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <h5 className="font-bold text-sm text-amber-300">{group.name}</h5>
+                                                <div className="flex items-center gap-2">
+                                                     <button onClick={() => { setEditingGroup(group); setGroupModalOpen(true); }} className="p-1 text-gray-400 hover:text-white text-xs"><FaEdit /></button>
+                                                    <button onClick={() => handleDeleteGroup(group.id)} className="p-1 text-gray-400 hover:text-red-400 text-xs"><FaTrash /></button>
+                                                </div>
+                                            </div>
                                             <div className="pl-2 space-y-1 mt-1">
                                                 {attributeSystem.definitions.filter(d => d.group === group.id).map(attr => (
                                                     <div key={attr.id} className="flex justify-between items-center text-sm">
                                                         <span>{attr.name} <span className="text-gray-500 text-xs">({attr.type})</span></span>
-                                                        <button onClick={() => { setEditingAttribute({ attribute: attr, group }); setAttributeModalOpen(true); }} className="p-1 hover:text-white"><FaEdit /></button>
+                                                         <div className="flex items-center gap-2">
+                                                            <button onClick={() => { setEditingAttribute({ attribute: attr, group }); setAttributeModalOpen(true); }} className="p-1 text-gray-400 hover:text-white text-xs"><FaEdit /></button>
+                                                            <button onClick={() => handleDeleteAttribute(attr.id)} className="p-1 text-gray-400 hover:text-red-400 text-xs"><FaTrash /></button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -505,6 +596,7 @@ const ManualGenesisScreen: React.FC<ManualGenesisScreenProps> = ({ onBack, onIns
                                         </div>
                                     ))}
                                 </div>
+                                 <button onClick={() => { setEditingGroup(null); setGroupModalOpen(true); }} className="w-full mt-2 text-sm text-green-300/80 hover:text-green-200 flex items-center justify-center gap-2 p-1 bg-green-900/30 rounded"><FaPlus/> Thêm Nhóm Mới</button>
                             </div>
                             
                             {/* Realm System */}

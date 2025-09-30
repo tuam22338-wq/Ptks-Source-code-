@@ -43,6 +43,7 @@ export const THEME_OPTIONS: { value: Theme; label: string; premium?: boolean }[]
     { value: 'theme-huyet-sat-ma-dien', label: 'Huyết Sát Ma Điện (Hắc ám)' },
     { value: 'theme-cyber-cultivation-city', label: 'Thành Phố Cyber-Tu Chân' },
     { value: 'theme-dao-ton-premium', label: 'Đạo Tôn (Premium)', premium: true },
+    { value: 'theme-thon-phe-tinh-ha', label: 'Thôn Phệ Tinh Hà (Premium)', premium: true },
 ];
 
 export const DYNAMIC_BACKGROUND_OPTIONS: { id: string; name: string; thumbnailClass: string }[] = [

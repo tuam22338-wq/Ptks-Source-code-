@@ -438,17 +438,11 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
     4.  **\`items\` (Tùy chọn):** Nếu văn bản mô tả các vật phẩm đặc biệt (thần binh, bảo vật), hãy trích xuất chúng.
     5.  **\`realmConfigs\` (Hệ Thống Tu Luyện):** Phân tích kỹ lưỡng các đoạn văn mô tả hệ thống sức mạnh, cấp bậc, hoặc con đường tu luyện. Nếu có, hãy suy luận và tạo ra một cấu trúc \`realmConfigs\` hoàn chỉnh. Đảm bảo \`qiRequired\` tăng dần một cách logic và \`bonuses\` phù hợp với mô tả của từng cấp bậc.
     6.  **\`attributeSystem\` (HỆ THỐNG THUỘC TÍNH - QUAN TRỌNG):**
-        **QUY TẮC BẤT BIẾN:** Thế giới game có một bộ thuộc tính sinh tồn CỐ ĐỊNH mà bạn **TUYỆT ĐỐI KHÔNG ĐƯỢC XÓA BỎ**. Bạn có thể SÁNG TẠO và **THÊM VÀO** các thuộc tính mới, nhưng **PHẢI GIỮ LẠI** các thuộc tính cốt lõi sau đây trong \`definitions\`:
-        - id: 'sinh_menh', name: 'Sinh Mệnh', group: 'vitals'
-        - id: 'linh_luc', name: 'Linh Lực', group: 'vitals'
-        - id: 'hunger', name: 'Độ No', group: 'vitals'
-        - id: 'thirst', name: 'Độ Khát', group: 'vitals'
-        - id: 'tuoi_tho', name: 'Tuổi Thọ', group: 'cultivation'
-        
-        Nhiệm vụ của bạn là:
-        a. **GIỮ NGUYÊN** 5 thuộc tính cốt lõi trên.
-        b. **SÁNG TẠO** thêm các thuộc tính PRIMARY và SECONDARY mới phù hợp với lore được cung cấp. NẾU thể loại của lore rõ ràng KHÔNG PHẢI là tu tiên (ví dụ: khoa huyễn, võ hiệp), hãy mạnh dạn THAY THẾ các thuộc tính tu tiên mặc định (trừ 5 thuộc tính cốt lõi) bằng những thuộc tính phù hợp hơn.
-        c. **TỔ CHỨC** tất cả thuộc tính (cũ và mới) vào các \`groups\` một cách hợp lý. Nếu lore là khoa huyễn, hãy tạo các nhóm như 'Cybernetics', 'Năng Lượng Lõi'.
+        **QUY TẮC SÁNG TẠO TỪ ĐẦU:** Bạn phải thiết kế và tạo ra một hệ thống thuộc tính **HOÀN TOÀN MỚI** từ con số không, dựa trên bối cảnh và lore được cung cấp.
+        - **KHÔNG GIẢ ĐỊNH:** Không có bất kỳ thuộc tính mặc định nào tồn tại. Bạn phải tự định nghĩa tất cả, bao gồm cả các thuộc tính cơ bản như sinh mệnh, năng lượng, v.v.
+        - **TẠO CẢ HAI PHẦN:** Bạn phải tạo cả hai mảng: \`definitions\` (danh sách tất cả thuộc tính) và \`groups\` (các nhóm để tổ chức chúng).
+        - **LOGIC THEO BỐI CẢNH:** Hệ thống phải nhất quán với thế giới. Nếu là thế giới tu tiên, hãy tạo các thuộc tính như 'Linh Lực', 'Căn Cốt'. Nếu là khoa huyễn, hãy tạo 'Năng Lượng Lõi', 'Độ Bền Vỏ Giáp'. Nếu là sinh tồn, hãy có 'Độ No', 'Độ Khát'.
+        - **ĐẦY ĐỦ THÔNG TIN:** Mỗi thuộc tính trong \`definitions\` phải có đủ các trường thông tin theo schema (id, name, description, iconName, type, group). Mỗi nhóm trong \`groups\` phải có id, name, và order.
     7.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
     8.  **\`tagDefinitions\` (Tùy chọn):** Nếu bạn tạo ra một tag rất độc đáo và mới lạ (ví dụ 'Vin-Corp Dystopia' cho thế giới Vingroup cai trị), hãy tạo một định nghĩa cho nó. Đối với các tag phổ biến như 'Huyền Huyễn', 'Hắc Ám', không cần tạo định nghĩa.
 
@@ -488,39 +482,12 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         }
         const json = JSON.parse(cleanedString);
         
-        if (json.content) {
-            const finalAttributeSystem = {
-                definitions: new Map<string, any>(),
-                groups: new Map<string, any>()
-            };
-        
-            // 1. Add all default attributes and groups first to establish a baseline.
-            DEFAULT_ATTRIBUTE_DEFINITIONS.forEach(def => finalAttributeSystem.definitions.set(def.id, def));
-            DEFAULT_ATTRIBUTE_GROUPS.forEach(group => finalAttributeSystem.groups.set(group.id, group));
-        
-            // 2. If AI provided a custom system, merge its creations.
-            if (json.content.attributeSystem) {
-                const coreVitalIds = new Set(['sinh_menh', 'linh_luc', 'hunger', 'thirst', 'tuoi_tho']);
-                
-                // Merge definitions, but explicitly prevent overwriting core vitals.
-                (json.content.attributeSystem.definitions || []).forEach((def: any) => {
-                    if (def.id && !coreVitalIds.has(def.id)) {
-                        finalAttributeSystem.definitions.set(def.id, def);
-                    }
-                });
-                
-                // Merge groups.
-                (json.content.attributeSystem.groups || []).forEach((group: any) => {
-                    if (group.id) {
-                        finalAttributeSystem.groups.set(group.id, group);
-                    }
-                });
-            }
-            
-            // 3. Assign the robustly merged system back to the JSON object.
+        // Fallback in case AI forgets to generate an attribute system
+        if (json.content && (!json.content.attributeSystem || !json.content.attributeSystem.definitions || json.content.attributeSystem.definitions.length === 0)) {
+            console.warn("AI failed to generate a custom attribute system. Falling back to default.");
             json.content.attributeSystem = {
-                definitions: Array.from(finalAttributeSystem.definitions.values()),
-                groups: Array.from(finalAttributeSystem.groups.values())
+                definitions: DEFAULT_ATTRIBUTE_DEFINITIONS,
+                groups: DEFAULT_ATTRIBUTE_GROUPS
             };
         }
 
