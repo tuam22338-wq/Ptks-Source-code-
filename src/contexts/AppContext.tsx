@@ -488,16 +488,15 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (error: any) {
             console.error("AI story generation failed:", error);
             const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${error.message}`;
-            // To properly handle the error, we need a way to resolve the pending state
-            // and show the error.
+            
             dispatch({
                 type: 'UPDATE_GAME_STATE',
                 payload: (currentState) => {
                     if (!currentState) return null;
                     const errorEntry: StoryEntry = { id: Date.now(), type: 'system', content: errorMessage };
+                    
                     const finalLog = currentState.storyLog.map(entry => {
                         if (entry.isPending) return { ...entry, isPending: false };
-                        // Remove the empty AI placeholder
                         if (entry.type === 'narrative' && entry.content === '') return null;
                         return entry;
                     }).filter(Boolean) as StoryEntry[];

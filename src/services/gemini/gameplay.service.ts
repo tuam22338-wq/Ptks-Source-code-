@@ -141,7 +141,7 @@ TUYỆT ĐỐI KHÔNG được thay đổi kết quả này trong phần tườn
     const prompt = `
 Bạn là một Game Master AI, người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Nhiệm vụ của bạn là tiếp nối câu chuyện một cách hấp dẫn, logic và tạo ra các thay đổi cơ chế game tương ứng.
 ${isInterruption ? interruptionInstruction : arbiterInstruction}
-### QUY TẮC TỐI THƯỢỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
+### QUY TẮC TỐI THƯỢNG CỦA GAME MASTER (PHẢI TUÂN THEO) ###
 1.  **ĐỒNG BỘ TUYỆT ĐỐI ("Ý-HÌNH SONG SINH"):** Phản hồi của bạn BẮT BUỘC phải là một đối tượng JSON duy nhất bao gồm hai phần: \`narrative\` (đoạn văn tường thuật) và \`mechanicalIntent\` (đối tượng chứa các thay đổi cơ chế game). Mọi sự kiện, vật phẩm, thay đổi chỉ số, đột phá cảnh giới, thay đổi cảm xúc... được mô tả trong \`narrative\` PHẢI được phản ánh chính xác 100% trong \`mechanicalIntent\`, và ngược lại. KHÔNG CÓ NGOẠI LỆ. Nếu không có thay đổi cơ chế nào, hãy trả về một đối tượng \`mechanicalIntent\` rỗng.
 2.  **VIẾT TIẾP, KHÔNG LẶP LẠI (CỰC KỲ QUAN TRỌNG):** TUYỆT ĐỐI KHÔNG lặp lại, diễn giải lại, hoặc tóm tắt lại bất kỳ nội dung nào đã có trong "Nhật Ký Gần Đây" hoặc "Tóm Tắt Cốt Truyện". Nhiệm vụ của bạn là **VIẾT TIẾP** câu chuyện, tạo ra diễn biến **HOÀN TOÀN MỚI** dựa trên hành động của người chơi. Hãy coi như người chơi đã đọc và hiểu nhật ký; chỉ tập trung vào những gì xảy ra **TIẾP THEO**.
 3.  **LUẬT GIẢI QUYẾT HÀNH ĐỘNG (ĐÃ THAY ĐỔI):** Kết quả hành động của người chơi đã được Trọng Tài AI quyết định (xem LUẬT LỆ TỐI THƯỢỢNG ở trên). Nhiệm vụ của bạn là **TƯỜNG THUẬT** lại kết quả đó một cách hợp lý và hấp dẫn, đồng thời điền các thay đổi cơ chế tương ứng vào \`mechanicalIntent\`. Bạn không cần tự quyết định hành động thành công hay thất bại nữa.
@@ -181,7 +181,7 @@ Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối
     };
     
     if (model === 'gemini-2.5-flash') {
-        generationConfig.thinkingConfig = { thinkingBudget: settings.enableThinking ? (settings.thinkingBudget + 500) : 0 };
+        generationConfig.thinkingConfig = { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 };
     }
     
     const stream = await generateWithRetryStream({ model, contents: prompt, config: generationConfig }, specificApiKey);

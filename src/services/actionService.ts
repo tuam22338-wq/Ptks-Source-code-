@@ -16,7 +16,6 @@ export const processPlayerAction = async (
     showNotification: (message: string) => void,
     abortSignal: AbortController['signal'],
     currentSlotId: number,
-    // FIX: Add missing 'onStreamUpdate' parameter to support real-time UI updates.
     onStreamUpdate: (content: string) => void
 ): Promise<GameState> => {
     
@@ -61,16 +60,11 @@ export const processPlayerAction = async (
         thoughtBubble = await generateNpcThoughtBubble(targetNpc, stateAfterSim, text);
     }
     
-    // NEW STEP 1: Retrieve personalized memories (RAG) for the current save slot
     const memoryContext = await retrieveAndSynthesizeMemory(text, stateAfterSim, currentSlotId);
 
-    // NEW STEP 2: Get Arbiter's logical decision (always run this for context, even if interrupted)
     const arbiterDecision = await decideActionOutcome(stateAfterSim, text);
 
-    const playerActionEntry: Omit<StoryEntry, 'id'> = { type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
-    
     // --- GIAI ĐOẠN 1: "Ý-HÌNH SONG SINH" ---
-    // NEW STEP 3: Pass new context (arbiter's decision & memories) to the narrator
     const stream = generateDualResponseStream(
         stateAfterSim, 
         text, 
@@ -78,7 +72,7 @@ export const processPlayerAction = async (
         memoryContext, 
         settings, 
         arbiterDecision, 
-        isInterruption, // Pass the interruption flag
+        isInterruption,
         thoughtBubble
     );
 
@@ -86,9 +80,7 @@ export const processPlayerAction = async (
     for await (const chunk of stream) {
         if (abortSignal.aborted) throw new Error("Hành động đã bị hủy.");
         fullResponseJsonString += chunk;
-
-        // FIX: Implement logic to extract narrative from the streaming JSON and update the UI.
-        // This provides a real-time typing effect for the AI's response.
+        
         const narrativeKey = '"narrative": "';
         const startIndex = fullResponseJsonString.indexOf(narrativeKey);
         
@@ -96,8 +88,6 @@ export const processPlayerAction = async (
             const contentStartIndex = startIndex + narrativeKey.length;
             let content = fullResponseJsonString.substring(contentStartIndex);
             
-            // The JSON is not complete, so we cannot reliably parse it.
-            // We just clean up the end a bit for a smoother streaming display.
             const intentKey = '","mechanicalIntent":';
             const intentIndex = content.lastIndexOf(intentKey);
             if (intentIndex !== -1) {
@@ -121,49 +111,6 @@ export const processPlayerAction = async (
         throw new Error("AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
     }
     
-    // --- GIAI ĐOẠN 1.5: ĐIỀU CHỈNH CỦA HỆ THỐNG ---
-    // If the action was a breakthrough, override AI's realm/stage change to ensure correctness.
-    const breakthroughKeywords = ["đột phá", "thăng cấp", "thăng lên", "tiến vào", "xung kích", "vượt qua cảnh giới"];
-    if (breakthroughKeywords.some(keyword => text.toLowerCase().includes(keyword))) {
-        const { playerCharacter, realmSystem } = stateAfterSim;
-        const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
-        
-        if (currentRealm) {
-            const currentStageIndex = currentRealm.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId);
-
-            if (currentStageIndex !== -1) {
-                let nextRealmId: string | undefined;
-                let nextStageId: string | undefined;
-
-                if (currentStageIndex < currentRealm.stages.length - 1) {
-                    // Breakthrough to the next stage within the same realm
-                    const nextStage = currentRealm.stages[currentStageIndex + 1];
-                    nextRealmId = currentRealm.id;
-                    nextStageId = nextStage.id;
-                } else {
-                    // Breakthrough to the next realm
-                    const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
-                    if (currentRealmIndex < realmSystem.length - 1) {
-                        const nextRealm = realmSystem[currentRealmIndex + 1];
-                        if (nextRealm && nextRealm.stages.length > 0) {
-                            nextRealmId = nextRealm.id;
-                            nextStageId = nextRealm.stages[0].id;
-                        }
-                    }
-                }
-                
-                if (nextRealmId && nextStageId) {
-                    if (!aiPayload.mechanicalIntent) {
-                        aiPayload.mechanicalIntent = {};
-                    }
-                    // Override whatever the AI decided.
-                    aiPayload.mechanicalIntent.realmChange = nextRealmId;
-                    aiPayload.mechanicalIntent.stageChange = nextStageId;
-                }
-            }
-        }
-    }
-
     // --- GIAI ĐOẠN 2: "THIÊN ĐẠO GIÁM SÁT" ---
     const { validatedIntent, validationNotifications } = validateMechanicalChanges(aiPayload.mechanicalIntent, stateAfterSim);
     validationNotifications.forEach(showNotification);
@@ -176,17 +123,26 @@ export const processPlayerAction = async (
         finalNarrative = await harmonizeNarrative(aiPayload.narrative, validatedIntent, validationNotifications);
     }
 
-    const narrativeEntry: Omit<StoryEntry, 'id'> = { type: 'narrative', content: finalNarrative };
+    finalState.storyLog = finalState.storyLog.filter(entry => {
+        // Remove the pending player action and the streaming placeholder
+        return !entry.isPending && !(entry.type === 'narrative' && entry.content === '');
+    });
 
-    const allNewEntries = [...baseLogEntries, playerActionEntry, narrativeEntry];
+    const finalNarrativeEntry: Omit<StoryEntry, 'id'> = { type: 'narrative', content: finalNarrative };
+    
     const lastId = finalState.storyLog.length > 0 ? finalState.storyLog[finalState.storyLog.length - 1].id : 0;
-    const finalNewLogEntries: StoryEntry[] = allNewEntries.map((entry, index) => ({ ...entry, id: lastId + index + 1 }));
-    finalState.storyLog = [...finalState.storyLog, ...finalNewLogEntries];
+    
+    // Add back the resolved player action and the final AI narrative
+    const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
+    const narrativeEntryWithId: StoryEntry = { ...finalNarrativeEntry, id: lastId + 2 } as StoryEntry;
 
-    for (const entry of finalNewLogEntries) {
-        await addEntryToMemory(entry, finalState, currentSlotId);
-    }
+    finalState.storyLog.push(playerActionEntry, narrativeEntryWithId);
 
+    // Add new memory fragments for the events that just transpired
+    await addEntryToMemory(playerActionEntry, finalState, currentSlotId);
+    await addEntryToMemory(narrativeEntryWithId, finalState, currentSlotId);
+
+    // Post-processing
     const finalQuestCheck = questManager.processQuestUpdates(finalState);
     finalQuestCheck.notifications.forEach(showNotification);
     let finalStateForSummary = finalQuestCheck.newState;

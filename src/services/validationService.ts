@@ -1,4 +1,3 @@
-
 import type { GameState, MechanicalIntent } from '../types';
 import { RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 
@@ -12,6 +11,9 @@ export const validateMechanicalChanges = (
     intent: MechanicalIntent,
     gameState: GameState
 ): { validatedIntent: MechanicalIntent, validationNotifications: string[] } => {
+    if (!intent) {
+        return { validatedIntent: {}, validationNotifications: [] };
+    }
     const validatedIntent = JSON.parse(JSON.stringify(intent));
     const validationNotifications: string[] = [];
     const { playerCharacter, realmSystem } = gameState;
@@ -58,7 +60,7 @@ export const validateMechanicalChanges = (
         }
 
         validatedIntent.statChanges.forEach((change: any) => {
-            const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.id === change.attribute);
+            const attrDef = gameState.attributeSystem.definitions.find(def => def.id === change.attribute);
             if (change.attribute === 'spiritualQi' && change.change > qiCap) {
                 const originalChange = change.change;
                 change.change = qiCap;
