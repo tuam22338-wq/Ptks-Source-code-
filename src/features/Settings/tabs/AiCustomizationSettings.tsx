@@ -93,6 +93,26 @@ const AiCustomizationSettings: React.FC<AiCustomizationSettingsProps> = ({ setti
                         <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.aiResponseWordCount}</span>
                     </div>
                 </SettingsRow>
+                <SettingsRow label="Độ dài Phản hồi Game Master" description="Đặt độ dài mong muốn cho mỗi phản hồi của Game Master AI khi trò chuyện để tạo thế giới (1,000 - 100,000 từ).">
+                    <div className="flex items-center gap-4">
+                        <input
+                            type="range"
+                            min="1000"
+                            max="100000"
+                            step="1000"
+                            value={settings.gameMasterWordCount}
+                            onChange={(e) => handleSettingChange('gameMasterWordCount', parseInt(e.target.value))}
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow"
+                        />
+                        <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-24 text-center">{settings.gameMasterWordCount}</span>
+                    </div>
+                </SettingsRow>
+                <SettingsRow label="Bật Google Grounding (Thử nghiệm)" description="Cho phép Game Master AI sử dụng Google Search để có thông tin mới và chính xác hơn. Có thể làm thay đổi văn phong của AI.">
+                    <label className="flex items-center cursor-pointer">
+                        <input type="checkbox" checked={settings.enableGoogleGrounding} onChange={e => handleSettingChange('enableGoogleGrounding', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                        <span className="ml-3 text-sm text-gray-300">Sử dụng Google Search để trả lời</span>
+                    </label>
+                </SettingsRow>
                  <SettingsRow label="Quyền Tự Quyết của Người Chơi" description={PLAYER_AGENCY_LEVELS.find(o => o.value === settings.playerAgencyLevel)?.description || ''}>
                      <LevelButtonGroup options={PLAYER_AGENCY_LEVELS} selectedValue={settings.playerAgencyLevel} onSelect={(v) => handleSettingChange('playerAgencyLevel', v as PlayerAgencyLevel)} />
                 </SettingsRow>

@@ -33,7 +33,9 @@ export async function* chatWithGameMaster(
     const settings = await db.getSettings();
     if (!settings) throw new Error("Settings not found");
 
-    const systemPrompt = `You are GameMasterAI, a helpful and creative assistant for building fantasy worlds for a TTRPG/video game. Your goal is to talk with the user, understand their vision, ask clarifying questions, and help them flesh out their ideas into a rich, detailed lore document through conversation. Be encouraging and imaginative. Consolidate their descriptions and your suggestions into your responses. Structure your responses clearly. Use markdown for formatting.`;
+    const systemPrompt = `You are GameMasterAI, a helpful and creative assistant for building fantasy worlds for a TTRPG/video game. Your goal is to talk with the user, understand their vision, ask clarifying questions, and help them flesh out their ideas into a rich, detailed lore document through conversation. Be encouraging and imaginative. Consolidate their descriptions and your suggestions into your responses. Structure your responses clearly. Use markdown for formatting.
+
+**RESPONSE LENGTH RULE:** Your response should be approximately ${settings.gameMasterWordCount || 3000} words long.`;
     
     const contents = history.map(h => ({
         role: h.role,
@@ -43,15 +45,21 @@ export async function* chatWithGameMaster(
     const model = settings?.gameMasterModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
     
+    const config: any = {
+        systemInstruction: systemPrompt,
+        temperature: 1.0, 
+        topK: settings.topK,
+        topP: settings.topP,
+    };
+
+    if (settings.enableGoogleGrounding) {
+        config.tools = [{googleSearch: {}}];
+    }
+    
     const stream = await generateWithRetryStream({
         model,
         contents,
-        config: {
-            systemInstruction: systemPrompt,
-            temperature: 1.0, 
-            topK: settings.topK,
-            topP: settings.topP,
-        }
+        config: config,
     }, specificApiKey);
     
     for await (const chunk of stream) {

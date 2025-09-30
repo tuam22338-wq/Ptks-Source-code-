@@ -1,3 +1,4 @@
+import type { ElementType } from 'react';
 // --- Settings Types ---
 // Per Gemini guidelines, only 'gemini-2.5-flash' is permitted for general text tasks.
 export type AIModel = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-lite-preview-06-17' | 'gemini-2.5-flash-preview-05-20' | 'gemini-2.5-flash-preview-04-17';
@@ -76,6 +77,8 @@ export interface GameSettings {
     novelistTopP: number;
     novelistEnableThinking: boolean;
     novelistThinkingBudget: number;
+    gameMasterWordCount: number;
+    enableGoogleGrounding: boolean;
     autoSummaryFrequency: number;
     ragTopK: number;
     ragChunkSize: number;

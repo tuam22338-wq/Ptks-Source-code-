@@ -94,6 +94,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
     novelistTopP: 0.95,
     novelistEnableThinking: true,
     novelistThinkingBudget: 500,
+    gameMasterWordCount: 3000,
+    enableGoogleGrounding: false,
     autoSummaryFrequency: 50,
     ragTopK: 5,
     ragChunkSize: 512,
