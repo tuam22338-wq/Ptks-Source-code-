@@ -118,8 +118,10 @@ export const applyMechanicalChanges = (
     
     if (intent.newTechniques) {
         intent.newTechniques.forEach(techData => {
+            // FIX: Access techniques from player character
             if (!pc.techniques.some((t: CultivationTechnique) => t.name === techData.name)) {
                 showNotification(`Lĩnh ngộ: [${techData.name}]`);
+                // FIX: Access techniques from player character
                 pc.techniques.push({
                     ...techData, id: `tech-${Date.now()}-${Math.random()}`, level: 1, maxLevel: 10,
                 } as CultivationTechnique);
@@ -167,9 +169,11 @@ export const applyMechanicalChanges = (
     });
 
     if (intent.realmChange && intent.stageChange) {
+        // FIX: Access realmSystem from GameState
         const newRealm = currentState.realmSystem.find(r => r.id === intent.realmChange);
         const newStage = newRealm?.stages.find(s => s.id === intent.stageChange);
         if (newRealm && newStage) {
+            // FIX: Access cultivation property
             pc.cultivation.currentRealmId = intent.realmChange;
             pc.cultivation.currentStageId = intent.stageChange;
             showNotification(`Đột phá thành công! Cảnh giới mới: ${newRealm.name} - ${newStage.name}`);
@@ -212,6 +216,7 @@ export const applyMechanicalChanges = (
             attr.value = Math.max(0, Number(attr.value));
             
         } else if (attrId === 'spiritualQi' && changes.change) {
+             // FIX: Access cultivation property
              pc.cultivation.spiritualQi = Math.max(0, Number(pc.cultivation.spiritualQi) + changes.change);
              if (changes.change !== 0) showNotification(`Linh Khí: ${changes.change > 0 ? '+' : ''}${changes.change.toLocaleString()}`);
         }

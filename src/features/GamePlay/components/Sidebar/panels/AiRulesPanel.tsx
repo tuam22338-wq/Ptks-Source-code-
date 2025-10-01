@@ -5,8 +5,8 @@ import { FaDownload, FaUpload } from 'react-icons/fa';
 
 const Field: React.FC<{ label: string; description: string; children: React.ReactNode }> = ({ label, description, children }) => (
     <div>
-        <label className="block text-lg font-semibold font-title text-gray-300">{label}</label>
-        <p className="text-sm text-gray-500 mb-2">{description}</p>
+        <label className="block text-lg font-semibold font-title" style={{color: 'var(--text-color)'}}>{label}</label>
+        <p className="text-sm text-[var(--text-muted-color)] mb-2">{description}</p>
         {children}
     </div>
 );
@@ -97,15 +97,15 @@ const AiRulesPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
 
     return (
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <p className="text-sm text-center text-gray-500 italic">
+            <p className="text-sm text-center italic" style={{color: 'var(--text-muted-color)'}}>
                 Tùy chỉnh các quy luật cốt lõi để AI tuân theo. Những thay đổi này được lưu riêng cho hành trình này.
             </p>
             
             <div className="flex gap-2">
-                <button onClick={handleExport} className="w-full px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2 justify-center">
+                <button onClick={handleExport} className="w-full px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center justify-center gap-2">
                     <FaDownload /> Xuất
                 </button>
-                <button onClick={() => importInputRef.current?.click()} className="w-full px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2 justify-center">
+                <button onClick={() => importInputRef.current?.click()} className="w-full px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center justify-center gap-2">
                     <FaUpload /> Nhập
                 </button>
                 <input
@@ -124,7 +124,7 @@ const AiRulesPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     rows={5}
-                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
+                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
                     placeholder="Ví dụ: Trong thế giới này, yêu tộc và nhân tộc có mối thù truyền kiếp."
                 />
             </Field>
@@ -135,7 +135,7 @@ const AiRulesPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     rows={5}
-                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
+                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
                     placeholder="Ví dụ: Nếu người chơi ở nơi có âm khí nồng đậm, tốc độ tu luyện ma công tăng gấp đôi."
                 />
             </Field>
@@ -146,7 +146,7 @@ const AiRulesPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     rows={4}
-                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
+                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
                     placeholder="Ví dụ: Luôn mô tả nội tâm của nhân vật một cách chi tiết."
                 />
             </Field>
@@ -157,7 +157,7 @@ const AiRulesPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     rows={4}
-                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
+                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
                     placeholder="Ví dụ: Cảnh giới Kim Đan trong thế giới này được chia thành 9 phẩm, từ hạ phẩm đến cực phẩm."
                 />
             </Field>
@@ -168,7 +168,7 @@ const AiRulesPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     rows={5}
-                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
+                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 resize-y font-mono text-sm"
                     placeholder="Ví dụ: NẾU vị trí == 'Bắc Hải' VÀ thời gian == 'Nửa Đêm' THÌ hiệu quả tu luyện Băng hệ công pháp TĂNG 20%."
                 />
             </Field>

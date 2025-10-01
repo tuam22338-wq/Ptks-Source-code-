@@ -1,4 +1,4 @@
-import type { CurrencyType, NarrativeStyle, Theme, LayoutMode, GameSpeed, InnateTalentRank, PhapBaoRank, ItemQuality, EquipmentSlot } from '../types';
+import type { CurrencyType, NarrativeStyle, Theme, LayoutMode, GameSpeed, InnateTalentRank, AbilityRank, ItemQuality, EquipmentSlot } from '../types';
 
 export const CURRENCY_DEFINITIONS: Record<CurrencyType, { name: CurrencyType; icon: string; category: 'Phàm Tệ' | 'Linh Tệ' | 'Tiên Tệ' | 'Đặc Biệt' }> = {
     'Đồng': { name: 'Đồng', icon: '🪙', category: 'Phàm Tệ' },
@@ -67,12 +67,13 @@ export const RANK_ORDER: InnateTalentRank[] = [
     'Hậu Tiên Giai', 'Đại Tiên Giai', 'Thánh Giai'
 ];
 
-// FIX: Added a canonical order for PhapBaoRank to be used in validation.
-export const PHAP_BAO_RANK_ORDER: PhapBaoRank[] = [
+export const ABILITY_RANK_ORDER: AbilityRank[] = [
     'Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'
 ];
+// FIX: Export alias for backward compatibility
+export const PHAP_BAO_RANK_ORDER = ABILITY_RANK_ORDER;
 
-export const PHAP_BAO_RANKS: Record<PhapBaoRank, { color: string }> = {
+export const ABILITY_RANKS: Record<AbilityRank, { color: string }> = {
     'Phàm Giai': { color: 'text-gray-400' },
     'Tiểu Giai': { color: 'text-green-400' },
     'Trung Giai': { color: 'text-blue-400' },
@@ -82,6 +83,8 @@ export const PHAP_BAO_RANKS: Record<PhapBaoRank, { color: string }> = {
     'Thiên Giai': { color: 'text-red-400' },
     'Thánh Giai': { color: 'text-fuchsia-400' },
 };
+// FIX: Export alias for backward compatibility
+export const PHAP_BAO_RANKS = ABILITY_RANKS;
 
 export const QUALITY_ORDER: ItemQuality[] = [
     'Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'
@@ -105,7 +108,6 @@ export const EQUIPMENT_SLOTS: Record<EquipmentSlot, { label: string }> = {
     'Phụ Kiện 2': { label: 'Phụ Kiện 2' },
 };
 
-// FIX: Added missing constant for mapping equipment slots to icons.
 export const EQUIPMENT_SLOT_ICONS: Record<EquipmentSlot, string> = {
     'Vũ Khí': 'GiBroadsword',
     'Thượng Y': 'GiChestArmor',

@@ -64,34 +64,34 @@ const AttributeEditorModal: React.FC<AttributeEditorModalProps> = ({ isOpen, onC
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
             <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <h3 className="text-xl font-bold p-4 border-b border-gray-700 text-amber-300">{originalId ? 'Chỉnh Sửa Thuộc Tính' : 'Thêm Thuộc Tính Mới'}</h3>
+                <h3 className="text-xl font-bold p-4 border-b border-gray-700" style={{color: 'var(--primary-accent-color)'}}>{originalId ? 'Chỉnh Sửa Thuộc Tính' : 'Thêm Thuộc Tính Mới'}</h3>
                 <div className="p-4 overflow-y-auto space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Tên Thuộc Tính</label>
-                            <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Vd: Lực Lượng"/>
+                            <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Tên Thuộc Tính</label>
+                            <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Vd: Lực Lượng"/>
                         </div>
                          <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">ID (Mã định danh)</label>
-                            <input name="id" value={formData.id} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="vd: luc_luong"/>
+                            <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>ID (Mã định danh)</label>
+                            <input name="id" value={formData.id} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="vd: luc_luong"/>
                         </div>
                     </div>
                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Mô Tả</label>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y" placeholder="Vd: Sức mạnh vật lý, ảnh hưởng đến sát thương..."/>
+                        <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Mô Tả</label>
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}} placeholder="Vd: Sức mạnh vật lý, ảnh hưởng đến sát thương..."/>
                     </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                             <label className="block text-sm font-medium text-gray-400 mb-1">Loại Thuộc Tính</label>
-                             <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 pr-8 appearance-none">
+                             <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Loại Thuộc Tính</label>
+                             <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 pr-8 appearance-none" style={{color: 'var(--text-color)'}}>
                                 {ATTRIBUTE_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Icon</label>
+                            <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Icon</label>
                             <div className="flex items-center">
-                                <span className="p-2 bg-black/30 border border-gray-600 rounded-l-lg"><IconComponent className="text-xl text-cyan-300"/></span>
-                                <select name="iconName" value={formData.iconName} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-r-lg px-4 py-2 text-gray-200 pr-8 appearance-none border-l-0">
+                                <span className="p-2 bg-black/30 border border-gray-600 rounded-l-lg"><IconComponent className="text-xl" style={{color: 'var(--secondary-accent-color)'}}/></span>
+                                <select name="iconName" value={formData.iconName} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-r-lg px-4 py-2 pr-8 appearance-none border-l-0" style={{color: 'var(--text-color)'}}>
                                     {sortedIconNames.map(iconName => <option key={iconName} value={iconName}>{iconName}</option>)}
                                 </select>
                             </div>
@@ -99,14 +99,14 @@ const AttributeEditorModal: React.FC<AttributeEditorModalProps> = ({ isOpen, onC
                     </div>
                     {formData.type === 'SECONDARY' && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Công Thức</label>
-                            <input name="formula" value={formData.formula} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 font-mono" placeholder="Vd: (luc_luong * 2) + (than_phap * 0.5)"/>
+                            <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Công Thức</label>
+                            <input name="formula" value={formData.formula} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 font-mono" style={{color: 'var(--text-color)'}} placeholder="Vd: (luc_luong * 2) + (than_phap * 0.5)"/>
                         </div>
                     )}
                     {(formData.type === 'PRIMARY' || formData.type === 'VITAL') && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Giá Trị Cơ Bản (Base Value)</label>
-                            <input name="baseValue" type="number" value={formData.baseValue} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" />
+                            <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Giá Trị Cơ Bản (Base Value)</label>
+                            <input name="baseValue" type="number" value={formData.baseValue} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} />
                         </div>
                     )}
                 </div>

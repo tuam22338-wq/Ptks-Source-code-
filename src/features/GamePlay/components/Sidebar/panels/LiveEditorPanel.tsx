@@ -1,4 +1,5 @@
 
+
 import React, { memo, useState, useEffect } from 'react';
 import type { GameState, CharacterAttributes, Currency, NPC } from '../../../../../types';
 import { useAppContext } from '../../../../../contexts/AppContext';
@@ -91,24 +92,24 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
                     if (!attr) return null;
                     return (
                         <div key={id}>
-                            <label className="text-xs text-gray-400">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
+                            <label className="text-xs text-[var(--text-muted-color)]">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
                             <div className="flex gap-2">
-                                <input type="number" value={attr.value} onChange={e => setPlayerAttrs(p => ({...p, [id]: { ...p[id]!, value: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                <input type="number" value={attr.value} onChange={e => setPlayerAttrs(p => ({...p, [id]: { ...p[id]!, value: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-[var(--text-color)]" />
                                 {attr.maxValue !== undefined && (
-                                    <input type="number" value={attr.maxValue} onChange={e => setPlayerAttrs(p => ({...p, [id]: { ...p[id]!, maxValue: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                    <input type="number" value={attr.maxValue} onChange={e => setPlayerAttrs(p => ({...p, [id]: { ...p[id]!, maxValue: parseInt(e.target.value, 10) || 0 }}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-[var(--text-color)]" />
                                 )}
                             </div>
                         </div>
                     );
                  })}
                  <div>
-                    <label className="text-xs text-gray-400">Linh Khí</label>
-                    <input type="number" value={playerCult.spiritualQi} onChange={e => setPlayerCult({ spiritualQi: parseInt(e.target.value, 10) || 0 })} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                    <label className="text-xs text-[var(--text-muted-color)]">Linh Khí</label>
+                    <input type="number" value={playerCult.spiritualQi} onChange={e => setPlayerCult({ spiritualQi: parseInt(e.target.value, 10) || 0 })} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-[var(--text-color)]" />
                 </div>
                  {Object.keys(playerCurr).map(key => (
                      <div key={key}>
-                        <label className="text-xs text-gray-400">{key}</label>
-                        <input type="number" value={playerCurr[key as keyof Currency] || 0} onChange={e => setPlayerCurr(p => ({...p, [key]: parseInt(e.target.value, 10) || 0}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                        <label className="text-xs text-[var(--text-muted-color)]">{key}</label>
+                        <input type="number" value={playerCurr[key as keyof Currency] || 0} onChange={e => setPlayerCurr(p => ({...p, [key]: parseInt(e.target.value, 10) || 0}))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-[var(--text-color)]" />
                     </div>
                  ))}
                 <button onClick={handleApplyPlayerChanges} className="w-full mt-2 px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-sm flex items-center justify-center gap-2"><FaSave /> Áp Dụng Thay Đổi</button>
@@ -116,15 +117,15 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
 
              <Section title="Thế Giới">
                 <div>
-                    <label className="text-xs text-gray-400">Dịch Chuyển</label>
-                    <select onChange={e => handleTeleport(e.target.value)} value={gameState.playerCharacter.currentLocationId} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200">
+                    <label className="text-xs text-[var(--text-muted-color)]">Dịch Chuyển</label>
+                    <select onChange={e => handleTeleport(e.target.value)} value={gameState.playerCharacter.currentLocationId} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-[var(--text-color)]">
                         {gameState.discoveredLocations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
                     </select>
                 </div>
             </Section>
             
             <Section title="NPC Tại Đây">
-                <select onChange={e => setSelectedNpcId(e.target.value)} value={selectedNpcId} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200">
+                <select onChange={e => setSelectedNpcId(e.target.value)} value={selectedNpcId} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-[var(--text-color)]">
                     <option value="">-- Chọn NPC --</option>
                     {npcsInLocation.map(npc => <option key={npc.id} value={npc.id}>{npc.identity.name}</option>)}
                 </select>
@@ -135,8 +136,8 @@ const LiveEditorPanel: React.FC<LiveEditorPanelProps> = ({ gameState }) => {
                              if (!attr) return null;
                              return (
                                 <div key={id}>
-                                    <label className="text-xs text-gray-400">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
-                                    <input type="number" value={attr.value} onChange={e => setNpcAttrs(p => p ? ({...p, [id]: { ...p[id]!, value: parseInt(e.target.value, 10) || 0 }}) : null)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-gray-200" />
+                                    <label className="text-xs text-[var(--text-muted-color)]">{gameState.attributeSystem.definitions.find(d => d.id === id)?.name || id}</label>
+                                    <input type="number" value={attr.value} onChange={e => setNpcAttrs(p => p ? ({...p, [id]: { ...p[id]!, value: parseInt(e.target.value, 10) || 0 }}) : null)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm text-[var(--text-color)]" />
                                 </div>
                             );
                         })}

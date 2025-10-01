@@ -7,7 +7,8 @@ import LoadingScreen from '../../components/LoadingScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
 import EventPanel from './components/EventPanel';
-import CombatScreen from './components/CombatScreen';
+// FIX: Changed import path to point to the correct file with the default export.
+import CombatScreen from './CombatScreen';
 import CultivationPathModal from './CultivationPathModal';
 import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
@@ -279,7 +280,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                 currentLocationName={currentLocation?.name || 'Vô Định'}
              />
             
-            <div className={`flex-grow w-full flex min-h-0 relative min-h-0`}>
+            <div className={`flex-grow w-full flex min-h-0 relative`}>
                 <main className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:mr-96' : ''}`}>
                     <StoryLog 
                         pageEntries={storyPages[currentPage] || []} 
@@ -287,18 +288,17 @@ const GamePlayScreenContent: React.FC = memo(() => {
                         onSpeak={speak} 
                     />
                     
-                    {/* Pagination Controls & Loading */}
-                    <div className="flex-shrink-0 p-2 border-t border-[var(--border-subtle)] bg-[var(--bg-subtle)] flex items-center justify-between">
-                        <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0 || isAiResponding} className="p-2 disabled:opacity-50"><FaArrowLeft /></button>
+                    <div className="flex-shrink-0 p-2 border-t border-[var(--shadow-light)] bg-[var(--bg-color)] flex items-center justify-between">
+                        <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0 || isAiResponding} className="btn btn-neumorphic !p-3 disabled:opacity-50"><FaArrowLeft /></button>
                          {isAiResponding && isOnLastPage ? (
                             <div className="flex items-center justify-center gap-2">
                                 <LoadingSpinner size="sm" message={state.loadingMessage} />
-                                <span className="font-mono text-amber-300">{formatTime(responseTimer)}</span>
+                                <span className="font-mono text-[var(--primary-accent-color)]">{formatTime(responseTimer)}</span>
                             </div>
                         ) : (
                             <span className="text-sm font-semibold text-[var(--text-muted-color)]">Trang {currentPage + 1} / {storyPages.length}</span>
                         )}
-                        <button onClick={() => setCurrentPage(p => Math.min(storyPages.length - 1, p + 1))} disabled={currentPage >= storyPages.length - 1 || isAiResponding} className="p-2 disabled:opacity-50"><FaArrowRight /></button>
+                        <button onClick={() => setCurrentPage(p => Math.min(storyPages.length - 1, p + 1))} disabled={currentPage >= storyPages.length - 1 || isAiResponding} className="btn btn-neumorphic !p-3 disabled:opacity-50"><FaArrowRight /></button>
                     </div>
 
                     {(isSpecialPanelActive && isOnLastPage) ? (

@@ -51,15 +51,15 @@ const LocationEditorModal: React.FC<LocationEditorModalProps> = ({ isOpen, onClo
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70" onClick={onClose}>
             <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg m-4" onClick={e => e.stopPropagation()}>
-                <h3 className="text-lg font-bold p-4 border-b border-gray-700 text-amber-300">{location ? 'Chỉnh Sửa Địa Điểm' : 'Thêm Địa Điểm'}</h3>
+                <h3 className="text-lg font-bold p-4 border-b border-gray-700" style={{color: 'var(--primary-accent-color)'}}>{location ? 'Chỉnh Sửa Địa Điểm' : 'Thêm Địa Điểm'}</h3>
                 <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Tên Địa Điểm" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" />
-                    <textarea name="description" value={formData.description} onChange={handleChange} rows={3} placeholder="Mô Tả" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y"/>
-                    <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200">
+                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Tên Địa Điểm" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} />
+                    <textarea name="description" value={formData.description} onChange={handleChange} rows={3} placeholder="Mô Tả" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}}/>
+                    <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}}>
                         {LOCATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    <input value={neighborsStr} onChange={e => setNeighborsStr(e.target.value)} placeholder="Hàng xóm (cách nhau bởi dấu phẩy)" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" />
-                    <input name="qiConcentration" type="number" value={formData.qiConcentration} onChange={handleChange} placeholder="Nồng độ Linh khí" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" />
+                    <input value={neighborsStr} onChange={e => setNeighborsStr(e.target.value)} placeholder="Hàng xóm (cách nhau bởi dấu phẩy)" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} />
+                    <input name="qiConcentration" type="number" value={formData.qiConcentration} onChange={handleChange} placeholder="Nồng độ Linh khí" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} />
                 </div>
                 <div className="p-4 border-t border-gray-700 flex justify-end gap-3">
                     <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500"><FaTimes /> Hủy</button>

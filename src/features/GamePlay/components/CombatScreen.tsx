@@ -48,7 +48,7 @@ const TechniqueSelectionModal: React.FC<{
             <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-2xl m-4 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <h3 className="text-xl text-[var(--primary-accent-color)] font-bold font-title">Chọn Công Pháp</h3>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
+                    <button onClick={onClose} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)]"><FaTimes /></button>
                 </div>
                 <div className="p-4 space-y-3 overflow-y-auto">
                     {techniques.map(tech => {
@@ -62,11 +62,11 @@ const TechniqueSelectionModal: React.FC<{
                                 <div className="flex justify-between items-start">
                                     <h4 className={`font-bold font-title ${rankStyle.color}`}>{tech.icon} {tech.name}</h4>
                                     <div className="text-right">
-                                        <p className={`text-sm font-semibold ${canAfford ? 'text-amber-300' : 'text-red-400'}`}>{tech.cost.value} {tech.cost.type}</p>
-                                        {cooldown > 0 && <p className="text-xs text-cyan-300">Hồi: {cooldown} lượt</p>}
+                                        <p className={`text-sm font-semibold ${canAfford ? 'text-[var(--primary-accent-color)]' : 'text-[var(--error-color)]'}`}>{tech.cost.value} {tech.cost.type}</p>
+                                        {cooldown > 0 && <p className="text-xs text-[var(--secondary-accent-color)]">Hồi: {cooldown} lượt</p>}
                                     </div>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-1">{tech.description}</p>
+                                <p className="text-xs mt-1" style={{color: 'var(--text-muted-color)'}}>{tech.description}</p>
                             </button>
                         );
                     })}
@@ -283,9 +283,9 @@ const CombatScreen: React.FC = () => {
             )}
             <div className="flex justify-between items-start mb-4">
                 <div className="w-1/3 text-center p-2 bg-black/20 rounded-lg">
-                    <p className="font-semibold text-gray-200">{gameState.playerCharacter.identity.name}</p>
+                    <p className="font-semibold" style={{color: 'var(--text-color)'}}>{gameState.playerCharacter.identity.name}</p>
                      {playerSinhMenh && playerSinhMenh.maxValue !== undefined && <HealthBar current={getFinalAttributeValue(gameState.playerCharacter, 'sinh_menh')} max={playerSinhMenh.maxValue} />}
-                    {isPlayerTurn && !isProcessingTurn && <p className="text-xs text-amber-300 animate-pulse">Lượt của bạn</p>}
+                    {isPlayerTurn && !isProcessingTurn && <p className="text-xs text-[var(--primary-accent-color)] animate-pulse">Lượt của bạn</p>}
                 </div>
                  <div className="w-2/3 grid grid-cols-2 gap-2 pl-4">
                     {combatState.enemies.map(enemy => {
@@ -294,9 +294,9 @@ const CombatScreen: React.FC = () => {
                          return (
                             <div key={enemy.id} onClick={() => setSelectedTargetId(enemy.id)}
                                 className={`p-2 bg-black/20 rounded-lg cursor-pointer transition-all duration-200 ${selectedTargetId === enemy.id ? 'border-2 border-amber-400' : 'border-2 border-transparent'}`}>
-                                <p className="font-semibold text-gray-200 text-sm truncate">{enemy.identity.name}</p>
+                                <p className="font-semibold text-sm truncate" style={{color: 'var(--text-color)'}}>{enemy.identity.name}</p>
                                 {enemySinhMenh && enemySinhMenh.maxValue !== undefined && <HealthBar current={getFinalAttributeValue(enemy, 'sinh_menh')} max={enemySinhMenh.maxValue} />}
-                                {isCurrentTurn && <p className="text-xs text-red-400">Lượt của địch</p>}
+                                {isCurrentTurn && <p className="text-xs" style={{color: 'var(--error-color)'}}>Lượt của địch</p>}
                             </div>
                          )
                     })}

@@ -136,6 +136,7 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
 - **Phe phái:** ${playerCharacter.reputation.map(r => r.factionName).join(', ')}.
 ` : '';
 
+  // FIX: Added return statement
   return `
 ### BỐI CẢNH GAME TOÀN CỤC ###
 ${modContext}

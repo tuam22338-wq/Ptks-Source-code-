@@ -1,5 +1,6 @@
 
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem, GenerationMode } from '../../types';
@@ -298,7 +299,6 @@ export const generateInitialWorldDetails = async (
             break;
     }
     
-    const settings = await db.getSettings();
     // FIX: Access narrativeStyle from gameState.gameplaySettings instead of global settings.
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === gameState.gameplaySettings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
@@ -336,6 +336,7 @@ export const generateInitialWorldDetails = async (
 
     Hãy thực hiện cả 3 nhiệm vụ và trả về kết quả trong một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 
+    const settings = await db.getSettings();
     const model = settings?.gameMasterModel || 'gemini-2.5-flash';
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
 

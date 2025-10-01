@@ -1,9 +1,9 @@
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload, ArbiterDecision } from '../types';
-import { generateDualResponseStream, harmonizeNarrative, summarizeStory, generateNpcThoughtBubble, decideActionOutcome } from './geminiService';
+import { generateActionResponseStream, harmonizeNarrative, summarizeStory } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
 import { simulateWorldTurn } from './worldSimulator';
 import * as questManager from '../utils/questManager';
-import { addEntryToMemory, retrieveAndSynthesizeMemory } from './memoryService';
+import { addEntryToMemory, retrieveMemoryContext } from './memoryService';
 import { validateMechanicalChanges } from './validationService';
 import { applyMechanicalChanges } from './stateUpdateService';
 import { runHeuristicFixer } from './heuristicFixerService';
@@ -20,62 +20,33 @@ export const processPlayerAction = async (
     onStreamUpdate: (content: string) => void
 ): Promise<GameState> => {
     
-    // --- GIAI ĐOẠN 0: CHUẨN BỊ & MÔ PHỎNG THẾ GIỚI ---
+    // --- GIAI ĐOẠN 0: CHUẨN BỊ, MÔ PHỎNG THẾ GIỚI & KÝ ỨC ---
     const { newState: stateAfterTime, newDay, notifications: timeNotifications } = advanceGameTime(gameState, apCost);
     timeNotifications.forEach(showNotification);
     
     let stateAfterSim = stateAfterTime;
-    let baseLogEntries: Omit<StoryEntry, 'id'>[] = [];
     
     if (newDay) {
-        baseLogEntries.push({ type: 'system', content: `Một ngày mới đã bắt đầu: ${stateAfterSim.gameDate.season}, ngày ${stateAfterSim.gameDate.day}` });
         showNotification("Một ngày mới bắt đầu...");
         const simResult = await simulateWorldTurn(stateAfterSim);
         stateAfterSim = simResult.newState;
         if (simResult.rumors.length > 0) {
-            baseLogEntries.push({ type: 'system-notification', content: `[Thế Giới Vận Chuyển] ${simResult.rumors.map(r => r.text).join(' ')}` });
+             const rumorText = `[Thế Giới Vận Chuyển] ${simResult.rumors.map(r => r.text).join(' ')}`;
+             // This needs to be added to the log later, as we don't have the final log yet.
+             // For now, we'll just show a notification.
+             showNotification(rumorText);
         }
     }
 
-    // --- GIAI ĐOẠN 0.2: KIỂM TRA GIÁN ĐOẠN NGẪU NHIÊN ---
-    const WORLD_INTERRUPTION_CHANCE_MAP: Record<string, number> = {
-        'none': 0,
-        'rare': 0.10,
-        'occasional': 0.25,
-        'frequent': 0.50,
-        'chaotic': 0.75
-    };
-    // FIX: Access worldInterruptionFrequency from gameState.gameplaySettings, not global settings.
-    const chance = WORLD_INTERRUPTION_CHANCE_MAP[gameState.gameplaySettings.worldInterruptionFrequency] || 0.25;
-    const isInterruption = Math.random() < chance;
+    const rawMemoryContext = await retrieveMemoryContext(text, stateAfterSim, currentSlotId);
 
-    if (isInterruption) {
-        showNotification("Thế giới biến động...");
-    }
-
-    // --- GIAI ĐOẠN 0.5: TƯ DUY NPC & TRUY XUẤT KÝ ỨC ---
-    let thoughtBubble: string | undefined = undefined;
-    const npcsHere = stateAfterSim.activeNpcs.filter(npc => npc.locationId === stateAfterSim.playerCharacter.currentLocationId);
-    const targetNpc = npcsHere.find(npc => text.includes(npc.identity.name));
-
-    if (targetNpc) {
-        thoughtBubble = await generateNpcThoughtBubble(targetNpc, stateAfterSim, text);
-    }
-    
-    const memoryContext = await retrieveAndSynthesizeMemory(text, stateAfterSim, currentSlotId);
-
-    const arbiterDecision = await decideActionOutcome(stateAfterSim, text);
-
-    // --- GIAI ĐOẠN 1: "Ý-HÌNH SONG SINH" ---
-    const stream = generateDualResponseStream(
+    // --- GIAI ĐOẠN 1: GỌI AI HỢP NHẤT ---
+    const stream = generateActionResponseStream(
         stateAfterSim, 
         text, 
         type, 
-        memoryContext, 
-        settings, 
-        arbiterDecision, 
-        isInterruption,
-        thoughtBubble
+        rawMemoryContext, 
+        settings
     );
 
     let fullResponseJsonString = '';
@@ -83,6 +54,7 @@ export const processPlayerAction = async (
         if (abortSignal.aborted) throw new Error("Hành động đã bị hủy.");
         fullResponseJsonString += chunk;
         
+        // Live streaming of the 'narrative' field
         const narrativeKey = '"narrative": "';
         const startIndex = fullResponseJsonString.indexOf(narrativeKey);
         
@@ -96,6 +68,7 @@ export const processPlayerAction = async (
                 content = content.substring(0, intentIndex);
             }
             
+            // Basic unescaping for display
             const unescapedContent = content
                 .replace(/\\n/g, '\n')
                 .replace(/\\"/g, '"')
@@ -105,6 +78,7 @@ export const processPlayerAction = async (
         }
     }
 
+    // --- GIAI ĐOẠN 2: PHÂN TÍCH & ÁP DỤNG KẾT QUẢ ---
     let aiPayload: AIResponsePayload;
     try {
         aiPayload = JSON.parse(fullResponseJsonString);
@@ -113,11 +87,9 @@ export const processPlayerAction = async (
         throw new Error("AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
     }
     
-    // --- GIAI ĐOẠN 2: "THIÊN ĐẠO GIÁM SÁT" ---
     const { validatedIntent, validationNotifications } = validateMechanicalChanges(aiPayload.mechanicalIntent, stateAfterSim);
     validationNotifications.forEach(showNotification);
 
-    // --- GIAI ĐOẠN 3: "NGÔN-THỰC HỢP NHẤT" ---
     let finalState = applyMechanicalChanges(stateAfterSim, validatedIntent, showNotification);
     
     let finalNarrative = aiPayload.narrative;
@@ -125,31 +97,23 @@ export const processPlayerAction = async (
         finalNarrative = await harmonizeNarrative(aiPayload.narrative, validatedIntent, validationNotifications);
     }
 
-    finalState.storyLog = finalState.storyLog.filter(entry => {
-        // Remove the pending player action and the streaming placeholder
-        return !entry.isPending && !(entry.type === 'narrative' && entry.content === '');
-    });
-
-    const finalNarrativeEntry: Omit<StoryEntry, 'id'> = { type: 'narrative', content: finalNarrative };
+    // Rebuild story log with final, non-pending entries
+    finalState.storyLog = finalState.storyLog.filter(entry => !entry.isPending && !(entry.type === 'narrative' && entry.content === ''));
     
     const lastId = finalState.storyLog.length > 0 ? finalState.storyLog[finalState.storyLog.length - 1].id : 0;
-    
-    // Add back the resolved player action and the final AI narrative
     const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
-    const narrativeEntryWithId: StoryEntry = { ...finalNarrativeEntry, id: lastId + 2 } as StoryEntry;
-
+    const narrativeEntryWithId: StoryEntry = { id: lastId + 2, type: 'narrative', content: finalNarrative, effects: validatedIntent };
     finalState.storyLog.push(playerActionEntry, narrativeEntryWithId);
 
     // Add new memory fragments for the events that just transpired
     await addEntryToMemory(playerActionEntry, finalState, currentSlotId);
     await addEntryToMemory(narrativeEntryWithId, finalState, currentSlotId);
 
-    // Post-processing
+    // --- GIAI ĐOẠN 3: XỬ LÝ HẬU KỲ & DỌN DẸP ---
     const finalQuestCheck = questManager.processQuestUpdates(finalState);
     finalQuestCheck.notifications.forEach(showNotification);
     let finalStateForSummary = finalQuestCheck.newState;
 
-    // --- GIAI ĐOẠN 4: THIÊN ĐẠO TRẬT TỰ GIÁM ---
     if (settings.enableHeuristicFixerAI) {
         try {
             const fixResult = await runHeuristicFixer(finalStateForSummary, currentSlotId);

@@ -16,7 +16,7 @@ import {
     VALIDATION_CAP_LEVELS,
     WORLD_INTERRUPTION_LEVELS
 } from "../constants";
-import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent, NamedRealmSystem, GameplaySettings, WorldCreationData } from "../types";
+import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent, NamedRealmSystem, GameplaySettings, WorldCreationData, Faction } from "../types";
 import { generateInitialWorldDetails } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
@@ -145,7 +145,7 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
     // ... [existing finalization logic] ...
     if (!dataToProcess.activeWorldId) {
         // Fallback for saves that predate the activeWorldId system
-        dataToProcess.activeWorldId = 'phong_than_dien_nghia';
+        dataToProcess.activeWorldId = 'khoi_nguyen_gioi';
     }
     if (!dataToProcess.playerCharacter.playerAiHooks) {
         dataToProcess.playerCharacter.playerAiHooks = {
@@ -295,24 +295,31 @@ export const hydrateWorldData = async (
     if (partialGameState.isHydrated || !partialGameState.creationData) {
         return partialGameState;
     }
-    
-    // Create a deep copy to modify safely
+
     const hydratedGameState: GameState = JSON.parse(JSON.stringify(partialGameState));
 
     try {
         setLoadingMessage('Đang tạo dựng thế giới, chúng sinh và viết nên chương mở đầu...');
-        
+
         const { npcs, relationships, openingNarrative } = await generateInitialWorldDetails(
             hydratedGameState,
             hydratedGameState.creationData.generationMode
         );
-        
-        hydratedGameState.playerCharacter.relationships.push(...relationships);
-        hydratedGameState.activeNpcs.push(...npcs);
 
-        // Replace the placeholder intro with the real one
+        // Family members are part of the story, always add them and their relationships.
+        const familyNpcs = npcs.filter(n => n.id.startsWith('family-npc-'));
+        hydratedGameState.playerCharacter.relationships.push(...relationships);
+        hydratedGameState.activeNpcs.push(...familyNpcs);
+
+        // Only add randomly generated "dynamic" NPCs if the user selected 'AI' mode.
+        if (hydratedGameState.creationData.npcGenerationMode === 'AI') {
+            const dynamicNpcs = npcs.filter(n => n.id.startsWith('dynamic-npc-'));
+            hydratedGameState.activeNpcs.push(...dynamicNpcs);
+        }
+
+        // Always use the AI opening narrative
         if (hydratedGameState.storyLog.length > 0) {
-             hydratedGameState.storyLog[0] = { ...hydratedGameState.storyLog[0], content: openingNarrative };
+            hydratedGameState.storyLog[0] = { ...hydratedGameState.storyLog[0], content: openingNarrative };
         } else {
             hydratedGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
         }
@@ -342,23 +349,22 @@ export const createNewGameState = async (
 ): Promise<GameState> => {
     const { 
         identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong, initialCurrency, generationMode = 'fast', attributeSystem, namedRealmSystem, genre,
+        npcGenerationMode, locationGenerationMode, factionGenerationMode,
+        customNpcs, customLocations, customFactions,
         ...gameplaySettingsData
      } = gameStartData;
 
     // --- DYNAMIC WORLD LOADING ---
     let modWorldData: ModWorldData | undefined;
     
-    // 1. Prioritize any enabled mod with its own world data. This assumes only one major world mod is active.
     const worldMod = activeMods.find(m => m.content.worldData && m.content.worldData.length > 0);
     if (worldMod) {
         modWorldData = worldMod.content.worldData[0];
-        activeWorldId = modWorldData.id; // Sync activeWorldId with the loaded mod world
+        activeWorldId = modWorldData.id;
     } else {
-        // 2. Fallback to finding world by ID among defaults if no world mod is active
         modWorldData = DEFAULT_WORLDS_DATA.find(w => w.id === activeWorldId);
     }
     
-    // 3. Ultimate fallback if ID is still invalid
     if (!modWorldData) {
         modWorldData = DEFAULT_WORLDS_DATA[0];
         activeWorldId = modWorldData.id;
@@ -367,16 +373,41 @@ export const createNewGameState = async (
 
     console.log(`Đang tải dữ liệu thế giới từ: ${modWorldData.name}`);
 
-    // Extract data from the chosen world data
-    const worldMapToUse = modWorldData.initialLocations.map(loc => ({
-        ...loc,
-        id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
-    })) as Location[];
+    // --- OVERRIDE WORLD DATA BASED ON USER CHOICE ---
+    let factionsToUse: Faction[];
+    if (factionGenerationMode === 'CUSTOM' && customFactions) {
+        factionsToUse = customFactions;
+    } else if (factionGenerationMode === 'NONE') {
+        factionsToUse = [];
+    } else {
+        factionsToUse = modWorldData.factions;
+    }
+
+    let worldMapToUse: Location[];
+    if (locationGenerationMode === 'CUSTOM' && customLocations) {
+        worldMapToUse = customLocations.map(loc => ({
+            ...loc,
+            id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+        })) as Location[];
+    } else if (locationGenerationMode === 'NONE') {
+        worldMapToUse = [];
+    } else {
+        worldMapToUse = modWorldData.initialLocations.map(loc => ({
+            ...loc,
+            id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+        })) as Location[];
+    }
+
     const majorEventsToUse = modWorldData.majorEvents;
-    const factionsToUse = modWorldData.factions;
     const startingYear = modWorldData.startingYear;
     const eraName = modWorldData.eraName;
-    const startingLocationId = worldMapToUse[0].id;
+
+    const startingLocationId = worldMapToUse.length > 0 ? worldMapToUse[0].id : '';
+    const startingLocation = worldMapToUse.find(l => l.id === startingLocationId) || (worldMapToUse.length > 0 ? worldMapToUse[0] : null);
+
+    if (!startingLocation) {
+        throw new Error("Không thể xác định địa điểm bắt đầu. Vui lòng cung cấp ít nhất một địa điểm nếu ở chế độ 'Tự Định Nghĩa'.");
+    }
     
     // --- Realm System Loading (Data-driven) ---
     let realmSystemToUse: RealmConfig[] = [];
@@ -389,7 +420,7 @@ export const createNewGameState = async (
     const modNamedSystems = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems;
     const modLegacyRealms = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
 
-    if (namedRealmSystem) { // Highest priority: user-defined system from creation screen
+    if (namedRealmSystem) {
         realmSystemToUse = namedRealmSystem.realms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
         realmSystemInfoToUse = {
             name: namedRealmSystem.name,
@@ -411,7 +442,7 @@ export const createNewGameState = async (
             resourceName: 'Linh Khí',
             resourceUnit: 'điểm',
         };
-    } else if (genre === 'Huyền Huyễn Tu Tiên') { // Fallback to default ONLY for this genre if no mod provides a system
+    } else if (genre === 'Huyền Huyễn Tu Tiên') {
         realmSystemToUse = REALM_SYSTEM.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
         realmSystemInfoToUse = {
             name: 'Hệ Thống Tu Luyện Mặc Định',
@@ -426,7 +457,14 @@ export const createNewGameState = async (
         groups: DEFAULT_ATTRIBUTE_GROUPS
     };
 
-    const initialNpcsFromData = modWorldData.initialNpcs.map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
+    let initialNpcsFromData: NPC[];
+    if (npcGenerationMode === 'CUSTOM' && customNpcs) {
+        initialNpcsFromData = customNpcs.map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
+    } else if (npcGenerationMode === 'NONE') {
+        initialNpcsFromData = [];
+    } else {
+        initialNpcsFromData = modWorldData.initialNpcs.map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
+    }
 
     const initialAttributes: CharacterAttributes = {};
     const selectedDifficulty = DIFFICULTY_LEVELS.find(d => d.id === difficulty) || DIFFICULTY_LEVELS.find(d => d.id === 'medium')!;
@@ -440,7 +478,6 @@ export const createNewGameState = async (
         }
     });
 
-    // Apply bonuses from character creation (race, background, spiritual root)
     [...initialBonuses].forEach(bonus => {
         const attrDef = attributeSystemToUse.definitions.find(d => d.name === bonus.attribute);
         if (attrDef && initialAttributes[attrDef.id]) {
@@ -453,7 +490,7 @@ export const createNewGameState = async (
     
     const initialCurrencies: Currency = initialCurrency && Object.keys(initialCurrency).length > 0
         ? initialCurrency
-        : { 'Bạc': 50, 'Linh thạch hạ phẩm': 20 }; // Fallback for safety
+        : { 'Bạc': 50, 'Linh thạch hạ phẩm': 20 };
 
     const startingInventoryItems: InventoryItem[] = initialItems.map((item, index) => ({
         id: `start-item-${index}-${Date.now()}`,
@@ -476,7 +513,7 @@ export const createNewGameState = async (
     const initialVitals: PlayerVitals = {
         temperature: 37,
     };
-    const startingLocation = worldMapToUse.find(l => l.id === startingLocationId) || worldMapToUse[0];
+    
     const initialCaveAbode: CaveAbode = {
         name: `${identity.name} Động Phủ`,
         level: 1,
@@ -487,7 +524,6 @@ export const createNewGameState = async (
         locationId: 'dong_phu'
     };
 
-    // Calculate derived stats for the first time
     const attributesWithDerived = calculateDerivedStats(initialAttributes, attributeSystemToUse.definitions);
 
     let playerCharacter: PlayerCharacter = {
@@ -541,7 +577,6 @@ export const createNewGameState = async (
     };
     
     const initialWorldState: WorldState = { rumors: [], dynamicEvents: [], foreshadowedEvents: [], triggeredDynamicEventIds: {} };
-    // Process foreshadowed events from mod data
     if (modWorldData?.foreshadowedEvents) {
         const totalStartDays = ((startingYear - 1) * 4 * 30) + 1;
         initialWorldState.foreshadowedEvents = modWorldData.foreshadowedEvents.map((fe, index): ForeshadowedEvent => ({
@@ -584,10 +619,15 @@ export const createNewGameState = async (
         playerStall: null,
         playerSect: null,
         isHydrated: false,
-        creationData: { npcDensity, generationMode },
+        creationData: { 
+            npcDensity, 
+            generationMode,
+            npcGenerationMode,
+            locationGenerationMode,
+            factionGenerationMode,
+        },
         gameplaySettings: {
             ...gameplaySettingsData,
-            // Provide defaults for any multipliers that might be missing
             cultivationRateMultiplier: 100,
             resourceRateMultiplier: 100,
             damageDealtMultiplier: 100,

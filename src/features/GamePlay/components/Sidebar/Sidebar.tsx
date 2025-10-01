@@ -72,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings 
                         <button
                             key={panel.id}
                             title={panel.label}
-                            className={`w-12 h-12 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-700/50 hover:text-white transition-colors ${activePanelId === panel.id ? 'bg-amber-600/50 text-white' : ''}`}
+                            className={`w-12 h-12 flex items-center justify-center rounded-lg text-[var(--text-muted-color)] hover:bg-gray-700/50 hover:text-[var(--text-color)] transition-colors ${activePanelId === panel.id ? 'bg-[var(--primary-accent-color)]/50 text-[var(--text-color)]' : ''}`}
                             onClick={() => setActivePanelId(panel.id)}
                         >
                             <panel.icon className="w-6 h-6" />
@@ -84,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings 
                         <h2 className="text-2xl font-bold font-title text-amber-300">
                             {availablePanels.find(p => p.id === activePanelId)?.label}
                         </h2>
-                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
+                        <button onClick={onClose} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)]"><FaTimes /></button>
                     </div>
                     <div className="overflow-y-auto h-[calc(100%-4rem)] pr-2">
                         {ActivePanel && React.createElement(ActivePanel, (panelProps as any)[activePanelId])}

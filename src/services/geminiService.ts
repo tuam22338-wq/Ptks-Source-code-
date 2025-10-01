@@ -9,9 +9,11 @@ export * from './gemini/asset.service';
 export * from './gemini/modding.service';
 export * from './gemini/quest.service';
 export * from './gemini/combat.service';
-export * from './gemini/interaction.service';
+// interaction.service's main function is deprecated and merged into gameplay.service
+// export * from './gemini/interaction.service';
 export * from './gemini/planning.service';
-export * from './gemini/arbiter.service';
+// Arbiter service is deprecated and merged into gameplay.service
+// export * from './gemini/arbiter.service';
 export * from './gemini/faction.service';
 export * from './gemini/novel.service';
 export * from './gemini/heuristic.service';

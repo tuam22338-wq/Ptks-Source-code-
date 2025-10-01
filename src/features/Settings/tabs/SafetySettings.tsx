@@ -9,7 +9,7 @@ interface SettingsSectionProps {
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
   <section className="mb-10">
-    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
@@ -23,8 +23,8 @@ interface SettingsRowProps {
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
   <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
     <div className="md:w-1/3 flex-shrink-0">
-      <label className="block font-semibold text-gray-200">{label}</label>
-      <p className="text-sm text-gray-500 mt-1">{description}</p>
+      <label className="block font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
+      <p className="text-sm mt-1" style={{color: 'var(--text-muted-color)'}}>{description}</p>
     </div>
     <div className="md:w-2/3">{children}</div>
   </div>
@@ -54,13 +54,13 @@ const SafetySettingsTab: React.FC<SafetySettingsProps> = ({ settings, handleSett
             <SettingsRow label="Công tắc an toàn chính" description="Tắt tùy chọn này sẽ bỏ qua tất cả các bộ lọc an toàn. Chỉ nên tắt nếu bạn hiểu rõ rủi ro." disabled={settings.enableNsfwMode}>
                 <label className="flex items-center cursor-pointer">
                     <input type="checkbox" checked={settings.masterSafetySwitch} onChange={e => handleSettingChange('masterSafetySwitch', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" disabled={settings.enableNsfwMode}/>
-                    <span className="ml-3 text-sm text-gray-300">Bật bộ lọc an toàn</span>
+                    <span className="ml-3 text-sm" style={{color: 'var(--text-color)'}}>Bật bộ lọc an toàn</span>
                 </label>
             </SettingsRow>
             {settings.masterSafetySwitch && SAFETY_CATEGORIES.map(category => (
                 <SettingsRow key={category.id} label={category.name} description={`Chặn các nội dung liên quan đến ${category.name.toLowerCase()}.`} disabled={settings.enableNsfwMode}>
                      <select 
-                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" 
+                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" 
                         value={settings.safetyLevels[category.id as keyof typeof settings.safetyLevels]}
                         onChange={e => handleSettingChange('safetyLevels', { ...settings.safetyLevels, [category.id]: e.target.value as SafetyLevel })}
                         disabled={settings.enableNsfwMode}

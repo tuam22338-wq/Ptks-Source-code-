@@ -3,10 +3,13 @@ import { FaArrowLeft, FaFileUpload, FaBrain, FaToggleOn, FaToggleOff, FaSave, Fa
 import { useAppContext } from '../../contexts/AppContext';
 import { CURRENT_GAME_VERSION, ATTRIBUTE_TEMPLATES, UI_ICONS, NARRATIVE_STYLES, DEATH_PENALTY_LEVELS, WORLD_INTERRUPTION_LEVELS } from '../../constants';
 import { REALM_TEMPLATES } from '../../data/realmTemplates';
-import type { SaveSlot, FullMod, WorldCreationData, ModAttributeSystem, AttributeDefinition, AttributeGroupDefinition, NamedRealmSystem, GenerationMode, NarrativeStyle, DeathPenalty, WorldInterruptionFrequency } from '../../types';
+import type { SaveSlot, FullMod, WorldCreationData, ModAttributeSystem, AttributeDefinition, AttributeGroupDefinition, NamedRealmSystem, GenerationMode, NarrativeStyle, DeathPenalty, WorldInterruptionFrequency, DataGenerationMode, ModNpc, ModLocation, Faction } from '../../types';
 import LoadingScreen from '../../components/LoadingScreen';
 import AttributeEditorModal from '../../features/Mods/components/AttributeEditorModal';
 import RealmEditorModal from '../../features/Mods/components/RealmEditorModal';
+import NpcEditorModal from '../../features/Mods/components/NpcEditorModal';
+import LocationEditorModal from '../../features/Mods/components/LocationEditorModal';
+import FactionEditorModal from '../../features/Mods/components/FactionEditorModal';
 import { generateWorldFromText } from '../../services/gemini/modding.service';
 
 // --- Quick Create Modal ---
@@ -89,6 +92,14 @@ const SaveSlotScreen: React.FC = () => {
   
   const [isRealmEditorOpen, setRealmEditorOpen] = useState(false);
 
+  // Modals for custom data
+  const [isNpcModalOpen, setNpcModalOpen] = useState(false);
+  const [editingNpc, setEditingNpc] = useState<ModNpc | null>(null);
+  const [isLocationModalOpen, setLocationModalOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<ModLocation | null>(null);
+  const [isFactionModalOpen, setFactionModalOpen] = useState(false);
+  const [editingFaction, setEditingFaction] = useState<Faction | null>(null);
+
   const [formData, setFormData] = useState<WorldCreationData>({
     genre: 'Huyền Huyễn Tu Tiên',
     theme: '',
@@ -103,8 +114,14 @@ const SaveSlotScreen: React.FC = () => {
     enableRealmSystem: true,
     realmTemplateId: 'xianxia_default',
     namedRealmSystem: REALM_TEMPLATES.find(t => t.id === 'xianxia_default')!.system,
-    // FIX: Add missing generationMode to satisfy the GameStartData type requirement in AppContext.
     generationMode: 'deep',
+    // Data Generation Modes
+    npcGenerationMode: 'AI',
+    locationGenerationMode: 'AI',
+    factionGenerationMode: 'AI',
+    customNpcs: [],
+    customLocations: [],
+    customFactions: [],
     // Default Gameplay Settings
     narrativeStyle: 'classic_wuxia',
     aiResponseWordCount: 1500,
@@ -146,6 +163,11 @@ const SaveSlotScreen: React.FC = () => {
         const finalValue = isCheckbox ? (e.target as HTMLInputElement).checked : value;
         setFormData(p => ({ ...p, [name]: finalValue }));
     }
+  };
+
+  const handleDataGenModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(p => ({ ...p, [name]: value as DataGenerationMode }));
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,9 +279,7 @@ const SaveSlotScreen: React.FC = () => {
         setLoadingMessage("AI đang phân tích ý tưởng của bạn...");
         setError(null);
         try {
-            // FIX: Call the correct function `generateWorldFromText` instead of `generateWorldFromPrompts`.
             const result: FullMod = await generateWorldFromText(description, 'deep');
-            // FIX: Extract properties from the returned FullMod object structure.
             setFormData(prev => ({
                 ...prev,
                 genre: result.modInfo.tags?.[0] || prev.genre,
@@ -277,8 +297,67 @@ const SaveSlotScreen: React.FC = () => {
         }
     };
   
+    // --- Custom Data Handlers ---
+    const handleSaveNpc = (npc: ModNpc) => {
+        setFormData(p => {
+            const existingIndex = p.customNpcs.findIndex(n => n.id === npc.id);
+            if (existingIndex > -1) {
+                const updatedNpcs = [...p.customNpcs];
+                updatedNpcs[existingIndex] = npc;
+                return { ...p, customNpcs: updatedNpcs };
+            }
+            return { ...p, customNpcs: [...p.customNpcs, npc] };
+        });
+        setNpcModalOpen(false);
+    };
+
+    const handleDeleteNpc = (npcId: string) => {
+        if (window.confirm("Bạn có chắc muốn xóa NPC này?")) {
+            setFormData(p => ({ ...p, customNpcs: p.customNpcs.filter(n => n.id !== npcId)}));
+        }
+    };
+    
+    const handleSaveLocation = (loc: ModLocation) => {
+        setFormData(p => {
+            const existingIndex = p.customLocations.findIndex(l => l.id === loc.id);
+            if (existingIndex > -1) {
+                 const updated = [...p.customLocations];
+                 updated[existingIndex] = loc;
+                return { ...p, customLocations: updated };
+            }
+            return { ...p, customLocations: [...p.customLocations, loc] };
+        });
+        setLocationModalOpen(false);
+    };
+
+    const handleDeleteLocation = (locId: string) => {
+        if (window.confirm("Bạn có chắc muốn xóa Địa Điểm này?")) {
+            setFormData(p => ({ ...p, customLocations: p.customLocations.filter(l => l.id !== locId)}));
+        }
+    };
+
+     const handleSaveFaction = (faction: Faction) => {
+        setFormData(p => {
+            const existingIndex = p.customFactions.findIndex(f => f.name === faction.name);
+            if (existingIndex > -1) {
+                const updated = [...p.customFactions];
+                updated[existingIndex] = faction;
+                return { ...p, customFactions: updated };
+            }
+            return { ...p, customFactions: [...p.customFactions, faction] };
+        });
+        setFactionModalOpen(false);
+    };
+
+    const handleDeleteFaction = (factionName: string) => {
+         if (window.confirm("Bạn có chắc muốn xóa Phe Phái này?")) {
+            setFormData(p => ({ ...p, customFactions: p.customFactions.filter(f => f.name !== factionName)}));
+        }
+    };
+
+
   if (isLoading) {
-      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} />;
+      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={formData.generationMode}/>;
   }
 
   return (
@@ -303,10 +382,13 @@ const SaveSlotScreen: React.FC = () => {
                 attributeSystem={formData.attributeSystem}
             />
         )}
-        
+        <NpcEditorModal isOpen={isNpcModalOpen} onClose={() => setNpcModalOpen(false)} onSave={handleSaveNpc} npc={editingNpc} />
+        <LocationEditorModal isOpen={isLocationModalOpen} onClose={() => setLocationModalOpen(false)} onSave={handleSaveLocation} location={editingLocation} />
+        <FactionEditorModal isOpen={isFactionModalOpen} onClose={() => setFactionModalOpen(false)} onSave={handleSaveFaction} faction={editingFaction} />
+
         <div className="flex justify-between items-center mb-4 flex-shrink-0">
             <h2 className="text-3xl font-bold font-title">Kiến Tạo Thế Giới</h2>
-            <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50" title="Quay Lại Menu">
+            <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-gray-700/50" title="Quay Lại Menu">
                 <FaArrowLeft className="w-5 h-5" />
             </button>
         </div>
@@ -322,7 +404,7 @@ const SaveSlotScreen: React.FC = () => {
             
             <Section title="1. Hồn Của Thế Giới">
                 <Field label="Thể Loại" description="Quyết định văn phong và không khí chính của câu chuyện. Sẽ tự động chọn một mẫu thuộc tính phù hợp.">
-                    <select name="genre" value={formData.genre} onChange={handleInputChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2">
+                    <select name="genre" value={formData.genre} onChange={handleInputChange} className="input-neumorphic">
                         <option>Huyền Huyễn Tu Tiên</option>
                         <option>Võ Hiệp Giang Hồ</option>
                         <option>Khoa Huyễn Viễn Tưởng</option>
@@ -331,22 +413,22 @@ const SaveSlotScreen: React.FC = () => {
                     </select>
                 </Field>
                 <Field label="Chủ Đề (Cụ thể hơn)" description="Giúp AI tập trung vào một khía cạnh cụ thể trong thể loại bạn chọn.">
-                    <input name="theme" value={formData.theme} onChange={handleInputChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" placeholder="VD: Ngôi nhà ma ám, Lời nguyền rồng, Tu tiên độ kiếp..."/>
+                    <input name="theme" value={formData.theme} onChange={handleInputChange} className="input-neumorphic" placeholder="VD: Ngôi nhà ma ám, Lời nguyền rồng, Tu tiên độ kiếp..."/>
                 </Field>
                 <Field label="Bối Cảnh (Thế giới/Môi trường)" description="Mô tả nơi câu chuyện sẽ diễn ra.">
-                    <textarea name="setting" value={formData.setting} onChange={handleInputChange} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" placeholder="VD: Thành phố bỏ hoang sau đại dịch, Vương quốc Eldoria huyền bí, Tam Giới hỗn loạn..."/>
+                    <textarea name="setting" value={formData.setting} onChange={handleInputChange} rows={3} className="input-neumorphic resize-y" placeholder="VD: Thành phố bỏ hoang sau đại dịch, Vương quốc Eldoria huyền bí, Tam Giới hỗn loạn..."/>
                 </Field>
             </Section>
 
              <Section title="2. Cài Đặt Sáng Thế Nâng Cao">
-                <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full flex justify-between items-center px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-left text-gray-200 hover:bg-black/40">
+                <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full flex justify-between items-center px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-left text-[var(--text-color)] hover:bg-black/40">
                     <span className="font-semibold">Tùy Chỉnh Lối Chơi & AI</span>
                     {showAdvanced ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
                  {showAdvanced && (
                     <div className="p-4 space-y-4 border-t border-gray-600/50 animate-fade-in">
                         <Field label="Phong Cách Tường Thuật" description="Chọn văn phong và giọng điệu cho AI kể chuyện.">
-                             <select name="narrativeStyle" value={formData.narrativeStyle} onChange={e => setFormData(p => ({ ...p, narrativeStyle: e.target.value as NarrativeStyle }))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2">
+                             <select name="narrativeStyle" value={formData.narrativeStyle} onChange={e => setFormData(p => ({ ...p, narrativeStyle: e.target.value as NarrativeStyle }))} className="input-neumorphic">
                                 {NARRATIVE_STYLES.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
                             </select>
                         </Field>
@@ -357,17 +439,17 @@ const SaveSlotScreen: React.FC = () => {
                             </div>
                         </Field>
                         <Field label="Mức Độ Biến Hóa Của Thế Giới" description="Tần suất các sự kiện ngẫu nhiên xảy ra làm gián đoạn hành động của bạn.">
-                            <select name="worldInterruptionFrequency" value={formData.worldInterruptionFrequency} onChange={e => setFormData(p => ({ ...p, worldInterruptionFrequency: e.target.value as WorldInterruptionFrequency }))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2">
+                            <select name="worldInterruptionFrequency" value={formData.worldInterruptionFrequency} onChange={e => setFormData(p => ({ ...p, worldInterruptionFrequency: e.target.value as WorldInterruptionFrequency }))} className="input-neumorphic">
                                 {WORLD_INTERRUPTION_LEVELS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                             </select>
                         </Field>
                          <Field label="Hình Phạt Khi Tử Vong" description="Chọn hình phạt sẽ xảy ra khi nhân vật của bạn chết.">
-                             <select name="deathPenalty" value={formData.deathPenalty} onChange={e => setFormData(p => ({ ...p, deathPenalty: e.target.value as DeathPenalty }))} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2">
+                             <select name="deathPenalty" value={formData.deathPenalty} onChange={e => setFormData(p => ({ ...p, deathPenalty: e.target.value as DeathPenalty }))} className="input-neumorphic">
                                 {DEATH_PENALTY_LEVELS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                             </select>
                         </Field>
                         <Field label="Bật Cơ Chế Sinh Tồn" description="Bật hoặc tắt nhu cầu về đói, khát.">
-                             <button onClick={() => setFormData(p => ({ ...p, enableSurvivalMechanics: !p.enableSurvivalMechanics }))} className="flex items-center gap-2 text-gray-300">
+                             <button onClick={() => setFormData(p => ({ ...p, enableSurvivalMechanics: !p.enableSurvivalMechanics }))} className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
                                 {formData.enableSurvivalMechanics ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
                                 <span>Bật đói và khát</span>
                             </button>
@@ -378,7 +460,7 @@ const SaveSlotScreen: React.FC = () => {
 
             <Section title="3. Hệ Thống Cảnh Giới & Thuộc Tính">
                  <Field label="Hệ thống Cảnh giới" description="Thế giới của bạn có hệ thống cấp bậc, tu luyện, hay sức mạnh không?">
-                    <button onClick={() => setFormData(p => ({ ...p, enableRealmSystem: !p.enableRealmSystem }))} className="flex items-center gap-2 text-gray-300">
+                    <button onClick={() => setFormData(p => ({ ...p, enableRealmSystem: !p.enableRealmSystem }))} className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
                         {formData.enableRealmSystem ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
                         <span>{formData.enableRealmSystem ? 'Đang Bật' : 'Đang Tắt'}</span>
                     </button>
@@ -386,7 +468,7 @@ const SaveSlotScreen: React.FC = () => {
                  {formData.enableRealmSystem && (
                      <Field label="Chọn Mẫu Cảnh Giới" description="Bắt đầu với một hệ thống có sẵn hoặc tự tạo.">
                         <div className="flex items-center gap-2">
-                           <select value={formData.realmTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2">
+                           <select value={formData.realmTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="input-neumorphic">
                                 {REALM_TEMPLATES.map(template => (
                                     <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
                                 ))}
@@ -397,25 +479,25 @@ const SaveSlotScreen: React.FC = () => {
                     </Field>
                  )}
                 <Field label="Hệ Thống Thuộc Tính" description="Bắt đầu với một hệ thống thuộc tính có sẵn.">
-                    <select onChange={e => handleTemplateChange(e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2">
+                    <select onChange={e => handleTemplateChange(e.target.value)} className="input-neumorphic">
                         {ATTRIBUTE_TEMPLATES.map(template => (
                             <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
                         ))}
                     </select>
                 </Field>
                 {formData.attributeSystem?.groups.map(group => (
-                    <div key={group.id} className="p-3 bg-black/30 rounded-lg border border-gray-800">
-                        <h4 className="font-bold text-lg text-amber-300">{group.name}</h4>
+                    <div key={group.id} className="neumorphic-inset-box p-3">
+                        <h4 className="font-bold text-lg" style={{color: 'var(--primary-accent-color)'}}>{group.name}</h4>
                         <div className="mt-2 space-y-2">
                             {formData.attributeSystem.definitions.filter(def => def.group === group.id).map(def => (
                                 <div key={def.id} className="flex justify-between items-center p-2 bg-black/20 rounded">
                                     <div className="flex items-center gap-2">
                                         {React.createElement(UI_ICONS[def.iconName] || 'span', { className: 'text-cyan-300' })}
-                                        <span className="text-sm font-semibold text-gray-300">{def.name}</span>
+                                        <span className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{def.name}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={() => handleOpenAttributeModal(group, def)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>
-                                        <button onClick={() => handleDeleteAttribute(def.id)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
+                                        <button onClick={() => handleOpenAttributeModal(group, def)} className="p-1 text-[var(--text-muted-color)] hover:text-[var(--text-color)]"><FaEdit /></button>
+                                        <button onClick={() => handleDeleteAttribute(def.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
                                     </div>
                                 </div>
                             ))}
@@ -429,23 +511,96 @@ const SaveSlotScreen: React.FC = () => {
 
             <Section title="4. Tạo Nhân Vật Chính">
                 <Field label="Tên Nhân Vật" description="Nhập tên cho nhân vật của bạn.">
-                    <input name="character.name" value={formData.character.name} onChange={handleInputChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2"/>
+                    <input name="character.name" value={formData.character.name} onChange={handleInputChange} className="input-neumorphic"/>
                 </Field>
                 <Field label="Giới Tính" description="">
-                     <select name="character.gender" value={formData.character.gender} onChange={handleInputChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2">
+                     <select name="character.gender" value={formData.character.gender} onChange={handleInputChange} className="input-neumorphic">
                         <option value="AI">Để AI quyết định</option>
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
                     </select>
                 </Field>
                 <Field label="Sơ Lược Tiểu Sử/Đặc Điểm (2-3 câu)" description="Cung cấp cho AI một vài ý tưởng về nhân vật của bạn.">
-                    <textarea name="character.bio" value={formData.character.bio} onChange={handleInputChange} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" placeholder="VD: Một thám tử tư nghiện cà phê với quá khứ bí ẩn, một đệ tử ngoại môn vô danh tình cờ nhặt được bí kíp..."/>
+                    <textarea name="character.bio" value={formData.character.bio} onChange={handleInputChange} rows={3} className="input-neumorphic resize-y" placeholder="VD: Một thám tử tư nghiện cà phê với quá khứ bí ẩn, một đệ tử ngoại môn vô danh tình cờ nhặt được bí kíp..."/>
                 </Field>
             </Section>
+
+            <Section title="5. Dữ Liệu Thế Giới">
+                <Field label="NPC Ban Đầu" description="Chọn cách tạo các NPC ban đầu trong thế giới.">
+                    <div className="flex gap-2 items-start">
+                        <select name="npcGenerationMode" value={formData.npcGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic flex-grow">
+                            <option value="AI">Để AI Tự Tạo</option>
+                            <option value="CUSTOM">Tự Định Nghĩa</option>
+                            <option value="NONE">Không Tạo Ban Đầu</option>
+                        </select>
+                    </div>
+                    {formData.npcGenerationMode === 'CUSTOM' && (
+                        <div className="mt-2 p-2 border border-gray-700 rounded-lg space-y-2">
+                            {formData.customNpcs.map(npc => (
+                                <div key={npc.id} className="flex justify-between items-center p-2 bg-black/20 rounded">
+                                    <span className="text-sm font-semibold">{npc.name}</span>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingNpc(npc); setNpcModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                        <button onClick={() => handleDeleteNpc(npc.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={() => { setEditingNpc(null); setNpcModalOpen(true); }} className="w-full mt-1 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus /> Thêm NPC</button>
+                        </div>
+                    )}
+                </Field>
+                 <Field label="Địa Điểm Ban Đầu" description="Chọn cách tạo các địa điểm ban đầu.">
+                     <div className="flex gap-2 items-start">
+                        <select name="locationGenerationMode" value={formData.locationGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic flex-grow">
+                            <option value="AI">Sử dụng từ Thế giới Mặc định</option>
+                            <option value="CUSTOM">Tự Định Nghĩa</option>
+                            <option value="NONE">Không Tạo Ban Đầu</option>
+                        </select>
+                    </div>
+                     {formData.locationGenerationMode === 'CUSTOM' && (
+                        <div className="mt-2 p-2 border border-gray-700 rounded-lg space-y-2">
+                            {formData.customLocations.map(loc => (
+                                <div key={loc.id} className="flex justify-between items-center p-2 bg-black/20 rounded">
+                                    <span className="text-sm font-semibold">{loc.name}</span>
+                                     <div className="flex gap-2">
+                                        <button onClick={() => { setEditingLocation(loc); setLocationModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                        <button onClick={() => handleDeleteLocation(loc.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={() => { setEditingLocation(null); setLocationModalOpen(true); }} className="w-full mt-1 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus /> Thêm Địa Điểm</button>
+                        </div>
+                    )}
+                </Field>
+                <Field label="Phe Phái Ban Đầu" description="Chọn cách tạo các phe phái ban đầu.">
+                     <div className="flex gap-2 items-start">
+                        <select name="factionGenerationMode" value={formData.factionGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic flex-grow">
+                            <option value="AI">Sử dụng từ Thế giới Mặc định</option>
+                            <option value="CUSTOM">Tự Định Nghĩa</option>
+                            <option value="NONE">Không Tạo Ban Đầu</option>
+                        </select>
+                    </div>
+                    {formData.factionGenerationMode === 'CUSTOM' && (
+                        <div className="mt-2 p-2 border border-gray-700 rounded-lg space-y-2">
+                            {formData.customFactions.map(faction => (
+                                <div key={faction.name} className="flex justify-between items-center p-2 bg-black/20 rounded">
+                                    <span className="text-sm font-semibold">{faction.name}</span>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setEditingFaction(faction); setFactionModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                        <button onClick={() => handleDeleteFaction(faction.name)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                    </div>
+                                </div>
+                            ))}
+                            <button onClick={() => { setEditingFaction(null); setFactionModalOpen(true); }} className="w-full mt-1 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus /> Thêm Phe Phái</button>
+                        </div>
+                    )}
+                </Field>
+            </Section>
+
         </div>
 
         <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-center">
-            <button onClick={handleStartCreation} className="px-8 py-3 text-xl font-bold rounded-lg bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 flex items-center gap-3">
+            <button onClick={handleStartCreation} className="btn btn-primary px-8 py-3 text-xl font-bold flex items-center gap-3">
                 <FaBrain /> Bắt Đầu Sáng Thế
             </button>
         </div>
@@ -454,16 +609,16 @@ const SaveSlotScreen: React.FC = () => {
 };
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="bg-black/20 p-4 rounded-lg border border-gray-700/60">
-        <h3 className="text-xl font-bold font-title text-amber-300 mb-4">{title}</h3>
+    <div className="neumorphic-inset-box p-4">
+        <h3 className="text-xl font-bold font-title text-[var(--primary-accent-color)] mb-4">{title}</h3>
         <div className="space-y-4">{children}</div>
     </div>
 );
 
 const Field: React.FC<{ label: string; description: string; children: React.ReactNode; disabled?: boolean }> = ({ label, description, children, disabled }) => (
     <div className={disabled ? 'opacity-50' : ''}>
-        <label className="block font-semibold text-gray-300">{label}</label>
-        <p className="text-sm text-gray-500 mb-2">{description}</p>
+        <label className="block font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
+        <p className="text-sm mb-2" style={{color: 'var(--text-muted-color)'}}>{description}</p>
         {children}
     </div>
 );

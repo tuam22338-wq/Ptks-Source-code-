@@ -1,8 +1,7 @@
-
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode } from '../../types';
-// FIX: Removed unused PT_WORLD_MAP import which was causing an error.
+// FIX: Removed unused import.
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
@@ -42,14 +41,15 @@ export const generateRelationshipUpdate = async (
     - Mô tả: ${currentRelationship.description}
 
     **Bối cảnh thế giới:**
-    - Năm: ${gameState.gameDate.year}, Đại kiếp Phong Thần đang diễn ra.
-    - Sự kiện gần đây: ${gameState.storyLog.slice(-5).map(e => e.content).join('; ')}
+    - Năm: ${gameState.gameDate.year}.
+    - Sự kiện lớn đang/sắp diễn ra: ${gameState.majorEvents.find(e => e.year >= gameState.gameDate.year)?.title || "Bình yên."}
+    - Tóm tắt câu chuyện gần đây: ${gameState.storySummary || "Chưa có gì đáng chú ý."}
     - Danh tiếng của người chơi: ${gameState.playerCharacter.danhVong.status}
 
     **Nhiệm vụ:**
     1.  **Phân tích:** Dựa trên tính cách, mục tiêu của hai NPC và bối cảnh thế giới, hãy suy nghĩ xem mối quan hệ của họ sẽ phát triển như thế nào. Ví dụ: hai người cùng phe có thể trở nên thân thiết hơn sau một chiến thắng, hai kẻ đối địch có thể mâu thuẫn sâu sắc hơn.
     2.  **Cập nhật mô tả:** Viết lại mô tả cho mối quan hệ của họ để phản ánh sự phát triển này. Kể cả khi không có thay đổi lớn, hãy làm mới câu chữ một chút.
-    3.  **Tạo tin đồn (Tùy chọn):** Nếu tương tác của họ đủ đáng chú ý, hãy tạo ra một câu tin đồn mà người chơi có thể nghe được. Ví dụ: "Nghe nói Khương Tử Nha và Thân Công Báo lại tranh cãi kịch liệt về thiên số tại bờ sông Vị."
+    3.  **Tạo tin đồn (Tùy chọn):** Nếu tương tác của họ đủ đáng chú ý, hãy tạo ra một câu tin đồn mà người chơi có thể nghe được. Ví dụ: "Nghe nói hai vị trưởng lão của hai phe lại tranh cãi kịch liệt về tài nguyên khoáng mạch."
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
 

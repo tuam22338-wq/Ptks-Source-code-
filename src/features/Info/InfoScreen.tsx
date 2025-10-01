@@ -10,34 +10,34 @@ const InfoScreen: React.FC = () => {
 
   return (
     <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex-shrink-0 flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold font-title">Thông Tin Trò Chơi</h2>
         <button
           onClick={() => handleNavigate('mainMenu')}
-          className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+          className="btn btn-neumorphic !rounded-full !p-2"
           title="Quay Lại Menu"
         >
           <FaArrowLeft className="w-5 h-5" />
         </button>
       </div>
-      <div className="flex-grow min-h-0 overflow-y-auto pr-4 space-y-8">
+      <div className="flex-grow min-h-0 overflow-y-auto pr-4 space-y-6">
         
-        <section>
-            <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">Thông Tin Phiên Bản</h3>
-            <p className="text-gray-400">Phiên bản hiện tại: <strong className="text-amber-300">{CURRENT_GAME_VERSION}</strong></p>
-        </section>
+        <div className="neumorphic-inset-box p-4">
+            <h3 className="text-xl font-bold font-title mb-2" style={{color: 'var(--primary-accent-color)'}}>Thông Tin Phiên Bản</h3>
+            <p style={{color: 'var(--text-muted-color)'}}>Phiên bản hiện tại: <strong style={{color: 'var(--text-color)'}}>{CURRENT_GAME_VERSION}</strong></p>
+        </div>
 
-        <section>
-            <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">Đội Ngũ Phát Triển</h3>
-            <p className="text-gray-400">Developer: <strong className="text-amber-300">Nguyen Hoang Truong</strong></p>
-            <p className="text-gray-400">Tester: <strong className="text-amber-300">NVH</strong></p>
-            <p className="text-gray-400 mt-4">Xin chân thành cảm ơn bạn đã trải nghiệm sản phẩm này!</p>
-        </section>
+        <div className="neumorphic-inset-box p-4">
+            <h3 className="text-xl font-bold font-title mb-2" style={{color: 'var(--primary-accent-color)'}}>Đội Ngũ Phát Triển</h3>
+            <p style={{color: 'var(--text-muted-color)'}}>Developer: <strong style={{color: 'var(--text-color)'}}>Nguyen Hoang Truong</strong></p>
+            <p style={{color: 'var(--text-muted-color)'}}>Tester: <strong style={{color: 'var(--text-color)'}}>NVH</strong></p>
+            <p className="mt-4" style={{color: 'var(--text-muted-color)'}}>Xin chân thành cảm ơn bạn đã trải nghiệm sản phẩm này!</p>
+        </div>
 
-        <section>
-            <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">Nền Tảng & Triển Khai</h3>
-            <p className="text-gray-400">Trò chơi được xây dựng dưới dạng một ứng dụng web tĩnh và có thể được triển khai trên nhiều nền tảng hosting hiện đại.</p>
-        </section>
+        <div className="neumorphic-inset-box p-4">
+            <h3 className="text-xl font-bold font-title mb-2" style={{color: 'var(--primary-accent-color)'}}>Nền Tảng & Triển Khai</h3>
+            <p style={{color: 'var(--text-muted-color)'}}>Trò chơi được xây dựng dưới dạng một ứng dụng web tĩnh và có thể được triển khai trên nhiều nền tảng hosting hiện đại.</p>
+        </div>
 
       </div>
     </div>

@@ -10,7 +10,6 @@ type ActionType = 'say' | 'act' | 'ask';
 
 interface ActionBarProps {
     onInputSubmit: (text: string) => void;
-    // FIX: Add onContextualAction to props to handle location-specific actions.
     onContextualAction: (actionId: string, actionLabel: string) => void;
     disabled: boolean;
     currentLocation: Location;
@@ -24,14 +23,13 @@ const QuickActionButton: React.FC<{
     onClick: () => void; 
     disabled?: boolean; 
     title?: string; 
-    className?: string; 
     children: React.ReactNode 
-}> = ({ onClick, disabled, title, className = '', children }) => (
+}> = ({ onClick, disabled, title, children }) => (
     <button
         onClick={onClick}
         disabled={disabled}
         title={title}
-        className={`flex items-center justify-center gap-2 px-3 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] text-sm font-semibold rounded-lg hover:bg-[var(--bg-interactive-hover)] disabled:opacity-50 transition-colors ${className}`}
+        className="btn btn-neumorphic !text-sm !py-2 !px-3"
     >
         {children}
     </button>
@@ -74,7 +72,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
 
     const handleQuickAction = (button: QuickActionButtonConfig) => {
         if (disabled) return;
-        // Special cases for hardcoded UI functions
         if (button.id === 'inventory') {
             openInventoryModal();
             return;
@@ -83,7 +80,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
             onToggleSidebar();
             return;
         }
-        // Default behavior: send action text to AI
         handlePlayerAction(button.actionText, 'act', 1, showNotification);
     };
 
@@ -102,17 +98,17 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
         : 'Bạn muốn hỏi Thiên Cơ điều gì? (vd: Khương Tử Nha là ai?)';
 
     return (
-        <div className="flex-shrink-0 p-3 bg-[var(--bg-subtle)] backdrop-blur-sm border-t border-[var(--border-subtle)]">
-            <div className="bg-black/20 rounded-lg border border-gray-700/60 mb-3">
+        <div className="flex-shrink-0 p-3 bg-[var(--bg-color)] border-t border-[var(--shadow-light)]">
+            <div className="rounded-lg mb-3" style={{boxShadow: 'var(--shadow-raised-interactive)'}}>
                  <button
                     onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
-                    className="w-full flex justify-between items-center p-2 text-gray-300 hover:bg-gray-800/50 rounded-t-lg transition-colors"
+                    className="w-full flex justify-between items-center p-2 text-[var(--text-color)] hover:bg-[var(--shadow-light)]/20 rounded-t-lg transition-colors"
                 >
                     <span className="font-bold font-title">Hành Động Nhanh</span>
                     {isQuickActionsOpen ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
                 {isQuickActionsOpen && (
-                    <div className="p-3 border-t border-gray-700/60 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="p-3 border-t border-[var(--shadow-dark)] grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {buttonsToDisplay.map(button => {
                             const Icon = UI_ICONS[button.iconName as keyof typeof UI_ICONS] || FaBolt;
                             return (
@@ -126,7 +122,6 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                                 </QuickActionButton>
                             );
                         })}
-                        {/* FIX: Render contextual actions from the current location. */}
                         {currentLocation.contextualActions?.map(action => {
                             const Icon = UI_ICONS[action.iconName as keyof typeof UI_ICONS] || FaBolt;
                             return (
@@ -144,7 +139,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                 )}
             </div>
 
-            <div className="flex gap-1 p-1 bg-[var(--bg-interactive)] rounded-lg border border-[var(--border-subtle)] mb-2">
+            <div className="flex gap-1 p-1 rounded-lg mb-2" style={{boxShadow: 'var(--shadow-pressed)'}}>
                 <TabButton
                     label="Hành Động"
                     icon={FaBolt}
@@ -171,12 +166,12 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
                     onChange={(e) => setInputText(e.target.value)}
                     placeholder={placeholder}
                     disabled={disabled}
-                    className="w-full bg-[var(--bg-interactive)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-lg text-[var(--text-color)] focus:outline-none focus:ring-1 focus:ring-[var(--input-focus-ring-color)] transition-all disabled:opacity-50"
+                    className="input-neumorphic !text-lg flex-grow"
                 />
                 <button
                     type="submit"
                     disabled={disabled || !inputText.trim()}
-                    className="flex-shrink-0 px-5 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-500 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
+                    className="btn btn-primary !rounded-full !p-3 h-14 w-14"
                 >
                     <FaPaperPlane />
                 </button>
@@ -189,8 +184,8 @@ const TabButton: React.FC<{label: string, icon: React.ElementType, isActive: boo
     <button
         type="button"
         onClick={onClick}
-        className={`w-1/3 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-md transition-colors ${
-            isActive ? 'bg-[var(--bg-interactive-hover)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--bg-interactive-hover)]'
+        className={`w-1/3 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-md transition-all duration-200 ${
+            isActive ? 'text-[var(--primary-accent-color)] shadow-[var(--shadow-pressed)]' : 'text-[var(--text-muted-color)] hover:text-[var(--text-color)]'
         }`}
     >
         <Icon /> {label}

@@ -1,6 +1,6 @@
 import type { GameState, MechanicalIntent } from '../types';
-// FIX: Replaced RANK_ORDER with PHAP_BAO_RANK_ORDER to match the correct type for validation.
-import { PHAP_BAO_RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
+// FIX: Replaced RANK_ORDER with ABILITY_RANK_ORDER and REALM_RANK_CAPS with TIER_RANK_CAPS to match the correct types for validation.
+import { ABILITY_RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 
 /**
  * Pillar 3: The Mechanical Filter / "Thiên Đạo Giám Sát"
@@ -18,11 +18,13 @@ export const validateMechanicalChanges = (
     const validatedIntent = JSON.parse(JSON.stringify(intent));
     const validationNotifications: string[] = [];
     const { playerCharacter, realmSystem } = gameState;
+    // FIX: Access cultivation property
     const playerRealmId = playerCharacter.cultivation.currentRealmId;
 
     const caps = REALM_RANK_CAPS[playerRealmId];
     if (caps) {
-        const maxRankIndex = PHAP_BAO_RANK_ORDER.indexOf(caps.maxRank);
+        // FIX: Use ABILITY_RANK_ORDER
+        const maxRankIndex = ABILITY_RANK_ORDER.indexOf(caps.maxRank);
         const maxQualityIndex = QUALITY_ORDER.indexOf(caps.maxQuality);
 
         if (validatedIntent.itemsGained) {
@@ -38,7 +40,8 @@ export const validateMechanicalChanges = (
 
         if (validatedIntent.newTechniques) {
             validatedIntent.newTechniques.forEach((tech: any) => {
-                const currentRankIndex = PHAP_BAO_RANK_ORDER.indexOf(tech.rank);
+                // FIX: Use ABILITY_RANK_ORDER
+                const currentRankIndex = ABILITY_RANK_ORDER.indexOf(tech.rank);
                 if (currentRankIndex > maxRankIndex) {
                     const originalRank = tech.rank;
                     tech.rank = caps.maxRank;
@@ -50,6 +53,7 @@ export const validateMechanicalChanges = (
 
     if (validatedIntent.statChanges) {
         const realm = realmSystem.find(r => r.id === playerRealmId);
+        // FIX: Access cultivation property
         const currentStageIndex = realm?.stages.findIndex(s => s.id === playerCharacter.cultivation.currentStageId);
         
         let qiCap = 5000;

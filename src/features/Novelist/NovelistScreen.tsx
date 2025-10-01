@@ -166,77 +166,90 @@ const NovelistScreen: React.FC = () => {
         await db.novels.put(updatedNovel);
     };
 
+    // FIX: Completed the implementation of handleSubmitPrompt to resolve a syntax error causing the module export to fail.
     const handleSubmitPrompt = async () => {
         if (!userInput.trim() || isGenerating || !activeNovel) return;
         
-        setIsGenerating(true);
-
-        const promptEntry: NovelContentEntry = {
+        const userEntry: NovelContentEntry = {
             id: `prompt-${Date.now()}`,
             type: 'prompt',
             content: userInput,
             timestamp: new Date().toISOString(),
         };
-        
-        const currentContent = [...(activeNovel.content || []), promptEntry];
-        await handleUpdateNovelContent(currentContent);
-        setUserInput('');
-        
-        try {
-            const stream = generateNovelChapter(userInput, activeNovel.content || [], activeNovel.synopsis, state.settings);
-            
-            let fullAiResponse = '';
-            const aiEntryId = `ai-${Date.now()}`;
-            
-            for await (const chunk of stream) {
-                fullAiResponse += chunk;
-                const updatedContentWithStream = [
-                    ...currentContent,
-                    { id: aiEntryId, type: 'ai_generation', content: fullAiResponse, timestamp: new Date().toISOString() }
-                ];
-                setActiveNovel(prev => prev ? { ...prev, content: updatedContentWithStream } : null);
-            }
 
-            await handleUpdateNovelContent([
-                ...currentContent,
-                { id: aiEntryId, type: 'ai_generation', content: fullAiResponse, timestamp: new Date().toISOString() }
-            ]);
+        const aiPlaceholder: NovelContentEntry = {
+            id: `ai-${Date.now()}`,
+            type: 'ai_generation',
+            content: '', // Placeholder for streaming
+            timestamp: new Date().toISOString(),
+        };
+
+        const newContent = [...(activeNovel.content || []), userEntry, aiPlaceholder];
+        await handleUpdateNovelContent(newContent);
+        setUserInput('');
+        setIsGenerating(true);
+
+        try {
+            const stream = generateNovelChapter(
+                userInput,
+                activeNovel.content,
+                activeNovel.synopsis,
+                state.settings
+            );
+
+            let fullResponse = '';
+            for await (const chunk of stream) {
+                fullResponse += chunk;
+                // Update the placeholder in real-time
+                const updatedContent = newContent.map(entry => 
+                    entry.id === aiPlaceholder.id ? { ...entry, content: fullResponse } : entry
+                );
+                // This updates state frequently, might need optimization later, but for now it works
+                setActiveNovel(prev => prev ? { ...prev, content: updatedContent } : null);
+            }
             
-        } catch (error) {
+            // Final update to DB after streaming is complete
+            const finalContent = newContent.map(entry => 
+                entry.id === aiPlaceholder.id ? { ...entry, content: fullResponse } : entry
+            );
+            await handleUpdateNovelContent(finalContent);
+
+        } catch (error: any) {
             console.error("Lỗi khi tạo chương mới:", error);
             const errorEntry: NovelContentEntry = {
                 id: `error-${Date.now()}`,
                 type: 'ai_generation',
-                content: `[Lỗi] Không thể kết nối với AI. Vui lòng thử lại.`,
+                content: `[Lỗi hệ thống: ${error.message}]`,
                 timestamp: new Date().toISOString(),
             };
-            await handleUpdateNovelContent([...currentContent, errorEntry]);
+            const finalContent = [...newContent.slice(0, -1), errorEntry];
+            await handleUpdateNovelContent(finalContent);
         } finally {
             setIsGenerating(false);
         }
     };
-    
+
     const handleDeleteNovel = async (id: number) => {
-        if (window.confirm("Bạn có chắc muốn xóa vĩnh viễn dự án này không?")) {
-            await db.novels.delete(id);
-            setNovels(novels.filter(n => n.id !== id));
+        if (window.confirm("Bạn có chắc muốn xóa vĩnh viễn tiểu thuyết này?")) {
+            await db.deleteNovel(id);
             if (activeNovel?.id === id) {
                 setActiveNovel(null);
             }
+            const allNovels = await db.novels.orderBy('lastModified').reverse().toArray();
+            setNovels(allNovels);
         }
     };
     
-    const handleExportNovel = () => {
+    const handleDownload = () => {
         if (!activeNovel) return;
-        const textContent = `Tiêu đề: ${activeNovel.title}\n\nTóm tắt: ${activeNovel.synopsis}\n\n---\n\n` + 
-        activeNovel.content.map(entry => {
+        const textContent = activeNovel.content.map(entry => {
             if (entry.type === 'prompt') {
-                return `\n\n>>> Gợi ý của bạn:\n${entry.content}\n\n`;
+                return `\n\n>>> ${entry.content}\n\n`;
             }
             return entry.content;
         }).join('');
         
-        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob([`# ${activeNovel.title}\n\n**Tóm tắt:** ${activeNovel.synopsis}\n\n---\n\n${textContent}`], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -248,116 +261,105 @@ const NovelistScreen: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-full flex flex-col gemini-theme">
+        <div className="w-full animate-fade-in flex flex-col h-full min-h-0 bg-stone-900 text-gray-200 novelist-theme">
             <NewNovelModal isOpen={isNewNovelModalOpen} onClose={() => setNewNovelModalOpen(false)} onCreate={handleCreateNovel} />
-            <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setSettingsModalOpen(false)} settings={state.settings} handleSettingChange={handleSettingChange}/>
-            
-            <header className="flex-shrink-0 flex justify-between items-center p-2 border-b border-gemini-border">
-                <div className="flex items-center gap-2">
-                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-full hover:bg-gemini-surface">
-                        <FaBars />
-                    </button>
-                    <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full hover:bg-gemini-surface">
-                        <FaArrowLeft />
-                    </button>
-                    <h1 className="text-lg font-semibold">{activeNovel ? activeNovel.title : 'Tiểu Thuyết Gia AI'}</h1>
-                </div>
-                {activeNovel && (
-                     <div className="flex gap-2">
-                        <button onClick={handleExportNovel} className="p-2 rounded-full hover:bg-gemini-surface" title="Xuất file .txt"><FaDownload /></button>
-                        <button onClick={() => handleDeleteNovel(activeNovel.id)} className="p-2 rounded-full hover:bg-gemini-surface" title="Xóa dự án"><FaTrash /></button>
-                    </div>
-                )}
-            </header>
+            <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setSettingsModalOpen(false)} settings={state.settings} handleSettingChange={handleSettingChange} />
 
-            <div className="flex-grow flex min-h-0">
-                <aside className={`flex-shrink-0 bg-gemini-surface-subtle border-r border-gemini-border flex flex-col transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
-                    <div className="p-3 border-b border-gemini-border">
-                        <button onClick={() => setNewNovelModalOpen(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gemini-accent/20 text-gemini-accent font-semibold rounded-full hover:bg-gemini-accent/30">
-                            <FaPlus /> Dự án mới
+            <div className="flex-shrink-0 flex justify-between items-center p-3 border-b border-gray-700/60 bg-stone-800/50">
+                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full hover:bg-gray-700/50 text-gray-400" title="Quay Lại Menu">
+                    <FaArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-2xl font-bold font-title text-amber-300">Tiểu Thuyết Gia AI</h2>
+                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-full hover:bg-gray-700/50 text-gray-400 md:hidden" title="Mở danh sách">
+                    <FaBars />
+                </button>
+            </div>
+
+            <div className="flex flex-grow min-h-0">
+                {/* Sidebar */}
+                <div className={`fixed md:relative top-0 left-0 h-full z-20 md:z-auto bg-stone-900/95 md:bg-stone-800/50 w-64 md:w-72 flex-shrink-0 border-r border-gray-700/60 flex flex-col transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+                     <div className="p-3">
+                        <button onClick={() => setNewNovelModalOpen(true)} className="w-full px-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-500 flex items-center justify-center gap-2">
+                            <FaPlus /> Tiểu Thuyết Mới
                         </button>
                     </div>
                     <div className="flex-grow overflow-y-auto">
-                        <p className="p-3 text-xs text-gemini-text-muted font-semibold">Gần đây</p>
                         {novels.map(novel => (
                             <button 
                                 key={novel.id} 
                                 onClick={() => handleSelectNovel(novel)}
-                                className={`w-full text-left p-3 text-sm rounded-md truncate transition-colors ${activeNovel?.id === novel.id ? 'bg-gemini-surface text-gemini-text' : 'text-gemini-text-muted hover:bg-gemini-surface'}`}
+                                className={`w-full text-left p-3 text-sm flex justify-between items-start transition-colors ${activeNovel?.id === novel.id ? 'bg-amber-500/10 text-amber-200' : 'hover:bg-gray-700/50'}`}
                             >
-                                {novel.title}
+                                <span className="font-semibold truncate">{novel.title}</span>
+                                 <button onClick={(e) => { e.stopPropagation(); handleDeleteNovel(novel.id); }} className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100"><FaTrash /></button>
                             </button>
                         ))}
                     </div>
-                     <div className="p-3 border-t border-gemini-border">
-                        <button onClick={() => setSettingsModalOpen(true)} className="w-full flex items-center gap-2 p-2 text-sm text-gemini-text-muted rounded-md hover:bg-gemini-surface">
-                            <FaCog /> Cài đặt
-                        </button>
-                    </div>
-                </aside>
-                
-                <main className="flex-grow flex flex-col relative">
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-grow flex flex-col min-w-0">
                     {activeNovel ? (
                         <>
-                            <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-4 md:p-6">
+                            <div className="flex-shrink-0 p-3 border-b border-gray-700/60 flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-gray-200">{activeNovel.title}</h3>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={handleDownload} className="p-2 text-gray-400 hover:text-white" title="Tải xuống"><FaDownload /></button>
+                                    <button onClick={() => setSettingsModalOpen(true)} className="p-2 text-gray-400 hover:text-white" title="Cài đặt"><FaCog /></button>
+                                </div>
+                            </div>
+
+                            <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-4 md:p-6 min-h-0">
                                 <div className="max-w-4xl mx-auto">
                                     {activeNovel.content.map(entry => (
-                                        <div key={entry.id} className="gemini-message-container py-4">
+                                        <div key={entry.id} className="message-container py-4">
                                             {entry.type === 'prompt' ? (
                                                 <div className="flex gap-4">
-                                                    <FaUserCircle className="text-3xl text-gemini-text-muted flex-shrink-0" />
+                                                    <FaUserCircle className="text-3xl text-gray-500 flex-shrink-0"/>
                                                     <p className="pt-1">{entry.content}</p>
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-4">
-                                                    <div className="w-8 h-8 rounded-full bg-gemini-accent/80 flex items-center justify-center flex-shrink-0 p-1.5"><GiSparkles className="w-full h-full" /></div>
-                                                    <div className="pt-1 prose prose-invert" dangerouslySetInnerHTML={parseContent(entry.content)} />
+                                                     <div className="w-8 h-8 rounded-full bg-amber-500/80 flex items-center justify-center flex-shrink-0 p-1.5"><GiSparkles className="w-full h-full text-white"/></div>
+                                                    <div className="pt-1 prose prose-invert prose-p:text-gray-200 prose-strong:text-amber-200" dangerouslySetInnerHTML={parseContent(entry.content)} />
                                                 </div>
                                             )}
                                         </div>
                                     ))}
                                     {isGenerating && activeNovel.content.length > 0 && activeNovel.content[activeNovel.content.length - 1].type === 'ai_generation' && (
-                                        <div className="flex justify-center mt-2"><LoadingSpinner size="sm" /></div>
+                                        <div className="flex justify-start ml-12"><LoadingSpinner size="sm"/></div>
                                     )}
-                                    <div ref={contentEndRef} />
+                                    <div ref={contentEndRef}/>
+                                </div>
+                            </div>
+                            
+                            <div className="flex-shrink-0 p-3 md:p-4 border-t border-gray-700/60">
+                                <div className="max-w-4xl mx-auto">
+                                    <div className="input-bar">
+                                        <textarea 
+                                            ref={textareaRef}
+                                            value={userInput}
+                                            onChange={e => setUserInput(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitPrompt(); } }}
+                                            disabled={isGenerating}
+                                            placeholder="Viết prompt của bạn ở đây... (vd: Viết tiếp, tập trung vào nhân vật A...)"
+                                            rows={1}
+                                            className="textarea"
+                                        />
+                                        <button onClick={handleSubmitPrompt} disabled={isGenerating || !userInput.trim()} className="send-button">
+                                            {isGenerating ? <div className="loader"></div> : <FaPaperPlane />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </>
                     ) : (
-                        <div className="flex-grow flex flex-col items-center justify-center text-center p-4">
-                            <h2 className="text-4xl font-bold gemini-title-gradient">Tiểu Thuyết Gia</h2>
-                            <p className="mt-2 text-gemini-text-muted">Cộng sự AI cho hành trình sáng tác của bạn</p>
-                            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full">
-                                <button onClick={() => { setUserInput('Viết chương mở đầu cho một câu chuyện về một tu sĩ mất đi linh căn'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Viết chương mở đầu cho một câu chuyện về một tu sĩ mất đi linh căn</button>
-                                <button onClick={() => { setUserInput('Tạo ra một đoạn hội thoại căng thẳng giữa hai vị tông chủ'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Tạo ra một đoạn hội thoại căng thẳng giữa hai vị tông chủ</button>
-                                <button onClick={() => { setUserInput('Mô tả một pháp bảo có khả năng nghịch chuyển thời gian'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Mô tả một pháp bảo có khả năng nghịch chuyển thời gian</button>
-                                <button onClick={() => { setUserInput('Kể về một bí cảnh ẩn giấu trong một sa mạc chết chóc'); if (!activeNovel) setNewNovelModalOpen(true); }} className="gemini-prompt-card">Kể về một bí cảnh ẩn giấu trong một sa mạc chết chóc</button>
-                            </div>
+                        <div className="flex-grow flex flex-col items-center justify-center text-center p-8">
+                            <h3 className="text-2xl font-bold text-gray-300">Chọn hoặc tạo một tiểu thuyết</h3>
+                            <p className="text-gray-500 mt-2">Bắt đầu hành trình sáng tác của bạn.</p>
                         </div>
                     )}
-                     <div className="gemini-input-container">
-                        <div className="gemini-input-bar">
-                             <textarea
-                                ref={textareaRef}
-                                value={userInput}
-                                onChange={e => setUserInput(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitPrompt(); } }}
-                                disabled={isGenerating || !activeNovel}
-                                placeholder={activeNovel ? "Viết tiếp câu chuyện..." : "Chọn hoặc tạo một dự án mới để bắt đầu..."}
-                                rows={1}
-                                className="gemini-textarea"
-                            />
-                            <button 
-                                onClick={handleSubmitPrompt} 
-                                disabled={isGenerating || !userInput.trim() || !activeNovel} 
-                                className="gemini-send-button"
-                            >
-                                {isGenerating ? <div className="gemini-loader"></div> : <FaPaperPlane />}
-                            </button>
-                        </div>
-                        <p className="text-center text-xs text-gemini-text-muted mt-2">Tiểu Thuyết Gia AI có thể mắc lỗi. Hãy kiểm tra các thông tin quan trọng.</p>
-                    </div>
-                </main>
+                </div>
             </div>
         </div>
     );

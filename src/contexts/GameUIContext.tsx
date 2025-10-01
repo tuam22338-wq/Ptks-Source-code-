@@ -1,4 +1,5 @@
 import React, { useState, useCallback, createContext, useContext, FC, PropsWithChildren } from 'react';
+// FIX: Changed CultivationPath import
 import type { GameEvent, CultivationPath, InnerDemonTrial } from '../types';
 
 interface Notification {

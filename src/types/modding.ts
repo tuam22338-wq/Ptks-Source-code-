@@ -1,12 +1,14 @@
 import type {
-    Faction, Gender, Element, StatBonus, ItemType, ItemQuality, EquipmentSlot, InnateTalentRank, PhapBaoRank,
-    TechniqueEffectType, TechniqueEffect,
+    Faction, Gender, Element, StatBonus, ItemType, ItemQuality, EquipmentSlot, InnateTalentRank, AbilityRank,
+    AbilityEffectType, 
     // FIX: Import SkillCheck, EventChoice, and EventOutcome from core types
     SkillCheck,
     AttributeDefinition,
     AttributeGroupDefinition,
     EventChoice,
-    EventOutcome
+    EventOutcome,
+    // FIX: Import CultivationTechnique from core to resolve error.
+    CultivationTechnique
 } from './core';
 import type { CharacterIdentity } from './character';
 // FIX: Correct imports to resolve circular dependencies and missing types.
@@ -42,7 +44,7 @@ export interface ModTalent {
     tags: string[];
 }
 
-export interface RealmStage {
+export interface SubTier {
     id: string;
     name: string;
     qiRequired: number;
@@ -51,22 +53,24 @@ export interface RealmStage {
     description?: string;
 }
 
+// FIX: Renamed TierConfig to RealmConfig for consistency
 export interface RealmConfig {
     id: string;
     name: string;
-    stages: RealmStage[];
+    stages: SubTier[];
     hasTribulation?: boolean;
     tribulationDescription?: string;
     description?: string;
 }
 
+// FIX: Renamed NamedProgressionSystem to NamedRealmSystem
 export interface NamedRealmSystem {
     id: string;
     name: string;
     description: string;
     resourceName: string; // Vd: 'Linh Khí', 'Hồn Lực', 'Điểm Kinh Nghiệm'
     resourceUnit: string; // Vd: 'điểm', 'năm', 'vòng'
-    realms: RealmConfig[];
+    realms: RealmConfig[]; // field name 'realms' is kept for backward compatibility with schema
 }
 
 export interface TalentSystemConfig {
@@ -130,6 +134,7 @@ export interface ModForeshadowedEvent {
 
 
 export interface ModWorldData {
+    // FIX: Add missing 'id' property required by ModWorldData type.
     id: string;
     name: string;
     description: string;
@@ -196,25 +201,23 @@ export interface ModInLibrary {
     isEnabled: boolean;
 }
 
-// --- UPDATED TECHNIQUE MODDING TYPES ---
-export type AuxiliaryTechniqueType = 'Tâm Pháp' | 'Độn Thuật' | 'Luyện Thể' | 'Kiếm Quyết' | 'Thần Thông';
-// FIX: Renamed to avoid conflict with gameplay CultivationTechnique type.
-export interface ModCultivationTechnique {
+// --- UPDATED ABILITY MODDING TYPES ---
+export type AuxiliaryAbilityType = 'Tâm Pháp' | 'Độn Thuật' | 'Luyện Thể' | 'Kiếm Quyết' | 'Thần Thông';
+export interface ModAbility {
     id: string;
     name: string;
     description: string;
     type: any; // Simplified for modding
-    rank: PhapBaoRank;
+    rank: AbilityRank;
     bonuses?: StatBonus[];
 }
-// FIX: Updated to use renamed type.
-export type ModAuxiliaryTechnique = Omit<ModCultivationTechnique, 'id' | 'type'> & {
+export type ModAuxiliaryAbility = Omit<ModAbility, 'id' | 'type'> & {
     id: string;
-    type: AuxiliaryTechniqueType;
+    type: AuxiliaryAbilityType;
     requirements?: StatBonus[];
     tags?: string[];
 };
-// --- END UPDATED TECHNIQUE MODDING TYPES ---
+// --- END UPDATED ABILITY MODDING TYPES ---
 
 export type ContentType = 'item' | 'talent' | 'character' | 'sect' | 'location' | 'worldData' | 'npc' | 'auxiliaryTechnique' | 'event' | 'customPanel' | 'recipe' | 'realm' | 'realmSystem' | 'talentSystem' | 'customDataPack';
 
@@ -318,11 +321,13 @@ export interface ModContent {
     sects?: Omit<ModSect, 'id'>[];
     locations?: Omit<ModLocation, 'id'>[];
     worldData?: ModWorldData[];
-    auxiliaryTechniques?: Omit<ModAuxiliaryTechnique, 'id'>[];
+    auxiliaryTechniques?: Omit<ModAuxiliaryAbility, 'id'>[];
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];
     recipes?: Omit<AlchemyRecipe, 'id'>[];
+    // FIX: Renamed tierConfigs to realmConfigs
     realmConfigs?: RealmConfig[]; // DEPRECATED for new mods, used for single-system mods
+    // FIX: Renamed namedProgressionSystems to namedRealmSystems
     namedRealmSystems?: NamedRealmSystem[];
     talentSystemConfig?: TalentSystemConfig;
     talentRanks?: Omit<ModTalentRank, 'id'>[];

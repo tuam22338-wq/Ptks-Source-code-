@@ -50,7 +50,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ message, isGeneratingWorl
             {isGeneratingWorld && (
                 <div className="text-center mt-4">
                     <p className="text-2xl font-mono text-amber-300">{formatTime(timer)}</p>
-                    <p className="text-sm text-gray-400 mt-1">{generationModeText}</p>
+                    <p className="text-sm text-[var(--text-muted-color)] mt-1">{generationModeText}</p>
                 </div>
             )}
         </div>

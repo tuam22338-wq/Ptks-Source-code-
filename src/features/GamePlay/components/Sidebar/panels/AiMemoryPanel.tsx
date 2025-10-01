@@ -1,4 +1,5 @@
 
+
 import React, { memo } from 'react';
 import type { GameState } from '../../../../../types';
 import { createModContextSummary } from '../../../../../utils/modManager';
@@ -8,9 +9,9 @@ interface AiMemoryPanelProps {
 }
 
 const InfoBlock: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-        <h4 className="font-bold text-amber-300 font-title">{title}</h4>
-        <div className="mt-2 text-sm text-gray-300 whitespace-pre-wrap">{children}</div>
+    <div className="neumorphic-inset-box p-3">
+        <h4 className="font-bold font-title" style={{color: 'var(--primary-accent-color)'}}>{title}</h4>
+        <div className="mt-2 text-sm whitespace-pre-wrap" style={{color: 'var(--text-color)'}}>{children}</div>
     </div>
 );
 
@@ -23,7 +24,7 @@ const AiMemoryPanel: React.FC<AiMemoryPanelProps> = ({ gameState }) => {
 
     return (
         <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <p className="text-sm text-center text-gray-500 italic">Đây là những thông tin cốt lõi mà AI sử dụng để kể chuyện, đảm bảo tính nhất quán.</p>
+            <p className="text-sm text-center italic" style={{color: 'var(--text-muted-color)'}}>Đây là những thông tin cốt lõi mà AI sử dụng để kể chuyện, đảm bảo tính nhất quán.</p>
             <InfoBlock title="Ký Ức Dài Hạn (Tóm Tắt Cốt Truyện)">
                 {storySummary || 'Hành trình vừa bắt đầu. Ký ức sẽ được hình thành khi bạn phiêu lưu.'}
             </InfoBlock>

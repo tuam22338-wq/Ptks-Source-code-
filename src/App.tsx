@@ -195,13 +195,14 @@ const AppContent: React.FC = () => {
         }
     };
     
-    const showHeader = !['mainMenu', 'gamePlay', 'novelist'].includes(view) && !isLoading && !isMigratingData;
-    const isPanelScreen = !['mainMenu', 'gamePlay', 'novelist'].includes(view);
+    const showHeader = !['mainMenu', 'gamePlay', 'novelist', 'aiTraining'].includes(view) && !isLoading && !isMigratingData;
+    const isPanelScreen = !['mainMenu', 'gamePlay', 'novelist', 'aiTraining'].includes(view);
+    
     const containerClasses = isPanelScreen 
-        ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col p-4 sm:p-6 lg:p-8'
+        ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col min-h-0'
         : 'w-full flex-grow flex flex-col';
     
-    const panelClasses = 'panel-bg backdrop-blur-md rounded-xl shadow-2xl shadow-black/50';
+    const panelClasses = 'panel-container';
 
     return (
         <div className="relative w-full h-full flex flex-col items-center">
@@ -217,7 +218,7 @@ const AppContent: React.FC = () => {
               </div>
             )}
       
-            <main className={`${containerClasses} min-h-0 ${isPanelScreen ? panelClasses : ''}`}>
+            <main className={`${containerClasses} ${isPanelScreen ? panelClasses : ''}`}>
                 <Suspense fallback={<LoadingScreen message="Đang tải..." />}>
                     {renderContent()}
                 </Suspense>

@@ -1,6 +1,3 @@
-
-
-
 import React, { memo, useRef, useState, useEffect } from 'react';
 import type { GameSettings, FullMod, GenerationMode, NovelContentEntry } from '../../types';
 import { summarizeLargeTextForWorldGen, generateWorldFromText, chatWithGameMaster } from '../../services/gemini/modding.service';
@@ -14,7 +11,7 @@ type ActiveTab = 'data' | 'gm' | 'prompts';
 
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="mb-10">
-    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
@@ -22,8 +19,8 @@ const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = 
 const SettingsRow: React.FC<{ label: string; description: string; children: React.ReactNode; disabled?: boolean }> = ({ label, description, children, disabled = false }) => (
   <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
     <div className="md:w-1/3 flex-shrink-0">
-      <label className="block font-semibold text-gray-200">{label}</label>
-      <p className="text-sm text-gray-500 mt-1">{description}</p>
+      <label className="block font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
+      <p className="text-sm mt-1" style={{color: 'var(--text-muted-color)'}}>{description}</p>
     </div>
     <div className="md:w-2/3">{children}</div>
   </div>
@@ -131,7 +128,7 @@ const WorldDataTrainingPanel: React.FC = () => {
                 </div>
             </SettingsRow>
             <SettingsRow label="2. Chế độ Phân tích" description="Chọn độ sâu phân tích của AI. Chế độ sâu hơn cho kết quả chi tiết hơn nhưng mất nhiều thời gian hơn.">
-                <select value={generationMode} onChange={(e) => setGenerationMode(e.target.value as GenerationMode)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200">
+                <select value={generationMode} onChange={(e) => setGenerationMode(e.target.value as GenerationMode)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}}>
                     <option value="fast">Nhanh (Trích xuất bề mặt)</option>
                     <option value="deep">Chuyên Sâu (Suy luận quan hệ)</option>
                     <option value="super_deep">Siêu Chuyên Sâu (Sáng tạo mở rộng)</option>
@@ -143,10 +140,10 @@ const WorldDataTrainingPanel: React.FC = () => {
                         <FaBrain /> {isLoading ? 'Đang phân tích...' : 'Tạo Dữ Liệu Thế Giới'}
                     </button>
                     {isLoading && <div className="mt-4"><LoadingSpinner message={loadingMessage} /></div>}
-                    {error && <p className="text-red-400 bg-red-900/20 p-2 rounded mt-2 text-sm">{error}</p>}
+                    {error && <p className="bg-red-900/20 p-2 rounded mt-2 text-sm" style={{color: 'var(--error-color)'}}>{error}</p>}
                     {generatedMod && (
                         <div className="mt-4 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-center">
-                            <p className="text-green-300 font-semibold">Tạo thế giới thành công!</p>
+                            <p className="font-semibold" style={{color: 'var(--success-color)'}}>Tạo thế giới thành công!</p>
                             <button onClick={handleDownload} className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 flex items-center gap-2 mx-auto">
                                 <FaDownload /> Tải xuống file Mod JSON
                             </button>
@@ -186,20 +183,20 @@ const SettingsModal: React.FC<{
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70" onClick={onClose}>
             <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-amber-300">Cài Đặt Game Master AI</h3>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-full"><FaTimes /></button>
+                    <h3 className="text-xl font-bold" style={{color: 'var(--primary-accent-color)'}}>Cài Đặt Game Master AI</h3>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gemini-surface"><FaTimes /></button>
                 </div>
                 <div className="p-4 overflow-y-auto">
                     <SettingsRow label="Độ lớn Phản hồi" description="Đặt độ dài mong muốn cho mỗi phản hồi của AI (1,000 - 100,000 từ). Càng dài, AI càng chi tiết.">
                         <div className="flex items-center gap-4">
                             <input type="range" min="1000" max="100000" step="1000" value={settings.gameMasterWordCount} onChange={(e) => handleSettingChange('gameMasterWordCount', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow"/>
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-24 text-center">{settings.gameMasterWordCount}</span>
+                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 w-24 text-center" style={{color: 'var(--text-color)'}}>{settings.gameMasterWordCount}</span>
                         </div>
                     </SettingsRow>
                     <SettingsRow label="Bật Google Grounding" description="Cho phép AI sử dụng Google Search để có thông tin mới và chính xác hơn. Có thể làm thay đổi văn phong.">
                         <label className="flex items-center cursor-pointer">
                             <input type="checkbox" checked={settings.enableGoogleGrounding} onChange={e => handleSettingChange('enableGoogleGrounding', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                            <span className="ml-3 text-sm text-gray-300">Sử dụng Google Search</span>
+                            <span className="ml-3 text-sm" style={{color: 'var(--text-color)'}}>Sử dụng Google Search</span>
                         </label>
                     </SettingsRow>
                 </div>
@@ -345,10 +342,10 @@ const GameMasterChatPanel: React.FC<{
                 </div>
 
                 {isWorldGenLoading && <div className="mt-2"><LoadingSpinner message={worldGenMessage} /></div>}
-                {worldGenError && <p className="text-red-400 bg-red-900/20 p-2 rounded mt-2 text-sm">{worldGenError}</p>}
+                {worldGenError && <p className="bg-red-900/20 p-2 rounded mt-2 text-sm" style={{color: 'var(--error-color)'}}>{worldGenError}</p>}
                 {generatedMod && (
                     <div className="mt-2 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-center">
-                        <p className="text-green-300 font-semibold">Tạo thế giới thành công!</p>
+                        <p className="font-semibold" style={{color: 'var(--success-color)'}}>Tạo thế giới thành công!</p>
                         <button onClick={handleDownloadGeneratedMod} className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 flex items-center gap-2 mx-auto">
                             <FaDownload /> Tải xuống file Mod JSON
                         </button>
@@ -373,15 +370,14 @@ const PromptEngineeringPanel: React.FC<{
     const [copySuccess, setCopySuccess] = useState('');
 
     const groupedPrompts = React.useMemo(() => {
-        // FIX: Explicitly typing the accumulator in the reduce function ensures correct type inference for `groupedPrompts`, resolving the 'unknown' type error on `prompts`.
-        return PROMPT_TEMPLATES.reduce((acc: Record<string, PromptTemplate[]>, prompt) => {
+        return PROMPT_TEMPLATES.reduce((acc, prompt) => {
             const category = prompt.category;
-            if (!acc[category]) {
-                acc[category] = [];
+            if (!(acc as any)[category]) {
+                (acc as any)[category] = [];
             }
-            acc[category].push(prompt);
+            (acc as any)[category].push(prompt);
             return acc;
-        }, {});
+        }, {} as Record<string, PromptTemplate[]>);
     }, []);
 
     const handleCopy = (text: string) => {
@@ -400,17 +396,17 @@ const PromptEngineeringPanel: React.FC<{
 
     return (
         <div className="p-4 space-y-6">
-            <h3 className="text-xl font-bold font-title text-center text-amber-300">Thư Viện Prompt Mẫu</h3>
-            <p className="text-sm text-center text-gray-400">Học hỏi các kỹ thuật prompt chuyên nghiệp để ra lệnh cho AI một cách hiệu quả nhất. Sử dụng các mẫu dưới đây làm nền tảng để sáng tạo thế giới của riêng bạn.</p>
+            <h3 className="text-xl font-bold font-title text-center" style={{color: 'var(--primary-accent-color)'}}>Thư Viện Prompt Mẫu</h3>
+            <p className="text-sm text-center" style={{color: 'var(--text-muted-color)'}}>Học hỏi các kỹ thuật prompt chuyên nghiệp để ra lệnh cho AI một cách hiệu quả nhất. Sử dụng các mẫu dưới đây làm nền tảng để sáng tạo thế giới của riêng bạn.</p>
             {Object.entries(groupedPrompts).map(([category, prompts]) => (
                 <div key={category}>
-                    <h4 className="text-lg font-bold font-title text-gray-300 mb-3 pb-2 border-b border-gray-700">{category}</h4>
+                    <h4 className="text-lg font-bold font-title mb-3 pb-2 border-b border-gray-700" style={{color: 'var(--text-color)'}}>{category}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {prompts.map((p, index) => (
+                        {(prompts as PromptTemplate[]).map((p, index) => (
                             <div key={index} className="bg-black/20 p-4 rounded-lg border border-gray-700/60 flex flex-col">
-                                <h5 className="font-bold text-amber-300">{p.title}</h5>
-                                <p className="text-xs text-gray-500 italic mt-1 mb-2">{p.description}</p>
-                                <pre className="text-sm bg-black/30 p-3 rounded whitespace-pre-wrap font-mono flex-grow text-gray-300">{p.prompt}</pre>
+                                <h5 className="font-bold" style={{color: 'var(--primary-accent-color)'}}>{p.title}</h5>
+                                <p className="text-xs italic mt-1 mb-2" style={{color: 'var(--text-muted-color)'}}>{p.description}</p>
+                                <pre className="text-sm bg-black/30 p-3 rounded whitespace-pre-wrap font-mono flex-grow" style={{color: 'var(--text-color)'}}>{p.prompt}</pre>
                                 <div className="flex gap-2 mt-3">
                                     <button onClick={() => handleCopy(p.prompt)} className="flex-1 text-xs px-3 py-1.5 bg-gray-600 text-white rounded hover:bg-gray-500 flex items-center justify-center gap-2">
                                         <FaCopy /> {copySuccess === p.prompt ? 'Đã chép!' : 'Sao chép'}
@@ -439,24 +435,24 @@ const AiTrainingScreen: React.FC = () => {
     return (
         <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             <div className="flex-shrink-0 flex justify-between items-center mb-6">
-                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Quay Lại Menu"><FaArrowLeft className="w-5 h-5" /></button>
+                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full hover:bg-gray-700/50 transition-colors" title="Quay Lại Menu" style={{color: 'var(--text-muted-color)'}}><FaArrowLeft className="w-5 h-5" /></button>
                 <h2 className="text-3xl font-bold font-title">Huấn Luyện AI</h2>
                 <div className="w-9 h-9"></div> {/* Spacer */}
             </div>
             
             <div className="flex-shrink-0 flex items-center gap-2 p-1 bg-black/20 rounded-t-lg border-b border-gray-700/60">
-                <button onClick={() => setActiveTab('gm')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'gm' ? 'bg-[var(--panel-bg-color)] text-amber-300' : 'text-gray-400 hover:bg-gray-700/30'}`}>
+                <button onClick={() => setActiveTab('gm')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'gm' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-gray-700/30'}`} style={{color: activeTab !== 'gm' ? 'var(--text-muted-color)' : undefined}}>
                     <FaComments /> Game Master AI
                 </button>
-                 <button onClick={() => setActiveTab('prompts')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'prompts' ? 'bg-[var(--panel-bg-color)] text-amber-300' : 'text-gray-400 hover:bg-gray-700/30'}`}>
+                 <button onClick={() => setActiveTab('prompts')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'prompts' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-gray-700/30'}`} style={{color: activeTab !== 'prompts' ? 'var(--text-muted-color)' : undefined}}>
                     <FaLightbulb /> Kỹ Thuật Prompt
                 </button>
-                <button onClick={() => setActiveTab('data')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'data' ? 'bg-[var(--panel-bg-color)] text-amber-300' : 'text-gray-400 hover:bg-gray-700/30'}`}>
+                <button onClick={() => setActiveTab('data')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'data' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-gray-700/30'}`} style={{color: activeTab !== 'data' ? 'var(--text-muted-color)' : undefined}}>
                     <FaDatabase /> Huấn Luyện Dữ Liệu
                 </button>
             </div>
 
-            <div className="flex-grow min-h-0 overflow-y-auto rounded-b-xl" style={{backgroundColor: 'var(--panel-bg-color)'}}>
+            <div className="flex-grow min-h-0 overflow-y-auto rounded-b-xl" style={{backgroundColor: 'var(--bg-color)'}}>
                 {activeTab === 'data' && (
                     <div className="p-4">
                         <SettingsSection title="Tạo Dữ Liệu Thế Giới Từ Văn Bản">

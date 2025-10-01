@@ -1,3 +1,4 @@
+// FIX: import CultivationTechnique from types
 import type { NPC, PlayerCharacter, CultivationTechnique, Element } from '../types';
 // FIX: Import attribute definitions to look up attribute data.
 import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';

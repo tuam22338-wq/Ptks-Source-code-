@@ -11,7 +11,8 @@ const NotificationArea: React.FC<NotificationAreaProps> = ({ notifications, onDi
             {notifications.map(notification => (
                 <div 
                     key={notification.id} 
-                    className="bg-teal-600/90 text-white px-6 py-2 rounded-full shadow-lg animate-fade-in"
+                    className="neumorphic-raised text-white px-6 py-2 rounded-full shadow-lg animate-fade-in"
+                    style={{backgroundColor: 'var(--bg-color)', color: 'var(--success-color)'}}
                     onClick={() => onDismiss(notification.id)}
                 >
                     {notification.message}

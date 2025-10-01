@@ -42,14 +42,14 @@ export type CharacterAttributes = Record<string, {
 export type Gender = 'Nam' | 'Nữ' | 'AI';
 
 export type ItemType = 'Vũ Khí' | 'Phòng Cụ' | 'Đan Dược' | 'Pháp Bảo' | 'Tạp Vật' | 'Đan Lô' | 'Linh Dược' | 'Đan Phương' | 'Nguyên Liệu';
-export type PhapBaoRank = 'Phàm Giai' | 'Tiểu Giai' | 'Trung Giai' | 'Cao Giai' | 'Siêu Giai' | 'Địa Giai' | 'Thiên Giai' | 'Thánh Giai';
+export type AbilityRank = 'Phàm Giai' | 'Tiểu Giai' | 'Trung Giai' | 'Cao Giai' | 'Siêu Giai' | 'Địa Giai' | 'Thiên Giai' | 'Thánh Giai';
 export type ItemQuality = 'Phàm Phẩm' | 'Linh Phẩm' | 'Pháp Phẩm' | 'Bảo Phẩm' | 'Tiên Phẩm' | 'Tuyệt Phẩm';
 export type EquipmentSlot = 'Vũ Khí' | 'Thượng Y' | 'Hạ Y' | 'Giày' | 'Phụ Kiện 1' | 'Phụ Kiện 2';
 export type InnateTalentRank = 'Phàm Giai' | 'Siêu Phàm Giai' | 'Sơ Tiên Giai' | 'Trung Tiên Giai' | 'Hậu Tiên Giai' | 'Đại Tiên Giai' | 'Thánh Giai';
 export type Season = 'Xuân' | 'Hạ' | 'Thu' | 'Đông';
 export type TimeOfDay = 'Sáng Sớm' | 'Buổi Sáng' | 'Buổi Trưa' | 'Buổi Chiều' | 'Hoàng Hôn' | 'Buổi Tối' | 'Nửa Đêm';
 export type Weather = 'SUNNY' | 'CLOUDY' | 'RAIN' | 'STORM' | 'SNOW';
-export type TechniqueEffectType = 'DAMAGE' | 'HEAL' | 'BUFF' | 'DEBUFF' | 'APPLY_EFFECT';
+export type AbilityEffectType = 'DAMAGE' | 'HEAL' | 'BUFF' | 'DEBUFF' | 'APPLY_EFFECT';
 
 // FIX: Define SkillCheck, EventChoice, and EventOutcome here to be used across modules without conflict.
 export interface SkillCheck {
@@ -70,12 +70,34 @@ export interface EventOutcome {
     details: Record<string, any>;
 }
 
+// FIX: Moved CultivationTechnique from gameplay.ts to here to resolve circular dependency.
+export interface CultivationTechnique {
+    id: string;
+    name: string;
+    description: string;
+    type: AbilityType;
+    cost: {
+        type: 'Linh Lực' | 'Sinh Mệnh' | 'Nguyên Thần';
+        value: number;
+    };
+    cooldown: number; // in turns/actions, 0 for no cooldown
+    effects: AbilityEffect[];
+    rank: AbilityRank;
+    icon: string;
+    level: number;
+    maxLevel: number;
+    levelBonuses?: { level: number, bonuses: StatBonus[] }[];
+    element?: Element;
+    requirements?: StatBonus[];
+    tags?: string[];
+    bonuses?: StatBonus[];
+}
 
-export interface TechniqueEffect {
-    type: TechniqueEffectType;
+export interface AbilityEffect {
+    type: AbilityEffectType;
     details: Record<string, any>;
 }
-export type CultivationTechniqueType = 'Linh Kỹ' | 'Thần Thông' | 'Độn Thuật' | 'Tuyệt Kỹ' | 'Tâm Pháp' | 'Luyện Thể' | 'Kiếm Quyết';
+export type AbilityType = 'Linh Kỹ' | 'Thần Thông' | 'Độn Thuật' | 'Tuyệt Kỹ' | 'Tâm Pháp' | 'Luyện Thể' | 'Kiếm Quyết';
 export type CurrencyType = 
     | 'Đồng' | 'Bạc' | 'Vàng' 
     | 'Linh thạch hạ phẩm' | 'Linh thạch trung phẩm' | 'Linh thạch thượng phẩm' | 'Linh thạch cực phẩm'

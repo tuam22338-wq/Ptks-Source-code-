@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import { REALM_SYSTEM } from '../constants';
+// FIX: Removed unused import of renamed constant
 import type { 
     GameState, 
     GameSettings, 
@@ -50,9 +50,9 @@ export class MyDatabase extends Dexie {
   heuristicFixLogs!: Table<HeuristicFixReport, number>; // Bảng mới cho Thiên Đạo Giám
 
   constructor() {
-    super('PhongThanKySuDB');
-    // FIX: Upgraded database version to 6 to add the 'heuristicFixLogs' table.
-    (this as Dexie).version(6).stores({
+    super('TamThienTheGioiDB');
+    // FIX: Upgraded database version to 7 to reflect schema generalization.
+    (this as Dexie).version(7).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
@@ -67,7 +67,7 @@ export class MyDatabase extends Dexie {
       novels: '++id, title, lastModified',
       heuristicFixLogs: '++id, timestamp', // Schema cho bảng logs
     });
-    // This will upgrade from version 5 to 6, creating the new table.
+    // This will upgrade from version 6 to 7.
     (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });
@@ -128,7 +128,7 @@ const dehydrateGameStateForSave = (gameState: GameState): GameState => {
 
     // Remove non-serializable or reconstructable data to optimize save size
     delete dehydratedState.activeMods;
-    delete dehydratedState.realmSystem;
+    delete dehydratedState.progressionSystem;
     delete dehydratedState.attributeSystem; // Attribute definitions can be reconstructed on load
     
     // The new attribute system (Record<string, ...>) is fully serializable.
@@ -246,7 +246,7 @@ export const saveModDraft = async (draftData: any): Promise<void> => {
 // --- World Service ---
 export const getActiveWorldId = async (): Promise<string> => {
     const setting = await db.misc.get('activeWorldId');
-    return setting?.value || 'phong_than_dien_nghia'; // Default world ID
+    return setting?.value || 'khoi_nguyen_gioi'; // Default world ID
 };
 
 export const setActiveWorldId = async (worldId: string): Promise<void> => {

@@ -36,15 +36,15 @@ const FactionEditorModal: React.FC<FactionEditorModalProps> = ({ isOpen, onClose
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70" onClick={onClose}>
             <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-lg m-4" onClick={e => e.stopPropagation()}>
-                <h3 className="text-lg font-bold p-4 border-b border-gray-700 text-amber-300">{faction ? 'Chỉnh Sửa Phe Phái' : 'Thêm Phe Phái'}</h3>
+                <h3 className="text-lg font-bold p-4 border-b border-gray-700" style={{color: 'var(--primary-accent-color)'}}>{faction ? 'Chỉnh Sửa Phe Phái' : 'Thêm Phe Phái'}</h3>
                 <div className="p-4 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Tên Phe Phái</label>
-                        <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" disabled={!!faction}/>
+                        <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Tên Phe Phái</label>
+                        <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} disabled={!!faction}/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Mô Tả</label>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y"/>
+                        <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Mô Tả</label>
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows={3} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}}/>
                     </div>
                 </div>
                 <div className="p-4 border-t border-gray-700 flex justify-end gap-3">

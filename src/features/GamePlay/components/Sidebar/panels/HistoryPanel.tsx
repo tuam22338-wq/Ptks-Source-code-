@@ -9,9 +9,9 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ majorEvents }) => {
   return (
     <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
         {majorEvents.length > 0 ? majorEvents.map((event, index) => (
-          <div key={index} className="bg-black/20 p-3 rounded-xl border-y border-amber-800/50 flex flex-col">
+          <div key={index} className="neumorphic-inset-box p-3 flex flex-col">
             <div className="pb-2 mb-2 text-center">
-                <p className="text-md font-bold text-amber-400 font-title tracking-wider">
+                <p className="text-md font-bold font-title tracking-wider" style={{color: 'var(--primary-accent-color)'}}>
                     Dự kiến: Năm {event.year}
                 </p>
                 <h3 className="mt-1 text-lg font-bold font-title" style={{color: 'var(--text-color)'}}>
@@ -23,12 +23,12 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ majorEvents }) => {
                <p className="text-xs text-justify" style={{color: 'var(--text-muted-color)'}}>{event.summary}</p>
             </div>
 
-            <div className="mt-3 pt-2 border-t border-gray-700">
+            <div className="mt-3 pt-2 border-t" style={{borderColor: 'var(--shadow-light)'}}>
                 <p className="text-xs text-red-400/90 mt-1"><strong className="font-semibold text-red-400">Hệ quả:</strong> {event.consequences}</p>
             </div>
           </div>
         )) : (
-            <div className="text-center text-gray-500 p-8">
+            <div className="text-center p-8" style={{color: 'var(--text-muted-color)'}}>
                 <p>Thế giới này không có dòng lịch sử được định sẵn.</p>
             </div>
         )}

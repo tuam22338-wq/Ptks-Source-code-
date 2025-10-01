@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaEdit, FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import type { RealmConfig, RealmStage, ModAttributeSystem, NamedRealmSystem } from '../../../types';
-import RealmStageEditorModal from './RealmStageEditorModal';
+import type { RealmConfig, SubTier, ModAttributeSystem, NamedRealmSystem } from '../../../types';
+import SubTierEditorModal from './SubTierEditorModal';
 
 interface RealmEditorModalProps {
     isOpen: boolean;
@@ -12,27 +12,27 @@ interface RealmEditorModalProps {
 }
 
 const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, onSave, initialSystems, attributeSystem }) => {
-    const [realms, setRealms] = useState<RealmConfig[]>([]);
+    const [tiers, setTiers] = useState<RealmConfig[]>([]);
     const [systemInfo, setSystemInfo] = useState({ name: '', description: '', resourceName: 'Linh Khí', resourceUnit: 'điểm' });
-    const [expandedRealms, setExpandedRealms] = useState<Record<string, boolean>>({});
-    const [isStageModalOpen, setIsStageModalOpen] = useState(false);
-    const [editingStage, setEditingStage] = useState<{ stage: RealmStage | null; realmIndex: number }>({ stage: null, realmIndex: -1 });
+    const [expandedTiers, setExpandedTiers] = useState<Record<string, boolean>>({});
+    const [isSubTierModalOpen, setIsSubTierModalOpen] = useState(false);
+    const [editingSubTier, setEditingSubTier] = useState<{ subTier: SubTier | null; tierIndex: number }>({ subTier: null, tierIndex: -1 });
 
     useEffect(() => {
         if (isOpen) {
             const mainSystem = initialSystems.length > 0 ? initialSystems[0] : null;
-            setRealms(mainSystem ? JSON.parse(JSON.stringify(mainSystem.realms)) : []);
+            setTiers(mainSystem ? JSON.parse(JSON.stringify(mainSystem.realms)) : []);
             setSystemInfo({
-                name: mainSystem?.name || 'Hệ Thống Tu Luyện Chính',
-                description: mainSystem?.description || 'Hệ thống tu luyện mặc định.',
-                resourceName: mainSystem?.resourceName || 'Linh Khí',
+                name: mainSystem?.name || 'Hệ Thống Sức Mạnh Chính',
+                description: mainSystem?.description || 'Hệ thống tiến trình mặc định.',
+                resourceName: mainSystem?.resourceName || 'Điểm Kinh Nghiệm',
                 resourceUnit: mainSystem?.resourceUnit || 'điểm',
             });
-            const initialExpanded = (mainSystem?.realms || []).reduce((acc, realm, index) => {
-                acc[realm.id || index] = index === 0;
+            const initialExpanded = (mainSystem?.realms || []).reduce((acc, tier, index) => {
+                acc[tier.id || index] = index === 0;
                 return acc;
             }, {} as Record<string, boolean>);
-            setExpandedRealms(initialExpanded);
+            setExpandedTiers(initialExpanded);
         }
     }, [initialSystems, isOpen]);
     
@@ -41,52 +41,52 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
     };
 
     const handleSaveAndClose = () => {
-        onSave([{ ...systemInfo, id: 'main_system', realms }]);
+        onSave([{ ...systemInfo, id: 'main_system', realms: tiers }]);
         onClose();
     };
 
-    const handleRealmChange = (index: number, field: keyof RealmConfig, value: any) => {
-        const newRealms = [...realms];
-        (newRealms[index] as any)[field] = value;
-        setRealms(newRealms);
+    const handleTierChange = (index: number, field: keyof RealmConfig, value: any) => {
+        const newTiers = [...tiers];
+        (newTiers[index] as any)[field] = value;
+        setTiers(newTiers);
     };
     
-    const handleAddRealm = () => {
-        const newRealm: RealmConfig = { id: `realm_${Date.now()}`, name: 'Cảnh Giới Mới', description: '', stages: [] };
-        setRealms([...realms, newRealm]);
+    const handleAddTier = () => {
+        const newTier: RealmConfig = { id: `tier_${Date.now()}`, name: 'Cấp Bậc Mới', description: '', stages: [] };
+        setTiers([...tiers, newTier]);
     };
     
-    const handleDeleteRealm = (index: number) => {
-        if (window.confirm(`Bạn có chắc muốn xóa cảnh giới "${realms[index].name}"?`)) {
-            setRealms(realms.filter((_, i) => i !== index));
+    const handleDeleteTier = (index: number) => {
+        if (window.confirm(`Bạn có chắc muốn xóa cấp bậc "${tiers[index].name}"?`)) {
+            setTiers(tiers.filter((_, i) => i !== index));
         }
     };
     
-    const handleOpenStageModal = (stage: RealmStage | null, realmIndex: number) => {
-        setEditingStage({ stage, realmIndex });
-        setIsStageModalOpen(true);
+    const handleOpenSubTierModal = (subTier: SubTier | null, tierIndex: number) => {
+        setEditingSubTier({ subTier, tierIndex });
+        setIsSubTierModalOpen(true);
     };
     
-    const handleSaveStage = (stage: RealmStage) => {
-        const newRealms = [...realms];
-        const realm = newRealms[editingStage.realmIndex];
-        const stageIndex = realm.stages.findIndex(s => s.id === stage.id);
+    const handleSaveSubTier = (subTier: SubTier) => {
+        const newTiers = [...tiers];
+        const tier = newTiers[editingSubTier.tierIndex];
+        const subTierIndex = tier.stages.findIndex(s => s.id === subTier.id);
         
-        if (stageIndex > -1) {
-            realm.stages[stageIndex] = stage;
+        if (subTierIndex > -1) {
+            tier.stages[subTierIndex] = subTier;
         } else {
-            realm.stages.push(stage);
+            tier.stages.push(subTier);
         }
         
-        setRealms(newRealms);
-        setIsStageModalOpen(false);
+        setTiers(newTiers);
+        setIsSubTierModalOpen(false);
     };
 
-    const handleDeleteStage = (realmIndex: number, stageIndex: number) => {
-        if (window.confirm("Bạn có chắc muốn xóa tiểu cảnh giới này?")) {
-            const newRealms = [...realms];
-            newRealms[realmIndex].stages.splice(stageIndex, 1);
-            setRealms(newRealms);
+    const handleDeleteSubTier = (tierIndex: number, subTierIndex: number) => {
+        if (window.confirm("Bạn có chắc muốn xóa cấp bậc phụ này?")) {
+            const newTiers = [...tiers];
+            newTiers[tierIndex].stages.splice(subTierIndex, 1);
+            setTiers(newTiers);
         }
     };
 
@@ -94,64 +94,64 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
 
     return (
         <>
-            <RealmStageEditorModal
-                isOpen={isStageModalOpen}
-                onClose={() => setIsStageModalOpen(false)}
-                onSave={handleSaveStage}
-                stage={editingStage.stage}
+            <SubTierEditorModal
+                isOpen={isSubTierModalOpen}
+                onClose={() => setIsSubTierModalOpen(false)}
+                onSave={handleSaveSubTier}
+                subTier={editingSubTier.subTier}
                 attributeDefinitions={attributeSystem.definitions}
                 resourceName={systemInfo.resourceName}
                 resourceUnit={systemInfo.resourceUnit}
             />
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
                 <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-3xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                    <h3 className="text-xl font-bold p-4 border-b border-gray-700 text-amber-300">Chỉnh Sửa Hệ Thống Tu Luyện</h3>
+                    <h3 className="text-xl font-bold p-4 border-b border-gray-700" style={{color: 'var(--primary-accent-color)'}}>Chỉnh Sửa Hệ Thống Tiến Trình</h3>
                     <div className="p-4 overflow-y-auto space-y-3">
                         <div className="p-3 bg-black/25 rounded-lg border border-gray-800/80 mb-3 space-y-3">
-                            <h4 className="font-bold text-gray-200">Thông Tin Hệ Thống</h4>
-                            <input value={systemInfo.name} onChange={e => handleSystemInfoChange('name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Tên Hệ Thống (Vd: Hệ Thống Hồn Sư)"/>
+                            <h4 className="font-bold" style={{color: 'var(--text-color)'}}>Thông Tin Hệ Thống</h4>
+                            <input value={systemInfo.name} onChange={e => handleSystemInfoChange('name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Tên Hệ Thống (Vd: Hệ Thống Hồn Sư)"/>
                             <div className="grid grid-cols-2 gap-2">
-                                <input value={systemInfo.resourceName} onChange={e => handleSystemInfoChange('resourceName', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Tên Tài Nguyên (Vd: Hồn Lực)"/>
-                                <input value={systemInfo.resourceUnit} onChange={e => handleSystemInfoChange('resourceUnit', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200" placeholder="Đơn Vị (Vd: năm, cấp)"/>
+                                <input value={systemInfo.resourceName} onChange={e => handleSystemInfoChange('resourceName', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Tên Tài Nguyên (Vd: Hồn Lực)"/>
+                                <input value={systemInfo.resourceUnit} onChange={e => handleSystemInfoChange('resourceUnit', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Đơn Vị (Vd: năm, cấp)"/>
                             </div>
-                            <textarea value={systemInfo.description} onChange={e => handleSystemInfoChange('description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y" placeholder="Mô tả hệ thống..."/>
+                            <textarea value={systemInfo.description} onChange={e => handleSystemInfoChange('description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}} placeholder="Mô tả hệ thống..."/>
                         </div>
-                        {realms.map((realm, realmIndex) => (
-                            <div key={realm.id || realmIndex} className="bg-black/25 rounded-lg border border-gray-800/80">
-                                <button onClick={() => setExpandedRealms(p => ({...p, [realm.id || realmIndex]: !p[realm.id || realmIndex]}))} className="w-full flex justify-between items-center p-3 text-left hover:bg-gray-800/50">
-                                    <span className="font-bold text-gray-200 text-lg">{realm.name}</span>
+                        {tiers.map((tier, tierIndex) => (
+                            <div key={tier.id || tierIndex} className="bg-black/25 rounded-lg border border-gray-800/80">
+                                <button onClick={() => setExpandedTiers(p => ({...p, [tier.id || tierIndex]: !p[tier.id || tierIndex]}))} className="w-full flex justify-between items-center p-3 text-left hover:bg-gray-800/50">
+                                    <span className="font-bold text-lg" style={{color: 'var(--text-color)'}}>{tier.name}</span>
                                     <div className="flex items-center gap-4">
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRealm(realmIndex); }} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
-                                        {expandedRealms[realm.id || realmIndex] ? <FaChevronUp /> : <FaChevronDown />}
+                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteTier(tierIndex); }} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                        {expandedTiers[tier.id || tierIndex] ? <FaChevronUp /> : <FaChevronDown />}
                                     </div>
                                 </button>
-                                {expandedRealms[realm.id || realmIndex] && (
+                                {expandedTiers[tier.id || tierIndex] && (
                                     <div className="p-3 border-t border-gray-800/80 space-y-3">
-                                        <input value={realm.name} onChange={e => handleRealmChange(realmIndex, 'name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 mb-2" placeholder="Tên Đại Cảnh Giới"/>
-                                        <textarea value={realm.description} onChange={e => handleRealmChange(realmIndex, 'description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 resize-y" placeholder="Mô tả..."/>
+                                        <input value={tier.name} onChange={e => handleTierChange(tierIndex, 'name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 mb-2" style={{color: 'var(--text-color)'}} placeholder="Tên Đại Cảnh Giới"/>
+                                        <textarea value={tier.description} onChange={e => handleTierChange(tierIndex, 'description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}} placeholder="Mô tả..."/>
                                         <div className="space-y-2">
-                                            {realm.stages.map((stage, stageIndex) => (
-                                                <div key={stage.id || stageIndex} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                            {tier.stages.map((subTier, subTierIndex) => (
+                                                <div key={subTier.id || subTierIndex} className="flex justify-between items-center p-2 bg-black/30 rounded">
                                                     <div>
-                                                        <p className="text-sm font-semibold">{stage.name}</p>
-                                                        <p className="text-xs text-gray-400">{systemInfo.resourceName}: {!isFinite(stage.qiRequired) ? 'Vô Hạn' : (stage.qiRequired || 0).toLocaleString()}</p>
+                                                        <p className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{subTier.name}</p>
+                                                        <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>{systemInfo.resourceName}: {!isFinite(subTier.qiRequired) ? 'Vô Hạn' : (subTier.qiRequired || 0).toLocaleString()}</p>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <button onClick={() => handleOpenStageModal(stage, realmIndex)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>
-                                                        <button onClick={() => handleDeleteStage(realmIndex, stageIndex)} className="p-1 text-gray-400 hover:text-red-400"><FaTrash /></button>
+                                                        <button onClick={() => handleOpenSubTierModal(subTier, tierIndex)} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                                        <button onClick={() => handleDeleteSubTier(tierIndex, subTierIndex)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
-                                        <button onClick={() => handleOpenStageModal(null, realmIndex)} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
-                                            <FaPlus /> Thêm Tiểu Cảnh Giới
+                                        <button onClick={() => handleOpenSubTierModal(null, tierIndex)} className="w-full mt-2 text-sm hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded" style={{color: 'var(--secondary-accent-color)'}}>
+                                            <FaPlus /> Thêm Cấp Bậc Phụ
                                         </button>
                                     </div>
                                 )}
                             </div>
                         ))}
-                        <button onClick={handleAddRealm} className="w-full mt-3 text-base text-amber-300/80 hover:text-amber-200 flex items-center justify-center gap-2 p-2 bg-amber-900/30 rounded border border-amber-500/30">
-                            <FaPlus /> Thêm Đại Cảnh Giới
+                        <button onClick={handleAddTier} className="w-full mt-3 text-base hover:text-amber-200 flex items-center justify-center gap-2 p-2 bg-amber-900/30 rounded border border-amber-500/30" style={{color: 'var(--primary-accent-color)'}}>
+                            <FaPlus /> Thêm Cấp Bậc Chính
                         </button>
                     </div>
                     <div className="p-4 border-t border-gray-700 flex justify-end gap-3 mt-auto">

@@ -16,16 +16,16 @@ const MapView: React.FC<MapViewProps> = ({ discoveredLocations, currentLocationI
                     .map(id => discoveredLocations.find(l => l.id === id)?.name)
                     .filter(Boolean);
                 return (
-                    <div key={location.id} className={`bg-black/20 p-3 rounded-lg border-2 ${isCurrent ? 'border-amber-400' : 'border-gray-700/60'}`}>
-                         <h4 className="font-bold text-lg font-title text-amber-300 flex items-center gap-2">
+                    <div key={location.id} className={`neumorphic-inset-box p-3 ${isCurrent ? 'ring-2 ring-[var(--primary-accent-color)]' : ''}`}>
+                         <h4 className="font-bold text-lg font-title flex items-center gap-2" style={{color: 'var(--primary-accent-color)'}}>
                              {isCurrent && <FaMapPin className="text-red-500 animate-pulse" />}
                              {location.name}
                         </h4>
-                        <p className="text-xs text-gray-500">{location.type}</p>
-                        <p className="text-sm text-gray-400 mt-2">{location.description}</p>
+                        <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>{location.type}</p>
+                        <p className="text-sm mt-2" style={{color: 'var(--text-color)'}}>{location.description}</p>
                         {neighbors.length > 0 && (
-                            <div className="mt-3 pt-2 border-t border-gray-700/50">
-                                <p className="text-xs text-gray-500">Lối đi đến: <span className="text-gray-400">{neighbors.join(', ')}</span></p>
+                            <div className="mt-3 pt-2 border-t" style={{borderColor: 'var(--shadow-light)'}}>
+                                <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>Lối đi đến: <span style={{color: 'var(--text-color)'}}>{neighbors.join(', ')}</span></p>
                             </div>
                         )}
                     </div>

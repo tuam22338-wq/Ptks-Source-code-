@@ -1,6 +1,5 @@
-
 import { Type } from "@google/genai";
-import type { GameState, NPC, CharacterAttributes } from '../../types';
+import type { GameState, NPC, CharacterAttributes, CultivationTechnique } from '../../types';
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
@@ -14,7 +13,7 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
     const { combatState, playerCharacter } = gameState;
     if (!combatState) throw new Error("Không ở trong trạng thái chiến đấu.");
 
-    const availableTechniques = npc.techniques.filter(tech => {
+    const availableTechniques = (npc.techniques || []).filter(tech => {
         const cooldown = 0; // NPCs don't have cooldowns for simplicity yet
         const canAfford = true; // NPCs have infinite resources for now
         return cooldown <= 0 && canAfford;

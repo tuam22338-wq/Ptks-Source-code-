@@ -12,11 +12,11 @@ const AttributeRow: React.FC<{
     description?: string;
 }> = ({ label, value, maxValue, icon: Icon, description }) => (
     <div className="flex justify-between items-center text-sm py-1 group relative" title={description}>
-        <div className="flex items-center gap-2 text-gray-300">
+        <div className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
             <Icon />
             <span>{label}</span>
         </div>
-        <span className="font-mono font-semibold text-amber-200">
+        <span className="font-mono font-semibold" style={{color: 'var(--primary-accent-color)'}}>
             {value}
             {maxValue !== undefined && ` / ${maxValue}`}
         </span>
@@ -27,7 +27,7 @@ const AttributeRow: React.FC<{
 const ProgressBar: React.FC<{ current: number; max: number; colorClass: string }> = ({ current, max, colorClass }) => {
     const percentage = max > 0 ? (current / max) * 100 : 0;
     return (
-        <div className="w-full bg-black/30 rounded-full h-2.5 border border-gray-700">
+        <div className="w-full bg-black/30 rounded-full h-2.5" style={{boxShadow: 'var(--shadow-pressed)'}}>
             <div className={`${colorClass} h-2 rounded-full`} style={{ width: `${percentage}%` }}></div>
         </div>
     );
@@ -67,8 +67,8 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
         if (attributesInGroup.length === 0) return null;
 
         return (
-            <div key={group.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                <h4 className="font-bold text-amber-300 font-title mb-2">{group.name}</h4>
+            <div key={group.id} className="neumorphic-inset-box p-3">
+                <h4 className="font-bold font-title mb-2" style={{color: 'var(--primary-accent-color)'}}>{group.name}</h4>
                 <div className="space-y-1">
                     {attributesInGroup.map(def => {
                         const attr = getAttributeValue(def.id);
@@ -108,8 +108,8 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
         if (currencies.length === 0) return null;
 
         return (
-            <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                <h4 className="font-bold text-amber-300 font-title mb-2">Tài Sản</h4>
+            <div className="neumorphic-inset-box p-3">
+                <h4 className="font-bold font-title mb-2" style={{color: 'var(--primary-accent-color)'}}>Tài Sản</h4>
                 <div className="space-y-1">
                     {currencies.map(([name, amount]) => {
                         return (
@@ -132,15 +132,15 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
         if (!relationships || relationships.length === 0) return null;
 
         return (
-            <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                <h4 className="font-bold text-amber-300 font-title mb-2 flex items-center gap-2"><GiFamilyTree /> Quan Hệ</h4>
+            <div className="neumorphic-inset-box p-3">
+                <h4 className="font-bold font-title mb-2 flex items-center gap-2" style={{color: 'var(--primary-accent-color)'}}><GiFamilyTree /> Quan Hệ</h4>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                     {relationships.map(rel => {
                         const npc = activeNpcs.find(n => n.id === rel.npcId);
                         if (!npc) return null;
                         return (
                             <div key={rel.npcId} className="text-sm">
-                                <p className="font-semibold">{npc.identity.name} - <span className="text-gray-400">{rel.type}</span></p>
+                                <p className="font-semibold">{npc.identity.name} - <span style={{color: 'var(--text-muted-color)'}}>{rel.type}</span></p>
                                 <p className="text-xs text-cyan-300">{rel.status} ({rel.value})</p>
                             </div>
                         );
@@ -156,11 +156,11 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
         <div className="space-y-4 animate-fade-in" style={{ animationDuration: '300ms' }}>
             {/* Cultivation Progress (if realm system exists and is a progression system) */}
             {isProgressionSystem && (
-                <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                    <h4 className="font-bold text-amber-300 font-title">{realmSystemInfo.name}</h4>
+                <div className="neumorphic-inset-box p-3">
+                    <h4 className="font-bold font-title" style={{color: 'var(--primary-accent-color)'}}>{realmSystemInfo.name}</h4>
                     <p className="text-lg font-semibold text-cyan-300">{currentRealm?.name} - {currentStage?.name}</p>
                     <div className="mt-2">
-                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                        <div className="flex justify-between text-xs mb-1" style={{color: 'var(--text-muted-color)'}}>
                             <span>{realmSystemInfo.resourceName}</span>
                             <span>{playerCharacter.cultivation.spiritualQi.toLocaleString()} / {(isFinite(qiToNextStage) ? qiToNextStage.toLocaleString() : 'MAX')} {realmSystemInfo.resourceUnit}</span>
                         </div>
@@ -182,13 +182,13 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
 
             {/* Active Effects */}
             {playerCharacter.activeEffects.length > 0 && (
-                <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
-                    <h4 className="font-bold text-amber-300 font-title mb-2">Hiệu Ứng</h4>
+                <div className="neumorphic-inset-box p-3">
+                    <h4 className="font-bold font-title mb-2" style={{color: 'var(--primary-accent-color)'}}>Hiệu Ứng</h4>
                     <div className="space-y-2">
                         {playerCharacter.activeEffects.map(effect => (
                             <div key={effect.id} className="text-sm">
                                 <p className={`font-semibold ${effect.isBuff ? 'text-green-400' : 'text-red-400'}`}>{effect.name}</p>
-                                <p className="text-xs text-gray-400">{effect.description} (Còn {effect.duration === -1 ? 'vĩnh viễn' : `${effect.duration} lượt`})</p>
+                                <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>{effect.description} (Còn {effect.duration === -1 ? 'vĩnh viễn' : `${effect.duration} lượt`})</p>
                             </div>
                         ))}
                     </div>

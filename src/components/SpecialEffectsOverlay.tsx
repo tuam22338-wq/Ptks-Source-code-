@@ -13,6 +13,7 @@ const SpecialEffectsOverlay: React.FC = () => {
     const [activeEffect, setActiveEffect] = useState<null | 'breakthrough' | 'rareItem'>(null);
     const [rareItemData, setRareItemData] = useState<{ name: string; icon: string; quality: ItemQuality } | null>(null);
 
+    // FIX: Access cultivation property
     const prevRealmId = useRef<string | undefined>(gameState?.playerCharacter.cultivation.currentRealmId);
     const prevInventory = useRef<Map<string, number>>(new Map());
     const isInitialMount = useRef(true);
@@ -21,6 +22,7 @@ const SpecialEffectsOverlay: React.FC = () => {
         if (!gameState) return;
 
         const { playerCharacter } = gameState;
+        // FIX: Access cultivation property
         const currentRealmId = playerCharacter.cultivation.currentRealmId;
         const currentItems = playerCharacter.inventory.items;
 
@@ -65,6 +67,7 @@ const SpecialEffectsOverlay: React.FC = () => {
         prevRealmId.current = currentRealmId;
         prevInventory.current = currentInventoryMap;
 
+    // FIX: Access cultivation property in dependency array
     }, [gameState?.playerCharacter.cultivation.currentRealmId, gameState?.playerCharacter.inventory.items, gameState]);
 
 

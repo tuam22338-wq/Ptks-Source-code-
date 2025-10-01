@@ -23,7 +23,7 @@ const TabButton: React.FC<{
 }> = memo(({ tabId, activeTab, onClick, icon: Icon, label }) => (
   <button
     onClick={() => onClick(tabId)}
-    className={`flex-grow flex flex-col items-center justify-center p-3 text-gray-400 rounded-lg transition-colors duration-200 hover:bg-gray-700/50 hover:text-white ${activeTab === tabId ? 'bg-gray-600 text-white shadow-inner' : ''}`}
+    className={`flex-grow flex flex-col items-center justify-center p-3 text-[var(--text-muted-color)] rounded-lg transition-colors duration-200 hover:bg-gray-700/50 hover:text-[var(--text-color)] ${activeTab === tabId ? 'bg-gray-600 text-[var(--text-color)] shadow-inner' : ''}`}
   >
     <Icon className="text-2xl mb-1" />
     <span className="text-xs font-semibold">{label}</span>
@@ -40,7 +40,7 @@ export const SettingsPanel: React.FC = () => {
         <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             {isRagManagerOpen && <RagSourceManagerModal onClose={() => setIsRagManagerOpen(false)} />}
             <div className="flex-shrink-0 flex justify-between items-center mb-6">
-                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors" title="Quay Lại Menu">
+                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-gray-700/50 transition-colors" title="Quay Lại Menu">
                     <FaArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-3xl font-bold font-title">Cài Đặt</h2>

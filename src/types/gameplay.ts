@@ -1,13 +1,13 @@
-
-
 import type {
-    Gender, Element, StatBonus, CharacterAttributes, PhapBaoRank, ItemQuality, EquipmentSlot, InnateTalentRank,
-    Season, TimeOfDay, Weather, TechniqueEffect, CultivationTechniqueType, CurrencyType,
-    ItemType, SkillCheck, EventChoice, EventOutcome
+    Gender, Element, StatBonus, CharacterAttributes, AbilityRank, ItemQuality, EquipmentSlot, InnateTalentRank,
+    Season, TimeOfDay, Weather, AbilityEffect, AbilityType, CurrencyType,
+    ItemType, SkillCheck, EventChoice, EventOutcome, Faction, CultivationTechnique
 } from './core';
 import type { SpiritualRoot, CharacterIdentity, InnateTalent } from './character';
-import type { FullMod, RealmConfig, ModAttributeSystem, ModEvent, NamedRealmSystem } from './modding';
+// FIX: Update imports to use renamed types 'RealmConfig' and 'NamedRealmSystem' and remove Faction to avoid circular dependency issues.
+import type { FullMod, RealmConfig, ModAttributeSystem, ModEvent, NamedRealmSystem, ModLocation, ModNpc } from './modding';
 import type { SystemInfo, NpcDensity, GameplaySettings } from './settings';
+import type { MechanicalIntent } from './ai';
 
 // --- New Asset Types ---
 export type AssetLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
@@ -119,6 +119,7 @@ export interface MemoryState {
 }
 // --- END NPC MIND STATE ---
 
+// FIX: Renamed ProgressionState to CultivationState
 export interface CultivationState {
     currentRealmId: string;
     currentStageId: string;
@@ -126,27 +127,7 @@ export interface CultivationState {
     hasConqueredInnerDemon: boolean;
 }
 
-export interface CultivationTechnique {
-    id: string;
-    name: string;
-    description: string;
-    type: CultivationTechniqueType;
-    cost: {
-        type: 'Linh Lực' | 'Sinh Mệnh' | 'Nguyên Thần';
-        value: number;
-    };
-    cooldown: number; // in turns/actions, 0 for no cooldown
-    effects: TechniqueEffect[];
-    rank: PhapBaoRank;
-    icon: string;
-    level: number;
-    maxLevel: number;
-    levelBonuses?: { level: number, bonuses: StatBonus[] }[];
-    element?: Element;
-    requirements?: StatBonus[];
-    tags?: string[];
-    bonuses?: StatBonus[];
-}
+// FIX: Renamed Ability to CultivationTechnique, moved definition to core.ts
 
 export interface InventoryItem {
     id: string;
@@ -154,7 +135,7 @@ export interface InventoryItem {
     description: string;
     quantity: number;
     type: ItemType;
-    rank?: PhapBaoRank;
+    rank?: AbilityRank;
     icon?: string;
     bonuses?: StatBonus[];
     weight: number;
@@ -177,10 +158,12 @@ export interface NPC {
     identity: CharacterIdentity;
     status: string;
     attributes: CharacterAttributes;
-    talents: InnateTalent[]; // NPCs still use talents for now
+    talents: InnateTalent[];
     locationId: string;
     relationships?: Relationship[];
+    // FIX: Add missing cultivation property
     cultivation: CultivationState;
+    // FIX: Add missing techniques property
     techniques: CultivationTechnique[];
     inventory: Inventory;
     currencies: Currency;
@@ -221,11 +204,12 @@ export interface DanhVong {
     status: string;
 }
 
+// FIX: Renamed ProgressionPath to CultivationPath
 export interface CultivationPath {
   id: string;
   name: string;
   description: string;
-  requiredRealmId: string; // The realm you must ENTER to be offered this path
+  requiredRealmId: string; // The tier you must ENTER to be offered this path
   bonuses: StatBonus[];
 }
 
@@ -258,6 +242,7 @@ export interface QuestObjective {
 }
 
 export interface QuestReward {
+    // FIX: Add missing spiritualQi property
     spiritualQi?: number;
     currencies?: Currency;
     items?: { name: string, quantity: number }[];
@@ -301,15 +286,17 @@ export interface PlayerAiHooks {
 export interface PlayerCharacter {
     identity: CharacterIdentity;
     attributes: CharacterAttributes;
+    // FIX: Renamed powerSource to spiritualRoot
     spiritualRoot: SpiritualRoot | null;
     inventory: Inventory;
     currencies: Currency;
+    // FIX: Add missing cultivation property
     cultivation: CultivationState;
     currentLocationId: string;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     vitals: PlayerVitals;
     
-    // New Simplified Technique System
+    // FIX: Renamed mainAbilityInfo to mainCultivationTechniqueInfo and abilities to techniques
     mainCultivationTechniqueInfo: { name: string; description: string; } | null;
     techniques: CultivationTechnique[];
 
@@ -322,6 +309,7 @@ export interface PlayerCharacter {
     caveAbode: CaveAbode;
     healthStatus: CharacterStatus;
     activeEffects: ActiveEffect[];
+    // FIX: Add missing techniqueCooldowns property
     techniqueCooldowns: Record<string, number>;
     activeQuests: ActiveQuest[];
     completedQuestIds: string[];
@@ -336,6 +324,7 @@ export interface StoryEntry {
     type: 'narrative' | 'dialogue' | 'action-result' | 'system' | 'player-action' | 'player-dialogue' | 'combat' | 'system-notification';
     content: string;
     isPending?: boolean;
+    effects?: MechanicalIntent; // Contains the direct consequences of this narrative entry.
 }
 
 export interface Rumor {
@@ -411,6 +400,7 @@ export interface PlayerSect {
 
 export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
 export type GenerationMode = 'fast' | 'deep' | 'super_deep';
+export type DataGenerationMode = 'AI' | 'CUSTOM' | 'NONE';
 
 export interface WorldCreationData extends GameplaySettings {
     genre: string;
@@ -428,11 +418,18 @@ export interface WorldCreationData extends GameplaySettings {
         bio: string;
     };
     attributeSystem?: ModAttributeSystem;
-    enableRealmSystem: boolean;
-    realmTemplateId: string;
-    namedRealmSystem: NamedRealmSystem | null;
+    enableRealmSystem: boolean; // Kept for UI state, will be translated to enableProgressionSystem
+    realmTemplateId: string; // Kept for UI state, will be translated
+    namedRealmSystem: NamedRealmSystem | null; // Updated type
     // FIX: Add missing generationMode to satisfy the GameStartData type requirement in AppContext.
     generationMode: GenerationMode;
+    // New data generation controls
+    npcGenerationMode: DataGenerationMode;
+    locationGenerationMode: DataGenerationMode;
+    factionGenerationMode: DataGenerationMode;
+    customNpcs: ModNpc[];
+    customLocations: ModLocation[];
+    customFactions: Faction[];
 }
 
 export interface GameState {
@@ -449,14 +446,17 @@ export interface GameState {
     encounteredNpcIds: string[];
     activeMods: FullMod[];
     activeModIds?: string[];
+    // FIX: Rename progressionSystem to realmSystem and use RealmConfig
     realmSystem: RealmConfig[];
+    // FIX: Rename progressionSystemInfo to realmSystemInfo
     realmSystemInfo: {
         name: string;
         resourceName: string;
         resourceUnit: string;
     };
+    // FIX: Rename namedProgressionSystems to namedRealmSystems
     namedRealmSystems?: NamedRealmSystem[];
-    attributeSystem: ModAttributeSystem; // Now dynamic
+    attributeSystem: ModAttributeSystem;
     majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;
     combatState: CombatState | null;
@@ -472,6 +472,9 @@ export interface GameState {
     creationData?: {
         npcDensity: NpcDensity;
         generationMode: GenerationMode;
+        npcGenerationMode?: DataGenerationMode;
+        locationGenerationMode?: DataGenerationMode;
+        factionGenerationMode?: DataGenerationMode;
     };
     gameplaySettings: GameplaySettings;
 }
@@ -541,5 +544,6 @@ export interface Sect {
     joinRequirements: { attribute: string; value: number; greaterThan?: boolean }[];
     missions: SectMission[];
     iconName?: string;
+    // FIX: Renamed startingTechnique to use CultivationTechnique type
     startingTechnique?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
 }

@@ -14,8 +14,8 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message, size = 'md' })
     const textSizeClass = size === 'sm' ? 'text-xs' : 'text-lg';
   return (
     <div className="flex flex-col items-center justify-center space-y-2 p-2">
-      <div className={`${sizeClasses[size]} border-4 border-dashed rounded-full animate-spin border-amber-400`}></div>
-      {message && <p className={`text-amber-300 ${textSizeClass} font-title text-center`}>{message}</p>}
+      <div className={`${sizeClasses[size]} border-4 border-dashed rounded-full animate-spin border-[var(--primary-accent-color)]`}></div>
+      {message && <p className={`text-[var(--primary-accent-color)] ${textSizeClass} font-title text-center`}>{message}</p>}
     </div>
   );
 };

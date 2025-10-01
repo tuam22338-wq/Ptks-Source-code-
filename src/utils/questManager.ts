@@ -186,7 +186,10 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             if (rewards.spiritualQi) {
                 const qiAmount = Number(rewards.spiritualQi) || 0;
                 if (qiAmount > 0) {
-                    pc.cultivation.spiritualQi += qiAmount;
+                    // FIX: Ensure pc object has cultivation property
+                    if (pc.cultivation) {
+                        pc.cultivation.spiritualQi += qiAmount;
+                    }
                     notifications.push(`Bạn nhận được [${qiAmount.toLocaleString()} Linh khí]`);
                 }
             }

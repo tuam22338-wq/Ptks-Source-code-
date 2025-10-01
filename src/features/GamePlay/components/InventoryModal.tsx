@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
 // FIX: Added 'EQUIPMENT_SLOT_ICONS' to the import list to resolve the "does not exist" error.
@@ -67,13 +68,13 @@ const ItemComparison: React.FC<{ item: InventoryItem; equipped: InventoryItem | 
                 const itemValue = Number(itemBonuses.get(attr)) || 0;
                 const equippedValue = Number(equippedBonuses.get(attr)) || 0;
                 const diff = itemValue - equippedValue;
-                let diffColor = 'text-gray-400';
+                let diffColor = 'text-[var(--text-muted-color)]';
                 if (diff > 0) diffColor = 'text-green-400';
                 if (diff < 0) diffColor = 'text-red-400';
 
                 return (
                     <div key={attr} className="flex justify-between items-center text-xs">
-                        <span className="text-gray-300">{attr}</span>
+                        <span style={{color: 'var(--text-color)'}}>{attr}</span>
                         <div className="flex items-center gap-2">
                             <span className="font-mono w-8 text-right">{itemValue}</span>
                             <span className={`font-mono font-bold w-10 text-center ${diffColor}`}>
@@ -319,7 +320,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-4xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
                     <h3 className="text-2xl text-[var(--primary-accent-color)] font-bold font-title">Túi Càn Khôn</h3>
-                    <button onClick={handleClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
+                    <button onClick={handleClose} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)]"><FaTimes /></button>
                 </div>
                 
                 <div className="flex-grow p-4 flex flex-col lg:flex-row gap-4 min-h-0">
@@ -347,7 +348,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                 <div className="h-full flex flex-col justify-between animate-fade-in" style={{animationDuration: '200ms'}}>
                                     <div>
                                         <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[selectedItem.quality].color}`}>{selectedItem.name}</h4>
-                                        <p className="text-xs text-gray-400 italic truncate">{selectedItem.description}</p>
+                                        <p className="text-xs text-[var(--text-muted-color)] italic truncate">{selectedItem.description}</p>
                                         {selectedItem.vitalEffects && selectedItem.vitalEffects.length > 0 && <div className="mt-1 text-xs text-yellow-300">{selectedItem.vitalEffects.map(b => `${b.vital === 'hunger' ? 'No bụng' : 'Nước uống'} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
                                         
                                         {selectedItem.slot && !selectedItem.isEquipped && <ItemComparison item={selectedItem} equipped={equippedItemForComparison} />}
@@ -361,7 +362,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="h-full flex items-center justify-center text-gray-500">Di chuột qua vật phẩm để xem chi tiết.</div>
+                                <div className="h-full flex items-center justify-center text-[var(--text-muted-color)]">Di chuột qua vật phẩm để xem chi tiết.</div>
                             )}
                         </div>
                     </div>
@@ -370,7 +371,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                     <div className="flex-grow flex flex-col p-3 rounded-lg border border-[var(--border-subtle)] min-h-0">
                          <div className="w-full bg-[var(--bg-interactive)] p-2 rounded-lg border border-[var(--border-subtle)] space-y-1 mb-3 flex-shrink-0">
                              <div className="flex justify-between items-baseline text-xs">
-                                 <div className="flex items-center gap-1 text-gray-300"><GiWeight /> <span>Tải trọng</span></div>
+                                 <div className="flex items-center gap-1" style={{color: 'var(--text-color)'}}><GiWeight /> <span>Tải trọng</span></div>
                                  <span className="font-mono">{currentWeight.toFixed(1)} / {playerCharacter.inventory.weightCapacity.toFixed(1)}</span>
                              </div>
                              <div className="w-full bg-black/40 rounded-full h-1.5 border border-gray-800">
@@ -378,7 +379,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                              </div>
                              <div className="relative pt-2">
                                 <FaSearch className="absolute left-3 top-1/2 text-gray-500" />
-                                <input type="text" placeholder="Tìm vật phẩm..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 w-full !py-1.5 pl-9" />
+                                <input type="text" placeholder="Tìm vật phẩm..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 w-full !py-1.5 pl-9" />
                              </div>
                         </div>
 

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings } from '../types';
+import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
 import { migrateGameState, createNewGameState, hydrateWorldData } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
@@ -26,6 +26,13 @@ export interface GameStartData extends GameplaySettings {
     attributeSystem?: ModAttributeSystem;
     namedRealmSystem?: NamedRealmSystem | null;
     genre: string;
+    // New data generation controls
+    npcGenerationMode: DataGenerationMode;
+    locationGenerationMode: DataGenerationMode;
+    factionGenerationMode: DataGenerationMode;
+    customNpcs?: ModNpc[];
+    customLocations?: ModLocation[];
+    customFactions?: Faction[];
 }
 
 
@@ -77,7 +84,7 @@ const initialState: AppState = {
     currentSlotId: null,
     settings: DEFAULT_SETTINGS,
     storageUsage: { usageString: '0 B / 0 B', percentage: 0 },
-    activeWorldId: 'phong_than_dien_nghia',
+    activeWorldId: 'khoi_nguyen_gioi',
     backgrounds: { status: {}, urls: {} },
     installedMods: [],
     modBeingEdited: null,
@@ -497,7 +504,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             }, attributeSystemToUse);
 
             const gameStartData: GameStartData = {
-                // FIX: Spread worldCreationData to include all GameplaySettings.
                 ...worldCreationData,
                 identity,
                 spiritualRoot,

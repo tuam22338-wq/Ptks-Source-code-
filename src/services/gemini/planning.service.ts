@@ -1,4 +1,6 @@
 
+
+
 import { Type } from "@google/genai";
 import type { GameState, NPC } from '../../types';
 import { generateWithRetry } from './gemini.core';
@@ -48,8 +50,8 @@ export const generateNpcActionPlan = async (npc: NPC, gameState: GameState): Pro
     Kế hoạch phải logic, phù hợp với tính cách của NPC và bối cảnh thế giới. Các bước phải là những hành động cụ thể mà NPC có thể thực hiện.
 
     **Ví dụ:**
-    - **Mục tiêu:** "Tìm ra kẻ đã hãm hại sư phụ."
-    - **Kế hoạch có thể tạo ra:** ["Đi đến thư viện tông môn để tra cứu manh mối.", "Hỏi thăm các sư huynh đệ cũ về ngày xảy ra sự việc.", "Tới hiện trường vụ án để tìm kiếm dấu vết còn sót lại."]
+    - **Mục tiêu:** "Tìm kiếm 'Cổ Thần Thảo' để cứu em gái."
+    - **Kế hoạch có thể tạo ra:** ["Đi đến thư viện để tìm thông tin về 'Cổ Thần Thảo'.", "Hỏi thăm các dược sư trong thành.", "Tới 'Vực Sâu Vĩnh Cửu' để tìm thảo dược."]
 
     Hãy trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
     

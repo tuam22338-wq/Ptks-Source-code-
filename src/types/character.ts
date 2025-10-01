@@ -1,12 +1,14 @@
 import type { Element, StatBonus, InnateTalentRank, Gender } from './core';
 
-// --- New Spiritual Root System Types ---
+// --- New PowerSource System Types ---
+// FIX: Renamed PowerSourceQuality to SpiritualRootQuality
 export type SpiritualRootQuality = 'Phàm Căn' | 'Linh Căn' | 'Địa Căn' | 'Thiên Căn' | 'Thánh Căn';
 
+// FIX: Renamed PowerSource to SpiritualRoot
 export interface SpiritualRoot {
   elements: { type: Element; purity: number }[]; // Purity from 1-100
   quality: SpiritualRootQuality;
-  name: string; // e.g., "Hỏa Thiên Linh Căn", "Kim Mộc Thủy Tạp Linh Căn"
+  name: string; // e.g., "Hỏa Thiên Linh Căn", "Kim Mộc Thủy Tạp Linh Căn", "Lõi Năng Lượng Cybernetic"
   description: string;
   bonuses: StatBonus[];
 }

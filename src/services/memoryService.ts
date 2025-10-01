@@ -1,7 +1,5 @@
-
 import type { EntityReference, GameState, MemoryFragment, StoryEntry, GraphEdge } from '../types';
 import * as db from './dbService';
-import * as gameplayService from './gemini/gameplay.service';
 
 
 /**
@@ -33,6 +31,7 @@ export const extractEntities = (content: string, gameState: GameState): EntityRe
                 entities.set(item.id, { id: item.id, type: 'item', name: item.name });
                 return;
             }
+            // FIX: Access techniques from player character
             const tech = gameState.playerCharacter.techniques.find(t => t.name === name);
             if (tech && !entities.has(tech.id)) {
                 entities.set(tech.id, { id: tech.id, type: 'technique', name: tech.name });
@@ -98,7 +97,7 @@ export const saveGraphEdges = async (edges: GraphEdge[]): Promise<void> => {
     }
 };
 
-// --- PHASE 3: WORKING MEMORY ---
+// --- WORKING MEMORY ---
 
 /**
  * A simplified entity extractor for raw player input text.
@@ -111,6 +110,7 @@ export const extractEntitiesFromText = (text: string, gameState: GameState): Ent
         ...gameState.activeNpcs.map(e => ({ id: e.id, name: e.identity.name, type: 'npc' as const })),
         ...gameState.discoveredLocations.map(e => ({ id: e.id, name: e.name, type: 'location' as const })),
         ...gameState.playerCharacter.inventory.items.map(e => ({ id: e.id, name: e.name, type: 'item' as const })),
+        // FIX: Access techniques from player character
         ...gameState.playerCharacter.techniques.map(e => ({ id: e.id, name: e.name, type: 'technique' as const })),
     ];
     
@@ -125,10 +125,11 @@ export const extractEntitiesFromText = (text: string, gameState: GameState): Ent
 
 
 /**
- * Orchestrates the retrieval and synthesis of relevant memories for the AI narrator.
+ * Retrieves relevant memories and formats them into a simple string context.
+ * This replaces the previous AI-powered synthesis step to reduce latency.
  * @returns A concise string report of relevant memories, or an empty string if none are found.
  */
-export const retrieveAndSynthesizeMemory = async (
+export const retrieveMemoryContext = async (
     playerAction: string,
     gameState: GameState,
     slotId: number
@@ -136,6 +137,16 @@ export const retrieveAndSynthesizeMemory = async (
     // 1. Extract entities from the player's intended action
     const entities = extractEntitiesFromText(playerAction, gameState);
     const entityIds = entities.map(e => e.id);
+
+    // Also include entities from the current location for context
+    const currentLocation = gameState.discoveredLocations.find(l => l.id === gameState.playerCharacter.currentLocationId);
+    if (currentLocation && !entityIds.includes(currentLocation.id)) {
+        entityIds.push(currentLocation.id);
+    }
+    const npcsHere = gameState.activeNpcs.filter(n => n.locationId === currentLocation?.id);
+    npcsHere.forEach(npc => {
+        if(!entityIds.includes(npc.id)) entityIds.push(npc.id);
+    });
 
     if (entityIds.length === 0) {
         return ''; // No relevant entities, no need to query memory
@@ -148,17 +159,7 @@ export const retrieveAndSynthesizeMemory = async (
         return ''; // No memories found for these entities
     }
 
-    // 3. Use an AI to synthesize these memories into a concise report for the main narrator
-    try {
-        const memoryReport = await gameplayService.synthesizeMemoriesForPrompt(
-            memories,
-            playerAction,
-            gameState.playerCharacter.identity.name
-        );
-        return memoryReport;
-    } catch (error) {
-        console.error("Failed to synthesize memories:", error);
-        // Fallback: return a simple list of the latest memory content
-        return `Ký ức gần nhất: ${memories[0].content}`;
-    }
+    // 3. Format memories into a simple string for the main prompt context.
+    const memoryContent = memories.map((m, i) => `Ký ức ${i+1} (Năm ${m.gameDate.year}, ${m.gameDate.season}, ngày ${m.gameDate.day}): ${m.content}`).join('\n\n');
+    return memoryContent;
 };

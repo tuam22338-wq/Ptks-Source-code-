@@ -11,7 +11,7 @@ interface SettingsSectionProps {
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
   <section className="mb-10">
-    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50 text-gray-300">{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
@@ -25,8 +25,8 @@ interface SettingsRowProps {
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
   <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
     <div className="md:w-1/3 flex-shrink-0">
-      <label className="block font-semibold text-gray-200">{label}</label>
-      <p className="text-sm text-gray-500 mt-1">{description}</p>
+      <label className="block font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
+      <p className="text-sm mt-1" style={{color: 'var(--text-muted-color)'}}>{description}</p>
     </div>
     <div className="md:w-2/3">{children}</div>
   </div>
@@ -145,7 +145,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                     {AI_SYNC_MODES.map(mode => (
                         <button 
                             key={mode.value} 
-                            className={`w-full text-center py-1.5 px-2 text-sm text-gray-400 rounded-md transition-colors duration-200 font-semibold hover:bg-gray-700/50 hover:text-white ${settings.aiSyncMode === mode.value ? 'bg-gray-600 text-white shadow-inner' : ''}`} 
+                            className={`w-full text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 hover:bg-gray-700/50 hover:text-[var(--text-color)] ${settings.aiSyncMode === mode.value ? 'bg-gray-600 text-[var(--text-color)] shadow-inner' : 'text-[var(--text-muted-color)]'}`} 
                             onClick={() => handleSettingChange('aiSyncMode', mode.value)}
                             title={mode.description}
                         >
@@ -157,7 +157,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
             <SettingsRow label="Bảng điều khiển nhà phát triển" description="Hiển thị một console trong game để theo dõi log và các thông tin gỡ lỗi.">
                 <label className="flex items-center cursor-pointer">
                     <input type="checkbox" checked={settings.enableDeveloperConsole} onChange={e => handleSettingChange('enableDeveloperConsole', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                    <span className="ml-3 text-sm text-gray-300">Bật Developer Console</span>
+                    <span className="ml-3 text-sm" style={{color: 'var(--text-color)'}}>Bật Developer Console</span>
                 </label>
             </SettingsRow>
             <SettingsRow label="Chế độ Thử nghiệm (Live Editor)" description="Bật một bảng điều khiển đặc biệt trong game để chỉnh sửa trực tiếp chỉ số, NPC, và các dữ liệu khác. Cần tải lại game sau khi thay đổi.">
@@ -174,7 +174,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
             <SettingsRow label="Chế độ hiệu suất" description="Tắt các hiệu ứng hình ảnh và chuyển động để cải thiện hiệu suất trên các thiết bị yếu.">
                  <label className="flex items-center cursor-pointer">
                     <input type="checkbox" checked={settings.enablePerformanceMode} onChange={e => handleSettingChange('enablePerformanceMode', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                    <span className="ml-3 text-sm text-gray-300">Bật Performance Mode</span>
+                    <span className="ml-3 text-sm" style={{color: 'var(--text-color)'}}>Bật Performance Mode</span>
                 </label>
             </SettingsRow>
             <SettingsRow label="Quản lý Dữ liệu" description="Sao lưu toàn bộ dữ liệu game (lưu game, cài đặt, mods) ra file hoặc khôi phục từ file sao lưu.">

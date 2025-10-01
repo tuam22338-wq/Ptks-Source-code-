@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, memo } from 'react';
-import type { StoryEntry, InventoryItem, CultivationTechnique } from '../../types';
+// FIX: import CultivationTechnique from types
+import type { StoryEntry, InventoryItem, CultivationTechnique, GameState } from '../../types';
 import { FaVolumeUp } from 'react-icons/fa';
 
 interface StoryLogProps {
     pageEntries: StoryEntry[];
-    inventoryItems: InventoryItem[];
-    techniques: CultivationTechnique[];
+    gameState: GameState;
     onSpeak: (text: string) => void;
 }
 
@@ -47,18 +47,20 @@ const highlightText = (text: string, items: InventoryItem[], techniques: Cultiva
 };
 
 
-const StoryLog: React.FC<StoryLogProps> = ({ pageEntries, inventoryItems, techniques, onSpeak }) => {
+const StoryLog: React.FC<StoryLogProps> = ({ pageEntries, gameState, onSpeak }) => {
     
     const handleSpeak = (content: string) => {
         const cleanText = content.replace(/\[.*?\]/g, '');
         onSpeak(cleanText);
     };
 
+    const { inventory, techniques } = gameState.playerCharacter;
+
     return (
         <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
             {pageEntries.map((entry) => {
                 const animationStyle = { animationDuration: '600ms' };
-                const contentWithHighlight = highlightText(entry.content, inventoryItems, techniques);
+                const contentWithHighlight = highlightText(entry.content, inventory.items, techniques);
                 const isSpeakable = ['narrative', 'dialogue', 'action-result', 'system-notification', 'player-dialogue', 'combat'].includes(entry.type);
 
                 switch (entry.type) {
