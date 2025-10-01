@@ -6,6 +6,7 @@ import * as questManager from '../utils/questManager';
 import { addEntryToMemory, retrieveAndSynthesizeMemory } from './memoryService';
 import { validateMechanicalChanges } from './validationService';
 import { applyMechanicalChanges } from './stateUpdateService';
+import { runHeuristicFixer } from './heuristicFixerService';
 
 export const processPlayerAction = async (
     gameState: GameState,
@@ -44,7 +45,8 @@ export const processPlayerAction = async (
         'frequent': 0.50,
         'chaotic': 0.75
     };
-    const chance = WORLD_INTERRUPTION_CHANCE_MAP[settings.worldInterruptionFrequency] || 0.25;
+    // FIX: Access worldInterruptionFrequency from gameState.gameplaySettings, not global settings.
+    const chance = WORLD_INTERRUPTION_CHANCE_MAP[gameState.gameplaySettings.worldInterruptionFrequency] || 0.25;
     const isInterruption = Math.random() < chance;
 
     if (isInterruption) {
@@ -146,6 +148,18 @@ export const processPlayerAction = async (
     const finalQuestCheck = questManager.processQuestUpdates(finalState);
     finalQuestCheck.notifications.forEach(showNotification);
     let finalStateForSummary = finalQuestCheck.newState;
+
+    // --- GIAI ĐOẠN 4: THIÊN ĐẠO TRẬT TỰ GIÁM ---
+    if (settings.enableHeuristicFixerAI) {
+        try {
+            const fixResult = await runHeuristicFixer(finalStateForSummary, currentSlotId);
+            finalStateForSummary = fixResult.newState;
+            fixResult.notifications.forEach(showNotification);
+        } catch (error) {
+            console.error("[Heuristic Fixer] Failed to run AI validation:", error);
+            showNotification("[Hệ Thống] Thiên Đạo Trật Tự Giám gặp lỗi.");
+        }
+    }
 
     if (finalStateForSummary.storyLog.length > 0 && finalStateForSummary.storyLog.length % settings.autoSummaryFrequency === 0) {
         try {

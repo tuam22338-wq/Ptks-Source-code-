@@ -1,4 +1,4 @@
-import type { FactionReputationStatus, DifficultyLevel, NpcDensity, QuickActionButtonConfig } from '../types';
+import type { FactionReputationStatus, DifficultyLevel, NpcDensity, QuickActionButtonConfig, PhapBaoRank, ItemQuality } from '../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../data/attributes';
 
 // FIX: Removed SystemShopItem type as it's not defined or used elsewhere. The type of SYSTEM_SHOP_ITEMS is inferred.
@@ -34,7 +34,21 @@ export const ALL_ATTRIBUTES = DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name);
 export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'spiritualQi'];
 
 export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
-    { id: 'cultivate', label: 'Tu Luyện', description: 'Hấp thụ linh khí để tăng tu vi', iconName: 'GiSprout', actionText: 'tu luyện' },
     { id: 'inventory', label: 'Túi Đồ', description: 'Mở túi đồ của bạn', iconName: 'GiSwapBag', actionText: 'mở túi đồ' },
-    { id: 'dashboard', label: 'Bảng Điều Khiển', description: 'Mở Bảng Điều Khiển', iconName: 'FaUser', actionText: 'mở bảng điều khiển' },
+    { id: 'dashboard', label: 'Trạng Thái', description: 'Mở bảng trạng thái nhân vật', iconName: 'FaUser', actionText: 'mở bảng trạng thái' },
 ];
+
+// FIX: Add REALM_RANK_CAPS constant for validation service.
+export const REALM_RANK_CAPS: Record<string, { maxRank: PhapBaoRank, maxQuality: ItemQuality }> = {
+    'pham_nhan': { maxRank: 'Phàm Giai', maxQuality: 'Phàm Phẩm' },
+    'luyen_khi': { maxRank: 'Tiểu Giai', maxQuality: 'Linh Phẩm' },
+    'truc_co': { maxRank: 'Trung Giai', maxQuality: 'Pháp Phẩm' },
+    'ket_dan': { maxRank: 'Cao Giai', maxQuality: 'Bảo Phẩm' },
+    'nguyen_anh': { maxRank: 'Siêu Giai', maxQuality: 'Tiên Phẩm' },
+    'hoa_than': { maxRank: 'Địa Giai', maxQuality: 'Tiên Phẩm' },
+    'luyen_hu': { maxRank: 'Thiên Giai', maxQuality: 'Tuyệt Phẩm' },
+    'hop_the': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'dai_thua': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'do_kiep': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'nhan_tien': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+};

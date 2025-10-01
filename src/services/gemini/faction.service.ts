@@ -1,9 +1,9 @@
+
 import { Type } from "@google/genai";
 import type { GameState, DynamicWorldEvent } from '../../types';
 import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 import { createFullGameStateContext } from './promptContextBuilder';
-import { PT_FACTIONS, JTTW_FACTIONS, PT_WORLD_MAP, JTTW_WORLD_MAP } from '../../constants';
 
 /**
  * Acts as a "Strategist AI" to determine if a major world event should occur.
@@ -11,11 +11,11 @@ import { PT_FACTIONS, JTTW_FACTIONS, PT_WORLD_MAP, JTTW_WORLD_MAP } from '../../
  * @returns A new DynamicWorldEvent object, or null if no event is generated.
  */
 export const generateDynamicWorldEventFromAI = async (gameState: GameState): Promise<Omit<DynamicWorldEvent, 'id' | 'turnStart'> | null> => {
-    const { worldState, gameDate, activeMods, activeWorldId } = gameState;
+    const { worldState, gameDate, activeMods, activeWorldId, playerCharacter, discoveredLocations } = gameState;
 
-    // Use factions and locations from the active world
-    const factions = activeWorldId === 'tay_du_ky' ? JTTW_FACTIONS.map(f => f.name) : PT_FACTIONS.map(f => f.name);
-    const locationIds = (activeWorldId === 'tay_du_ky' ? JTTW_WORLD_MAP : PT_WORLD_MAP).map(l => l.id);
+    // Use factions and locations from the active game state
+    const factions = playerCharacter.reputation.map(r => r.factionName);
+    const locationIds = discoveredLocations.map(l => l.id);
 
     const schema = {
         type: Type.OBJECT,
@@ -24,8 +24,8 @@ export const generateDynamicWorldEventFromAI = async (gameState: GameState): Pro
             title: { type: Type.STRING, description: "Tiêu đề ngắn gọn, hấp dẫn cho sự kiện." },
             description: { type: Type.STRING, description: "Mô tả chi tiết về sự kiện, điều gì đang xảy ra." },
             duration: { type: Type.NUMBER, description: "Thời gian sự kiện kéo dài (tính bằng ngày trong game), ví dụ: 30." },
-            affectedFactions: { type: Type.ARRAY, items: { type: Type.STRING, enum: factions }, description: "Các phe phái chính bị ảnh hưởng bởi sự kiện này." },
-            affectedLocationIds: { type: Type.ARRAY, items: { type: Type.STRING, enum: locationIds }, description: "Các địa điểm chính nơi sự kiện diễn ra hoặc bị ảnh hưởng." },
+            affectedFactions: { type: Type.ARRAY, items: { type: Type.STRING, enum: factions.length > 0 ? factions : undefined }, description: "Các phe phái chính bị ảnh hưởng bởi sự kiện này." },
+            affectedLocationIds: { type: Type.ARRAY, items: { type: Type.STRING, enum: locationIds.length > 0 ? locationIds : undefined }, description: "Các địa điểm chính nơi sự kiện diễn ra hoặc bị ảnh hưởng." },
         },
         required: ['shouldCreateEvent']
     };

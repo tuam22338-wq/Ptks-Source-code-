@@ -1,10 +1,12 @@
 import type {
     Faction, Gender, Element, StatBonus, ItemType, ItemQuality, EquipmentSlot, InnateTalentRank, PhapBaoRank,
     TechniqueEffectType, TechniqueEffect,
-    // FIX: Import SkillCheck from core types
+    // FIX: Import SkillCheck, EventChoice, and EventOutcome from core types
     SkillCheck,
     AttributeDefinition,
-    AttributeGroupDefinition
+    AttributeGroupDefinition,
+    EventChoice,
+    EventOutcome
 } from './core';
 import type { CharacterIdentity } from './character';
 // FIX: Correct imports to resolve circular dependencies and missing types.
@@ -222,23 +224,12 @@ export interface EventTrigger {
     details: Record<string, any>;
 }
 
-export type EventOutcomeType = 'GIVE_ITEM' | 'REMOVE_ITEM' | 'CHANGE_STAT' | 'ADD_RUMOR' | 'START_EVENT' | 'START_STORY' | 'UPDATE_REPUTATION';
-export interface EventOutcome {
-    type: EventOutcomeType;
-    details: Record<string, any>;
-}
-
 // FIX: This type is now defined locally as it's a core part of modding events.
-export interface EventChoice {
-    id: string;
-    text: string;
-    check: SkillCheck | null;
-}
 export type ModEvent = Omit<GameEvent, 'id' | 'choices'> & {
     id: string;
     name: string;
     trigger?: EventTrigger;
-    choices: Array<Omit<EventChoice, 'id'> & { outcomes?: EventOutcome[] }>;
+    choices: Array<Omit<EventChoice, 'id' | 'check'> & { outcomes?: EventOutcome[], check?: SkillCheck }>;
     tags?: string[];
 };
 
@@ -326,7 +317,7 @@ export interface ModContent {
     characters?: Omit<ModCharacter, 'id'>[];
     sects?: Omit<ModSect, 'id'>[];
     locations?: Omit<ModLocation, 'id'>[];
-    worldData?: Omit<ModWorldData, 'id'>[];
+    worldData?: ModWorldData[];
     auxiliaryTechniques?: Omit<ModAuxiliaryTechnique, 'id'>[];
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];

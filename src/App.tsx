@@ -2,29 +2,24 @@ import React, { useMemo, lazy, Suspense } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
 import { SettingsPanel } from './features/Settings/SettingsPanel';
-import { CharacterCreationScreen } from './features/CharacterCreation/CharacterCreationScreen';
 import SaveSlotScreen from './features/MainMenu/SaveSlotScreen';
 import MainMenu from './features/MainMenu/MainMenu';
-import ModsScreen from './features/Mods/ModsScreen';
 import { GamePlayScreen } from './features/GamePlay/GamePlayScreen';
-import ThoiTheScreen from './features/Lore/LoreScreen';
 import InfoScreen from './features/Info/InfoScreen';
 import DeveloperConsole from './components/DeveloperConsole';
-import WorldSelectionScreen from './features/WorldSelection/WorldSelectionScreen';
 import SpecialEffectsOverlay from './components/SpecialEffectsOverlay';
 import { AppProvider, useAppContext } from './contexts/AppContext';
 import NovelistScreen from './features/Novelist/NovelistScreen'; // Import a tela mới
+import LoadGameScreen from './features/MainMenu/LoadGameScreen';
 
 // --- Lazy Loaded Components ---
 const LazySettingsPanel = lazy(() => import('./features/Settings/SettingsPanel').then(module => ({ default: module.SettingsPanel })));
-const LazyCharacterCreationScreen = lazy(() => import('./features/CharacterCreation/CharacterCreationScreen').then(module => ({ default: module.CharacterCreationScreen })));
 const LazySaveSlotScreen = lazy(() => import('./features/MainMenu/SaveSlotScreen'));
-const LazyModsScreen = lazy(() => import('./features/Mods/ModsScreen'));
+const LazyLoadGameScreen = lazy(() => import('./features/MainMenu/LoadGameScreen'));
 const LazyGamePlayScreen = lazy(() => import('./features/GamePlay/GamePlayScreen').then(module => ({ default: module.GamePlayScreen })));
-const LazyThoiTheScreen = lazy(() => import('./features/Lore/LoreScreen'));
 const LazyInfoScreen = lazy(() => import('./features/Info/InfoScreen'));
-const LazyWorldSelectionScreen = lazy(() => import('./features/WorldSelection/WorldSelectionScreen'));
 const LazyNovelistScreen = lazy(() => import('./features/Novelist/NovelistScreen'));
+const LazyAiTrainingScreen = lazy(() => import('./features/AiTraining/AiTrainingScreen'));
 
 
 const BackgroundOverlay: React.FC = () => {
@@ -66,6 +61,33 @@ const AmbientEffectsOverlay: React.FC = () => {
         </div>
     );
 };
+
+const InkSplatterOverlay: React.FC = () => {
+    const { state } = useAppContext();
+    const theme = state.settings.theme;
+
+    // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the comparison error here.
+    if (state.settings.enablePerformanceMode || theme !== 'theme-ink-wash-bamboo') {
+        return null;
+    }
+    return (
+        <div className="ink-splatter-container">
+            {Array.from({ length: 10 }).map((_, i) => {
+                const size = Math.random() * 200 + 100; // 100px to 300px
+                const style: React.CSSProperties = {
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    animationDuration: `${Math.random() * 5 + 5}s`, // 5 to 10 seconds
+                    animationDelay: `${Math.random() * 10}s`, // 0 to 10 seconds
+                };
+                return <div className="ink-splatter" key={i} style={style}></div>;
+            })}
+        </div>
+    );
+};
+
 
 const WeatherOverlay: React.FC = () => {
     const { state } = useAppContext();
@@ -153,20 +175,16 @@ const AppContent: React.FC = () => {
             return <MainMenu />;
           case 'saveSlots':
             return <LazySaveSlotScreen />;
-          case 'characterCreation':
-            return <LazyCharacterCreationScreen />;
+          case 'loadGame':
+            return <LazyLoadGameScreen />;
           case 'settings':
             return <LazySettingsPanel />;
-          case 'mods':
-            return <LazyModsScreen />;
-          case 'thoiThe':
-            return <LazyThoiTheScreen />;
           case 'info':
             return <LazyInfoScreen />;
-          case 'worldSelection':
-            return <LazyWorldSelectionScreen />;
           case 'novelist': // Thêm case mới
             return <LazyNovelistScreen />;
+          case 'aiTraining':
+            return <LazyAiTrainingScreen />;
           case 'gamePlay':
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
@@ -189,6 +207,7 @@ const AppContent: React.FC = () => {
         <div className="relative w-full h-full flex flex-col items-center">
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
+            <InkSplatterOverlay />
             {gameState && <WeatherOverlay />}
             {gameState && <SpecialEffectsOverlay />}
 

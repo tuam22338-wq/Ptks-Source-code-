@@ -45,6 +45,7 @@ const modelConfigs: { id: AssignableModel; label: string; description: string; m
     { id: 'ragOrchestratorModel', label: 'Model Điều Phối RAG', description: 'Model dùng để phân tích ý định và chọn nguồn tri thức.', modelType: 'text' },
     { id: 'memorySynthesisModel', label: 'Model Tổng Hợp Ký Ức', description: 'Model dùng để tổng hợp ký ức thành báo cáo ngắn gọn.', modelType: 'text' },
     { id: 'narrativeHarmonizerModel', label: 'Model Hài hòa Tường thuật', description: 'Model siêu nhanh, dùng để sửa lại văn bản cho khớp với cơ chế game.', modelType: 'text' },
+    { id: 'heuristicFixerModel', label: 'Model Sửa Lỗi Logic (Thiên Đạo)', description: 'Model chuyên sửa lỗi logic trong game state.', modelType: 'text' },
 ];
 
 interface AiModelSettingsProps {
@@ -86,6 +87,45 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                     <div className="flex items-center gap-2 mt-2">
                         <input type="text" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} placeholder="Dán API Key mới vào đây" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 flex-grow" />
                         <button onClick={handleAddApiKey} className="p-2 text-gray-200 bg-gray-600 rounded-md hover:bg-gray-500"><FaPlus /></button>
+                    </div>
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Thông số Kỹ thuật (Chung)" description="Các cài đặt này ảnh hưởng đến hành vi của tất cả các model AI. Tùy chỉnh cho từng màn chơi riêng có thể được thiết lập trong mục 'Tạo Thế Giới Mới'.">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Nhiệt độ (Temperature)</label>
+                        <div className="flex items-center gap-4">
+                            <input type="range" min="0" max="2" step="0.1" value={settings.temperature} onChange={(e) => handleSettingChange('temperature', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.temperature.toFixed(1)}</span>
+                        </div>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Top-K</label>
+                        <div className="flex items-center gap-4">
+                            <input type="range" min="1" max="128" step="1" value={settings.topK} onChange={(e) => handleSettingChange('topK', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.topK}</span>
+                        </div>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Top-P</label>
+                        <div className="flex items-center gap-4">
+                            <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={(e) => handleSettingChange('topP', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
+                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.topP.toFixed(2)}</span>
+                        </div>
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Bật 'Suy Nghĩ' (Thinking)</label>
+                         <label className="flex items-center cursor-pointer">
+                            <input type="checkbox" checked={settings.enableThinking} onChange={e => handleSettingChange('enableThinking', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                            <span className="ml-3 text-sm text-gray-300">Bật Thinking (chỉ cho gemini-2.5-flash)</span>
+                        </label>
+                    </div>
+                     <div className={!settings.enableThinking ? 'opacity-50' : ''}>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Ngân sách 'Suy Nghĩ'</label>
+                        <div className="flex items-center gap-4">
+                            <input type="range" min="0" max="2000" step="50" value={settings.thinkingBudget} onChange={(e) => handleSettingChange('thinkingBudget', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" disabled={!settings.enableThinking}/>
+                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-gray-200 w-20 text-center">{settings.thinkingBudget}</span>
+                        </div>
                     </div>
                 </div>
             </SettingsRow>

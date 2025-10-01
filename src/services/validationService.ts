@@ -1,5 +1,6 @@
 import type { GameState, MechanicalIntent } from '../types';
-import { RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
+// FIX: Replaced RANK_ORDER with PHAP_BAO_RANK_ORDER to match the correct type for validation.
+import { PHAP_BAO_RANK_ORDER, QUALITY_ORDER, REALM_RANK_CAPS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 
 /**
  * Pillar 3: The Mechanical Filter / "Thiên Đạo Giám Sát"
@@ -21,7 +22,7 @@ export const validateMechanicalChanges = (
 
     const caps = REALM_RANK_CAPS[playerRealmId];
     if (caps) {
-        const maxRankIndex = RANK_ORDER.indexOf(caps.maxRank);
+        const maxRankIndex = PHAP_BAO_RANK_ORDER.indexOf(caps.maxRank);
         const maxQualityIndex = QUALITY_ORDER.indexOf(caps.maxQuality);
 
         if (validatedIntent.itemsGained) {
@@ -37,7 +38,7 @@ export const validateMechanicalChanges = (
 
         if (validatedIntent.newTechniques) {
             validatedIntent.newTechniques.forEach((tech: any) => {
-                const currentRankIndex = RANK_ORDER.indexOf(tech.rank);
+                const currentRankIndex = PHAP_BAO_RANK_ORDER.indexOf(tech.rank);
                 if (currentRankIndex > maxRankIndex) {
                     const originalRank = tech.rank;
                     tech.rank = caps.maxRank;

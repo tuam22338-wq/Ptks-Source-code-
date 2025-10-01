@@ -14,34 +14,28 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ onClose, onDismissPermanently
                 <div className="text-center mb-4">
                     <FaBell className="text-4xl text-amber-300 mx-auto mb-2" />
                     <h2 className="text-3xl font-bold font-title text-center text-amber-300">Cập nhật phiên bản {CURRENT_GAME_VERSION}</h2>
-                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Hồng Trần Biến Số</p>
+                    <p className="text-xl font-semibold font-title text-gray-400 tracking-wider">Vạn Vật Quy Nhất</p>
                 </div>
 
                 <div className="text-gray-300 space-y-3 my-4 max-h-[50vh] overflow-y-auto pr-2">
-                    <p>Chào mừng quý đạo hữu! Phiên bản này mang đến một luồng sinh khí mới cho thế giới, khiến nó trở nên khó lường và sống động hơn:</p>
+                    <p>Chào mừng quý đạo hữu đến với một phiên bản được tái cấu trúc lớn, đặt nền móng cho một tương lai không giới hạn:</p>
                     <ul className="list-disc list-inside space-y-3 pl-4">
                         <li>
-                            <strong className="text-amber-300">Thế Giới Năng Động (Tính Năng Mới!)</strong>
+                            <strong className="text-amber-300">Đại Tái Cấu Trúc Mã Nguồn (Lõi)</strong>
                             <p className="text-sm text-gray-400 pl-2">
-                                Thêm một cài đặt mới trong mục "Lối Chơi" cho phép bạn điều chỉnh tần suất các sự kiện ngẫu nhiên xảy ra. Khi được kích hoạt, thế giới sẽ trở nên sống động hơn, đôi khi các NPC hoặc tình huống bất ngờ sẽ làm gián đoạn hành động của bạn, tạo ra những ngã rẽ khó lường cho câu chuyện. Hãy tùy chỉnh để có trải nghiệm phù hợp nhất!
+                                Toàn bộ mã nguồn đã được tái cấu trúc. Các dữ liệu thế giới cứng (Phong Thần, Tây Du) đã được loại bỏ khỏi mã nguồn chính và chuyển thành các "Thế Giới Mặc Định". Điều này giúp game thực sự trở thành một nền tảng, sẵn sàng cho bất kỳ thế giới mod nào mà không cần sửa đổi mã nguồn.
                             </p>
                         </li>
                         <li>
-                            <strong className="text-amber-300">Nâng Cấp "Xuất Thế Giới"</strong>
-                            <p className="text-sm text-gray-400 pl-2">
-                                Chức năng xuất thế giới mặc định ("Phong Thần", "Tây Du") đã được đại tu. File mod xuất ra giờ đây chứa đựng đầy đủ và chi tiết hơn các dữ liệu gốc, bao gồm cả mối quan hệ và thiên phú của NPC, giúp việc tùy chỉnh và tái nhập vào game trở nên dễ dàng và mạnh mẽ hơn.
-                            </p>
-                        </li>
-                        <li>
-                            <strong className="text-amber-300">"Thời Thế" Linh Động Theo Mod</strong>
+                            <strong className="text-amber-300">Dọn Dẹp Triệt Để</strong>
                              <p className="text-sm text-gray-400 pl-2">
-                                Màn hình "Thời Thế" (dòng lịch sử) đã được tái cấu trúc hoàn toàn. Hệ thống giờ đây sẽ ưu tiên tuyệt đối việc tải và hiển thị dòng lịch sử từ thế giới mod mà bạn đang kích hoạt, làm cho mỗi thế giới mod trở nên độc nhất và có chiều sâu hơn. Nếu không có, game sẽ tự động quay về lịch sử mặc định.
+                                Hàng chục tệp tin và thành phần mã nguồn không còn được sử dụng, đã lỗi thời, hoặc rỗng đã bị xóa khỏi dự án. Điều này giúp mã nguồn gọn gàng hơn, dễ bảo trì và phát triển trong tương lai, đồng thời cải thiện một chút hiệu suất tải game.
                             </p>
                         </li>
                          <li>
                             <strong className="text-amber-300">Cải Thiện Trải Nghiệm & Sửa Lỗi</strong>
                             <p className="text-sm text-gray-400 pl-2">
-                                Tinh chỉnh lại logic tải dữ liệu và sửa một số lỗi nhỏ liên quan đến quản lý mod để đảm bảo trải nghiệm mượt mà và ổn định hơn.
+                                Tinh chỉnh lại logic tải dữ liệu, dọn dẹp các hằng số không cần thiết và sửa các lỗi nhỏ liên quan đến hệ thống mod, giúp trải nghiệm mượt mà và ổn định hơn.
                             </p>
                         </li>
                     </ul>

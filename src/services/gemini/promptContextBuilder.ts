@@ -2,7 +2,7 @@ import type { GameState, GameSettings } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
 
-// FIX: Add 'settings' parameter to the function signature and remove the incorrect access from gameState.
+// FIX: Add 'settings' parameter to the function signature, remove incorrect access from gameState, and add missing return statement.
 export const createFullGameStateContext = (gameState: GameState, settings: GameSettings, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
   const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, realmSystem, realmSystemInfo } = gameState;
   const playerAiHooks = gameState.playerCharacter.playerAiHooks;
@@ -74,134 +74,96 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
     ? npcsHere.map(n => {
         const emotions = `[Tâm trạng: Tin tưởng(${n.emotions.trust}), Sợ hãi(${n.emotions.fear}), Tức giận(${n.emotions.anger})]`;
         const memories = n.memory.shortTerm.length > 0 ? ` [Ký ức gần đây: ${n.memory.shortTerm.join('; ')}]` : '';
-        const willpower = ` [Động lực: ${n.motivation}] [Mục tiêu: ${n.goals.join(', ')}] [Kế hoạch: ${n.currentPlan ? n.currentPlan[0] : 'Chưa có'}]`;
-        return `${n.identity.name} (${n.status}) ${emotions}${memories}${willpower}`;
+        const willpower = ` [Động lực: ${n.motivation}, Mục tiêu: ${n.goals.join(', ')}]`;
+        return `- ${n.identity.name} (${n.status}). ${emotions}${memories}${willpower}`;
       }).join('\n')
-    : 'Không có ai.';
-
-  let assistantContext = '';
-  if (forAssistant) {
-      const encounteredNpcsDetails = activeNpcs.filter(npc => encounteredNpcIds.includes(npc.id)).map(npc => `- ${npc.identity.name}: ${npc.identity.origin}. ${npc.status}`).join('\n');
-      assistantContext = `
-**4. Bách Khoa Toàn Thư (Thông tin đã biết)**
-- **Nhân vật đã gặp:**
-${encounteredNpcsDetails || 'Chưa gặp ai.'}
-- **Địa danh đã khám phá:**
-${discoveredLocations.map(l => `- ${l.name}: ${l.description}`).join('\n')}
-- **Thiên Mệnh Niên Biểu (Sự kiện lịch sử):**
-${majorEvents.map(e => `- Năm ${e.year}, ${e.title}: ${e.summary}`).join('\n')}
-      `;
-  }
-
-  const memoryReportContext = instantMemoryReport
-    ? `
-**Ký Ức Liên Quan Gần Đây (TRỌNG TÂM):**
-${instantMemoryReport}`
-    : '';
-    
-  const thoughtBubbleContext = thoughtBubble
-    ? `
-**SUY NGHĨ NỘI TÂM CỦA NPC (ƯU TIÊN TUYỆT ĐỐI):**
-NPC mà người chơi đang tương tác có suy nghĩ nội tâm sau: "${thoughtBubble}"
-`
-    : '';
-
-  let dynamicStyleInstruction = '';
-  if (combatState) {
-      dynamicStyleInstruction = `**LUẬT VĂN PHONG (ĐANG CHIẾN ĐẤU):** Hãy dùng câu ngắn, động từ mạnh. Tập trung vào hành động và tác động. Tăng tốc độ tường thuật.`;
-  } else if (gameState.dialogueWithNpcId) {
-      dynamicStyleInstruction = `**LUẬT VĂN PHONG (ĐANG ĐỐI THOẠI):** Tập trung vào biểu cảm, ngôn ngữ cơ thể và ẩn ý trong lời nói.`;
-  }
-  
-  const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
-  const neighbors = currentLocation?.neighbors.map(id => discoveredLocations.find(l => l.id === id)?.name).filter(Boolean) || [];
-  const modContext = createModContextSummary(activeMods);
-  
-  const attributeDefinitionsContext = `
-**3. Hệ Thống Thuộc Tính Của Thế Giới Này**
-Đây là các định nghĩa về chỉ số và thuộc tính tồn tại trong thế giới này. Hãy sử dụng chúng để hiểu ý nghĩa của từng chỉ số.
-${attributeSystem.definitions.map(def => `- **${def.name}:** ${def.description}`).join('\n')}
-`;
+    : 'Không có ai đáng chú ý ở đây.';
   
     const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
     const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
 
-    let nextStageInfo = 'Đã đạt cảnh giới cao nhất.';
+    let qiToNextStage = Infinity;
     if (currentRealm && currentStage) {
         const currentStageIndex = currentRealm.stages.findIndex(s => s.id === currentStage.id);
-        if (currentStageIndex !== -1) {
-            let nextStage = null;
-            let nextRealmName = currentRealm.name;
-            if (currentStageIndex < currentRealm.stages.length - 1) {
-                nextStage = currentRealm.stages[currentStageIndex + 1];
-            } else {
-                const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
-                if (currentRealmIndex < realmSystem.length - 1) {
-                    const nextRealm = realmSystem[currentRealmIndex + 1];
-                    if (nextRealm && nextRealm.stages.length > 0) {
-                        nextStage = nextRealm.stages[0];
-                        nextRealmName = nextRealm.name;
-                    }
-                }
-            }
-            if (nextStage) {
-                if (nextStage.breakthroughRequirements) {
-                    nextStageInfo = `Để đột phá lên ${nextRealmName} - ${nextStage.name}, cần: ${nextStage.breakthroughRequirements}.`;
-                } else {
-                    nextStageInfo = `Cần ${nextStage.qiRequired.toLocaleString()} ${realmSystemInfo.resourceUnit} ${realmSystemInfo.resourceName} để đột phá lên ${nextRealmName} - ${nextStage.name}.`;
+        if (currentStageIndex !== -1 && currentStageIndex < currentRealm.stages.length - 1) {
+            qiToNextStage = currentRealm.stages[currentStageIndex + 1].qiRequired;
+        } else {
+            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
+            if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
+                const nextRealm = realmSystem[currentRealmIndex + 1];
+                if (nextRealm && nextRealm.stages.length > 0) {
+                    qiToNextStage = nextRealm.stages[0].qiRequired;
                 }
             }
         }
     }
 
 
-  let cultivationContext = `
-- **Tu Luyện (CỰC KỲ QUAN TRỌNG):**
-  - Hệ thống: ${realmSystemInfo.name}
-  - Cảnh giới hiện tại: ${currentRealm?.name || 'Không rõ'} - ${currentStage?.name || 'Không rõ'}.
-  - ${realmSystemInfo.resourceName}: ${playerCharacter.cultivation.spiritualQi.toLocaleString()} ${realmSystemInfo.resourceUnit}.
-  - Mục tiêu tiếp theo: ${nextStageInfo}
-`;
+  const combatContext = combatState ? `
+### TRẠNG THÁI CHIẾN ĐẤU ###
+- **Đối thủ:** ${combatState.enemies.map(e => `${e.identity.name} (HP: ${e.attributes.sinh_menh?.value})`).join(', ')}
+- **Lượt đi:** Hiện tại là lượt của ${combatState.turnOrder[combatState.currentTurnIndex] === 'player' ? 'bạn' : combatState.enemies.find(e => e.id === combatState.turnOrder[combatState.currentTurnIndex])?.identity.name}.
+` : '';
 
-  const context = `
-${modContext}${playerRulesContext}### TOÀN BỘ BỐI CẢNH GAME ###
-Đây là toàn bộ thông tin về trạng thái game hiện tại. Hãy sử dụng thông tin này để đảm bảo tính nhất quán và logic cho câu chuyện.
-${dynamicStyleInstruction}
+  const memoryContext = instantMemoryReport ? `
+### KÝ ỨC LIÊN QUAN (TỪ TRÍ NHỚ DÀI HẠN) ###
+- ${instantMemoryReport}
+` : '';
 
-**1. Nhân Vật Chính: ${playerCharacter.identity.name}**
-${cultivationContext}
-- **Tài Sản (QUAN TRỌNG):** ${currencySummary || 'Không một xu dính túi.'}
-- **Nguồn Gốc Sức Mạnh:** ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
-- **Thần Thông/Kỹ Năng:** ${playerCharacter.techniques.map(t => t.name).join(', ') || 'Chưa có'}.
-- **Thân Phận:** ${playerCharacter.identity.origin}, Tính cách: **${playerCharacter.identity.personality}**.
-- **Trang Bị:** ${equipmentSummary || 'Không có'}.
-- **Chi Tiết Trạng Thái:**${attributeSummary}
-- **Hiệu ứng:** ${activeEffectsSummary}
-- **Danh Vọng & Quan Hệ:** Danh vọng ${playerCharacter.danhVong.status}. Các phe phái: ${reputationSummary}.
-- **Thông tin Tông Môn:** ${playerCharacter.sect ? `Là đệ tử của ${playerCharacter.sect.sectId}, chức vị ${playerCharacter.sect.rank}.` : 'Hiện là tán tu.'}
-- **Vật phẩm trong túi đồ:** ${playerCharacter.inventory.items.map(i => `${i.name} (x${i.quantity})`).join(', ') || 'Trống rỗng.'}
+  const thoughtContext = thoughtBubble ? `
+### SUY NGHĨ NỘI TÂM CỦA NPC ###
+- **NPC mục tiêu có thể đang nghĩ:** "${thoughtBubble}"
+` : '';
 
-**2. Thế Giới Hiện Tại**
-- **Thời Gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season} ngày ${gameDate.day}, giờ ${gameDate.shichen}.
-- **Vị Trí Hiện Tại (CỰC KỲ QUAN TRỌNG):** Bạn đang ở '${currentLocation?.name}'. Mô tả: ${currentLocation?.description}.
-- **Các lối đi có thể đến:** ${neighbors.join(', ') || 'Không có'}.
-- **NPCs Tại Đây:** 
+  const modContext = createModContextSummary(activeMods);
+  
+  const recentHistory = storyLog
+    .slice(forAssistant ? -20 : -10)
+    .map(entry => {
+        switch (entry.type) {
+            case 'player-action': return `[Hành Động] ${entry.content}`;
+            case 'player-dialogue': return `[Lời Nói] ${entry.content}`;
+            default: return `[Tường Thuật] ${entry.content}`;
+        }
+    })
+    .join('\n');
+    
+  const forAssistantContext = forAssistant ? `
+### BÁCH KHOA TOÀN THƯ (THÔNG TIN ĐÃ BIẾT) ###
+- **Sự kiện lịch sử:** ${majorEvents.map(e => `${e.title} (Năm ${e.year})`).join(', ')}.
+- **Nhân vật đã gặp:** ${activeNpcs.filter(n => encounteredNpcIds.includes(n.id)).map(n => n.identity.name).join(', ')}.
+- **Địa điểm đã khám phá:** ${discoveredLocations.map(l => l.name).join(', ')}.
+- **Phe phái:** ${playerCharacter.reputation.map(r => r.factionName).join(', ')}.
+` : '';
+
+  return `
+### BỐI CẢNH GAME TOÀN CỤC ###
+${modContext}
+${playerRulesContext}
+**Thời gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen}). Thời tiết: ${gameDate.weather}.
+**Nhân Vật Chính: ${playerCharacter.identity.name}**
+- **Trạng thái:** ${playerCharacter.healthStatus}. ${activeEffectsSummary}
+- **Cảnh giới:** ${currentRealm?.name} - ${currentStage?.name || ''} (${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${(qiToNextStage !== Infinity ? qiToNextStage.toLocaleString() : 'MAX')} ${realmSystemInfo.resourceName})
+- **Thuộc tính:**${attributeSummary}
+- **Danh Vọng:** ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value}).
+- **Tiền tệ:** ${currencySummary || 'Không có'}.
+- **Trang bị:** ${equipmentSummary || 'Không có'}.
+- **Nhiệm vụ:**\n${questSummary}
+- **Quan hệ phe phái:** ${reputationSummary}.
+
+**Bối Cảnh Hiện Tại:**
+- **Vị trí:** ${currentLocation?.name}. (${currentLocation?.description}).
+- **Nồng độ ${realmSystemInfo.resourceName}:** ${currentLocation?.qiConcentration}/100.
+- **NPC xung quanh:**
 ${npcsHereWithMindState}
-- **Sự Kiện Thế Giới Đang Diễn Ra:** ${worldState.dynamicEvents?.map(e => e.title).join(', ') || 'Bình yên.'}
+${combatContext}
+${thoughtContext}
+${memoryContext}
+**Nhật Ký Gần Đây (Không được lặp lại):**
+${recentHistory}
 
-${attributeDefinitionsContext}
-
-**4. Nhiệm Vụ & Cốt Truyện**
-- **Nhiệm Vụ Đang Làm:**
-${questSummary}
-- **Tóm Tắt Cốt Truyện (Ký ức dài hạn):**
-${storySummary || 'Hành trình vừa bắt đầu.'}
-${memoryReportContext}
-${thoughtBubbleContext}
-- **Nhật Ký Gần Đây (Ký ức ngắn hạn):**
-${storyLog.slice(-5).map(entry => `[${entry.type}] ${entry.content}`).join('\n')}
-${assistantContext}
-#############################
-  `;
-  return context;
+**Tóm Tắt Cốt Truyện (Ký ức dài hạn):**
+${storySummary || 'Hành trình vừa mới bắt đầu.'}
+${forAssistantContext}
+`;
 };

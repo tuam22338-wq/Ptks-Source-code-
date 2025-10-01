@@ -58,6 +58,8 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
     
     const getAttributeValue = (id: string) => playerCharacter.attributes[id] || { value: 0 };
     
+    const isProgressionSystem = realmSystem.length > 1 || (realmSystem.length === 1 && realmSystem[0].stages.length > 1);
+    
     const renderAttributeGroup = (group: (typeof attributeSystem.groups)[0]) => {
         const attributesInGroup = attributeSystem.definitions
             .filter(def => def.group === group.id && playerCharacter.attributes[def.id]);
@@ -152,8 +154,8 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
 
     return (
         <div className="space-y-4 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            {/* Cultivation Progress (if realm system exists) */}
-            {realmSystem.length > 0 && (
+            {/* Cultivation Progress (if realm system exists and is a progression system) */}
+            {isProgressionSystem && (
                 <div className="bg-black/20 p-3 rounded-lg border border-gray-700/60">
                     <h4 className="font-bold text-amber-300 font-title">{realmSystemInfo.name}</h4>
                     <p className="text-lg font-semibold text-cyan-300">{currentRealm?.name} - {currentStage?.name}</p>

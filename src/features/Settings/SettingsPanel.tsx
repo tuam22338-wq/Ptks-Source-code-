@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import type { GameSettings } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaBrain, FaPenFancy } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaPenFancy } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import RagSourceManagerModal from './RagSourceManagerModal';
@@ -10,12 +10,9 @@ import SoundSettings from './tabs/SoundSettings';
 import AiModelSettings from './tabs/AiModelSettings';
 import RagSettings from './tabs/RagSettings';
 import SafetySettings from './tabs/SafetySettings';
-import GameplaySettings from './tabs/GameplaySettings';
 import AdvancedSettings from './tabs/AdvancedSettings';
-import AiCustomizationSettings from './tabs/AiCustomizationSettings';
-import NovelistSettings from './tabs/NovelistSettings';
 
-type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'gameplay' | 'advanced' | 'ai_customization';
+type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'advanced';
 
 const TabButton: React.FC<{
   tabId: SettingsTab;
@@ -53,8 +50,6 @@ export const SettingsPanel: React.FC = () => {
             <div className="flex-shrink-0 grid grid-cols-3 sm:grid-cols-5 lg:flex lg:items-center gap-2 p-2 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
                 <TabButton tabId="sound" activeTab={activeTab} onClick={setActiveTab} icon={FaVolumeUp} label="Âm Thanh" />
-                <TabButton tabId="gameplay" activeTab={activeTab} onClick={setActiveTab} icon={FaGamepad} label="Lối Chơi" />
-                <TabButton tabId="ai_customization" activeTab={activeTab} onClick={setActiveTab} icon={GiGears} label="AI Tùy Chỉnh" />
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI Models" />
                 <TabButton tabId="rag" activeTab={activeTab} onClick={setActiveTab} icon={FaSearchPlus} label="RAG" />
                 <TabButton tabId="safety" activeTab={activeTab} onClick={setActiveTab} icon={FaShieldAlt} label="An Toàn" />
@@ -65,10 +60,8 @@ export const SettingsPanel: React.FC = () => {
                 {activeTab === 'interface' && <InterfaceSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'sound' && <SoundSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'ai_models' && <AiModelSettings settings={settings} handleSettingChange={handleSettingChange} />}
-                {activeTab === 'ai_customization' && <AiCustomizationSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'rag' && <RagSettings settings={settings} handleSettingChange={handleSettingChange} onOpenRagManager={() => setIsRagManagerOpen(true)} />}
                 {activeTab === 'safety' && <SafetySettings settings={settings} handleSettingChange={handleSettingChange} />}
-                {activeTab === 'gameplay' && <GameplaySettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'advanced' && <AdvancedSettings settings={settings} handleSettingChange={handleSettingChange} />}
             </div>
 

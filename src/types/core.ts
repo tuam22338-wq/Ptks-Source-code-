@@ -39,7 +39,7 @@ export type CharacterAttributes = Record<string, {
     maxValue?: number;
 }>;
 
-export type Gender = 'Nam' | 'Nữ';
+export type Gender = 'Nam' | 'Nữ' | 'AI';
 
 export type ItemType = 'Vũ Khí' | 'Phòng Cụ' | 'Đan Dược' | 'Pháp Bảo' | 'Tạp Vật' | 'Đan Lô' | 'Linh Dược' | 'Đan Phương' | 'Nguyên Liệu';
 export type PhapBaoRank = 'Phàm Giai' | 'Tiểu Giai' | 'Trung Giai' | 'Cao Giai' | 'Siêu Giai' | 'Địa Giai' | 'Thiên Giai' | 'Thánh Giai';
@@ -51,11 +51,25 @@ export type TimeOfDay = 'Sáng Sớm' | 'Buổi Sáng' | 'Buổi Trưa' | 'Buổ
 export type Weather = 'SUNNY' | 'CLOUDY' | 'RAIN' | 'STORM' | 'SNOW';
 export type TechniqueEffectType = 'DAMAGE' | 'HEAL' | 'BUFF' | 'DEBUFF' | 'APPLY_EFFECT';
 
-// FIX: Define SkillCheck here to be used across modules without conflict.
+// FIX: Define SkillCheck, EventChoice, and EventOutcome here to be used across modules without conflict.
 export interface SkillCheck {
   attribute: string;
   difficulty: number;
 }
+
+export interface EventChoice {
+    id: string;
+    text: string;
+    check?: SkillCheck;
+}
+
+export type EventOutcomeType = 'GIVE_ITEM' | 'REMOVE_ITEM' | 'CHANGE_STAT' | 'ADD_RUMOR' | 'START_EVENT' | 'START_STORY' | 'UPDATE_REPUTATION';
+
+export interface EventOutcome {
+    type: EventOutcomeType;
+    details: Record<string, any>;
+}
+
 
 export interface TechniqueEffect {
     type: TechniqueEffectType;

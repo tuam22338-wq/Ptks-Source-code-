@@ -15,7 +15,8 @@ import type {
     RagSource,
     RagEmbedding,
     ModInLibrary,
-    Novel
+    Novel,
+    HeuristicFixReport
 } from '../types';
 
 export interface DbSaveSlot {
@@ -46,11 +47,12 @@ export class MyDatabase extends Dexie {
   ragEmbeddings!: Table<RagEmbedding, number>; // auto-incrementing primary key
   assetCache!: Table<{id: string, data: any}, string>;
   novels!: Table<Novel, number>; // Bảng mới cho tính năng Tiểu Thuyết Gia AI
+  heuristicFixLogs!: Table<HeuristicFixReport, number>; // Bảng mới cho Thiên Đạo Giám
 
   constructor() {
     super('PhongThanKySuDB');
-    // Version 5 thêm bảng novels
-    (this as Dexie).version(5).stores({
+    // FIX: Upgraded database version to 6 to add the 'heuristicFixLogs' table.
+    (this as Dexie).version(6).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
@@ -62,9 +64,10 @@ export class MyDatabase extends Dexie {
       ragSources: 'id, type, isEnabled',
       ragEmbeddings: '++id, sourceId',
       assetCache: 'id',
-      novels: '++id, title, lastModified', // Schema cho bảng novels
+      novels: '++id, title, lastModified',
+      heuristicFixLogs: '++id, timestamp', // Schema cho bảng logs
     });
-    // This will upgrade from version 4 to 5, creating the new table.
+    // This will upgrade from version 5 to 6, creating the new table.
     (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });
@@ -206,6 +209,7 @@ export const saveModToLibrary = async (mod: ModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: ModInLibrary[]): Promise<void> => {
+    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
@@ -266,6 +270,7 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
 export const exportAllData = async (): Promise<Record<string, any>> => {
   const data: Record<string, any> = {};
   const allTables = db.getTables();
+  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
   await (db as Dexie).transaction('r', allTables, async () => {
     for (const table of allTables) {
       data[table.name] = await table.toArray();
@@ -297,6 +302,7 @@ export const importAllData = async (data: Record<string, any>): Promise<void> =>
   }
 
   const allTables = db.getTables();
+  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
   await (db as Dexie).transaction('rw', allTables, async () => {
     // Clear all tables first for a clean import
     await Promise.all(allTables.map(table => table.clear()));
@@ -331,6 +337,7 @@ export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<numb
 };
 
 export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
+    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.memoryFragments, db.graphEdges, async () => {
         await db.memoryFragments.where('slotId').equals(slotId).delete();
         await db.graphEdges.where('slotId').equals(slotId).delete();
@@ -369,6 +376,7 @@ export const getRelevantMemories = async (
   // Deduplicate and sort
   const uniqueFragments = Array.from(new Map(allFragments.map(f => [f.id, f])).values());
   
+  // FIX: Explicitly type sort function parameters to resolve 'unknown' type error.
   uniqueFragments.sort((a: MemoryFragment, b: MemoryFragment) => {
       if (a.gameDate.year !== b.gameDate.year) return b.gameDate.year - a.gameDate.year;
       const seasonOrder = ['Xuân', 'Hạ', 'Thu', 'Đông'];
@@ -379,4 +387,26 @@ export const getRelevantMemories = async (
   });
 
   return uniqueFragments.slice(0, limit);
+};
+
+// --- Novelist Service ---
+export const getAllNovels = async (): Promise<Novel[]> => {
+    return db.novels.orderBy('lastModified').reverse().toArray();
+};
+
+export const saveNovel = async (novel: Novel): Promise<number> => {
+    return db.novels.put(novel);
+};
+
+export const deleteNovel = async (id: number): Promise<void> => {
+    return db.novels.delete(id);
+};
+
+// --- Heuristic Fixer Service ---
+export const addHeuristicFixLog = async (log: Omit<HeuristicFixReport, 'id'>): Promise<void> => {
+    await db.heuristicFixLogs.add(log as HeuristicFixReport);
+};
+
+export const getAllHeuristicFixLogs = async (): Promise<HeuristicFixReport[]> => {
+    return db.heuristicFixLogs.orderBy('timestamp').reverse().toArray();
 };

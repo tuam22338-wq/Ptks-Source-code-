@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 import type { GameState, MajorEvent, NPC, ActiveQuest, PlayerNpcRelationship } from '../../types';
 import { generateWithRetry } from './gemini.core';

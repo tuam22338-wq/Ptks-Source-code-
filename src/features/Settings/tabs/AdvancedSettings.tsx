@@ -1,8 +1,9 @@
-import React, { memo, useRef } from 'react';
+import React, { memo, useRef, useState } from 'react';
 import type { GameSettings } from '../../../types';
-import { FaDownload, FaUpload, FaExclamationTriangle, FaVial, FaTrophy } from 'react-icons/fa';
+import { FaDownload, FaUpload, FaExclamationTriangle, FaVial, FaTrophy, FaShieldAlt } from 'react-icons/fa';
 import * as db from '../../../services/dbService';
 import { AI_SYNC_MODES } from '../../../constants';
+import HeuristicFixerModal from '../HeuristicFixerModal'; // Import the new modal
 
 interface SettingsSectionProps {
     title: string;
@@ -38,6 +39,7 @@ interface AdvancedSettingsProps {
 
 const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSettingChange }) => {
     const importInputRef = useRef<HTMLInputElement>(null);
+    const [isFixerModalOpen, setFixerModalOpen] = useState(false);
 
     const handleExportData = async () => {
         if (!window.confirm("Bạn có muốn sao lưu toàn bộ dữ liệu game (lưu game, cài đặt, mods) ra một tệp JSON không?")) {
@@ -113,6 +115,8 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
     };
 
     return (
+        <>
+        {isFixerModalOpen && <HeuristicFixerModal isOpen={isFixerModalOpen} onClose={() => setFixerModalOpen(false)} />}
         <SettingsSection title="Nâng Cao">
             <SettingsRow label="Gói Đạo Tôn (Premium)" description="Kích hoạt các tính năng cao cấp như model AI mạnh hơn và các tùy chỉnh giao diện độc quyền.">
                 <div className="flex flex-col">
@@ -123,6 +127,17 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                     <p className="mt-2 text-xs text-gray-500">
                         Đây là tính năng mô phỏng. Trong phiên bản thực tế, đây sẽ là gói trả phí để ủng hộ nhà phát triển.
                     </p>
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Thiên Đạo Trật Tự Giám" description="Bật AI chạy ngầm để tự động phát hiện và sửa các lỗi logic trong game state (ví dụ: chỉ số âm, nhiệm vụ kẹt). Có thể làm chậm một chút sau mỗi hành động.">
+                <div className="flex flex-col gap-2">
+                    <label className="flex items-center cursor-pointer">
+                        <input type="checkbox" checked={settings.enableHeuristicFixerAI} onChange={e => handleSettingChange('enableHeuristicFixerAI', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                        <span className="ml-3 text-sm font-bold text-teal-300 flex items-center gap-2"><FaShieldAlt /> Bật Thiên Đạo Giám</span>
+                    </label>
+                     <button onClick={() => setFixerModalOpen(true)} className="mt-2 text-left w-full max-w-xs px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold text-sm transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500">
+                        Xem Báo Cáo Can Thiệp
+                    </button>
                 </div>
             </SettingsRow>
             <SettingsRow label="Chế độ Đồng bộ AI" description="Chọn cách AI đồng bộ hóa trạng thái game. 'Thiên Cơ' được khuyến khích để đảm bảo tính nhất quán.">
@@ -185,6 +200,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                 </button>
             </SettingsRow>
         </SettingsSection>
+        </>
     );
 };
 

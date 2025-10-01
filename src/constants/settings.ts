@@ -45,7 +45,7 @@ export const WORLD_REACTIVITY_LEVELS: { value: WorldReactivity; label: string; d
 export const DEATH_PENALTY_LEVELS: { value: DeathPenalty; label: string; description: string }[] = [
     { value: 'none', label: 'Không có', description: 'Hồi sinh tại chỗ, phù hợp trải nghiệm cốt truyện.' },
     { value: 'resource_loss', label: 'Mất Tài nguyên', description: 'Mất một phần tiền và vật phẩm.' },
-    { value: 'realm_loss', label: 'Tụt Cảnh giới', description: 'Bị suy yếu tu vi, có thể rớt tiểu cảnh giới.' },
+    { value: 'realm_loss', label: 'Suy Yếu Vĩnh Viễn', description: 'Nhân vật bị suy yếu vĩnh viễn sau khi hồi sinh, một số thuộc tính sẽ bị giảm.' },
     { value: 'permadeath', label: 'Xóa Vĩnh Viễn', description: 'File lưu sẽ bị xóa. Thử thách tối thượng.' },
 ];
 export const VALIDATION_CAP_LEVELS: { value: ValidationServiceCap; label: string; description: string }[] = [
@@ -64,12 +64,12 @@ export const WORLD_INTERRUPTION_LEVELS: { value: WorldInterruptionFrequency; lab
 export const DEFAULT_SETTINGS: GameSettings = {
     layoutMode: 'auto',
     gameSpeed: 'normal',
-    narrativeStyle: 'classic_wuxia',
     fontFamily: "'Noto Serif', serif",
-    theme: 'theme-bamboo-forest',
-    dynamicBackground: 'ink_wash',
+    // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the assignment error here.
+    theme: 'theme-bich-du-cung',
+    dynamicBackground: 'mystic_violet',
     zoomLevel: 55,
-    textColor: '#d1d5db',
+    textColor: '#e0e0e0',
     mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',
@@ -87,6 +87,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     memorySynthesisModel: 'gemini-2.5-flash',
     narrativeHarmonizerModel: 'gemini-2.5-flash',
     novelistModel: 'gemini-2.5-flash',
+    heuristicFixerModel: 'gemini-2.5-flash', // Add default model
     novelistWordCount: 3000,
     novelistNarrativeStyle: 'classic_wuxia',
     novelistTemperature: 1.0,
@@ -103,7 +104,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
     historyTokenLimit: 8192,
     summarizeBeforePruning: true,
     itemsPerPage: 10,
-    aiResponseWordCount: 1500,
     enableAiSoundSystem: false,
     masterSafetySwitch: true,
     enableNsfwMode: false,
@@ -123,6 +123,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     modelApiKeyAssignments: {},
     enableDeveloperConsole: false,
     enableTestingMode: false,
+    enableHeuristicFixerAI: false, // Add default value
     backgroundMusicUrl: 'https://files.catbox.moe/f86nal.mp3',
     backgroundMusicName: 'Nhạc Nền Mặc Định',
     backgroundMusicVolume: 0.5,
@@ -136,25 +137,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ttsVolume: 1,
     aiSyncMode: 'intent_driven',
     isPremium: false,
-
-    // New Detailed Gameplay Settings Defaults
-    aiCreativityLevel: 'balanced',
-    narrativePacing: 'medium',
-    playerAgencyLevel: 'balanced',
-    aiMemoryDepth: 'balanced',
-    npcComplexity: 'advanced',
-    worldEventFrequency: 'occasional',
-    worldReactivity: 'dynamic',
-    cultivationRateMultiplier: 100,
-    resourceRateMultiplier: 100,
-    damageDealtMultiplier: 100,
-    damageTakenMultiplier: 100,
-    enableSurvivalMechanics: true,
-    deathPenalty: 'resource_loss',
-    validationServiceCap: 'strict',
-    narrateSystemChanges: true,
     enableAutomaticModelRotation: true,
-    worldInterruptionFrequency: 'occasional',
 };
 
 export const AI_MODELS: { value: AIModel; label: string }[] = [

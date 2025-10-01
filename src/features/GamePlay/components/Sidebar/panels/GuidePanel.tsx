@@ -16,71 +16,56 @@ const GuideSection: React.FC<{ icon: React.ElementType; title: string; children:
 
 const GuidePanel: React.FC = () => {
     return (
-        <div className="space-y-6 animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div>
-                <h3 className="flex items-center gap-2 text-lg text-gray-300 font-title font-semibold mb-4 text-center border-b border-gray-700 pb-2">
-                    <FaBookReader className="text-amber-300" /> Hướng Dẫn
-                </h3>
+        <div className="space-y-4 animate-fade-in" style={{ animationDuration: '300ms' }}>
+            <h3 className="flex items-center justify-center gap-2 text-lg text-gray-300 font-title font-semibold mb-4 text-center border-b border-gray-700 pb-2">
+                <FaBookReader className="text-amber-300" /> Hướng Dẫn Nhanh
+            </h3>
 
-                <GuideSection icon={GiGears} title="Sử Dụng Giao Diện">
-                    <p>Các bảng thông tin và chức năng chính có thể được truy cập như sau:</p>
-                    <ul className="list-disc list-inside text-gray-400 italic">
-                        <li><strong className="text-gray-300">Bảng Điều Khiển (<FaBars className="inline-block mb-1"/>):</strong> Nhấn vào biểu tượng ở góc trên cùng bên trái để mở bảng điều khiển chính, nơi bạn có thể xem Nhân Vật, Bản Đồ, Nhiệm Vụ, và nhiều hơn nữa.</li>
-                        <li><strong className="text-gray-300">Túi Đồ (<GiSwapBag className="inline-block mb-1"/>):</strong> Gõ lệnh "mở túi đồ" hoặc "kiểm tra hành trang" vào ô hành động để mở túi đồ của bạn.</li>
-                        <li><strong className="text-gray-300">Bảng Tóm Tắt (<FaRegWindowMaximize className="inline-block mb-1"/>):</strong> Nhấn vào biểu tượng nhân vật ở thanh trên cùng để bật/tắt bảng tóm tắt chỉ số nhanh ở góc trên bên phải.</li>
-                         <li><strong className="text-gray-300">Hỏi Thiên Cơ:</strong> Sử dụng tab "Hỏi Thiên Cơ" trong ô hành động để hỏi AI về các thông tin trong game như nhân vật, địa danh, hoặc luật chơi.</li>
-                    </ul>
-                </GuideSection>
-                
-                <div className="p-3 text-center bg-blue-900/20 border border-blue-600/50 rounded-lg text-blue-200 text-sm my-4">
-                    Nhiều tính năng của game đã được tích hợp vào AI kể chuyện để mang lại trải nghiệm nhập vai sâu sắc hơn. Hãy dùng ngôn ngữ tự nhiên để tương tác với thế giới!
-                </div>
-                <div className="space-y-4">
-                    <GuideSection icon={FaRoute} title="Di Chuyển & Tương Tác AI">
-                        <p>Các hành động cơ bản như di chuyển và nói chuyện giờ đây được thực hiện hoàn toàn bằng ngôn ngữ tự nhiên, thay vì nút bấm.</p>
-                        <ul className="list-disc list-inside text-gray-400 italic">
-                            <li>Để di chuyển: "đi đến Triều Ca", "tới Rừng Cổ Thụ".</li>
-                            <li>Để xem có ai xung quanh: "nhìn xung quanh", "có ai ở đây không?".</li>
-                            <li>Để nói chuyện: "nói chuyện với Khương Tử Nha", "bắt chuyện với lão nông".</li>
-                            <li>Để khám phá: "khám phá khu rừng", "tìm kiếm xung quanh xem có gì không".</li>
-                        </ul>
-                        <p className="mt-2">AI sẽ tự động hiểu và tường thuật lại kết quả hành động của bạn.</p>
-                    </GuideSection>
+            <GuideSection icon={GiGears} title="Sử Dụng Giao Diện">
+                <p>Các bảng thông tin và chức năng chính có thể được truy cập như sau:</p>
+                <ul className="list-disc list-inside text-gray-400 italic">
+                    <li><strong className="text-gray-300">Bảng Điều Khiển:</strong> Mở bảng điều khiển chính (Trạng Thái, Bản Đồ, Nhiệm Vụ, v.v.) qua nút trên thanh hành động.</li>
+                    <li><strong className="text-gray-300">Túi Đồ (<GiSwapBag className="inline-block mb-1"/>):</strong> Gõ lệnh "mở túi đồ" hoặc nhấn nút nhanh để mở túi đồ của bạn.</li>
+                    <li><strong className="text-gray-300">Hỏi Thiên Cơ:</strong> Sử dụng tab "Hỏi Thiên Cơ" trong ô hành động để hỏi AI về các thông tin trong game.</li>
+                </ul>
+            </GuideSection>
+            
+            <div className="p-3 text-center bg-blue-900/20 border border-blue-600/50 rounded-lg text-blue-200 text-sm">
+                Nhiều tính năng của game đã được tích hợp vào AI. Hãy dùng ngôn ngữ tự nhiên để tương tác với thế giới!
+            </div>
 
-                    <GuideSection icon={GiSwapBag} title="Túi Đồ & Tiền Tệ">
-                        <p>Bạn có thể mở túi đồ bất cứ lúc nào bằng cách ra lệnh:</p>
-                        <ul className="list-disc list-inside text-gray-400 italic">
-                            <li>"mở túi đồ"</li>
-                            <li>"kiểm tra hành trang"</li>
-                        </ul>
-                        <p className="mt-2">Tiền tệ (Bạc, Linh Thạch,...) được coi như vật phẩm và nằm trong túi đồ của bạn.</p>
-                        <p>Sau khi bạn trang bị, sử dụng hoặc vứt bỏ vật phẩm và đóng túi đồ lại, AI kể chuyện sẽ tự động nhận biết và tiếp nối câu chuyện một cách hợp lý.</p>
-                    </GuideSection>
-                    
-                     <GuideSection icon={GiCastle} title="Công Pháp & Tu Luyện">
-                        <p>Tu luyện là con đường hấp thụ linh khí để tăng cường tu vi. Ban đầu, bạn có thể học các <strong className="text-yellow-300">Công Pháp Phụ Đạo</strong> từ sư phụ hoặc kỳ ngộ để bắt đầu tích lũy linh khí.</p>
-                        <p>Tuy nhiên, để thực sự phát triển và có sức chiến đấu, bạn cần tìm và tu luyện một <strong className="text-amber-300">Công Pháp Chủ Đạo</strong>. Công pháp chủ đạo sẽ mở khóa cây kỹ năng, mang lại các thần thông mạnh mẽ và định hình con đường tu luyện của bạn.</p>
-                        <p className="mt-2">Không có công pháp chủ đạo, bạn sẽ rất thiệt thòi khi đối đầu với tu sĩ cùng cấp.</p>
-                        <ul className="list-disc list-inside text-gray-400 italic">
-                            <li>Dùng lệnh "tu luyện" để hấp thụ linh khí.</li>
-                            <li>Tìm kiếm sư phụ hoặc bí cảnh để có được công pháp.</li>
-                        </ul>
-                    </GuideSection>
+            <GuideSection icon={FaRoute} title="Tương Tác AI & Ngôn Ngữ Tự Nhiên">
+                <p>Các hành động cơ bản như di chuyển và nói chuyện giờ đây được thực hiện hoàn toàn bằng ngôn ngữ tự nhiên.</p>
+                <ul className="list-disc list-inside text-gray-400 italic">
+                    <li>Để di chuyển: "đi đến Triều Ca", "tới Rừng Cổ Thụ".</li>
+                    <li>Để xem xung quanh: "nhìn xung quanh", "có ai ở đây không?".</li>
+                    <li>Để nói chuyện: "nói chuyện với Khương Tử Nha", "bắt chuyện với lão nông".</li>
+                    <li>Để khám phá: "khám phá khu rừng", "tìm kiếm vật phẩm".</li>
+                </ul>
+                <p className="mt-2">AI sẽ tự động hiểu và tường thuật lại kết quả hành động của bạn.</p>
+            </GuideSection>
+            
+            <GuideSection icon={GiCastle} title="Phát Triển Sức Mạnh">
+                <p>Phát triển sức mạnh là con đường hấp thụ năng lượng của thế giới (linh khí, nội lực, năng lượng psionic,...) để tăng cường bản thân. Ban đầu, bạn có thể học các <strong className="text-yellow-300">phương pháp cơ bản</strong> từ người hướng dẫn hoặc kỳ ngộ.</p>
+                <p>Tuy nhiên, để thực sự mạnh mẽ, bạn cần tìm và đi theo một <strong className="text-amber-300">con đường sức mạnh chính</strong> (ví dụ: công pháp chủ đạo, cây kỹ năng, cấy ghép cybernetic...). Con đường này sẽ mở khóa các khả năng độc đáo và định hình phong cách chiến đấu của bạn.</p>
+                <ul className="list-disc list-inside text-gray-400 italic mt-2">
+                    <li>Dùng lệnh như "tu luyện", "thiền định", "hấp thụ năng lượng" để phát triển.</li>
+                    <li>Tìm kiếm người hướng dẫn, bí cảnh, hoặc công nghệ để có được con đường sức mạnh cho riêng mình.</li>
+                </ul>
+            </GuideSection>
 
-                     <GuideSection icon={GiGears} title="Các Hành Động Hệ Thống">
-                        <p>Các hành động phức tạp hơn cũng được điều khiển bằng lời nói:</p>
-                        <ul className="list-disc list-inside text-gray-400 italic">
-                            <li><strong className="text-gray-300">Tông Môn (<FaLandmark className="inline-block mb-1"/>):</strong> "tìm một tông môn để gia nhập", "xin gia nhập Xiển Giáo".</li>
-                            <li><strong className="text-gray-300">Động Phủ (<GiMountainCave className="inline-block mb-1"/>):</strong> "nâng cấp Tụ Linh Trận", "cải thiện Linh Điền".</li>
-                            <li><strong className="text-gray-300">Luyện Đan (<GiCauldron className="inline-block mb-1"/>):</strong> "bắt đầu luyện đan", "luyện chế Hồi Khí Đan". AI sẽ tự kiểm tra xem bạn có đan phương, nguyên liệu, và đan lô hay không.</li>
-                        </ul>
-                    </GuideSection>
+             <GuideSection icon={GiGears} title="Các Hành Động Hệ Thống">
+                <p>Các hành động phức tạp hơn cũng được điều khiển bằng lời nói:</p>
+                <ul className="list-disc list-inside text-gray-400 italic">
+                    <li><strong className="text-gray-300">Gia nhập Phe phái (<FaLandmark className="inline-block mb-1"/>):</strong> "tìm một phe phái để gia nhập", "xin gia nhập Vệ Binh Tinh Hệ".</li>
+                    <li><strong className="text-gray-300">Căn cứ (<GiMountainCave className="inline-block mb-1"/>):</strong> "nâng cấp phòng thí nghiệm", "cải thiện khu vườn", "xây dựng Tụ Linh Trận".</li>
+                    <li><strong className="text-gray-300">Chế tạo (<GiCauldron className="inline-block mb-1"/>):</strong> "bắt đầu chế tạo", "tạo ra thuốc hồi phục", "luyện chế Hồi Khí Đan". AI sẽ tự kiểm tra xem bạn có bản thiết kế/đan phương, nguyên liệu, và công cụ hay không.</li>
+                </ul>
+            </GuideSection>
 
-                    <div className="p-3 text-center bg-yellow-900/20 border border-yellow-600/50 rounded-lg text-yellow-300 text-sm">
-                        <FaExclamationCircle className="inline-block mr-2" />
-                        Hãy sáng tạo! AI có thể hiểu nhiều cách diễn đạt khác nhau.
-                    </div>
-                </div>
+            <div className="p-3 text-center bg-yellow-900/20 border border-yellow-600/50 rounded-lg text-yellow-300 text-sm">
+                <FaExclamationCircle className="inline-block mr-2" />
+                Hãy sáng tạo! AI có thể hiểu nhiều cách diễn đạt khác nhau.
             </div>
         </div>
     );

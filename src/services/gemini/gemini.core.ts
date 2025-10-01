@@ -202,9 +202,6 @@ export const generateWithRetryStream = (generationRequest: any, specificApiKey?:
 };
 
 export const generateImagesWithRetry = (generationRequest: any, specificApiKey?: string | null): Promise<GenerateImagesResponse> => {
-    const apiFunc = (instance: GoogleGenAI) => instance.models.generateImages(generationRequest) as unknown as Promise<GenerateImagesResponse>;
-    if (specificApiKey) {
-        return executeApiCallWithSingleKey(apiFunc, specificApiKey);
-    }
-    return executeApiCallWithPool(apiFunc);
+    const createApiCall = (request: any) => (instance: GoogleGenAI) => instance.models.generateImages(request) as unknown as Promise<GenerateImagesResponse>;
+    return executeWithModelRotation<GenerateImagesResponse>(generationRequest, createApiCall, specificApiKey);
 };

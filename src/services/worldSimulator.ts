@@ -1,3 +1,4 @@
+
 import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, StatBonus, CharacterAttributes } from '../types';
 import { generateRelationshipUpdate } from './gemini/npc.service';
 import { generateNpcActionPlan } from './gemini/planning.service';
@@ -66,46 +67,44 @@ export const simulateWorldTurn = async (
     }
 
     // --- Pillar 3: Faction Ambition Simulation ---
-    const settings = await db.getSettings();
-    if (settings) {
-        const eventFrequency = settings.worldEventFrequency || 'occasional';
-        const eventChanceMap = {
-            'rare': 0.10,
-            'occasional': 0.25,
-            'frequent': 0.50,
-            'chaotic': 0.80
-        };
-        const chance = eventChanceMap[eventFrequency];
+    // FIX: Access worldEventFrequency from gameState's gameplaySettings, not global settings.
+    const eventFrequency = gameState.gameplaySettings.worldEventFrequency || 'occasional';
+    const eventChanceMap = {
+        'rare': 0.10,
+        'occasional': 0.25,
+        'frequent': 0.50,
+        'chaotic': 0.80
+    };
+    const chance = eventChanceMap[eventFrequency as keyof typeof eventChanceMap];
 
-        if (Math.random() < chance) {
-            console.log(`[WorldSim] Triggering faction event simulation (Chance: ${chance * 100}%)`);
-            try {
-                const eventData = await generateDynamicWorldEventFromAI(currentTurnState);
-                if (eventData) {
-                    const totalDays = (currentTurnState.gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(currentTurnState.gameDate.season) * 30) + currentTurnState.gameDate.day;
-                    const newEvent: DynamicWorldEvent = {
-                        ...eventData,
-                        id: `world-event-${Date.now()}`,
-                        turnStart: totalDays,
-                    };
-                    
-                    if (!currentTurnState.worldState.dynamicEvents) {
-                        currentTurnState.worldState.dynamicEvents = [];
-                    }
-                    currentTurnState.worldState.dynamicEvents.push(newEvent);
-
-                    const rumor: Rumor = {
-                        id: `rumor-event-${Date.now()}-${newEvent.id}`,
-                        locationId: newEvent.affectedLocationIds[0] || currentTurnState.playerCharacter.currentLocationId,
-                        text: `[Thiên Hạ Đại Sự] ${eventData.title}: ${eventData.description}`,
-                    };
-                    newRumors.push(rumor);
-                    console.log(`[WorldSim] New world event created: ${newEvent.title}`);
+    if (Math.random() < chance) {
+        console.log(`[WorldSim] Triggering faction event simulation (Chance: ${chance * 100}%)`);
+        try {
+            const eventData = await generateDynamicWorldEventFromAI(currentTurnState);
+            if (eventData) {
+                const totalDays = (currentTurnState.gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(currentTurnState.gameDate.season) * 30) + currentTurnState.gameDate.day;
+                const newEvent: DynamicWorldEvent = {
+                    ...eventData,
+                    id: `world-event-${Date.now()}`,
+                    turnStart: totalDays,
+                };
+                
+                if (!currentTurnState.worldState.dynamicEvents) {
+                    currentTurnState.worldState.dynamicEvents = [];
                 }
-            } catch (error) {
-                console.error("[WorldSim] Failed to simulate faction turn:", error);
-                // Don't crash the game, just log the error.
+                currentTurnState.worldState.dynamicEvents.push(newEvent);
+
+                const rumor: Rumor = {
+                    id: `rumor-event-${Date.now()}-${newEvent.id}`,
+                    locationId: newEvent.affectedLocationIds[0] || currentTurnState.playerCharacter.currentLocationId,
+                    text: `[Thiên Hạ Đại Sự] ${eventData.title}: ${eventData.description}`,
+                };
+                newRumors.push(rumor);
+                console.log(`[WorldSim] New world event created: ${newEvent.title}`);
             }
+        } catch (error) {
+            console.error("[WorldSim] Failed to simulate faction turn:", error);
+            // Don't crash the game, just log the error.
         }
     }
     

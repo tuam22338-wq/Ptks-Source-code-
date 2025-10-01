@@ -1,14 +1,13 @@
+
+
 import type {
     Gender, Element, StatBonus, CharacterAttributes, PhapBaoRank, ItemQuality, EquipmentSlot, InnateTalentRank,
     Season, TimeOfDay, Weather, TechniqueEffect, CultivationTechniqueType, CurrencyType,
-    // FIX: Import ItemType and SkillCheck from the core types module.
-    ItemType, SkillCheck
+    ItemType, SkillCheck, EventChoice, EventOutcome
 } from './core';
 import type { SpiritualRoot, CharacterIdentity, InnateTalent } from './character';
-// FIX: Import EventOutcome to resolve type error.
-import type { FullMod, RealmConfig, ModAttributeSystem, ModEvent, EventChoice, EventOutcome } from './modding';
-// FIX: Import NpcDensity to resolve type error.
-import type { SystemInfo, NpcDensity } from './settings';
+import type { FullMod, RealmConfig, ModAttributeSystem, ModEvent, NamedRealmSystem } from './modding';
+import type { SystemInfo, NpcDensity, GameplaySettings } from './settings';
 
 // --- New Asset Types ---
 export type AssetLoadStatus = 'idle' | 'loading' | 'loaded' | 'error';
@@ -33,7 +32,7 @@ export interface SaveSlot {
 
 // --- Timeline Types ---
 export interface GameDate {
-  era: string; // Changed from 'Tiên Phong Thần' to string to support custom worlds
+  era: string; 
   year: number;
   season: Season;
   day: number;
@@ -413,9 +412,31 @@ export interface PlayerSect {
 export type DifficultyLevel = 'rookie' | 'easy' | 'medium' | 'hard' | 'hell';
 export type GenerationMode = 'fast' | 'deep' | 'super_deep';
 
+export interface WorldCreationData extends GameplaySettings {
+    genre: string;
+    theme: string;
+    setting: string;
+    mainGoal: string;
+    openingStory: string;
+    importedMod: FullMod | null;
+    fanficMode: boolean;
+    // FIX: Add missing 'hardcoreMode' property to align type with its usage.
+    hardcoreMode: boolean;
+    character: {
+        name: string;
+        gender: Gender;
+        bio: string;
+    };
+    attributeSystem?: ModAttributeSystem;
+    enableRealmSystem: boolean;
+    realmTemplateId: string;
+    namedRealmSystem: NamedRealmSystem | null;
+    // FIX: Add missing generationMode to satisfy the GameStartData type requirement in AppContext.
+    generationMode: GenerationMode;
+}
+
 export interface GameState {
     version?: string;
-    // FIX: Add activeWorldId to GameState to make it self-contained for services.
     activeWorldId: string;
     difficulty?: DifficultyLevel;
     playerCharacter: PlayerCharacter;
@@ -434,6 +455,7 @@ export interface GameState {
         resourceName: string;
         resourceUnit: string;
     };
+    namedRealmSystems?: NamedRealmSystem[];
     attributeSystem: ModAttributeSystem; // Now dynamic
     majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;
@@ -451,6 +473,7 @@ export interface GameState {
         npcDensity: NpcDensity;
         generationMode: GenerationMode;
     };
+    gameplaySettings: GameplaySettings;
 }
 
 // --- Gameplay Event Types ---

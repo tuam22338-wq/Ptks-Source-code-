@@ -134,7 +134,7 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                                 <div key={stage.id || stageIndex} className="flex justify-between items-center p-2 bg-black/30 rounded">
                                                     <div>
                                                         <p className="text-sm font-semibold">{stage.name}</p>
-                                                        <p className="text-xs text-gray-400">{systemInfo.resourceName}: {stage.qiRequired === null || !isFinite(stage.qiRequired) ? 'Vô Hạn' : stage.qiRequired.toLocaleString()}</p>
+                                                        <p className="text-xs text-gray-400">{systemInfo.resourceName}: {!isFinite(stage.qiRequired) ? 'Vô Hạn' : (stage.qiRequired || 0).toLocaleString()}</p>
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <button onClick={() => handleOpenStageModal(stage, realmIndex)} className="p-1 text-gray-400 hover:text-white"><FaEdit /></button>

@@ -1,6 +1,6 @@
 import React, { useState, memo, useMemo } from 'react';
 import type { GameState, GameSettings } from '../../../../types';
-import { FaTimes, FaUser, FaMapMarkedAlt, FaBook, FaBrain, FaQuestionCircle, FaVial } from 'react-icons/fa';
+import { FaTimes, FaUser, FaMapMarkedAlt, FaBook, FaBrain, FaQuestionCircle, FaVial, FaBookOpen } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
 
 // Import panel components
@@ -11,8 +11,9 @@ import AiMemoryPanel from './panels/AiMemoryPanel';
 import GuidePanel from './panels/GuidePanel';
 import AiRulesPanel from './panels/AiRulesPanel';
 import LiveEditorPanel from './panels/LiveEditorPanel';
+import HistoryPanel from './panels/HistoryPanel';
 
-type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'guide' | 'liveEditor';
+type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'guide' | 'liveEditor' | 'history';
 
 interface SidebarPanel {
     id: PanelId;
@@ -25,6 +26,7 @@ const BASE_PANELS: SidebarPanel[] = [
     { id: 'status', label: 'Trạng Thái', icon: FaUser, component: StatusPanel },
     { id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, component: MapView },
     { id: 'quests', label: 'Nhiệm Vụ', icon: FaBook, component: QuestPanel },
+    { id: 'history', label: 'Lịch Sử', icon: FaBookOpen, component: HistoryPanel },
     { id: 'memory', label: 'Ký Ức AI', icon: FaBrain, component: AiMemoryPanel },
     { id: 'rules', label: 'Quy Luật', icon: GiGears, component: AiRulesPanel },
     { id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle, component: GuidePanel },
@@ -55,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings 
         status: { gameState: gameState },
         map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
+        history: { majorEvents: gameState.majorEvents },
         memory: { gameState },
         rules: { gameState: gameState },
         guide: {},

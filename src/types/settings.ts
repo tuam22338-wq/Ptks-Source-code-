@@ -1,4 +1,28 @@
 import type { ElementType } from 'react';
+
+// Cài đặt dành riêng cho từng màn chơi, sẽ được lưu cùng save game.
+export interface GameplaySettings {
+    narrativeStyle: NarrativeStyle;
+    aiResponseWordCount: number;
+    aiCreativityLevel: AiCreativityLevel;
+    narrativePacing: NarrativePacing;
+    playerAgencyLevel: PlayerAgencyLevel;
+    aiMemoryDepth: AiMemoryDepth;
+    npcComplexity: NpcComplexity;
+    worldEventFrequency: WorldEventFrequency;
+    worldReactivity: WorldReactivity;
+    cultivationRateMultiplier: number;
+    resourceRateMultiplier: number;
+    damageDealtMultiplier: number;
+    damageTakenMultiplier: number;
+    enableSurvivalMechanics: boolean;
+    deathPenalty: DeathPenalty;
+    validationServiceCap: ValidationServiceCap;
+    narrateSystemChanges: boolean;
+    worldInterruptionFrequency: WorldInterruptionFrequency;
+}
+
+
 // --- Settings Types ---
 // Per Gemini guidelines, only 'gemini-2.5-flash' is permitted for general text tasks.
 export type AIModel = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-2.5-flash-lite' | 'gemini-2.5-flash-lite-preview-06-17' | 'gemini-2.5-flash-preview-05-20' | 'gemini-2.5-flash-preview-04-17';
@@ -9,7 +33,8 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise' | 'er_gen_style' | 'fenghuo_style' | 'cyberpunk' | 'noir_detective' | 'epic_fantasy' | 'lovecraftian_horror' | 'comedic' | 'slice_of_life';
-export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa' | 'theme-dao-ton-premium' | 'theme-cyber-cultivation-city' | 'theme-thon-phe-tinh-ha';
+// FIX: Add 'theme-ink-wash-bamboo' to the Theme type to resolve type errors across the application.
+export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa' | 'theme-dao-ton-premium' | 'theme-cyber-cultivation-city' | 'theme-thon-phe-tinh-ha' | 'theme-ink-wash-bamboo';
 export type AiSyncMode = 'classic' | 'intent_driven';
 export type TtsProvider = 'browser' | 'elevenlabs';
 
@@ -42,12 +67,19 @@ export type AssignableModel =
     | 'ragEmbeddingModel' | 'ragOrchestratorModel'
     | 'memorySynthesisModel'
     | 'narrativeHarmonizerModel'
-    | 'novelistModel';
+    | 'novelistModel'
+    | 'heuristicFixerModel'; // Add new model assignment
+
+export interface HeuristicFixReport {
+    id?: number;
+    timestamp: string;
+    problem: string;
+    solution: string;
+}
 
 export interface GameSettings {
     layoutMode: LayoutMode;
     gameSpeed: GameSpeed;
-    narrativeStyle: NarrativeStyle;
     fontFamily: string;
     theme: Theme;
     dynamicBackground: string;
@@ -70,6 +102,7 @@ export interface GameSettings {
     memorySynthesisModel: AIModel;
     narrativeHarmonizerModel: AIModel;
     novelistModel: AIModel;
+    heuristicFixerModel: AIModel; // Add new model
     novelistWordCount: number;
     novelistNarrativeStyle: NarrativeStyle;
     novelistTemperature: number;
@@ -86,7 +119,6 @@ export interface GameSettings {
     historyTokenLimit: number;
     summarizeBeforePruning: boolean;
     itemsPerPage: number;
-    aiResponseWordCount: number;
     enableAiSoundSystem: boolean;
     masterSafetySwitch: boolean;
     enableNsfwMode: boolean;
@@ -101,6 +133,7 @@ export interface GameSettings {
     modelApiKeyAssignments: Partial<Record<AssignableModel, string>>;
     enableDeveloperConsole: boolean;
     enableTestingMode: boolean;
+    enableHeuristicFixerAI: boolean; // Add new setting
     backgroundMusicUrl: string;
     backgroundMusicName: string;
     backgroundMusicVolume: number;
@@ -114,25 +147,7 @@ export interface GameSettings {
     ttsVolume: number;
     aiSyncMode: AiSyncMode;
     isPremium: boolean;
-
-    // New Detailed Gameplay Settings
-    aiCreativityLevel: AiCreativityLevel;
-    narrativePacing: NarrativePacing;
-    playerAgencyLevel: PlayerAgencyLevel;
-    aiMemoryDepth: AiMemoryDepth;
-    npcComplexity: NpcComplexity;
-    worldEventFrequency: WorldEventFrequency;
-    worldReactivity: WorldReactivity;
-    cultivationRateMultiplier: number;
-    resourceRateMultiplier: number;
-    damageDealtMultiplier: number;
-    damageTakenMultiplier: number;
-    enableSurvivalMechanics: boolean;
-    deathPenalty: DeathPenalty;
-    validationServiceCap: ValidationServiceCap;
-    narrateSystemChanges: boolean;
     enableAutomaticModelRotation: boolean;
-    worldInterruptionFrequency: WorldInterruptionFrequency;
 }
 
 export type SystemFeature = 'status' | 'quests' | 'store' | 'analysis';

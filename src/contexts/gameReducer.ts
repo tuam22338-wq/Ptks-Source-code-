@@ -54,7 +54,9 @@ export type Action =
   // Actions for Novelist AI
   | { type: 'SET_NOVELS'; payload: Novel[] }
   | { type: 'SET_ACTIVE_NOVEL_ID'; payload: number | null }
-  | { type: 'UPDATE_NOVEL'; payload: Novel };
+  | { type: 'UPDATE_NOVEL'; payload: Novel }
+  // FIX: Add action to set current slot ID
+  | { type: 'SET_CURRENT_SLOT_ID'; payload: number | null };
 
 
 // The reducer function
@@ -93,7 +95,8 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             return { ...state, activeWorldId: action.payload };
         
         case 'START_CHARACTER_CREATION':
-            return { ...state, currentSlotId: action.payload, view: 'characterCreation' };
+            // FIX: The 'characterCreation' view is deprecated and not a valid View type. Redirecting to 'saveSlots' which now handles the world/character creation flow.
+            return { ...state, currentSlotId: action.payload, view: 'saveSlots' };
 
         case 'LOAD_GAME':
             const loadedGameState = sanitizeGameState(action.payload.gameState);
@@ -217,6 +220,9 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
                 return { ...state, novels: newNovels };
             }
             return { ...state, novels: [...state.novels, action.payload] };
+        
+        case 'SET_CURRENT_SLOT_ID':
+            return { ...state, currentSlotId: action.payload };
 
         default:
             return state;

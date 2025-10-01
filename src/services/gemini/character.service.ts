@@ -1,10 +1,9 @@
 
 
-
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem, GenerationMode } from '../../types';
-import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, PT_WORLD_MAP, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
+import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
@@ -84,7 +83,7 @@ Khi gán "bonuses", bạn CHỈ ĐƯỢC PHÉP sử dụng tên thuộc tính t�
         required: ['refined_appearance', 'origin_story', 'power_source', 'bonuses'],
     };
 
-    const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game tu tiên. Dựa trên các ý tưởng của người chơi và hệ thống thuộc tính của thế giới, hãy diễn giải và kiến tạo nên một nhân vật hoàn chỉnh.
+    const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game nhập vai giả tưởng. Dựa trên các ý tưởng của người chơi và hệ thống thuộc tính của thế giới, hãy diễn giải và kiến tạo nên một nhân vật hoàn chỉnh.
 
     **Ý Tưởng Cốt Lõi Của Người Chơi:**
     - **Thông tin cơ bản:**
@@ -162,7 +161,7 @@ export const generateInitialWorldDetails = async (
     generationMode: GenerationMode
 ): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[], openingNarrative: string }> => {
     
-    const { playerCharacter, discoveredLocations, activeNpcs, activeWorldId } = gameState;
+    const { playerCharacter, discoveredLocations, activeNpcs, activeWorldId, realmSystem } = gameState;
     const currentLocation = discoveredLocations.find(loc => loc.id === playerCharacter.currentLocationId);
 
     const npcDensity = gameState.creationData!.npcDensity; // Should exist here
@@ -183,8 +182,8 @@ export const generateInitialWorldDetails = async (
         required: ['name', 'gender', 'age', 'relationship_type', 'status', 'description', 'personality'],
     };
 
-    const availableLocations = PT_WORLD_MAP.map(l => l.id);
-    const availableRealms = REALM_SYSTEM.map(r => r.name);
+    const availableLocations = discoveredLocations.map(l => l.id);
+    const availableRealms = realmSystem.map(r => r.name);
     const elements: Element[] = ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ', 'Vô'];
 
     const dynamicNpcSchema = {
@@ -198,7 +197,7 @@ export const generateInitialWorldDetails = async (
             personality: { type: Type.STRING, description: 'Tính cách của NPC (ví dụ: Trung Lập, Tà Ác, Hỗn Loạn, Chính Trực).' },
             motivation: { type: Type.STRING, description: "Động lực cốt lõi, sâu xa nhất của NPC. Ví dụ: 'Chứng tỏ bản thân', 'Tìm kiếm sự thật', 'Báo thù cho gia tộc'." },
             goals: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách 1-3 mục tiêu dài hạn mà NPC đang theo đuổi. Ví dụ: ['Trở thành đệ nhất luyện đan sư', 'Tìm ra kẻ đã hãm hại sư phụ']." },
-            realmName: { type: Type.STRING, enum: availableRealms, description: 'Cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
+            realmName: { type: Type.STRING, enum: availableRealms.length > 0 ? availableRealms : ['Phàm Nhân'], description: 'Cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
             element: { type: Type.STRING, enum: elements, description: 'Thuộc tính ngũ hành của NPC.' },
             initialEmotions: {
                 type: Type.OBJECT,
@@ -300,7 +299,8 @@ export const generateInitialWorldDetails = async (
     }
     
     const settings = await db.getSettings();
-    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === settings?.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
+    // FIX: Access narrativeStyle from gameState.gameplaySettings instead of global settings.
+    const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === gameState.gameplaySettings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
     const prompt = `Bạn là một AI Sáng Thế, có khả năng kiến tạo thế giới game tu tiên "Tam Thiên Thế Giới". Dựa trên thông tin về nhân vật chính, hãy thực hiện đồng thời 3 nhiệm vụ sau và trả về kết quả trong một đối tượng JSON duy nhất.
 
@@ -399,9 +399,9 @@ export const generateInitialWorldDetails = async (
     if(data.dynamic_npcs) {
         const dynamicNpcs = data.dynamic_npcs.map((npcData: any): NPC => {
             const { name, gender, description, origin, personality, talents, realmName, currency, element, initialEmotions, motivation, goals, ...stats } = npcData;
-            const targetRealm = REALM_SYSTEM.find(r => r.name === realmName) || REALM_SYSTEM[0];
-            const targetStage = targetRealm.stages[Math.floor(Math.random() * targetRealm.stages.length)];
-            const cultivation: NPC['cultivation'] = { currentRealmId: targetRealm.id, currentStageId: targetStage.id, spiritualQi: Math.floor(Math.random() * targetStage.qiRequired), hasConqueredInnerDemon: false, };
+            const targetRealm = realmSystem.find(r => r.name === realmName) || realmSystem[0];
+            const targetStage = targetRealm?.stages[Math.floor(Math.random() * (targetRealm?.stages.length || 1))] || {id: 'pn_1', qiRequired: 0};
+            const cultivation: NPC['cultivation'] = { currentRealmId: targetRealm?.id || 'pham_nhan', currentStageId: targetStage.id, spiritualQi: Math.floor(Math.random() * targetStage.qiRequired), hasConqueredInnerDemon: false, };
             const baseAttributes: CharacterAttributes = {};
             DEFAULT_ATTRIBUTE_DEFINITIONS.forEach(attrDef => {
                 if(attrDef.baseValue !== undefined) { baseAttributes[attrDef.id] = { value: attrDef.baseValue, ...(attrDef.type === 'VITAL' && { maxValue: attrDef.baseValue }) }; }
@@ -420,7 +420,7 @@ export const generateInitialWorldDetails = async (
             updateAttr('chinh_dao', stats.ChinhDao || 0);
             updateAttr('ma_dao', stats.MaDao || 0);
             const npcCurrencies: Partial<Currency> = {};
-            if (currency?.linhThachHaPham > 0) { npcCurrencies['Linh thạch hạ phẩm'] = currency.linhThachHaPham; } else if (targetRealm.id !== 'pham_nhan') { npcCurrencies['Linh thạch hạ phẩm'] = Math.floor(Math.random() * 20); }
+            if (currency?.linhThachHaPham > 0) { npcCurrencies['Linh thạch hạ phẩm'] = currency.linhThachHaPham; } else if (targetRealm?.id !== 'pham_nhan') { npcCurrencies['Linh thạch hạ phẩm'] = Math.floor(Math.random() * 20); }
             if (currency?.bac > 0) { npcCurrencies['Bạc'] = currency.bac; } else { npcCurrencies['Bạc'] = 10 + Math.floor(Math.random() * 100); }
             return {
                 ...stats, id: `dynamic-npc-${Math.random().toString(36).substring(2, 9)}`, identity: { name, gender, appearance: description, origin, personality, age: 20 + Math.floor(Math.random() * 200) }, element: element || 'Vô', talents: talents || [], attributes: baseAttributes, emotions: initialEmotions || { trust: 50, fear: 10, anger: 10 }, memory: { shortTerm: [], longTerm: [] }, motivation: motivation || "Sống một cuộc sống bình yên.", goals: goals || [], currentPlan: null, cultivation, techniques: [], currencies: npcCurrencies, inventory: { items: [], weightCapacity: 15 }, equipment: {}, healthStatus: 'HEALTHY' as const, activeEffects: [], tuoiTho: 100 + Math.floor(Math.random() * 500)

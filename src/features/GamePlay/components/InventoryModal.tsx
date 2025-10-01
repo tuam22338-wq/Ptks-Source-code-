@@ -1,13 +1,7 @@
 
-
-
-
-
-
-
-
 import React, { useState, useMemo, useCallback } from 'react';
 import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacter, PlayerVitals, CharacterAttributes } from '../../../types';
+// FIX: Added 'EQUIPMENT_SLOT_ICONS' to the import list to resolve the "does not exist" error.
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
 import { GiWeight, GiPerson } from "react-icons/gi";
 import { FaTimes, FaArrowLeft, FaArrowRight, FaSearch } from 'react-icons/fa';

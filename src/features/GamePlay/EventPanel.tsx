@@ -1,5 +1,5 @@
 import React from 'react';
-// FIX: Update type imports to use `CharacterAttributes` instead of the removed `Attribute` type.
+// FIX: Update type imports to use `CharacterAttributes` and `EventChoice`.
 import type { GameEvent, EventChoice, CharacterAttributes } from '../../types';
 import { FaDiceD20 } from 'react-icons/fa';
 // FIX: Import attribute definitions to look up attribute IDs by name.
