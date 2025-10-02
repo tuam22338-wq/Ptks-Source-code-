@@ -1,7 +1,7 @@
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter, EventChoice, GameSettings } from '../../types';
-import StoryLog from './components/StoryLog';
-import ActionBar from './components/ActionBar';
+import StoryLog from './StoryLog';
+import ActionBar from './ActionBar';
 import TopBar from './components/TopBar';
 import LoadingScreen from '../../components/LoadingScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';

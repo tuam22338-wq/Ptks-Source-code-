@@ -103,3 +103,56 @@ export type CurrencyType =
     | 'Linh thạch hạ phẩm' | 'Linh thạch trung phẩm' | 'Linh thạch thượng phẩm' | 'Linh thạch cực phẩm'
     | 'Tiên Ngọc'
     | 'Điểm Cống Hiến Tông Môn' | 'Điểm Danh Vọng' | 'Điểm Nguồn';
+
+export interface ResourceNode {
+    id: string;
+    name: string;
+    description: string;
+    itemId: string; // ID of the item
+    requiredSkill: { attribute: string; value: number };
+    apCost: number;
+}
+
+export interface Location {
+    id: string;
+    name: string;
+    description: string;
+    type: 'Thành Thị' | 'Thôn Làng' | 'Hoang Dã' | 'Sơn Mạch' | 'Thánh Địa' | 'Bí Cảnh' | 'Quan Ải';
+    neighbors: string[]; // Array of location IDs
+    factionInfluence?: { name: string; level: 'Mạnh' | 'Trung bình' | 'Yếu' | 'Không có' }[];
+    isExplorable?: boolean;
+    coordinates: { x: number; y: number; };
+    resources?: ResourceNode[];
+    qiConcentration: number;
+    contextualActions?: {
+        id: string;
+        label: string;
+        description: string;
+        iconName?: string;
+    }[];
+    shopIds?: string[];
+}
+
+export interface GameEvent {
+    id: string;
+    description: string;
+    choices: EventChoice[];
+}
+
+export interface MajorEvent {
+    year: number;
+    title: string;
+    location: string;
+    involvedParties: string;
+    summary: string;
+    consequences: string;
+}
+
+export interface ForeshadowedEvent {
+  id: string;
+  title: string;
+  description: string;
+  turnStart: number;
+  potentialTriggerDay: number;
+  chance: 'Thấp' | 'Vừa' | 'Cao' | 'Chắc chắn';
+}

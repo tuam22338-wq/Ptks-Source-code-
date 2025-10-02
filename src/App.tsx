@@ -93,10 +93,7 @@ const WeatherOverlay: React.FC = () => {
     const { state } = useAppContext();
     const weather = state.gameState?.gameDate?.weather;
 
-    if (state.settings.enablePerformanceMode) {
-        return null;
-    }
-
+    // HOOKS MUST BE CALLED BEFORE EARLY RETURNS
     const weatherEffect = useMemo(() => {
         switch (weather) {
             case 'RAIN':
@@ -141,6 +138,10 @@ const WeatherOverlay: React.FC = () => {
                 return null;
         }
     }, [weather]);
+
+    if (state.settings.enablePerformanceMode) {
+        return null;
+    }
 
     return (
         <div className={`weather-overlay ${weatherEffect ? 'active' : ''}`}>

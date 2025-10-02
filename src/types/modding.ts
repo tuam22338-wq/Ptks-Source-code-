@@ -8,11 +8,14 @@ import type {
     EventChoice,
     EventOutcome,
     // FIX: Import CultivationTechnique from core to resolve error.
-    CultivationTechnique
+    CultivationTechnique,
+    MajorEvent,
+    GameEvent,
+    Location
 } from './core';
 import type { CharacterIdentity } from './character';
 // FIX: Correct imports to resolve circular dependencies and missing types.
-import type { MajorEvent, GameEvent, NPC, Location, ForeshadowedEvent } from './gameplay';
+import type { NPC } from './gameplay';
 
 export interface ModTagDefinition {
     id: string; // e.g., 'cyberpunk_tu_chan'

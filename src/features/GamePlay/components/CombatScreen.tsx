@@ -1,20 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { GameState, NPC, PlayerCharacter, CultivationTechnique, ActiveEffect, StoryEntry, CharacterAttributes } from '../../../types';
 import { decideNpcCombatAction } from '../../../services/geminiService';
 import * as combatManager from '../../../utils/combatManager';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { FaTimes } from 'react-icons/fa';
-// FIX: Import DEFAULT_ATTRIBUTE_DEFINITIONS to look up attribute data.
 import { PHAP_BAO_RANKS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../../../constants';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 import { useAppContext } from '../../../contexts/AppContext';
 
-// FIX: Rewrote getBaseAttributeValue to work with the new CharacterAttributes record.
 const getBaseAttributeValue = (character: PlayerCharacter | NPC, attributeId: string): number => {
     return character.attributes[attributeId]?.value || 0;
 };
 
-// FIX: Rewrote getFinalAttributeValue to use the new attribute system.
 const getFinalAttributeValue = (character: PlayerCharacter | NPC, attributeId: string): number => {
     const baseValue = getBaseAttributeValue(character, attributeId);
     const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.id === attributeId);
@@ -81,13 +78,14 @@ const CombatScreen: React.FC = () => {
     const { state, dispatch } = useAppContext();
     const { gameState } = state;
     const { showNotification } = useGameUIContext();
-
-    // Early return if there's no game state or combat state. This prevents crashes.
-    if (!gameState || !gameState.combatState) {
-        return null;
-    }
-
-    const { combatState } = gameState;
+    
+    // --- HOOKS ---
+    // All hooks are moved to the top of the component to follow the Rules of Hooks.
+    const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+    const [isProcessingTurn, setIsProcessingTurn] = useState(false);
+    const [showTechniqueModal, setShowTechniqueModal] = useState(false);
+    
+    const combatState = gameState?.combatState;
 
     const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
         dispatch({
@@ -101,23 +99,13 @@ const CombatScreen: React.FC = () => {
         });
     }, [dispatch]);
 
-    const allPlayerTechniques = React.useMemo(() => {
+    const allPlayerTechniques = useMemo(() => {
         if (!gameState) return [];
         return gameState.playerCharacter.techniques || [];
     }, [gameState]);
 
-    const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
-    const [isProcessingTurn, setIsProcessingTurn] = useState(false);
-    const [showTechniqueModal, setShowTechniqueModal] = useState(false);
-
     const currentActorId = combatState?.turnOrder[combatState.currentTurnIndex];
     const isPlayerTurn = currentActorId === 'player';
-
-    useEffect(() => {
-        if (combatState && combatState.enemies.length > 0) {
-            setSelectedTargetId(combatState.enemies.find(e => getFinalAttributeValue(e, 'sinh_menh') > 0)?.id || null);
-        }
-    }, [combatState]);
 
     const advanceTurn = useCallback((currentState: GameState): GameState => {
         if (!currentState.combatState) return currentState;
@@ -136,7 +124,13 @@ const CombatScreen: React.FC = () => {
         }
         return { ...currentState, playerCharacter, combatState: { ...combatState, turnOrder: newTurnOrder, currentTurnIndex: newIndex, } };
     }, []);
-
+    
+    useEffect(() => {
+        if (combatState && combatState.enemies.length > 0) {
+            setSelectedTargetId(combatState.enemies.find(e => getFinalAttributeValue(e, 'sinh_menh') > 0)?.id || null);
+        }
+    }, [combatState]);
+    
     useEffect(() => {
         const processEnemyTurn = async () => {
             if (!isPlayerTurn && combatState && !isProcessingTurn && gameState) {
@@ -181,6 +175,14 @@ const CombatScreen: React.FC = () => {
         };
         processEnemyTurn();
     }, [currentActorId, isPlayerTurn, combatState, gameState, dispatch, addStoryEntry, isProcessingTurn, showNotification, advanceTurn]);
+
+
+    // --- EARLY RETURN ---
+    // Moved after all hooks to comply with Rules of Hooks
+    if (!gameState || !combatState) {
+        return null;
+    }
+
 
     const handleBasicAttack = async () => {
         if (!isPlayerTurn || !selectedTargetId || isProcessingTurn || !gameState) return;

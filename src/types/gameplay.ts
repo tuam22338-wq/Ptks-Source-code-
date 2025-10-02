@@ -1,7 +1,8 @@
 import type {
     Gender, Element, StatBonus, CharacterAttributes, AbilityRank, ItemQuality, EquipmentSlot, InnateTalentRank,
     Season, TimeOfDay, Weather, AbilityEffect, AbilityType, CurrencyType,
-    ItemType, SkillCheck, EventChoice, EventOutcome, Faction, CultivationTechnique
+    ItemType, SkillCheck, EventChoice, EventOutcome, Faction, CultivationTechnique,
+    Location, GameEvent, MajorEvent, ForeshadowedEvent, ResourceNode
 } from './core';
 import type { SpiritualRoot, CharacterIdentity, InnateTalent } from './character';
 // FIX: Update imports to use renamed types 'RealmConfig' and 'NamedRealmSystem' and remove Faction to avoid circular dependency issues.
@@ -43,14 +44,6 @@ export interface GameDate {
   maxActionPoints: number;
 }
 
-export interface MajorEvent {
-    year: number;
-    title: string;
-    location: string;
-    involvedParties: string;
-    summary: string;
-    consequences: string;
-}
 
 // --- Gameplay Types ---
 export type CharacterStatus = 'HEALTHY' | 'LIGHTLY_INJURED' | 'HEAVILY_INJURED' | 'NEAR_DEATH';
@@ -70,35 +63,6 @@ export interface ActiveEffect {
 }
 
 export type Currency = Partial<Record<CurrencyType, number>>;
-
-export interface ResourceNode {
-    id: string;
-    name: string;
-    description: string;
-    itemId: string; // ID of the item
-    requiredSkill: { attribute: string; value: number };
-    apCost: number;
-}
-
-export interface Location {
-    id: string;
-    name: string;
-    description: string;
-    type: 'Thành Thị' | 'Thôn Làng' | 'Hoang Dã' | 'Sơn Mạch' | 'Thánh Địa' | 'Bí Cảnh' | 'Quan Ải';
-    neighbors: string[]; // Array of location IDs
-    factionInfluence?: { name: string; level: 'Mạnh' | 'Trung bình' | 'Yếu' | 'Không có' }[];
-    isExplorable?: boolean;
-    coordinates: { x: number; y: number; };
-    resources?: ResourceNode[];
-    qiConcentration: number;
-    contextualActions?: {
-        id: string;
-        label: string;
-        description: string;
-        iconName?: string;
-    }[];
-    shopIds?: string[];
-}
 
 export interface Relationship {
   targetNpcId: string;
@@ -343,15 +307,6 @@ export interface DynamicWorldEvent {
   affectedLocationIds: string[]; // Location IDs
 }
 
-export interface ForeshadowedEvent {
-  id: string;
-  title: string;
-  description: string;
-  turnStart: number; // Game day number it was created
-  potentialTriggerDay: number; // Estimated day it might happen
-  chance: 'Thấp' | 'Vừa' | 'Cao' | 'Chắc chắn';
-}
-
 export interface WorldState {
     rumors: Rumor[];
     dynamicEvents: DynamicWorldEvent[];
@@ -487,13 +442,6 @@ export interface GameState {
     };
     gameplaySettings: GameplaySettings;
     worldTurnLog?: WorldTurnEntry[];
-}
-
-// --- Gameplay Event Types ---
-export interface GameEvent {
-    id: string;
-    description: string;
-    choices: EventChoice[];
 }
 
 // --- Shop Types ---

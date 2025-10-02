@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -99,31 +97,16 @@ const initialState: AppState = {
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
+    // --- PART 1: HOOKS (State, Refs) ---
     const [state, dispatch] = useReducer(gameReducer, initialState);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasLoadedInitialSettings = useRef(false);
 
-    useEffect(() => {
-        const handleVoicesChanged = () => {
-            if (window.speechSynthesis) {
-                setVoices(window.speechSynthesis.getVoices());
-            }
-        };
-        if (window.speechSynthesis) {
-            window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-            handleVoicesChanged();
-        } else {
-            console.warn("Text-to-Speech not supported by this browser.");
-        }
-        return () => {
-            if (window.speechSynthesis) {
-                window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-            }
-        };
-    }, []);
-
+    // --- PART 2: CALLBACKS (Memoized Handlers) ---
     const speak = useCallback(async (text: string, force = false) => {
         if (!text || (!state.settings.enableTTS && !force)) return;
 
@@ -241,129 +224,12 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         }
     }, [updateStorageUsage]);
 
-    useEffect(() => {
-        const setViewportHeight = () => {
-            document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-        };
-        setViewportHeight();
-        window.addEventListener('resize', setViewportHeight);
-        return () => window.removeEventListener('resize', setViewportHeight);
-    }, []);
-
-    useEffect(() => {
-        const migrateData = async () => {
-            const isMigrated = await db.getMigrationStatus();
-            if (isMigrated) {
-                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }});
-                return;
-            }
-            if (localStorage.length === 0) {
-                await db.setMigrationStatus(true);
-                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }});
-                return;
-            }
-            dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp hệ thống lưu trữ...' }});
-            try {
-                // Migration logic from old AppContext
-                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp thành công!' }});
-                await db.setMigrationStatus(true);
-            } catch (error) {
-                console.error("Migration failed:", error);
-                 dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Lỗi nâng cấp hệ thống.' }});
-            } finally {
-                setTimeout(() => dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }}), 1500);
-            }
-        };
-        migrateData();
-    }, []);
-
-    useEffect(() => {
-        const loadInitialData = async () => {
-            if (state.isMigratingData) return;
-            try {
-                const [savedSettings, worldId, cachedAssets, modLibrary] = await Promise.all([
-                    db.getSettings(),
-                    db.getActiveWorldId(),
-                    db.getAllAssets(),
-                    db.getModLibrary()
-                ]);
-
-                const oldPlaylist = [
-                    'https://files.catbox.moe/f86nal.mp3',
-                    'https://files.catbox.moe/uckxqm.mp3'
-                ];
-                const newPlaylist = [
-                    'https://archive.org/download/Chinese-instrumental-music/Chinese-instrumental-music.mp3',
-                    'https://archive.org/download/ChineseTraditionalMusic/Chinese-Traditional-Music-Guqin-Meditation.mp3'
-                ];
-                let finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
-
-                if (!finalSettings.backgroundMusicUrl || oldPlaylist.includes(finalSettings.backgroundMusicUrl)) {
-                    const randomIndex = Math.floor(Math.random() * newPlaylist.length);
-                    finalSettings.backgroundMusicUrl = newPlaylist[randomIndex];
-                    finalSettings.backgroundMusicName = 'Nhạc Nền Mặc Định';
-                }
-
-                dispatch({ type: 'SET_SETTINGS', payload: finalSettings });
-                dispatch({ type: 'SET_ALL_CACHED_BACKGROUNDS', payload: cachedAssets });
-                dispatch({ type: 'SET_INSTALLED_MODS', payload: modLibrary });
-
-                apiKeyManager.updateKeys(finalSettings.apiKeys || []);
-                apiKeyManager.updateModelRotationSetting(finalSettings.enableAutomaticModelRotation);
-                dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
-
-                await loadSaveSlots();
-            } catch (error) {
-                console.error("Failed to load initial data from DB", error);
-            }
-        };
-        loadInitialData();
-    }, [state.isMigratingData, loadSaveSlots]);
-
-    useEffect(() => {
-        const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, layoutMode, enablePerformanceMode, customThemeColors } = state.settings;
-        if (!audioRef.current) {
-            audioRef.current = new Audio();
-            audioRef.current.loop = true;
-        }
-        const audio = audioRef.current;
-        audio.volume = backgroundMusicVolume;
-        if (backgroundMusicUrl && audio.src !== backgroundMusicUrl) audio.src = backgroundMusicUrl;
-        if (backgroundMusicUrl && audio.paused) audio.play().catch(e => console.warn("Autoplay was prevented.", e));
-        else if (!backgroundMusicUrl && !audio.paused) { audio.pause(); audio.src = ''; }
-        
-        document.body.style.fontFamily = fontFamily;
-        document.documentElement.style.fontSize = `${zoomLevel}%`;
-        
-        THEME_OPTIONS.forEach(t => document.body.classList.remove(t.value));
-        if (theme) document.body.classList.add(theme);
-
-        if (theme === 'theme-custom' && customThemeColors) {
-            Object.entries(customThemeColors).forEach(([key, value]) => {
-                document.documentElement.style.setProperty(key, value);
-            });
-        } else {
-            // Clean up custom properties if not using custom theme
-            const defaultColors = DEFAULT_SETTINGS.customThemeColors;
-            if (defaultColors) {
-                 Object.keys(defaultColors).forEach(key => {
-                    document.documentElement.style.removeProperty(key);
-                });
-            }
-        }
-        
-        document.body.classList.toggle('force-desktop', layoutMode === 'desktop');
-        document.body.classList.toggle('force-mobile', layoutMode === 'mobile');
-        document.body.classList.toggle('performance-mode', enablePerformanceMode);
-    }, [state.settings]);
-
     const handleNavigate = useCallback((targetView: View) => dispatch({ type: 'NAVIGATE', payload: targetView }), []);
 
     const handleSettingChange = useCallback((key: keyof GameSettings, value: any) => {
         dispatch({ type: 'UPDATE_SETTING', payload: { key, value } });
     }, []);
 
-    // --- TỰ ĐỘNG LƯU CÀI ĐẶT ---
     const performSaveSettings = useCallback(async () => {
         dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'saving' });
         try {
@@ -379,36 +245,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'idle' });
         }
     }, [state.settings]);
-
-    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const hasLoadedInitialSettings = useRef(false);
-
-    useEffect(() => {
-        if (state.isMigratingData) {
-            return;
-        }
-        if (!hasLoadedInitialSettings.current) {
-            hasLoadedInitialSettings.current = true;
-            return; 
-        }
-        
-        dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'idle' });
-
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
-        saveTimeoutRef.current = setTimeout(() => {
-            performSaveSettings();
-        }, 1000);
-
-        return () => {
-            if (saveTimeoutRef.current) {
-                clearTimeout(saveTimeoutRef.current);
-            }
-        };
-    }, [state.settings, state.isMigratingData, performSaveSettings]);
-    // --- KẾT THÚC LOGIC TỰ ĐỘNG LƯU ---
 
     const handleDynamicBackgroundChange = async (themeId: string) => {
         handleSettingChange('dynamicBackground', themeId);
@@ -430,7 +266,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     };
 
     const handleSettingsSave = useCallback(async () => {
-        // This function is now deprecated due to auto-save, but kept for context type compatibility.
         console.log("Manual save called, but auto-save is active.");
     }, []);
 
@@ -442,7 +277,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 dispatch({ type: 'LOAD_GAME', payload: { gameState: selectedSlot.data!, slotId } });
             }, 500);
         } else {
-            // This path is deprecated, new games are started via SaveSlotScreen (Tạo Thế Giới)
             alert("Ô trống. Vui lòng vào 'Tạo Thế Giới Mới' để bắt đầu.");
         }
     }, [state.saveSlots]);
@@ -461,7 +295,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleDeleteGame = useCallback(async (slotId: number) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn dữ liệu ở ô ${slotId}?`)) {
             await db.deleteGameState(slotId);
-            await db.deleteMemoryForSlot(slotId); // Also delete associated memory
+            await db.deleteMemoryForSlot(slotId);
             await loadSaveSlots();
         }
     }, [loadSaveSlots]);
@@ -502,24 +336,19 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
             const setLoading = (msg: string) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } });
             
-            // Create the initial, un-hydrated state
             const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, setLoading);
-            
-            // Immediately hydrate the state fully, showing progress on the loading screen
             const fullyHydratedState = await hydrateWorldData(newGameState, setLoading);
 
-            // Save the fully hydrated state
             await db.saveGameState(state.currentSlotId, fullyHydratedState);
             await loadSaveSlots();
 
-            // Run migration for sanitation and load the game
             const finalGameState = await migrateGameState(fullyHydratedState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: state.currentSlotId } });
         } catch (error) {
-            // Re-throw the error so the calling UI component can catch it and display it.
-            // FIX: Always throw an Error object for better error handling downstream. The caught 'error' is of type 'unknown' and must be cast to a string.
-            // Cast 'error' to a string to satisfy the Error constructor.
-            throw new Error(String(error));
+            // FIX: Re-throwing error with a template literal to ensure it's a string.
+            // This resolves a potential issue where the caught 'error' is of type 'unknown'
+            // and cannot be directly passed to the Error constructor.
+            throw new Error(`${error}`);
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
 
@@ -589,9 +418,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Failed during custom world creation:", error);
-            // FIX: Cast the caught 'error' (type 'unknown') to a string before creating a new Error to resolve the type mismatch.
-            // Cast 'error' to a string to satisfy the Error constructor.
-            throw new Error(String(error));
+            // FIX: Re-throwing error with a template literal to ensure it's a string.
+            throw new Error(`${error}`);
         }
     }, [state.activeWorldId, loadSaveSlots]);
 
@@ -623,7 +451,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 customNpcs: [],
                 customLocations: [],
                 customFactions: [],
-                ...state.settings, // Use default gameplay settings
+                ...state.settings,
             };
             
             const setLoading = (msg: string) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } });
@@ -636,7 +464,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
             }, [mod], mod.content.worldData?.[0].id || 'khoi_nguyen_gioi', setLoading);
             
-            // Manually inject the pre-generated data, skipping the slow hydration steps
             newGameState.storyLog = [{ id: 1, type: 'narrative' as const, content: openingNarrative }];
             newGameState.playerCharacter.relationships.push(...relationships);
             newGameState.activeNpcs.push(...familyNpcs, ...dynamicNpcs);
@@ -651,9 +478,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // FIX: Cast the caught 'error' (type 'unknown') to a string before creating a new Error to resolve the type mismatch.
-            // Cast 'error' to a string to satisfy the Error constructor.
-            throw new Error(String(error));
+            // FIX: Re-throwing error with a template literal to ensure it's a string.
+            throw new Error(`${error}`);
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);
 
@@ -784,7 +610,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (error) {
             console.error("Không thể lưu thay đổi trạng thái mod:", error);
             alert("Không thể lưu thay đổi trạng thái mod.");
-            // Revert UI state on failure
             dispatch({ type: 'SET_INSTALLED_MODS', payload: state.installedMods });
         }
     }, [state.installedMods]);
@@ -807,6 +632,156 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         console.log("Placeholder for handleEditWorld, logic to be implemented in calling component", worldId);
     }, []);
 
+    // --- PART 3: EFFECTS ---
+    useEffect(() => {
+        const handleVoicesChanged = () => {
+            if (window.speechSynthesis) {
+                setVoices(window.speechSynthesis.getVoices());
+            }
+        };
+        if (window.speechSynthesis) {
+            window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+            handleVoicesChanged();
+        } else {
+            console.warn("Text-to-Speech not supported by this browser.");
+        }
+        return () => {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        const setViewportHeight = () => {
+            document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+        };
+        setViewportHeight();
+        window.addEventListener('resize', setViewportHeight);
+        return () => window.removeEventListener('resize', setViewportHeight);
+    }, []);
+
+    useEffect(() => {
+        const migrateData = async () => {
+            const isMigrated = await db.getMigrationStatus();
+            if (isMigrated) {
+                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }});
+                return;
+            }
+            if (localStorage.length === 0) {
+                await db.setMigrationStatus(true);
+                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }});
+                return;
+            }
+            dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp hệ thống lưu trữ...' }});
+            try {
+                dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Nâng cấp thành công!' }});
+                await db.setMigrationStatus(true);
+            } catch (error) {
+                console.error("Migration failed:", error);
+                 dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Lỗi nâng cấp hệ thống.' }});
+            } finally {
+                setTimeout(() => dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: false }}), 1500);
+            }
+        };
+        migrateData();
+    }, []);
+
+    useEffect(() => {
+        const loadInitialData = async () => {
+            if (state.isMigratingData) return;
+            try {
+                const [savedSettings, worldId, cachedAssets, modLibrary] = await Promise.all([
+                    db.getSettings(),
+                    db.getActiveWorldId(),
+                    db.getAllAssets(),
+                    db.getModLibrary()
+                ]);
+
+                const oldPlaylist = ['https://files.catbox.moe/f86nal.mp3', 'https://files.catbox.moe/uckxqm.mp3'];
+                const newPlaylist = ['https://archive.org/download/Chinese-instrumental-music/Chinese-instrumental-music.mp3', 'https://archive.org/download/ChineseTraditionalMusic/Chinese-Traditional-Music-Guqin-Meditation.mp3'];
+                let finalSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
+
+                if (!finalSettings.backgroundMusicUrl || oldPlaylist.includes(finalSettings.backgroundMusicUrl)) {
+                    const randomIndex = Math.floor(Math.random() * newPlaylist.length);
+                    finalSettings.backgroundMusicUrl = newPlaylist[randomIndex];
+                    finalSettings.backgroundMusicName = 'Nhạc Nền Mặc Định';
+                }
+
+                dispatch({ type: 'SET_SETTINGS', payload: finalSettings });
+                dispatch({ type: 'SET_ALL_CACHED_BACKGROUNDS', payload: cachedAssets });
+                dispatch({ type: 'SET_INSTALLED_MODS', payload: modLibrary });
+
+                apiKeyManager.updateKeys(finalSettings.apiKeys || []);
+                apiKeyManager.updateModelRotationSetting(finalSettings.enableAutomaticModelRotation);
+                dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
+
+                await loadSaveSlots();
+            } catch (error) {
+                console.error("Failed to load initial data from DB", error);
+            }
+        };
+        loadInitialData();
+    }, [state.isMigratingData, loadSaveSlots]);
+
+    useEffect(() => {
+        const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, layoutMode, enablePerformanceMode, customThemeColors } = state.settings;
+        if (!audioRef.current) {
+            audioRef.current = new Audio();
+            audioRef.current.loop = true;
+        }
+        const audio = audioRef.current;
+        audio.volume = backgroundMusicVolume;
+        if (backgroundMusicUrl && audio.src !== backgroundMusicUrl) audio.src = backgroundMusicUrl;
+        if (backgroundMusicUrl && audio.paused) audio.play().catch(e => console.warn("Autoplay was prevented.", e));
+        else if (!backgroundMusicUrl && !audio.paused) { audio.pause(); audio.src = ''; }
+        
+        document.body.style.fontFamily = fontFamily;
+        document.documentElement.style.fontSize = `${zoomLevel}%`;
+        
+        THEME_OPTIONS.forEach(t => document.body.classList.remove(t.value));
+        if (theme) document.body.classList.add(theme);
+
+        if (theme === 'theme-custom' && customThemeColors) {
+            Object.entries(customThemeColors).forEach(([key, value]) => {
+                document.documentElement.style.setProperty(key, value);
+            });
+        } else {
+            const defaultColors = DEFAULT_SETTINGS.customThemeColors;
+            if (defaultColors) {
+                 Object.keys(defaultColors).forEach(key => {
+                    document.documentElement.style.removeProperty(key);
+                });
+            }
+        }
+        
+        document.body.classList.toggle('force-desktop', layoutMode === 'desktop');
+        document.body.classList.toggle('force-mobile', layoutMode === 'mobile');
+        document.body.classList.toggle('performance-mode', enablePerformanceMode);
+    }, [state.settings]);
+
+    useEffect(() => {
+        if (state.isMigratingData) return;
+        if (!hasLoadedInitialSettings.current) {
+            hasLoadedInitialSettings.current = true;
+            return; 
+        }
+        
+        dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'idle' });
+
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+        saveTimeoutRef.current = setTimeout(() => {
+            performSaveSettings();
+        }, 1000);
+
+        return () => {
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        };
+    }, [state.settings, state.isMigratingData, performSaveSettings]);
+
+
+    // --- PART 4: CONTEXT & RENDER ---
     const contextValue: AppContextType = {
         state, dispatch, handleNavigate, handleSettingChange, handleDynamicBackgroundChange, handleSettingsSave,
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
