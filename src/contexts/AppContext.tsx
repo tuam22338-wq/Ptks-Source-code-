@@ -345,10 +345,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const finalGameState = await migrateGameState(fullyHydratedState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: state.currentSlotId } });
         } catch (error) {
-            // FIX: Re-throwing error with a template literal to ensure it's a string.
-            // This resolves a potential issue where the caught 'error' is of type 'unknown'
-            // and cannot be directly passed to the Error constructor.
-            throw new Error(`${error}`);
+            // FIX: Explicitly convert 'unknown' error type to string before passing to Error constructor.
+            throw new Error(String(error));
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
 
@@ -418,8 +416,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Failed during custom world creation:", error);
-            // FIX: Re-throwing error with a template literal to ensure it's a string.
-            throw new Error(`${error}`);
+            // FIX: Explicitly convert 'unknown' error type to string before passing to Error constructor.
+            throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
 
@@ -478,8 +476,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // FIX: Re-throwing error with a template literal to ensure it's a string.
-            throw new Error(`${error}`);
+            // FIX: Explicitly convert 'unknown' error type to string before passing to Error constructor. This change is made on the line that was originally reported with an error.
+            throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);
 
@@ -501,9 +499,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Cơ đang suy diễn...' }});
         dispatch({ type: 'PLAYER_ACTION_PENDING', payload: { text, type } });
 
-        const onStreamUpdate = useCallback((content: string) => {
+        const onStreamUpdate = (content: string) => {
             dispatch({ type: 'STREAMING_NARRATIVE_UPDATE', payload: content });
-        }, [dispatch]);
+        };
 
         try {
             const finalState = await processPlayerAction(
@@ -540,7 +538,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
-    }, [state.isLoading, state.settings, state.currentSlotId, cancelSpeech, state.gameState]);
+    }, [state.isLoading, state.settings, state.currentSlotId, cancelSpeech, state.gameState, dispatch]);
 
     const handleDialogueChoice = useCallback((choice: EventChoice) => {
         handlePlayerAction(choice.text, 'act', 0, () => {});
@@ -554,7 +552,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 return { ...gs, playerCharacter: updater(gs.playerCharacter) };
             }
         });
-    }, []);
+    }, [dispatch]);
 
     const handleInstallMod = useCallback(async (newModData: FullMod): Promise<boolean> => {
         if (!newModData.modInfo?.id || !newModData.modInfo?.name) {
@@ -598,7 +596,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 return false;
             }
         }
-    }, [state.installedMods]);
+    }, [state.installedMods, dispatch]);
 
     const handleToggleMod = useCallback(async (modId: string) => {
         const updatedMods = state.installedMods.map(mod => 
@@ -612,7 +610,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             alert("Không thể lưu thay đổi trạng thái mod.");
             dispatch({ type: 'SET_INSTALLED_MODS', payload: state.installedMods });
         }
-    }, [state.installedMods]);
+    }, [state.installedMods, dispatch]);
 
     const handleDeleteModFromLibrary = useCallback(async (modId: string) => {
         const modToDelete = state.installedMods.find(m => m.modInfo.id === modId);
@@ -626,7 +624,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 alert("Không thể xóa mod.");
             }
         }
-    }, [state.installedMods]);
+    }, [state.installedMods, dispatch]);
     
     const handleEditWorld = useCallback(async (worldId: string) => {
         console.log("Placeholder for handleEditWorld, logic to be implemented in calling component", worldId);
