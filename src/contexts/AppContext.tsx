@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -516,6 +518,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (error) {
             // Re-throw the error so the calling UI component can catch it and display it.
             // FIX: Always throw an Error object for better error handling downstream. The caught 'error' is of type 'unknown' and must be cast to a string.
+            // Cast 'error' to a string to satisfy the Error constructor.
             throw new Error(String(error));
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
@@ -586,7 +589,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Failed during custom world creation:", error);
-            // FIX: Cast the caught 'error' (type 'unknown') to a string before creating a new Error to resolve the type mismatch, as indicated by the error on line 341.
+            // FIX: Cast the caught 'error' (type 'unknown') to a string before creating a new Error to resolve the type mismatch.
+            // Cast 'error' to a string to satisfy the Error constructor.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
@@ -648,6 +652,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (error) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
             // FIX: Cast the caught 'error' (type 'unknown') to a string before creating a new Error to resolve the type mismatch.
+            // Cast 'error' to a string to satisfy the Error constructor.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);

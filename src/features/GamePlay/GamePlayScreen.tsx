@@ -27,7 +27,7 @@ interface CustomStoryPlayerProps {
 }
 
 const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpdateGameState }) => {
-    const { activeStory, activeMods, playerCharacter } = gameState;
+    const { activeStory, activeMods } = gameState;
     const [animationState, setAnimationState] = useState<'idle' | 'rolling' | 'result'>('idle');
     const [rollResult, setRollResult] = useState<{ roll: number; modifier: number; total: number; dc: number; success: boolean } | null>(null);
 

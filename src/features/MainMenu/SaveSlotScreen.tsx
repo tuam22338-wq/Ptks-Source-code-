@@ -213,6 +213,9 @@ const SaveSlotScreen: React.FC = () => {
       }
     };
     reader.readAsText(file);
+    if (event.target) {
+        event.target.value = "";
+    }
   };
   
   const handleStartCreation = () => {
@@ -397,9 +400,19 @@ const SaveSlotScreen: React.FC = () => {
             </button>
         </div>
         
-        <div className="p-4 bg-teal-900/30 border border-teal-500/50 rounded-lg mb-6 text-center">
-            <button onClick={() => setQuickCreateOpen(true)} className="w-full flex items-center justify-center gap-3 px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-lg">
-                <FaBolt /> Tạo Nhanh Bằng AI (Chỉ cần mô tả)
+        <div className="p-4 bg-teal-900/30 border border-teal-500/50 rounded-lg mb-6 flex flex-col sm:flex-row gap-4">
+            <button onClick={() => setQuickCreateOpen(true)} className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-lg">
+                <FaBolt /> Tạo Nhanh Bằng AI
+            </button>
+            <input
+                type="file"
+                ref={importInputRef}
+                onChange={handleFileImport}
+                className="hidden"
+                accept=".json"
+            />
+            <button onClick={() => importInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-sky-700/80 text-white font-bold rounded-lg hover:bg-sky-600/80 text-lg">
+                <FaFileUpload /> Nhập World Data (.json)
             </button>
         </div>
       
