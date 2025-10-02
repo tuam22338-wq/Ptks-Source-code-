@@ -24,7 +24,7 @@ const TabButton: React.FC<{
 }> = memo(({ tabId, activeTab, onClick, icon: Icon, label }) => (
   <button
     onClick={() => onClick(tabId)}
-    className={`flex-grow flex flex-col items-center justify-center p-3 text-[var(--text-muted-color)] rounded-lg transition-colors duration-200 hover:bg-gray-700/50 hover:text-[var(--text-color)] ${activeTab === tabId ? 'bg-gray-600 text-[var(--text-color)] shadow-inner' : ''}`}
+    className={`flex-grow flex flex-col items-center justify-center p-3 text-[var(--text-muted-color)] rounded-lg transition-colors duration-200 hover:bg-[var(--shadow-light)]/50 hover:text-[var(--text-color)] ${activeTab === tabId ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : ''}`}
   >
     <Icon className="text-2xl mb-1" />
     <span className="text-xs font-semibold">{label}</span>
@@ -48,7 +48,7 @@ export const SettingsPanel: React.FC = () => {
                 <div className="w-9 h-9"></div> {/* Spacer */}
             </div>
 
-            <div className="flex-shrink-0 grid grid-cols-3 sm:grid-cols-5 lg:flex lg:items-center gap-2 p-2 bg-black/20 rounded-lg border border-gray-700/60 mb-6">
+            <div className="flex-shrink-0 grid grid-cols-3 sm:grid-cols-5 lg:flex lg:items-center gap-2 p-2 rounded-lg border mb-6" style={{boxShadow: 'var(--shadow-pressed)', borderColor: 'var(--shadow-dark)'}}>
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
                 <TabButton tabId="sound" activeTab={activeTab} onClick={setActiveTab} icon={FaVolumeUp} label="Âm Thanh" />
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI Models" />
@@ -66,7 +66,7 @@ export const SettingsPanel: React.FC = () => {
                 {activeTab === 'advanced' && <AdvancedSettings settings={settings} handleSettingChange={handleSettingChange} />}
             </div>
 
-            <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-end items-center" style={{ minHeight: '52px' }}>
+            <div className="flex-shrink-0 mt-6 pt-4 border-t border-[var(--shadow-light)] flex justify-end items-center" style={{ minHeight: '52px' }}>
                 {state.settingsSavingStatus === 'saving' && (
                     <div className="text-sm flex items-center gap-2" style={{color: 'var(--text-muted-color)'}}>
                         <LoadingSpinner size="sm" /> Đang lưu...

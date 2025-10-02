@@ -29,8 +29,8 @@ const HeuristicFixerModal: React.FC<HeuristicFixerModalProps> = ({ isOpen, onClo
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '300ms' }} onClick={onClose}>
-            <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-3xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+            <div className="bg-[var(--bg-color)]/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-3xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-[var(--shadow-light)] flex justify-between items-center">
                     <h2 className="text-2xl font-bold font-title flex items-center gap-2" style={{color: 'var(--primary-accent-color)'}}>
                         <FaShieldAlt /> Thiên Đạo Báo Cáo
                     </h2>
@@ -45,7 +45,7 @@ const HeuristicFixerModal: React.FC<HeuristicFixerModalProps> = ({ isOpen, onClo
                     ) : (
                         <div className="space-y-4">
                             {logs.map(log => (
-                                <div key={log.id} className="bg-black/20 p-4 rounded-lg border border-gray-700/60">
+                                <div key={log.id} className="neumorphic-inset-box p-4">
                                     <p className="text-xs font-mono" style={{color: 'var(--text-muted-color)'}}>{new Date(log.timestamp).toLocaleString('vi-VN')}</p>
                                     <p className="mt-2 font-semibold" style={{color: 'var(--error-color)'}}>
                                         <span className="font-bold">[Phát hiện]</span> {log.problem}

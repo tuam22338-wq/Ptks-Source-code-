@@ -11,7 +11,7 @@ interface SettingsSectionProps {
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
   <section className="mb-10">
-    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-color)'}}>{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-[var(--shadow-light)]" style={{color: 'var(--text-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
@@ -23,7 +23,7 @@ interface SettingsRowProps {
     disabled?: boolean;
 }
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
-  <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
+  <div className={`neumorphic-inset-box p-4 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
     <div className="md:w-1/3 flex-shrink-0">
       <label className="block font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
       <p className="text-sm mt-1" style={{color: 'var(--text-muted-color)'}}>{description}</p>
@@ -135,17 +135,17 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                         <input type="checkbox" checked={settings.enableHeuristicFixerAI} onChange={e => handleSettingChange('enableHeuristicFixerAI', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
                         <span className="ml-3 text-sm font-bold text-teal-300 flex items-center gap-2"><FaShieldAlt /> Bật Thiên Đạo Giám</span>
                     </label>
-                     <button onClick={() => setFixerModalOpen(true)} className="mt-2 text-left w-full max-w-xs px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold text-sm transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500">
+                     <button onClick={() => setFixerModalOpen(true)} className="btn btn-neumorphic mt-2 text-left w-full max-w-xs text-sm">
                         Xem Báo Cáo Can Thiệp
                     </button>
                 </div>
             </SettingsRow>
             <SettingsRow label="Chế độ Đồng bộ AI" description="Chọn cách AI đồng bộ hóa trạng thái game. 'Thiên Cơ' được khuyến khích để đảm bảo tính nhất quán.">
-                <div className="flex items-center p-1 bg-black/30 rounded-lg border border-gray-700/60 w-full">
+                <div className="flex items-center p-1 rounded-lg w-full" style={{boxShadow: 'var(--shadow-pressed)'}}>
                     {AI_SYNC_MODES.map(mode => (
                         <button 
                             key={mode.value} 
-                            className={`w-full text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 hover:bg-gray-700/50 hover:text-[var(--text-color)] ${settings.aiSyncMode === mode.value ? 'bg-gray-600 text-[var(--text-color)] shadow-inner' : 'text-[var(--text-muted-color)]'}`} 
+                            className={`w-full text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 hover:bg-[var(--shadow-light)]/50 hover:text-[var(--text-color)] ${settings.aiSyncMode === mode.value ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)]'}`} 
                             onClick={() => handleSettingChange('aiSyncMode', mode.value)}
                             title={mode.description}
                         >
@@ -179,10 +179,10 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
             </SettingsRow>
             <SettingsRow label="Quản lý Dữ liệu" description="Sao lưu toàn bộ dữ liệu game (lưu game, cài đặt, mods) ra file hoặc khôi phục từ file sao lưu.">
                  <div className="flex gap-2">
-                    <button onClick={handleExportData} className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2">
+                    <button onClick={handleExportData} className="btn btn-neumorphic">
                         <FaDownload /> Sao Lưu
                     </button>
-                    <button onClick={() => importInputRef.current?.click()} className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 flex items-center gap-2">
+                    <button onClick={() => importInputRef.current?.click()} className="btn btn-neumorphic">
                         <FaUpload /> Nhập Dữ liệu
                     </button>
                     <input
@@ -195,7 +195,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                 </div>
             </SettingsRow>
             <SettingsRow label="Xóa toàn bộ dữ liệu" description="Hành động này sẽ xóa tất cả các file lưu, cài đặt và mod của bạn. Không thể hoàn tác.">
-                 <button onClick={handleResetData} className="px-4 py-2 bg-red-800 text-white border border-red-700 rounded-lg font-semibold transition-colors duration-200 hover:bg-red-700 flex items-center gap-2">
+                 <button onClick={handleResetData} className="btn flex items-center gap-2" style={{backgroundColor: 'var(--error-color)', color: 'white', boxShadow: 'var(--shadow-raised-interactive)'}}>
                     <FaExclamationTriangle /> Xóa Dữ Liệu
                 </button>
             </SettingsRow>

@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 import type { GameSettings, SafetyLevel } from '../../../types';
 import { SAFETY_LEVELS, SAFETY_CATEGORIES } from '../../../constants';
@@ -9,7 +10,7 @@ interface SettingsSectionProps {
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
   <section className="mb-10">
-    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-color)'}}>{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-[var(--shadow-light)]" style={{color: 'var(--text-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
@@ -21,7 +22,7 @@ interface SettingsRowProps {
     disabled?: boolean;
 }
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
-  <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
+  <div className={`neumorphic-inset-box p-4 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
     <div className="md:w-1/3 flex-shrink-0">
       <label className="block font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
       <p className="text-sm mt-1" style={{color: 'var(--text-muted-color)'}}>{description}</p>
@@ -45,7 +46,8 @@ const SafetySettingsTab: React.FC<SafetySettingsProps> = ({ settings, handleSett
                         <span className="ml-3 text-sm font-bold text-red-400 flex items-center gap-2"><FaFire /> Bật chế độ 18+</span>
                     </label>
                     {settings.enableNsfwMode && (
-                         <p className="mt-2 text-xs text-red-400 bg-red-900/30 border border-red-500/50 p-2 rounded-md">
+                        // FIX: Removed duplicate 'color' and redundant 'backgroundColor' properties from the style object.
+                         <p className="mt-2 text-xs p-2 rounded-md" style={{background: 'rgba(var(--error-color-rgb), 0.1)', border: '1px solid rgba(var(--error-color-rgb), 0.5)', color: 'var(--error-color)'}}>
                             <strong>CẢNH BÁO:</strong> Bạn đã bật chế độ NSFW. AI sẽ tạo ra các nội dung cực kỳ bạo lực, tàn khốc, và tình dục một cách chi tiết, trần trụi. Trải nghiệm có thể chứa các yếu tố kinh dị và gây khó chịu. Các bộ lọc an toàn khác đã bị vô hiệu hóa.
                         </p>
                     )}
@@ -60,7 +62,7 @@ const SafetySettingsTab: React.FC<SafetySettingsProps> = ({ settings, handleSett
             {settings.masterSafetySwitch && SAFETY_CATEGORIES.map(category => (
                 <SettingsRow key={category.id} label={category.name} description={`Chặn các nội dung liên quan đến ${category.name.toLowerCase()}.`} disabled={settings.enableNsfwMode}>
                      <select 
-                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none" 
+                        className="input-neumorphic w-full" 
                         value={settings.safetyLevels[category.id as keyof typeof settings.safetyLevels]}
                         onChange={e => handleSettingChange('safetyLevels', { ...settings.safetyLevels, [category.id]: e.target.value as SafetyLevel })}
                         disabled={settings.enableNsfwMode}

@@ -9,7 +9,7 @@ interface SettingsSectionProps {
 }
 const SettingsSection: React.FC<SettingsSectionProps> = ({ title, children }) => (
   <section className="mb-10">
-    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-gray-600/50" style={{color: 'var(--text-color)'}}>{title}</h3>
+    <h3 className="text-xl font-bold font-title mb-4 pb-2 border-b border-[var(--shadow-light)]" style={{color: 'var(--text-color)'}}>{title}</h3>
     <div className="space-y-4">{children}</div>
   </section>
 );
@@ -21,7 +21,7 @@ interface SettingsRowProps {
     disabled?: boolean;
 }
 const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children, disabled = false }) => (
-  <div className={`bg-black/10 p-4 rounded-lg border border-gray-800/50 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
+  <div className={`neumorphic-inset-box p-4 flex flex-col md:flex-row gap-4 items-start ${disabled ? 'opacity-50' : ''}`}>
     <div className="md:w-1/3 flex-shrink-0">
       <label className="block font-semibold" style={{color: 'var(--text-color)'}}>{label}</label>
       <p className="text-sm mt-1" style={{color: 'var(--text-muted-color)'}}>{description}</p>
@@ -80,13 +80,13 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                     {settings.apiKeys.map(key => (
                         <div key={key} className="flex items-center gap-2 mb-2">
                             <FaKey className="text-gray-500" />
-                            <input type="text" readOnly value={`••••••••${key.slice(-4)}`} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 flex-grow" />
+                            <input type="text" readOnly value={`••••••••${key.slice(-4)}`} className="input-neumorphic w-full flex-grow" />
                             <button onClick={() => handleRemoveApiKey(key)} className="p-2 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
                         </div>
                     ))}
                     <div className="flex items-center gap-2 mt-2">
-                        <input type="text" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} placeholder="Dán API Key mới vào đây" className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 flex-grow" />
-                        <button onClick={handleAddApiKey} className="p-2 text-gray-200 bg-gray-600 rounded-md hover:bg-gray-500"><FaPlus /></button>
+                        <input type="text" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} placeholder="Dán API Key mới vào đây" className="input-neumorphic w-full flex-grow" />
+                        <button onClick={handleAddApiKey} className="btn btn-neumorphic !p-2"><FaPlus /></button>
                     </div>
                 </div>
             </SettingsRow>
@@ -95,22 +95,22 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                     <div>
                         <label className="block text-sm font-medium text-[var(--text-muted-color)] mb-1">Nhiệt độ (Temperature)</label>
                         <div className="flex items-center gap-4">
-                            <input type="range" min="0" max="2" step="0.1" value={settings.temperature} onChange={(e) => handleSettingChange('temperature', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.temperature.toFixed(1)}</span>
+                            <input type="range" min="0" max="2" step="0.1" value={settings.temperature} onChange={(e) => handleSettingChange('temperature', parseFloat(e.target.value))} className="w-full h-2 rounded-lg appearance-none cursor-pointer flex-grow" />
+                            <span className="font-mono text-sm neumorphic-inset-box px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.temperature.toFixed(1)}</span>
                         </div>
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-[var(--text-muted-color)] mb-1">Top-K</label>
                         <div className="flex items-center gap-4">
-                            <input type="range" min="1" max="128" step="1" value={settings.topK} onChange={(e) => handleSettingChange('topK', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.topK}</span>
+                            <input type="range" min="1" max="128" step="1" value={settings.topK} onChange={(e) => handleSettingChange('topK', parseInt(e.target.value))} className="w-full h-2 rounded-lg appearance-none cursor-pointer flex-grow" />
+                            <span className="font-mono text-sm neumorphic-inset-box px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.topK}</span>
                         </div>
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-[var(--text-muted-color)] mb-1">Top-P</label>
                         <div className="flex items-center gap-4">
-                            <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={(e) => handleSettingChange('topP', parseFloat(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" />
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.topP.toFixed(2)}</span>
+                            <input type="range" min="0" max="1" step="0.05" value={settings.topP} onChange={(e) => handleSettingChange('topP', parseFloat(e.target.value))} className="w-full h-2 rounded-lg appearance-none cursor-pointer flex-grow" />
+                            <span className="font-mono text-sm neumorphic-inset-box px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.topP.toFixed(2)}</span>
                         </div>
                     </div>
                      <div>
@@ -123,8 +123,8 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                      <div className={!settings.enableThinking ? 'opacity-50' : ''}>
                         <label className="block text-sm font-medium text-[var(--text-muted-color)] mb-1">Ngân sách 'Suy Nghĩ'</label>
                         <div className="flex items-center gap-4">
-                            <input type="range" min="0" max="2000" step="50" value={settings.thinkingBudget} onChange={(e) => handleSettingChange('thinkingBudget', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer flex-grow" disabled={!settings.enableThinking}/>
-                            <span className="font-mono text-sm bg-black/30 border border-gray-600 rounded-md px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.thinkingBudget}</span>
+                            <input type="range" min="0" max="2000" step="50" value={settings.thinkingBudget} onChange={(e) => handleSettingChange('thinkingBudget', parseInt(e.target.value))} className="w-full h-2 rounded-lg appearance-none cursor-pointer flex-grow" disabled={!settings.enableThinking}/>
+                            <span className="font-mono text-sm neumorphic-inset-box px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.thinkingBudget}</span>
                         </div>
                     </div>
                 </div>
@@ -138,14 +138,14 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                         }
 
                         return (
-                            <div key={config.id} className="p-3 bg-black/20 rounded-lg border border-gray-700/60">
+                            <div key={config.id} className="neumorphic-inset-box p-3">
                                 <p className="font-semibold" style={{color: 'var(--text-color)'}}>{config.label}</p>
                                 <p className="text-xs text-[var(--text-muted-color)] mb-2">{config.description}</p>
                                 <div className="flex items-center gap-2">
                                     <select 
                                         value={(settings as any)[config.id] || ''}
                                         onChange={e => handleSettingChange(config.id, e.target.value)}
-                                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none flex-grow"
+                                        className="input-neumorphic w-full flex-grow"
                                     >
                                         {config.modelType === 'image' ? IMAGE_AI_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
                                          config.modelType === 'rag' ? RAG_EMBEDDING_MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>) :
@@ -162,7 +162,7 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                                             }
                                             handleSettingChange('modelApiKeyAssignments', newAssignments);
                                         }}
-                                        className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none w-40"
+                                        className="input-neumorphic w-40"
                                     >
                                         <option value="auto">Tự động</option>
                                         {settings.apiKeys.map((key, index) => (

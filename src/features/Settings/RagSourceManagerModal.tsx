@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaTimes, FaFileUpload, FaSync, FaTrash, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import type { RagSource } from '../../types';
@@ -77,10 +75,10 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '300ms' }}>
-            <div className="bg-stone-900/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-3xl m-4 h-[80vh] flex flex-col">
-                <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-                    <h2 className="text-2xl font-bold font-title text-amber-300">Quản lý Nguồn Tri Thức RAG</h2>
-                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><FaTimes /></button>
+            <div className="bg-[var(--bg-color)]/80 backdrop-blur-lg border border-[var(--panel-border-color)] rounded-xl shadow-2xl shadow-black/50 w-full max-w-3xl m-4 h-[80vh] flex flex-col">
+                <div className="p-4 border-b border-[var(--shadow-light)] flex justify-between items-center">
+                    <h2 className="text-2xl font-bold font-title text-[var(--primary-accent-color)]">Quản lý Nguồn Tri Thức RAG</h2>
+                    <button onClick={onClose} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)]"><FaTimes /></button>
                 </div>
 
                 <div className="p-4 flex-grow overflow-y-auto">
@@ -90,10 +88,10 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                          {isLoading ? (
                             <div className="flex justify-center p-8"><LoadingSpinner message="Đang tải nguồn..." /></div>
                         ) : sources.map(source => (
-                            <div key={source.id} className="bg-black/20 p-3 rounded-lg border border-gray-700/60 flex justify-between items-center">
+                            <div key={source.id} className="neumorphic-inset-box p-3 flex justify-between items-center">
                                 <div>
-                                    <h4 className="font-bold text-gray-200">{source.name}</h4>
-                                    <p className="text-xs text-gray-500">Loại: {source.type} | ID: {source.id}</p>
+                                    <h4 className="font-bold text-[var(--text-color)]">{source.name}</h4>
+                                    <p className="text-xs text-[var(--text-muted-color)]">Loại: {source.type} | ID: {source.id}</p>
                                     <div className="flex items-center gap-2 mt-1 text-sm">
                                         {source.status === 'INDEXED' && <FaCheckCircle className="text-green-500" />}
                                         {source.status === 'INDEXING' && <FaSync className="text-blue-400 animate-spin" />}
@@ -111,7 +109,7 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                                      <button 
                                         onClick={() => handleReIndex(source.id)}
                                         disabled={source.status === 'INDEXING'}
-                                        className="px-4 py-2 bg-[var(--bg-interactive)] text-[var(--text-color)] border border-[var(--border-subtle)] rounded-lg font-semibold transition-colors duration-200 hover:bg-[var(--bg-interactive-hover)] hover:border-gray-500 text-xs px-3 py-1 flex items-center gap-2 disabled:opacity-50"
+                                        className="btn btn-neumorphic !text-xs !px-3 !py-1 flex items-center gap-2 disabled:opacity-50"
                                         title="Lập chỉ mục lại"
                                     >
                                         <FaSync />
@@ -119,7 +117,8 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                                     {source.type === 'PLAYER_JOURNAL' && (
                                         <button 
                                             onClick={() => handleDelete(source.id)}
-                                            className="bg-red-800/80 text-white border border-red-700/80 rounded-lg font-semibold transition-colors duration-200 hover:bg-red-700 text-xs px-3 py-1"
+                                            className="btn !p-0 h-8 w-8 !rounded-lg"
+                                            style={{backgroundColor: 'var(--error-color)', color: 'white'}}
                                             title="Xóa Nguồn"
                                         >
                                             <FaTrash />
@@ -131,15 +130,15 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                     </div>
                 </div>
                 
-                <div className="p-4 border-t border-gray-700 flex-shrink-0">
+                <div className="p-4 border-t border-[var(--shadow-light)] flex-shrink-0">
                     <input type="file" accept=".txt" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                     <button 
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30 flex items-center justify-center gap-3 py-3"
+                        className="btn btn-primary w-full flex items-center justify-center gap-3 py-3"
                     >
                         <FaFileUpload /> Thêm "Tâm Kinh Ký" (Tải lên file .txt)
                     </button>
-                    <p className="text-xs text-gray-500 text-center mt-2">Tải lên các ghi chép, lore của riêng bạn để AI có thể học và tích hợp vào câu chuyện.</p>
+                    <p className="text-xs text-[var(--text-muted-color)] text-center mt-2">Tải lên các ghi chép, lore của riêng bạn để AI có thể học và tích hợp vào câu chuyện.</p>
                 </div>
             </div>
         </div>
