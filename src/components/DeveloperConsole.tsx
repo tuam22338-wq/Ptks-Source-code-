@@ -159,7 +159,7 @@ const DeveloperConsole: React.FC = () => {
                         <FaKey className="text-yellow-400 mt-1 flex-shrink-0" />
                         <div className="flex-grow text-yellow-300">
                             Rotating API Key due to <span className="font-bold">{log.reason}</span>.
-                             <span className="font-mono"> {log.fromIndex} -> {log.toIndex}</span>
+                             <span className="font-mono">{`${log.fromIndex} -> ${log.toIndex}`}</span>
                         </div>
                     </div>
                 );
@@ -170,7 +170,7 @@ const DeveloperConsole: React.FC = () => {
                         <FaSyncAlt className="text-orange-400 mt-1 flex-shrink-0" />
                         <div className="flex-grow text-orange-300">
                             Model Fallback triggered due to <span className="font-bold">{log.reason}</span>.
-                            <span className="font-mono"> {log.fromModel} -> {log.toModel}</span>
+                            <span className="font-mono">{`${log.fromModel} -> ${log.toModel}`}</span>
                         </div>
                     </div>
                 );
