@@ -115,8 +115,10 @@ const executeApiCallWithPool = async <T>(apiFunction: (instance: GoogleGenAI) =>
                 }
             }
         } catch (error: any) {
+             console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'FAIL', keyIndex: currentIndex, reason: error.message });
              console.warn(`API call failed with key index ${currentIndex}. Error:`, error.message);
             if (error.toString().includes('429') || error.message?.includes('quota') || error.toString().includes('503')) {
+                 console.log({ type: 'AI_MONITOR', event: 'KEY_ROTATION', fromIndex: currentIndex, toIndex: (currentIndex + 1) % apiKeyManager.totalKeys, reason: 'Failure/Quota/503' });
                 continue;
             } else {
                 throw error;
@@ -164,18 +166,24 @@ const executeWithModelRotation = async <T>(
     let currentModel = currentRequest.model;
 
     while (currentModel) {
+        console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'INITIATED', model: currentModel });
         try {
             const apiFunc = createApiCall(currentRequest);
+            let result: T;
             if (specificApiKey) {
-                return await executeApiCallWithSingleKey(apiFunc, specificApiKey);
+                result = await executeApiCallWithSingleKey(apiFunc, specificApiKey);
+            } else {
+                result = await executeApiCallWithPool(apiFunc);
             }
-            return await executeApiCallWithPool(apiFunc);
+            console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'SUCCESS', model: currentModel });
+            return result;
         } catch (error: any) {
             const isAllKeysFailedError = error.message.includes("Tất cả các API key đều đã hết hạn ngạch") || error.toString().includes('503');
             const fallbackModel = apiKeyManager.isModelRotationEnabled() ? modelFallbackMap[currentModel] : undefined;
 
             if (isAllKeysFailedError && fallbackModel) {
                 console.warn(`All keys failed for model '${currentModel}'. Rotating to fallback model '${fallbackModel}'.`);
+                console.log({ type: 'AI_MONITOR', event: 'MODEL_FALLBACK', fromModel: currentModel, toModel: fallbackModel, reason: 'All keys failed' });
                 currentModel = fallbackModel;
                 currentRequest.model = fallbackModel;
                 if (currentRequest.config?.thinkingConfig && (currentModel === 'gemini-2.5-pro')) {
@@ -183,6 +191,7 @@ const executeWithModelRotation = async <T>(
                     delete currentRequest.config.thinkingConfig;
                 }
             } else {
+                console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'FAIL', model: currentModel, reason: error.message });
                 throw error;
             }
         }

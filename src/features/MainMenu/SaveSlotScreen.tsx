@@ -21,25 +21,25 @@ const QuickCreateModal: React.FC<{
     const [characterName, setCharacterName] = useState('');
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" onClick={onClose}>
-            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-xl m-4 p-6" onClick={e => e.stopPropagation()}>
-                <h3 className="text-2xl font-bold font-title text-amber-300 mb-4">Tạo Nhanh Bằng AI</h3>
-                <p className="text-sm text-gray-400 mb-4">Chỉ cần mô tả ý tưởng cốt lõi và tên nhân vật. AI sẽ tự động tạo ra một thế giới hoàn chỉnh với thể loại, bối cảnh, hệ thống thuộc tính, hệ thống cảnh giới và chương mở đầu.</p>
+            <div className="p-6 rounded-xl w-full max-w-xl m-4" style={{backgroundColor: 'var(--bg-color)', boxShadow: 'var(--shadow-raised)'}} onClick={e => e.stopPropagation()}>
+                <h3 className="text-2xl font-bold font-title text-[var(--primary-accent-color)] mb-4">Tạo Nhanh Bằng AI</h3>
+                <p className="text-sm text-[var(--text-muted-color)] mb-4">Chỉ cần mô tả ý tưởng cốt lõi và tên nhân vật. AI sẽ tự động tạo ra một thế giới hoàn chỉnh với thể loại, bối cảnh, hệ thống thuộc tính, hệ thống cảnh giới và chương mở đầu.</p>
                 <input
                     value={characterName}
                     onChange={e => setCharacterName(e.target.value)}
-                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 mb-3"
+                    className="input-neumorphic w-full mb-3"
                     placeholder="Nhập tên nhân vật chính của bạn..."
                 />
                 <textarea
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     rows={5}
-                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y"
+                    className="input-neumorphic w-full resize-y"
                     placeholder="VD: Một thế giới cyberpunk nơi tu sĩ cấy ghép linh hồn vào máy móc để trường sinh, các tập đoàn lớn là những tông môn mới, và 'linh khí' chính là dòng dữ liệu thuần khiết..."
                 />
                 <div className="mt-6 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500">Hủy</button>
-                    <button onClick={() => onGenerate(description, characterName)} disabled={!characterName.trim() || !description.trim()} className="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500 disabled:bg-gray-500">Bắt Đầu Sáng Tạo</button>
+                    <button onClick={onClose} className="btn btn-neumorphic">Hủy</button>
+                    <button onClick={() => onGenerate(description, characterName)} disabled={!characterName.trim() || !description.trim()} className="btn btn-primary">Bắt Đầu Sáng Tạo</button>
                 </div>
             </div>
         </div>
@@ -57,23 +57,23 @@ const SlotSelectionModal: React.FC<{
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" onClick={onClose}>
-            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 p-6" onClick={e => e.stopPropagation()}>
-                <h3 className="text-2xl font-bold font-title text-amber-300 mb-4 text-center">Chọn Ô Lưu Trữ Trống</h3>
+            <div className="p-6 rounded-xl w-full max-w-2xl m-4" style={{backgroundColor: 'var(--bg-color)', boxShadow: 'var(--shadow-raised)'}} onClick={e => e.stopPropagation()}>
+                <h3 className="text-2xl font-bold font-title text-[var(--primary-accent-color)] mb-4 text-center">Chọn Ô Lưu Trữ Trống</h3>
                 {emptySlots.length > 0 ? (
                     <div className="grid grid-cols-3 gap-4">
                         {emptySlots.map(slot => (
                             <button
                                 key={slot.id}
                                 onClick={() => onSelect(slot.id)}
-                                className="h-32 flex flex-col items-center justify-center text-center p-4 bg-black/20 border border-gray-600 rounded-lg hover:border-amber-400 hover:bg-amber-500/10 transition-colors"
+                                className="h-32 flex flex-col items-center justify-center text-center p-4 rounded-lg transition-colors btn-neumorphic"
                             >
-                                <FaSave className="text-4xl text-gray-400 mb-2"/>
+                                <FaSave className="text-4xl text-[var(--text-muted-color)] mb-2"/>
                                 <span className="font-bold">Ô {slot.id}</span>
                             </button>
                         ))}
                     </div>
                 ) : (
-                    <p className="text-center text-red-400">Không còn ô lưu trữ nào trống. Vui lòng xóa bớt một hành trình cũ để bắt đầu hành trình mới.</p>
+                    <p className="text-center text-[var(--error-color)]">Không còn ô lưu trữ nào trống. Vui lòng xóa bớt một hành trình cũ để bắt đầu hành trình mới.</p>
                 )}
             </div>
         </div>

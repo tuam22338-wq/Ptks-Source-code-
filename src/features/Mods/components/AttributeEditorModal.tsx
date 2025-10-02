@@ -63,35 +63,35 @@ const AttributeEditorModal: React.FC<AttributeEditorModalProps> = ({ isOpen, onC
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" style={{ animationDuration: '200ms' }} onClick={onClose}>
-            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <h3 className="text-xl font-bold p-4 border-b border-gray-700" style={{color: 'var(--primary-accent-color)'}}>{originalId ? 'Chỉnh Sửa Thuộc Tính' : 'Thêm Thuộc Tính Mới'}</h3>
+            <div className="w-full max-w-2xl m-4 max-h-[90vh] flex flex-col rounded-xl" style={{backgroundColor: 'var(--bg-color)', boxShadow: 'var(--shadow-raised)'}} onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold p-4 border-b" style={{color: 'var(--primary-accent-color)', borderColor: 'var(--shadow-light)'}}>{originalId ? 'Chỉnh Sửa Thuộc Tính' : 'Thêm Thuộc Tính Mới'}</h3>
                 <div className="p-4 overflow-y-auto space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Tên Thuộc Tính</label>
-                            <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Vd: Lực Lượng"/>
+                            <input name="name" value={formData.name} onChange={handleChange} className="input-neumorphic w-full" placeholder="Vd: Lực Lượng"/>
                         </div>
                          <div>
                             <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>ID (Mã định danh)</label>
-                            <input name="id" value={formData.id} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="vd: luc_luong"/>
+                            <input name="id" value={formData.id} onChange={handleChange} className="input-neumorphic w-full" placeholder="vd: luc_luong"/>
                         </div>
                     </div>
                      <div>
                         <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Mô Tả</label>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}} placeholder="Vd: Sức mạnh vật lý, ảnh hưởng đến sát thương..."/>
+                        <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className="input-neumorphic w-full resize-y" placeholder="Vd: Sức mạnh vật lý, ảnh hưởng đến sát thương..."/>
                     </div>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                              <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Loại Thuộc Tính</label>
-                             <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 pr-8 appearance-none" style={{color: 'var(--text-color)'}}>
+                             <select name="type" value={formData.type} onChange={handleChange} className="input-neumorphic w-full">
                                 {ATTRIBUTE_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Icon</label>
-                            <div className="flex items-center">
-                                <span className="p-2 bg-black/30 border border-gray-600 rounded-l-lg"><IconComponent className="text-xl" style={{color: 'var(--secondary-accent-color)'}}/></span>
-                                <select name="iconName" value={formData.iconName} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-r-lg px-4 py-2 pr-8 appearance-none border-l-0" style={{color: 'var(--text-color)'}}>
+                            <div className="flex items-center" style={{boxShadow: 'var(--shadow-pressed)', borderRadius: '0.5rem'}}>
+                                <span className="p-3 border-r" style={{borderColor: 'var(--shadow-light)'}}><IconComponent className="text-xl" style={{color: 'var(--secondary-accent-color)'}}/></span>
+                                <select name="iconName" value={formData.iconName} onChange={handleChange} className="input-neumorphic w-full !shadow-none !border-0">
                                     {sortedIconNames.map(iconName => <option key={iconName} value={iconName}>{iconName}</option>)}
                                 </select>
                             </div>
@@ -100,19 +100,19 @@ const AttributeEditorModal: React.FC<AttributeEditorModalProps> = ({ isOpen, onC
                     {formData.type === 'SECONDARY' && (
                         <div>
                             <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Công Thức</label>
-                            <input name="formula" value={formData.formula} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 font-mono" style={{color: 'var(--text-color)'}} placeholder="Vd: (luc_luong * 2) + (than_phap * 0.5)"/>
+                            <input name="formula" value={formData.formula} onChange={handleChange} className="input-neumorphic w-full font-mono" placeholder="Vd: (luc_luong * 2) + (than_phap * 0.5)"/>
                         </div>
                     )}
                     {(formData.type === 'PRIMARY' || formData.type === 'VITAL') && (
                         <div>
                             <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Giá Trị Cơ Bản (Base Value)</label>
-                            <input name="baseValue" type="number" value={formData.baseValue} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} />
+                            <input name="baseValue" type="number" value={formData.baseValue} onChange={handleChange} className="input-neumorphic w-full" />
                         </div>
                     )}
                 </div>
-                <div className="p-4 border-t border-gray-700 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 flex items-center gap-2"><FaTimes /> Hủy</button>
-                    <button onClick={handleSave} className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500 flex items-center gap-2"><FaSave /> Lưu</button>
+                <div className="p-4 border-t flex justify-end gap-3" style={{borderColor: 'var(--shadow-light)'}}>
+                    <button onClick={onClose} className="btn btn-neumorphic flex items-center gap-2"><FaTimes /> Hủy</button>
+                    <button onClick={handleSave} className="btn btn-primary flex items-center gap-2"><FaSave /> Lưu</button>
                 </div>
             </div>
         </div>

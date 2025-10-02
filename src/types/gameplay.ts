@@ -108,7 +108,7 @@ export interface InventoryItem {
     isEquipped?: boolean;
     slot?: EquipmentSlot;
     recipeId?: string;
-    vitalEffects?: { vital: string, value: number }[];
+    vitalEffects?: { vital: string; value: number }[];
 }
 
 export interface Inventory {

@@ -42,24 +42,24 @@ const TierBonusEditor: React.FC<{
     };
 
     return (
-        <div className="mt-3 pt-3 border-t border-gray-700/60">
+        <div className="mt-3 pt-3 border-t" style={{borderColor: 'var(--shadow-light)'}}>
             <h5 className="text-sm font-semibold mb-2" style={{color: 'var(--text-color)'}}>Thuộc Tính Cộng Thêm (Khi Đạt Đại Cảnh Giới)</h5>
             <div className="space-y-2 mb-3">
                 {(tier.bonuses || []).map((bonus, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-black/20 rounded">
-                        <span className="flex-grow text-sm" style={{color: 'var(--text-color)'}}>{bonus.attribute}: <span className="font-bold" style={{color: 'var(--success-color)'}}>{bonus.value > 0 ? `+${bonus.value}`: bonus.value}</span></span>
+                    <div key={index} className="flex items-center gap-2 p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                        <span className="flex-grow text-sm" style={{color: 'var(--text-color)'}}>{bonus.attribute}: <span className="font-bold text-[var(--success-color)]">{bonus.value > 0 ? `+${bonus.value}`: bonus.value}</span></span>
                         <button onClick={(e) => { e.stopPropagation(); handleRemoveBonus(index); }} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
                     </div>
                 ))}
             </div>
-            <div className="flex items-center gap-2 p-2 bg-black/25 border border-gray-700/60 rounded">
-                 <select name="attribute" value={newBonus.attribute} onChange={handleBonusChange} className="bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm flex-grow" style={{color: 'var(--text-color)'}}>
+            <div className="flex items-center gap-2 p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                 <select name="attribute" value={newBonus.attribute} onChange={handleBonusChange} className="input-neumorphic !py-1 text-sm flex-grow !shadow-none">
                     {attributeDefinitions.map(attr => (
                         <option key={attr.id} value={attr.name}>{attr.name}</option>
                     ))}
                 </select>
-                <input type="number" name="value" value={newBonus.value} onChange={handleBonusChange} className="w-24 bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm" style={{color: 'var(--text-color)'}} />
-                <button onClick={handleAddBonus} className="p-2 hover:text-white bg-green-900/50 rounded" style={{color: 'var(--success-color)'}}><FaPlus /></button>
+                <input type="number" name="value" value={newBonus.value} onChange={handleBonusChange} className="input-neumorphic !py-1 w-24 text-sm !shadow-none" />
+                <button onClick={handleAddBonus} className="p-2 btn-neumorphic !rounded-md"><FaPlus /></button>
             </div>
         </div>
     );
@@ -159,21 +159,21 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                 resourceUnit={systemInfo.resourceUnit}
             />
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-                <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-3xl m-4 h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                    <h3 className="text-xl font-bold p-4 border-b border-gray-700" style={{color: 'var(--primary-accent-color)'}}>Chỉnh Sửa Hệ Thống Tiến Trình</h3>
+                <div className="w-full max-w-3xl m-4 h-[90vh] flex flex-col rounded-xl" style={{backgroundColor: 'var(--bg-color)', boxShadow: 'var(--shadow-raised)'}} onClick={e => e.stopPropagation()}>
+                    <h3 className="text-xl font-bold p-4 border-b" style={{color: 'var(--primary-accent-color)', borderColor: 'var(--shadow-light)'}}>Chỉnh Sửa Hệ Thống Tiến Trình</h3>
                     <div className="p-4 overflow-y-auto space-y-3">
-                        <div className="p-3 bg-black/25 rounded-lg border border-gray-800/80 mb-3 space-y-3">
+                        <div className="neumorphic-inset-box p-3 mb-3 space-y-3">
                             <h4 className="font-bold" style={{color: 'var(--text-color)'}}>Thông Tin Hệ Thống</h4>
-                            <input value={systemInfo.name} onChange={e => handleSystemInfoChange('name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Tên Hệ Thống (Vd: Hệ Thống Hồn Sư)"/>
+                            <input value={systemInfo.name} onChange={e => handleSystemInfoChange('name', e.target.value)} className="input-neumorphic w-full" placeholder="Tên Hệ Thống (Vd: Hệ Thống Hồn Sư)"/>
                             <div className="grid grid-cols-2 gap-2">
-                                <input value={systemInfo.resourceName} onChange={e => handleSystemInfoChange('resourceName', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Tên Tài Nguyên (Vd: Hồn Lực)"/>
-                                <input value={systemInfo.resourceUnit} onChange={e => handleSystemInfoChange('resourceUnit', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} placeholder="Đơn Vị (Vd: năm, cấp)"/>
+                                <input value={systemInfo.resourceName} onChange={e => handleSystemInfoChange('resourceName', e.target.value)} className="input-neumorphic w-full" placeholder="Tên Tài Nguyên (Vd: Hồn Lực)"/>
+                                <input value={systemInfo.resourceUnit} onChange={e => handleSystemInfoChange('resourceUnit', e.target.value)} className="input-neumorphic w-full" placeholder="Đơn Vị (Vd: năm, cấp)"/>
                             </div>
-                            <textarea value={systemInfo.description} onChange={e => handleSystemInfoChange('description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}} placeholder="Mô tả hệ thống..."/>
+                            <textarea value={systemInfo.description} onChange={e => handleSystemInfoChange('description', e.target.value)} rows={2} className="input-neumorphic w-full resize-y" placeholder="Mô tả hệ thống..."/>
                         </div>
                         {tiers.map((tier, tierIndex) => (
-                            <div key={tier.id || tierIndex} className="bg-black/25 rounded-lg border border-gray-800/80">
-                                <button onClick={() => setExpandedTiers(p => ({...p, [tier.id || tierIndex]: !p[tier.id || tierIndex]}))} className="w-full flex justify-between items-center p-3 text-left hover:bg-gray-800/50">
+                            <div key={tier.id || tierIndex} className="rounded-lg" style={{boxShadow: 'var(--shadow-raised)'}}>
+                                <button onClick={() => setExpandedTiers(p => ({...p, [tier.id || tierIndex]: !p[tier.id || tierIndex]}))} className="w-full flex justify-between items-center p-3 text-left hover:bg-[var(--shadow-light)]/30 rounded-t-lg">
                                     <span className="font-bold text-lg" style={{color: 'var(--text-color)'}}>{tier.name}</span>
                                     <div className="flex items-center gap-4">
                                         <button onClick={(e) => { e.stopPropagation(); handleDeleteTier(tierIndex); }} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
@@ -181,9 +181,9 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                     </div>
                                 </button>
                                 {expandedTiers[tier.id || tierIndex] && (
-                                    <div className="p-3 border-t border-gray-800/80 space-y-3">
-                                        <input value={tier.name} onChange={e => handleTierChange(tierIndex, 'name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 mb-2" style={{color: 'var(--text-color)'}} placeholder="Tên Đại Cảnh Giới"/>
-                                        <textarea value={tier.description} onChange={e => handleTierChange(tierIndex, 'description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}} placeholder="Mô tả..."/>
+                                    <div className="p-3 border-t space-y-3" style={{borderColor: 'var(--shadow-light)'}}>
+                                        <input value={tier.name} onChange={e => handleTierChange(tierIndex, 'name', e.target.value)} className="input-neumorphic w-full mb-2" placeholder="Tên Đại Cảnh Giới"/>
+                                        <textarea value={tier.description} onChange={e => handleTierChange(tierIndex, 'description', e.target.value)} rows={2} className="input-neumorphic w-full resize-y" placeholder="Mô tả..."/>
                                         
                                         <TierBonusEditor
                                             tier={tier}
@@ -191,11 +191,11 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                             attributeDefinitions={attributeSystem.definitions}
                                         />
 
-                                        <div className="mt-4 pt-3 border-t border-gray-700/60">
+                                        <div className="mt-4 pt-3 border-t" style={{borderColor: 'var(--shadow-light)'}}>
                                             <h5 className="text-sm font-semibold mb-2" style={{color: 'var(--text-color)'}}>Các Cấp Bậc Phụ (Tiểu Cảnh Giới)</h5>
                                             <div className="space-y-2">
                                                 {tier.stages.map((subTier, subTierIndex) => (
-                                                    <div key={subTier.id || subTierIndex} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                                    <div key={subTier.id || subTierIndex} className="flex justify-between items-center p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
                                                         <div>
                                                             <p className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{subTier.name}</p>
                                                             <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>{systemInfo.resourceName}: {!isFinite(subTier.qiRequired) ? 'Vô Hạn' : (subTier.qiRequired || 0).toLocaleString()}</p>
@@ -216,13 +216,13 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                 )}
                             </div>
                         ))}
-                        <button onClick={handleAddTier} className="w-full mt-3 text-base hover:text-amber-200 flex items-center justify-center gap-2 p-2 bg-amber-900/30 rounded border border-amber-500/30" style={{color: 'var(--primary-accent-color)'}}>
+                        <button onClick={handleAddTier} className="btn btn-neumorphic w-full mt-3 text-base flex items-center justify-center gap-2 p-2">
                             <FaPlus /> Thêm Cấp Bậc Chính
                         </button>
                     </div>
-                    <div className="p-4 border-t border-gray-700 flex justify-end gap-3 mt-auto">
-                        <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 flex items-center gap-2"><FaTimes /> Hủy</button>
-                        <button onClick={handleSaveAndClose} className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500 flex items-center gap-2"><FaSave /> Lưu & Đóng</button>
+                    <div className="p-4 border-t flex justify-end gap-3 mt-auto" style={{borderColor: 'var(--shadow-light)'}}>
+                        <button onClick={onClose} className="btn btn-neumorphic flex items-center gap-2"><FaTimes /> Hủy</button>
+                        <button onClick={handleSaveAndClose} className="btn btn-primary flex items-center gap-2"><FaSave /> Lưu & Đóng</button>
                     </div>
                 </div>
             </div>

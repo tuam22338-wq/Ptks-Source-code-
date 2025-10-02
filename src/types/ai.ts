@@ -70,7 +70,7 @@ export interface ArbiterDecision {
 export interface MechanicalIntent {
     statChanges?: { attribute: string; change?: number; changeMax?: number; }[];
     currencyChanges?: { currencyName: CurrencyType; change: number; }[];
-    itemsGained?: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; weight: number; bonuses?: StatBonus[] }[];
+    itemsGained?: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; weight: number; bonuses?: StatBonus[]; vitalEffects?: { vital: string, value: number }[]; slot?: string; }[];
     itemsLost?: { name: string; quantity: number; }[];
     newTechniques?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel' | 'effects'>[];
     newQuests?: Partial<ActiveQuest>[];
@@ -85,6 +85,7 @@ export interface MechanicalIntent {
     realmChange?: string; // ID of the new realm after breakthrough
     stageChange?: string; // ID of the new stage after breakthrough
     dialogueState?: { status: 'START' | 'END'; npcName?: string };
+    knownRecipeIdsGained?: string[];
 }
 
 export interface AIResponsePayload {

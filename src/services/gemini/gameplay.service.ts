@@ -191,10 +191,12 @@ Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối
         temperature: settings.temperature,
         topK: settings.topK,
         topP: settings.topP,
+        maxOutputTokens: 8192,
     };
     
     if (model === 'gemini-2.5-flash') {
-        generationConfig.thinkingConfig = { thinkingBudget: settings.enableThinking ? settings.thinkingBudget : 0 };
+        const thinkingBudget = settings.enableThinking ? settings.thinkingBudget : 0;
+        generationConfig.thinkingConfig = { thinkingBudget: Math.min(thinkingBudget, 4096) };
     }
     
     const stream = await generateWithRetryStream({ model, contents: prompt, config: generationConfig }, specificApiKey);

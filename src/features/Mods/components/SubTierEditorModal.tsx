@@ -70,12 +70,12 @@ const SubTierEditorModal: React.FC<SubTierEditorModalProps> = ({ isOpen, onClose
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-xl m-4 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-                <h3 className="text-xl font-bold p-4 border-b border-gray-700" style={{color: 'var(--primary-accent-color)'}}>{subTier ? 'Chỉnh Sửa Cấp Bậc Phụ' : 'Thêm Cấp Bậc Phụ'}</h3>
+            <div className="w-full max-w-xl m-4 max-h-[90vh] flex flex-col rounded-xl" style={{backgroundColor: 'var(--bg-color)', boxShadow: 'var(--shadow-raised)'}} onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold p-4 border-b" style={{color: 'var(--primary-accent-color)', borderColor: 'var(--shadow-light)'}}>{subTier ? 'Chỉnh Sửa Cấp Bậc Phụ' : 'Thêm Cấp Bậc Phụ'}</h3>
                 <div className="p-4 overflow-y-auto space-y-4">
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>Tên</label>
-                        <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2" style={{color: 'var(--text-color)'}} />
+                        <input name="name" value={formData.name} onChange={handleChange} className="input-neumorphic w-full" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>{resourceName} Yêu Cầu ({resourceUnit})</label>
@@ -84,8 +84,7 @@ const SubTierEditorModal: React.FC<SubTierEditorModalProps> = ({ isOpen, onClose
                             type="text"
                             value={!isFinite(formData.qiRequired) ? 'Infinity' : formData.qiRequired}
                             onChange={handleChange}
-                            className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2"
-                            style={{color: 'var(--text-color)'}}
+                            className="input-neumorphic w-full"
                             placeholder="Nhập số, hoặc 'Infinity'"
                         />
                     </div>
@@ -96,8 +95,7 @@ const SubTierEditorModal: React.FC<SubTierEditorModalProps> = ({ isOpen, onClose
                             value={formData.breakthroughRequirements || ''}
                             onChange={handleChange}
                             rows={3}
-                            className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y"
-                            style={{color: 'var(--text-color)'}}
+                            className="input-neumorphic w-full resize-y"
                             placeholder="Nếu được điền, quy tắc này sẽ được ưu tiên hơn yêu cầu về tài nguyên. Vd: Cần hấp thụ một 'Hồn Hoàn' vạn năm."
                         />
                     </div>
@@ -105,26 +103,26 @@ const SubTierEditorModal: React.FC<SubTierEditorModalProps> = ({ isOpen, onClose
                         <h4 className="text-base font-semibold mb-2" style={{color: 'var(--text-color)'}}>Thuộc Tính Cộng Thêm</h4>
                         <div className="space-y-2 mb-3">
                             {formData.bonuses.map((bonus, index) => (
-                                <div key={index} className="flex items-center gap-2 p-2 bg-black/20 rounded">
-                                    <span className="flex-grow text-sm" style={{color: 'var(--text-color)'}}>{bonus.attribute}: <span className="font-bold" style={{color: 'var(--success-color)'}}>{bonus.value > 0 ? `+${bonus.value}`: bonus.value}</span></span>
+                                <div key={index} className="flex items-center gap-2 p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                                    <span className="flex-grow text-sm" style={{color: 'var(--text-color)'}}>{bonus.attribute}: <span className="font-bold text-[var(--success-color)]">{bonus.value > 0 ? `+${bonus.value}`: bonus.value}</span></span>
                                     <button onClick={() => handleRemoveBonus(index)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex items-center gap-2 p-2 bg-black/25 border border-gray-700/60 rounded">
-                             <select name="attribute" value={newBonus.attribute} onChange={handleBonusChange} className="bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm flex-grow" style={{color: 'var(--text-color)'}}>
+                        <div className="flex items-center gap-2 p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                             <select name="attribute" value={newBonus.attribute} onChange={handleBonusChange} className="input-neumorphic !py-1 text-sm flex-grow !shadow-none">
                                 {attributeDefinitions.map(attr => (
                                     <option key={attr.id} value={attr.name}>{attr.name}</option>
                                 ))}
                             </select>
-                            <input type="number" name="value" value={newBonus.value} onChange={handleBonusChange} className="w-24 bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm" style={{color: 'var(--text-color)'}} />
-                            <button onClick={handleAddBonus} className="p-2 hover:text-white bg-green-900/50 rounded" style={{color: 'var(--success-color)'}}><FaPlus /></button>
+                            <input type="number" name="value" value={newBonus.value} onChange={handleBonusChange} className="input-neumorphic !py-1 w-24 text-sm !shadow-none" />
+                            <button onClick={handleAddBonus} className="btn btn-neumorphic !p-2"><FaPlus /></button>
                         </div>
                     </div>
                 </div>
-                <div className="p-4 border-t border-gray-700 flex justify-end gap-3 mt-auto">
-                    <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 flex items-center gap-2"><FaTimes /> Hủy</button>
-                    <button onClick={handleSave} className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500 flex items-center gap-2"><FaSave /> Lưu</button>
+                <div className="p-4 border-t flex justify-end gap-3 mt-auto" style={{borderColor: 'var(--shadow-light)'}}>
+                    <button onClick={onClose} className="btn btn-neumorphic flex items-center gap-2"><FaTimes /> Hủy</button>
+                    <button onClick={handleSave} className="btn btn-primary flex items-center gap-2"><FaSave /> Lưu</button>
                 </div>
             </div>
         </div>

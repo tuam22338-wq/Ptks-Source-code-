@@ -127,6 +127,15 @@ export const applyMechanicalChanges = (
             });
         });
     }
+
+    if (intent.knownRecipeIdsGained) {
+        intent.knownRecipeIdsGained.forEach(recipeId => {
+            if (!pc.knownRecipeIds.includes(recipeId)) {
+                pc.knownRecipeIds.push(recipeId);
+                showNotification(`Đã học được công thức mới!`);
+            }
+        });
+    }
     
     if (intent.newTechniques) {
         intent.newTechniques.forEach(techData => {

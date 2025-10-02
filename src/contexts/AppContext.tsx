@@ -1,4 +1,6 @@
 
+
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -475,7 +477,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const finalGameState = await migrateGameState(newGameState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
             // FIX: The 'error' object in a catch block is of type 'unknown'. It must be explicitly cast to a string before being passed to the Error constructor to satisfy type requirements.
             throw new Error(String(error));
