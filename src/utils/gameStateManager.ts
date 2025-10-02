@@ -1,4 +1,4 @@
-import { FaQuestionCircle } from 'react-icons/fa';
+
 import {
     REALM_SYSTEM,
     DEFAULT_ATTRIBUTE_DEFINITIONS,

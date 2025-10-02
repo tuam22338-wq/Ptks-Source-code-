@@ -515,7 +515,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: state.currentSlotId } });
         } catch (error) {
             // Re-throw the error so the calling UI component can catch it and display it.
-            // FIX: Always throw an Error object for better error handling downstream.
+            // FIX: Always throw an Error object for better error handling downstream. The caught 'error' is of type 'unknown' and must be cast to a string.
             throw new Error(String(error));
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
@@ -586,7 +586,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Failed during custom world creation:", error);
-            // FIX: Ensure a proper Error object is thrown. The 'unknown' type from a catch block is not assignable to the 'string' parameter of the Error constructor without casting.
+            // FIX: Cast the caught 'error' (type 'unknown') to a string before creating a new Error to resolve the type mismatch, as indicated by the error on line 341.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
@@ -647,7 +647,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // FIX: Always throw an Error object for better error handling downstream.
+            // FIX: Cast the caught 'error' (type 'unknown') to a string before creating a new Error to resolve the type mismatch.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);

@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode, WorldTurnEntry } from '../../types';
@@ -5,7 +6,6 @@ import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpc
 import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
 import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
-import { FaQuestionCircle } from "react-icons/fa";
 
 interface NpcActionOutcome {
     narrative: string;
