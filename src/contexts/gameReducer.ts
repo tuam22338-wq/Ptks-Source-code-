@@ -22,6 +22,7 @@ export interface AppState {
     // State for Novelist AI feature
     novels: Novel[];
     activeNovelId: number | null;
+    settingsSavingStatus: 'idle' | 'saving' | 'saved';
 }
 
 // Define action types
@@ -56,7 +57,8 @@ export type Action =
   | { type: 'SET_ACTIVE_NOVEL_ID'; payload: number | null }
   | { type: 'UPDATE_NOVEL'; payload: Novel }
   // FIX: Add action to set current slot ID
-  | { type: 'SET_CURRENT_SLOT_ID'; payload: number | null };
+  | { type: 'SET_CURRENT_SLOT_ID'; payload: number | null }
+  | { type: 'SET_SETTINGS_SAVING_STATUS'; payload: 'idle' | 'saving' | 'saved' };
 
 
 // The reducer function
@@ -223,6 +225,9 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
         
         case 'SET_CURRENT_SLOT_ID':
             return { ...state, currentSlotId: action.payload };
+
+        case 'SET_SETTINGS_SAVING_STATUS':
+            return { ...state, settingsSavingStatus: action.payload };
 
         default:
             return state;

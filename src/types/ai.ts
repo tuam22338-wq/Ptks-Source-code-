@@ -84,6 +84,7 @@ export interface MechanicalIntent {
     dialogueChoices?: EventChoice[];
     realmChange?: string; // ID of the new realm after breakthrough
     stageChange?: string; // ID of the new stage after breakthrough
+    dialogueState?: { status: 'START' | 'END'; npcName?: string };
 }
 
 export interface AIResponsePayload {

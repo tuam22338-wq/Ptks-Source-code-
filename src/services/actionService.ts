@@ -1,5 +1,5 @@
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload, ArbiterDecision } from '../types';
-import { decideAction, generateActionResponseStream } from './geminiService';
+import { generateActionResponseStream } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
 import { simulateWorldTurn } from './worldSimulator';
 import * as questManager from '../utils/questManager';
@@ -32,72 +32,21 @@ export const processPlayerAction = async (
         stateAfterSim = simResult.newState;
         if (simResult.rumors.length > 0) {
              const rumorText = `[Thế Giới Vận Chuyển] ${simResult.rumors.map(r => r.text).join(' ')}`;
-             // This needs to be added to the log later, as we don't have the final log yet.
-             // For now, we'll just show a notification.
              showNotification(rumorText);
         }
     }
 
     const rawMemoryContext = await retrieveMemoryContext(text, stateAfterSim, currentSlotId);
 
-    // --- GIAI ĐOẠN 1: TRỌNG TÀI AI PHÂN LOẠI HÀNH ĐỘNG ---
-    let arbiterHint = '';
-    let actionTextForNarrator = text;
-    let actionTypeForNarrator = type;
-    let functionCalls;
-
-    try {
-        functionCalls = await decideAction(text, stateAfterSim);
-        if (functionCalls && functionCalls.length > 0) {
-            const primaryCall = functionCalls[0];
-
-            switch (primaryCall.name) {
-                case 'handle_dialogue':
-                    {
-                        arbiterHint = `[Gợi ý từ Trọng Tài AI: Đây là một hành động GIAO TIẾP. Hãy tập trung vào cuộc hội thoại giữa người chơi và ${primaryCall.args.target_npc_name}.]`;
-                        actionTextForNarrator = primaryCall.args.dialogue_content;
-                        actionTypeForNarrator = 'say';
-
-                        const targetNpc = stateAfterSim.activeNpcs.find(n => n.identity.name === primaryCall.args.target_npc_name);
-                        if (targetNpc) {
-                            if (stateAfterSim.dialogueWithNpcId !== targetNpc.id) {
-                                // Start of a new conversation
-                                stateAfterSim.dialogueWithNpcId = targetNpc.id;
-                                stateAfterSim.dialogueHistory = [];
-                            }
-                            // Add player's line to history
-                            stateAfterSim.dialogueHistory?.push({ speaker: 'player', content: actionTextForNarrator });
-                        }
-                    }
-                    break;
-                case 'handle_system_action':
-                    arbiterHint = `[Gợi ý từ Trọng Tài AI: Đây là một hành động HỆ THỐNG (${primaryCall.args.action_type}). Hãy xử lý logic cơ chế của nó (ví dụ: kiểm tra công thức, nguyên liệu) và tường thuật lại kết quả.]`;
-                    actionTextForNarrator = `Thực hiện hành động hệ thống: ${primaryCall.args.details}`;
-                    break;
-                case 'handle_combat_action':
-                    arbiterHint = `[Gợi ý từ Trọng Tài AI: Đây là một hành động CHIẾN ĐẤU. Hãy mô tả hành động một cách kịch tính trong bối cảnh trận chiến hiện tại.]`;
-                    actionTextForNarrator = primaryCall.args.combat_move;
-                    break;
-                case 'handle_narration':
-                default:
-                    arbiterHint = `[Gợi ý từ Trọng Tài AI: Đây là một hành động TƯỜNG THUẬT. Hãy tập trung mô tả môi trường, sự di chuyển, và kết quả khám phá.]`;
-                    actionTextForNarrator = primaryCall.args.action_description;
-                    break;
-            }
-        }
-    } catch (e) {
-        console.error("Arbiter AI failed:", e);
-        // If arbiter fails, just proceed without a hint.
-    }
-
-    // --- GIAI ĐOẠN 1.5: GỌI AI HỢP NHẤT (VỚI GỢI Ý) ---
+    // --- GIAI ĐOẠN 1: GỌI AI HỢP NHẤT ---
+    // The decideAction call has been removed. The main narrative AI now handles intent detection.
+    
     const stream = generateActionResponseStream(
         stateAfterSim, 
-        actionTextForNarrator, 
-        actionTypeForNarrator, 
+        text, 
+        type, 
         rawMemoryContext, 
-        settings,
-        arbiterHint
+        settings
     );
 
     let fullResponseJsonString = '';
@@ -119,7 +68,6 @@ export const processPlayerAction = async (
                 content = content.substring(0, intentIndex);
             }
             
-            // Basic unescaping for display
             const unescapedContent = content
                 .replace(/\\n/g, '\n')
                 .replace(/\\"/g, '"')
@@ -136,11 +84,6 @@ export const processPlayerAction = async (
     } catch (e) {
         console.error("Lỗi phân tích JSON từ AI:", e, "\nNội dung JSON:", fullResponseJsonString);
         throw new Error("AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
-    }
-    
-    // If it was a dialogue action, add AI's response to history
-    if (stateAfterSim.dialogueWithNpcId && functionCalls && functionCalls[0].name === 'handle_dialogue') {
-        stateAfterSim.dialogueHistory?.push({ speaker: stateAfterSim.dialogueWithNpcId, content: aiPayload.narrative });
     }
     
     const { validatedIntent, validationNotifications } = validateMechanicalChanges(aiPayload.mechanicalIntent, stateAfterSim);
@@ -163,15 +106,6 @@ export const processPlayerAction = async (
     await addEntryToMemory(narrativeEntryWithId, finalState, currentSlotId);
     
     // --- GIAI ĐOẠN 3: XỬ LÝ HẬU KỲ & DỌN DẸP ---
-    
-    // End conversation if the action was not a dialogue action
-    const primaryCallName = functionCalls && functionCalls[0] ? functionCalls[0].name : 'handle_narration';
-    if (finalState.dialogueWithNpcId && primaryCallName !== 'handle_dialogue') {
-        finalState.dialogueWithNpcId = null;
-        finalState.dialogueHistory = [];
-        showNotification("Kết thúc cuộc trò chuyện.");
-    }
-
     const finalQuestCheck = questManager.processQuestUpdates(finalState);
     finalQuestCheck.notifications.forEach(showNotification);
     let finalStateForReturn = finalQuestCheck.newState;

@@ -12,8 +12,6 @@ export * from './gemini/combat.service';
 // interaction.service's main function is deprecated and merged into gameplay.service
 // export * from './gemini/interaction.service';
 export * from './gemini/planning.service';
-// Arbiter service is deprecated and merged into gameplay.service
-// export * from './gemini/arbiter.service';
 export * from './gemini/faction.service';
 export * from './gemini/novel.service';
 export * from './gemini/heuristic.service';

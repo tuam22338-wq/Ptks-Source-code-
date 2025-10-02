@@ -93,6 +93,7 @@ const initialState: AppState = {
     // State for Novelist AI
     novels: [],
     activeNovelId: null,
+    settingsSavingStatus: 'idle',
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
@@ -360,6 +361,53 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'UPDATE_SETTING', payload: { key, value } });
     }, []);
 
+    // --- TỰ ĐỘNG LƯU CÀI ĐẶT ---
+    const performSaveSettings = useCallback(async () => {
+        dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'saving' });
+        try {
+            await db.saveSettings(state.settings);
+            apiKeyManager.updateKeys(state.settings.apiKeys || []);
+            apiKeyManager.updateModelRotationSetting(state.settings.enableAutomaticModelRotation);
+            
+            console.log('Settings auto-saved successfully.');
+            dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'saved' });
+            setTimeout(() => dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'idle' }), 2000);
+        } catch (error) {
+            console.error("Failed to auto-save settings to DB", error);
+            dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'idle' });
+        }
+    }, [state.settings]);
+
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hasLoadedInitialSettings = useRef(false);
+
+    useEffect(() => {
+        if (state.isMigratingData) {
+            return;
+        }
+        if (!hasLoadedInitialSettings.current) {
+            hasLoadedInitialSettings.current = true;
+            return; 
+        }
+        
+        dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'idle' });
+
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        saveTimeoutRef.current = setTimeout(() => {
+            performSaveSettings();
+        }, 1000);
+
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [state.settings, state.isMigratingData, performSaveSettings]);
+    // --- KẾT THÚC LOGIC TỰ ĐỘNG LƯU ---
+
     const handleDynamicBackgroundChange = async (themeId: string) => {
         handleSettingChange('dynamicBackground', themeId);
         if (themeId === 'none') return;
@@ -380,17 +428,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     };
 
     const handleSettingsSave = useCallback(async () => {
-        try {
-            await db.saveSettings(state.settings);
-            apiKeyManager.updateKeys(state.settings.apiKeys || []);
-            apiKeyManager.updateModelRotationSetting(state.settings.enableAutomaticModelRotation);
-            await updateStorageUsage();
-            alert('Cài đặt đã được lưu!');
-        } catch (error) {
-            console.error("Failed to save settings to DB", error);
-            alert('Lỗi: Không thể lưu cài đặt.');
-        }
-    }, [state.settings, updateStorageUsage]);
+        // This function is now deprecated due to auto-save, but kept for context type compatibility.
+        console.log("Manual save called, but auto-save is active.");
+    }, []);
 
     const handleSlotSelection = useCallback((slotId: number) => {
         const selectedSlot = state.saveSlots.find(s => s.id === slotId);
@@ -475,7 +515,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: state.currentSlotId } });
         } catch (error) {
             // Re-throw the error so the calling UI component can catch it and display it.
-            throw error;
+            // FIX: Always throw an Error object for better error handling downstream.
+            throw new Error(String(error));
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
 
@@ -543,9 +584,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const finalGameState = await migrateGameState(hydratedState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
 
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed during custom world creation:", error);
-            // FIX: The caught 'error' is of type 'unknown' or 'any'. To safely create a new Error with a message, it must first be converted to a string by using `String(error)`. This resolves the TypeScript error where an argument of type 'unknown' cannot be assigned to a parameter of type 'string'.
+            // FIX: Ensure a proper Error object is thrown. The 'unknown' type from a catch block is not assignable to the 'string' parameter of the Error constructor without casting.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
@@ -606,7 +647,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            throw error;
+            // FIX: Always throw an Error object for better error handling downstream.
+            throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);
 

@@ -2,7 +2,7 @@ import React, { memo, useRef, useState, useEffect } from 'react';
 import type { GameSettings, FullMod, GenerationMode, NovelContentEntry } from '../../types';
 import { summarizeLargeTextForWorldGen, generateWorldFromText, chatWithGameMaster } from '../../services/gemini/modding.service';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { FaFileUpload, FaDownload, FaBrain, FaArrowLeft, FaComments, FaDatabase, FaCog, FaTimes, FaPaperPlane, FaUserCircle, FaLightbulb, FaCopy } from 'react-icons/fa';
+import { FaFileUpload, FaDownload, FaBrain, FaArrowLeft, FaComments, FaDatabase, FaCog, FaTimes, FaPaperPlane, FaUserCircle, FaLightbulb, FaCopy, FaCheckCircle } from 'react-icons/fa';
 import { GiSparkles } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import { PROMPT_TEMPLATES, PromptTemplate } from '../../data/promptTemplates';
@@ -428,7 +428,7 @@ const PromptEngineeringPanel: React.FC<{
 // --- Main Screen ---
 
 const AiTrainingScreen: React.FC = () => {
-    const { handleNavigate, handleSettingsSave } = useAppContext();
+    const { handleNavigate, state } = useAppContext();
     const [activeTab, setActiveTab] = useState<ActiveTab>('gm');
     const [userInputForGM, setUserInputForGM] = useState('');
 
@@ -468,8 +468,17 @@ const AiTrainingScreen: React.FC = () => {
                 )}
             </div>
             
-            <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-end">
-                <button onClick={handleSettingsSave} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30">Lưu Cài Đặt</button>
+            <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-end items-center" style={{ minHeight: '52px' }}>
+                {state.settingsSavingStatus === 'saving' && (
+                    <div className="text-sm flex items-center gap-2" style={{color: 'var(--text-muted-color)'}}>
+                        <LoadingSpinner size="sm" /> Đang lưu...
+                    </div>
+                )}
+                {state.settingsSavingStatus === 'saved' && (
+                    <div className="text-sm flex items-center gap-2" style={{color: 'var(--success-color)'}}>
+                        <FaCheckCircle /> Đã lưu tự động
+                    </div>
+                )}
             </div>
         </div>
     );

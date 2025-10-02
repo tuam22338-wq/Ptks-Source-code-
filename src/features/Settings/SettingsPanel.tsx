@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import type { GameSettings } from '../../types';
-import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaPenFancy } from 'react-icons/fa';
+import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaPenFancy, FaCheckCircle } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import RagSourceManagerModal from './RagSourceManagerModal';
@@ -11,6 +11,7 @@ import AiModelSettings from './tabs/AiModelSettings';
 import RagSettings from './tabs/RagSettings';
 import SafetySettings from './tabs/SafetySettings';
 import AdvancedSettings from './tabs/AdvancedSettings';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'advanced';
 
@@ -31,7 +32,7 @@ const TabButton: React.FC<{
 ));
 
 export const SettingsPanel: React.FC = () => {
-    const { state, handleNavigate, handleSettingsSave, handleSettingChange } = useAppContext();
+    const { state, handleNavigate, handleSettingChange } = useAppContext();
     const { settings } = state;
     const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
     const [isRagManagerOpen, setIsRagManagerOpen] = useState(false);
@@ -65,8 +66,17 @@ export const SettingsPanel: React.FC = () => {
                 {activeTab === 'advanced' && <AdvancedSettings settings={settings} handleSettingChange={handleSettingChange} />}
             </div>
 
-            <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-end">
-                <button onClick={handleSettingsSave} className="px-6 py-2 bg-[var(--button-primary-bg)] text-[var(--primary-accent-text-color)] border border-[var(--button-primary-border)] rounded-md font-semibold transition-all duration-200 ease-in-out hover:bg-[var(--button-primary-hover-bg)] hover:-translate-y-0.5 shadow-md shadow-black/30">Lưu Cài Đặt</button>
+            <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-end items-center" style={{ minHeight: '52px' }}>
+                {state.settingsSavingStatus === 'saving' && (
+                    <div className="text-sm flex items-center gap-2" style={{color: 'var(--text-muted-color)'}}>
+                        <LoadingSpinner size="sm" /> Đang lưu...
+                    </div>
+                )}
+                {state.settingsSavingStatus === 'saved' && (
+                    <div className="text-sm flex items-center gap-2" style={{color: 'var(--success-color)'}}>
+                        <FaCheckCircle /> Đã lưu tự động
+                    </div>
+                )}
             </div>
         </div>
     );

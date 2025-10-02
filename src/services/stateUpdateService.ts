@@ -50,6 +50,25 @@ export const applyMechanicalChanges = (
 
     // Clear previous interaction states first.
     nextState.dialogueChoices = null;
+    
+    // Handle dialogue state changes first
+    if (intent.dialogueState) {
+        if (intent.dialogueState.status === 'START' && intent.dialogueState.npcName) {
+            const targetNpc = nextState.activeNpcs.find((n: NPC) => n.identity.name === intent.dialogueState.npcName);
+            if (targetNpc) {
+                nextState.dialogueWithNpcId = targetNpc.id;
+                nextState.dialogueHistory = []; // Start fresh history
+                showNotification(`Bắt đầu trò chuyện với ${targetNpc.identity.name}.`);
+            }
+        } else if (intent.dialogueState.status === 'END') {
+            if (nextState.dialogueWithNpcId) {
+                nextState.dialogueWithNpcId = null;
+                nextState.dialogueHistory = [];
+                showNotification("Kết thúc cuộc trò chuyện.");
+            }
+        }
+    }
+
 
     if (intent.dialogueChoices && intent.dialogueChoices.length > 0) {
         nextState.dialogueChoices = intent.dialogueChoices;
