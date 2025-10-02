@@ -67,6 +67,18 @@ export const DEFAULT_SETTINGS: GameSettings = {
     fontFamily: "'Noto Serif', serif",
     // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the assignment error here.
     theme: 'theme-bich-du-cung',
+    customThemeColors: {
+        '--bg-color': '#2A3F3A',
+        '--text-color': '#E0EFEA',
+        '--text-muted-color': '#8AA39A',
+        '--primary-accent-color': '#A0DEC4',
+        '--primary-accent-text-color': '#1C2925',
+        '--secondary-accent-color': '#82e9de',
+        '--panel-border-color': '#38554F',
+        '--input-focus-ring-color': '#A0DEC4',
+        '--shadow-light': '#38554F',
+        '--shadow-dark': '#1C2925',
+    },
     dynamicBackground: 'mystic_violet',
     zoomLevel: 55,
     textColor: '#e0e0e0',

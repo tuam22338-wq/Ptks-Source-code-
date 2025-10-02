@@ -129,7 +129,7 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                     </p>
                 </div>
             </SettingsRow>
-            <SettingsRow label="Thiên Đạo Trật Tự Giám" description="Bật AI chạy ngầm để tự động phát hiện và sửa các lỗi logic trong game state (ví dụ: chỉ số âm, nhiệm vụ kẹt). Có thể làm chậm một chút sau mỗi hành động.">
+            <SettingsRow label="Thiên Đạo Trật Tự Giám" description="Bật hệ thống tự động phát hiện và sửa các lỗi dữ liệu đơn giản (ví dụ: chỉ số âm, máu cao hơn mức tối đa).">
                 <div className="flex flex-col gap-2">
                     <label className="flex items-center cursor-pointer">
                         <input type="checkbox" checked={settings.enableHeuristicFixerAI} onChange={e => handleSettingChange('enableHeuristicFixerAI', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />

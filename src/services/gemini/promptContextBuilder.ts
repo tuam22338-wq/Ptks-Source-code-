@@ -4,7 +4,7 @@ import { createModContextSummary } from '../../utils/modManager';
 
 // FIX: Add 'settings' parameter to the function signature, remove incorrect access from gameState, and add missing return statement.
 export const createFullGameStateContext = (gameState: GameState, settings: GameSettings, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
-  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, realmSystem, realmSystemInfo } = gameState;
+  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, realmSystem, realmSystemInfo, dialogueWithNpcId, dialogueHistory } = gameState;
   const playerAiHooks = gameState.playerCharacter.playerAiHooks;
   let playerRulesContext = '';
   if (playerAiHooks) {
@@ -98,6 +98,22 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
         }
     }
 
+  let dialogueContext = '';
+  if (dialogueWithNpcId) {
+      const npc = activeNpcs.find(n => n.id === dialogueWithNpcId);
+      if (npc) {
+          dialogueContext = `
+### BỐI CẢNH HỘI THOẠI (ƯU TIÊN CAO) ###
+- **Bạn đang nói chuyện với:** ${npc.identity.name} (${npc.status}).
+- **Tính cách NPC:** ${npc.identity.personality}.
+- **Động lực NPC:** ${npc.motivation}.
+- **Cảm xúc NPC với bạn:** Tin tưởng(${npc.emotions.trust}), Sợ hãi(${npc.emotions.fear}), Tức giận(${npc.emotions.anger}).
+- **Lịch sử trò chuyện gần đây:**
+${(dialogueHistory || []).map(h => `  - ${h.speaker === 'player' ? playerCharacter.identity.name : npc.identity.name}: ${h.content}`).join('\n')}
+`;
+      }
+  }
+
 
   const combatContext = combatState ? `
 ### TRẠNG THÁI CHIẾN ĐẤU ###
@@ -140,6 +156,7 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
   return `
 ### BỐI CẢNH GAME TOÀN CỤC ###
 ${modContext}
+${dialogueContext}
 ${playerRulesContext}
 **Thời gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen}). Thời tiết: ${gameDate.weather}.
 **Nhân Vật Chính: ${playerCharacter.identity.name}**
@@ -149,7 +166,8 @@ ${playerRulesContext}
 - **Danh Vọng:** ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value}).
 - **Tiền tệ:** ${currencySummary || 'Không có'}.
 - **Trang bị:** ${equipmentSummary || 'Không có'}.
-- **Nhiệm vụ:**\n${questSummary}
+- **Nhiệm vụ:**
+${questSummary}
 - **Quan hệ phe phái:** ${reputationSummary}.
 
 **Bối Cảnh Hiện Tại:**

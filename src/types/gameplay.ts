@@ -432,6 +432,14 @@ export interface WorldCreationData extends GameplaySettings {
     customFactions: Faction[];
 }
 
+export interface WorldTurnEntry {
+    id: string;
+    gameDate: GameDate;
+    npcId: string;
+    npcName: string;
+    narrative: string;
+}
+
 export interface GameState {
     version?: string;
     activeWorldId: string;
@@ -461,6 +469,7 @@ export interface GameState {
     activeStory: ActiveStoryState | null;
     combatState: CombatState | null;
     dialogueWithNpcId: string | null;
+    dialogueHistory?: { speaker: string; content: string }[];
     dialogueChoices: EventChoice[] | null;
     worldSects?: Sect[];
     eventIllustrations?: { eventId: string; imageUrl: string; narrative: string }[];
@@ -477,6 +486,7 @@ export interface GameState {
         factionGenerationMode?: DataGenerationMode;
     };
     gameplaySettings: GameplaySettings;
+    worldTurnLog?: WorldTurnEntry[];
 }
 
 // --- Gameplay Event Types ---

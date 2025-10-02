@@ -1,4 +1,4 @@
-import { Type } from "@google/genai";
+import { Type, FunctionDeclaration } from "@google/genai";
 import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
 import * as db from '../dbService';
@@ -6,12 +6,125 @@ import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 import { createAiHooksInstruction } from '../../utils/modManager';
 import { createFullGameStateContext } from './promptContextBuilder';
 
+// --- ARBITER AI (Giai đoạn 1 Tái cấu trúc) ---
+const arbiterFunctionDeclarations: FunctionDeclaration[] = [
+    {
+        name: 'handle_narration',
+        description: 'Xử lý các hành động tường thuật chung, khám phá, di chuyển, hoặc bất kỳ hành động nào không thuộc các chức năng chuyên biệt khác.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                action_description: {
+                    type: Type.STRING,
+                    description: 'Mô tả lại hành động của người chơi dưới dạng một câu tường thuật. Ví dụ: "người chơi quyết định khám phá khu rừng" hoặc "nhân vật đi đến thành phố gần nhất".'
+                }
+            },
+            required: ['action_description']
+        }
+    },
+    {
+        name: 'handle_dialogue',
+        description: 'Xử lý các hành động liên quan đến giao tiếp, nói chuyện, hỏi, hoặc tương tác xã hội với một NPC cụ thể.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                target_npc_name: {
+                    type: Type.STRING,
+                    description: 'Tên của NPC mà người chơi muốn tương tác. Nếu không rõ, có thể là "người lạ", "lão nông", etc.'
+                },
+                dialogue_content: {
+                    type: Type.STRING,
+                    description: 'Nội dung câu nói hoặc câu hỏi của người chơi.'
+                }
+            },
+            required: ['target_npc_name', 'dialogue_content']
+        }
+    },
+    {
+        name: 'handle_system_action',
+        description: 'Xử lý các hành động có tính cơ chế cao, được hệ thống game định nghĩa trước. Ví dụ: chế tạo, luyện đan, nâng cấp, mở túi đồ, tu luyện, đột phá.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                action_type: {
+                    type: Type.STRING,
+                    enum: ['CRAFTING', 'INVENTORY', 'CULTIVATION', 'BREAKTHROUGH', 'UPGRADE_CAVE'],
+                    description: 'Loại hành động hệ thống.'
+                },
+                details: {
+                    type: Type.STRING,
+                    description: 'Chi tiết về hành động, ví dụ: tên vật phẩm cần chế, tên kỹ năng cần tu luyện.'
+                }
+            },
+            required: ['action_type', 'details']
+        }
+    },
+    {
+        name: 'handle_combat_action',
+        description: 'Xử lý các hành động liên quan trực tiếp đến chiến đấu, tấn công, phòng thủ, sử dụng kỹ năng trong một trận chiến.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                combat_move: {
+                    type: Type.STRING,
+                    description: 'Mô tả hành động chiến đấu của người chơi, ví dụ: "tung một cú đấm vào kẻ địch", "sử dụng Hỏa Cầu Thuật".'
+                }
+            },
+            required: ['combat_move']
+        }
+    }
+];
+
+/**
+ * Giai đoạn 1: Trọng Tài AI.
+ * Phân loại ý định của người chơi và trả về một FunctionCall để các service khác xử lý.
+ */
+export const decideAction = async (userInput: string, gameState: GameState) => {
+    const { playerCharacter, gameDate, discoveredLocations, activeNpcs } = gameState;
+    const currentLocation = discoveredLocations.find(l => l.id === playerCharacter.currentLocationId);
+    const npcsHere = activeNpcs.filter(npc => npc.locationId === playerCharacter.currentLocationId).map(npc => npc.identity.name);
+
+    const prompt = `Bạn là Trọng Tài AI, bộ não trung tâm của game. Nhiệm vụ của bạn là phân loại ý định của người chơi và gọi đúng chức năng chuyên biệt để xử lý. Đừng tự mình trả lời hay tường thuật.
+
+**Bối cảnh:**
+- Người chơi: ${playerCharacter.identity.name}
+- Vị trí: ${currentLocation?.name}
+- NPC có mặt: ${npcsHere.join(', ') || 'Không có ai'}
+- Trạng thái chiến đấu: ${gameState.combatState ? 'Đang trong trận chiến' : 'Bình thường'}
+
+**Hành động người chơi:** "${userInput}"
+
+Hãy phân tích hành động trên và gọi một trong các chức năng sau: \`handle_narration\`, \`handle_dialogue\`, \`handle_system_action\`, \`handle_combat_action\`.`;
+
+    const settings = await db.getSettings();
+    const model = settings?.actionAnalysisModel || 'gemini-2.5-flash';
+    const specificApiKey = settings?.modelApiKeyAssignments?.actionAnalysisModel;
+
+    const response = await generateWithRetry({
+        model,
+        contents: prompt,
+        config: {
+            tools: [{ functionDeclarations: arbiterFunctionDeclarations }],
+        }
+    }, specificApiKey);
+    
+    if (!response.functionCalls || response.functionCalls.length === 0) {
+        // Fallback if function calling fails
+        console.warn("Arbiter AI failed to return a function call. Falling back to narration.");
+        return [{ name: 'handle_narration', args: { action_description: userInput } }];
+    }
+    
+    return response.functionCalls;
+};
+// --- END ARBITER AI ---
+
 export async function* generateActionResponseStream(
     gameState: GameState, 
     userInput: string, 
     inputType: 'say' | 'act',
     rawMemoryContext: string,
-    settings: GameSettings
+    settings: GameSettings,
+    arbiterHint?: string
 ): AsyncIterable<string> {
     const { playerCharacter, difficulty, activeMods, attributeSystem, realmSystemInfo, gameplaySettings } = gameState;
     
@@ -47,6 +160,14 @@ export async function* generateActionResponseStream(
     const interruptionChance = { 'none': 0, 'rare': 0.10, 'occasional': 0.25, 'frequent': 0.50, 'chaotic': 0.75 }[gameplaySettings.worldInterruptionFrequency] || 0.25;
 
     const interruptionInstruction = `14. **LUẬT GIÁN ĐOẠN BẤT NGỜ:** Thế giới này luôn biến động. Dựa trên mức độ "Biến Hóa Của Thế Giới" (${gameplaySettings.worldInterruptionFrequency}, tương đương ${interruptionChance * 100}% cơ hội), hãy cân nhắc việc tạo ra một sự kiện bất ngờ để **GIÁN ĐOẠN** hành động của người chơi thay vì thực hiện nó trực tiếp. Nếu bạn quyết định gián đoạn, hãy mô tả sự kiện đó và các hậu quả cơ chế liên quan.`;
+    
+    const dialogueInstruction = `15. **LUẬT HỘI THOẠI (ƯU TIÊN CAO):** Khi "BỐI CẢNH HỘI THOẠI" được cung cấp, bạn phải nhập vai NPC được chỉ định. Phản hồi của bạn trong \`narrative\` phải là lời nói của NPC đó. Lời nói phải tuân thủ 100% tính cách, mục tiêu, và trạng thái cảm xúc của NPC. Sử dụng lịch sử trò chuyện để trả lời một cách logic. Dựa trên lời nói của người chơi, hãy cập nhật cảm xúc của NPC (trust, fear, anger) trong \`mechanicalIntent.emotionChanges\`.`;
+
+    const dynamicPacingInstruction = `16. **LUẬT VỀ NHỊP ĐỘ TƯỜNG THUẬT ĐỘNG (CỰC KỲ QUAN TRỌNG):** Bạn PHẢI tự động điều chỉnh văn phong và nhịp độ dựa trên bối cảnh để tạo ra trải nghiệm sống động nhất.
+    - **Khi đang trong TRẬN CHIẾN (\`combatState\` có tồn tại):** Dùng câu văn NGẮN, dồn dập, mạnh mẽ. Tập trung vào hành động, âm thanh va chạm, cảm giác đau đớn, và các chi tiết giác quan của trận đấu. Ví dụ: "Kiếm quang lóe lên! Bạn lách người. Gió rít qua tai. Một vết cắt rướm máu trên vai."
+    - **Khi đang KHÁM PHÁ (hành động như "khám phá", "nhìn xung quanh"):** Dùng câu văn DÀI, giàu hình ảnh, và có tính mô tả cao. Tập trung vào không khí, quang cảnh, mùi hương, âm thanh của môi trường để xây dựng cảm giác kỳ vĩ hoặc đáng sợ.
+    - **Khi đang HỘI THOẠI (\`dialogueWithNpcId\` có tồn tại):** Tập trung vào lời nói, tông giọng, và ẩn ý. Xen kẽ với các mô tả ngắn gọn về ngôn ngữ cơ thể, biểu cảm của nhân vật.
+    - **Khi thực hiện HÀNH ĐỘNG HỆ THỐNG (tu luyện, chế tạo):** Tường thuật một cách rõ ràng, súc tích, tập trung vào quá trình và kết quả.`;
 
     const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
     const validStatNames = attributeSystem.definitions.map(def => def.name);
@@ -127,7 +248,7 @@ export async function* generateActionResponseStream(
 
     const prompt = `
 Bạn là một Game Master AI Toàn Năng, người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Nhiệm vụ của bạn là tiếp nối câu chuyện một cách hấp dẫn, logic và tạo ra các thay đổi cơ chế game tương ứng.
-
+${arbiterHint || ''}
 **QUY TRÌNH SUY LUẬN BẮT BUỘC:**
 Bạn PHẢI thực hiện các bước sau trong suy nghĩ của mình và ghi lại toàn bộ quá trình đó vào trường \`thought\` của JSON trả về:
 1.  **Phân Tích & Phán Quyết (Logic Lõi):** Phân tích hành động của người chơi. Dựa trên chỉ số, bối cảnh, và quy luật thế giới, hãy quyết định hành động này **THÀNH CÔNG** hay **THẤT BẠI** và nêu rõ **LÝ DO**.
@@ -148,6 +269,8 @@ ${cultivationActionInstruction}
 ${impliedStateChangeInstruction}
 ${newNpcInstruction}
 ${interruptionInstruction}
+${dialogueInstruction}
+${dynamicPacingInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}
 - **Giọng văn:** ${narrativeStyle}.

@@ -184,6 +184,14 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
         };
     }
 
+    if (!dataToProcess.worldTurnLog) {
+        dataToProcess.worldTurnLog = [];
+    }
+    
+    if (!dataToProcess.dialogueHistory) {
+        dataToProcess.dialogueHistory = [];
+    }
+
 
     dataToProcess.version = CURRENT_GAME_VERSION;
 
@@ -380,7 +388,7 @@ export const createNewGameState = async (
     } else if (factionGenerationMode === 'NONE') {
         factionsToUse = [];
     } else {
-        factionsToUse = modWorldData.factions;
+        factionsToUse = modWorldData.factions || [];
     }
 
     let worldMapToUse: Location[];
@@ -392,7 +400,7 @@ export const createNewGameState = async (
     } else if (locationGenerationMode === 'NONE') {
         worldMapToUse = [];
     } else {
-        worldMapToUse = modWorldData.initialLocations.map(loc => ({
+        worldMapToUse = (modWorldData.initialLocations || []).map(loc => ({
             ...loc,
             id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
         })) as Location[];
@@ -463,7 +471,7 @@ export const createNewGameState = async (
     } else if (npcGenerationMode === 'NONE') {
         initialNpcsFromData = [];
     } else {
-        initialNpcsFromData = modWorldData.initialNpcs.map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
+        initialNpcsFromData = (modWorldData.initialNpcs || []).map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
     }
 
     const initialAttributes: CharacterAttributes = {};
@@ -506,7 +514,7 @@ export const createNewGameState = async (
     const initialInventory: Inventory = { weightCapacity: initialWeightCapacity, items: startingInventoryItems };
     const initialCultivation: CultivationState = {
         currentRealmId: (realmSystemToUse[0]?.id) || 'pham_nhan',
-        currentStageId: (realmSystemToUse[0]?.stages[0]?.id) || 'pn_1',
+        currentStageId: (realmSystemToUse[0]?.stages?.[0]?.id) || 'pn_1',
         spiritualQi: 0,
         hasConqueredInnerDemon: false,
     };
@@ -551,7 +559,7 @@ export const createNewGameState = async (
         activeQuests: [],
         completedQuestIds: [],
         inventoryActionLog: [],
-        element: spiritualRoot.elements.length === 1 ? spiritualRoot.elements[0].type : 'Hỗn Độn',
+        element: (spiritualRoot.elements && spiritualRoot.elements.length === 1) ? spiritualRoot.elements[0].type : 'Hỗn Độn',
         playerAiHooks: {
             on_world_build: '',
             on_action_evaluate: '',
@@ -600,6 +608,7 @@ export const createNewGameState = async (
         discoveredLocations: discoveredLocations,
         worldState: initialWorldState,
         storyLog: initialStory,
+        worldTurnLog: [],
         majorEvents: majorEventsToUse,
         encounteredNpcIds: [],
         activeMods: activeMods,
@@ -610,6 +619,7 @@ export const createNewGameState = async (
         activeStory: null,
         combatState: null,
         dialogueWithNpcId: null,
+        dialogueHistory: [],
         dialogueChoices: null,
         worldSects: [],
         eventIllustrations: [],

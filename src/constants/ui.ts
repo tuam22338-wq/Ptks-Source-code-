@@ -38,6 +38,7 @@ export const THEME_OPTIONS: { value: Theme; label: string; premium?: boolean }[]
     { value: 'theme-thon-phe-tinh-ha', label: 'Thôn Phệ Tinh Hà' },
     { value: 'theme-cyber-cultivation-city', label: 'Cyber Tu Chân' },
     { value: 'theme-dao-ton-premium', label: 'Đạo Tôn 👑 (Premium)', premium: true },
+    { value: 'theme-custom', label: 'Tùy Chỉnh Của Bạn' },
 ];
 
 export const FONT_OPTIONS: { value: string; label: string }[] = [

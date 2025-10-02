@@ -153,7 +153,15 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                                     </select>
                                     <select 
                                         value={settings.modelApiKeyAssignments[config.id] || 'auto'}
-                                        onChange={e => handleSettingChange('modelApiKeyAssignments', { ...settings.modelApiKeyAssignments, [config.id]: e.target.value })}
+                                        onChange={e => {
+                                            const newAssignments = { ...settings.modelApiKeyAssignments };
+                                            if (e.target.value === 'auto') {
+                                                delete newAssignments[config.id];
+                                            } else {
+                                                newAssignments[config.id] = e.target.value;
+                                            }
+                                            handleSettingChange('modelApiKeyAssignments', newAssignments);
+                                        }}
                                         className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--input-focus-ring-color)]/50 transition-colors duration-200 pr-8 appearance-none w-40"
                                     >
                                         <option value="auto">Tự động</option>

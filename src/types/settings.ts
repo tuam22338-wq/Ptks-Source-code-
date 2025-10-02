@@ -34,7 +34,7 @@ export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'B
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise' | 'er_gen_style' | 'fenghuo_style' | 'cyberpunk' | 'noir_detective' | 'epic_fantasy' | 'lovecraftian_horror' | 'comedic' | 'slice_of_life';
 // FIX: Add 'theme-ink-wash-bamboo' to the Theme type to resolve type errors across the application.
-export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa' | 'theme-dao-ton-premium' | 'theme-cyber-cultivation-city' | 'theme-thon-phe-tinh-ha' | 'theme-ink-wash-bamboo';
+export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa' | 'theme-dao-ton-premium' | 'theme-cyber-cultivation-city' | 'theme-thon-phe-tinh-ha' | 'theme-ink-wash-bamboo' | 'theme-custom';
 export type AiSyncMode = 'classic' | 'intent_driven';
 export type TtsProvider = 'browser' | 'elevenlabs';
 
@@ -82,6 +82,7 @@ export interface GameSettings {
     gameSpeed: GameSpeed;
     fontFamily: string;
     theme: Theme;
+    customThemeColors: Record<string, string>;
     dynamicBackground: string;
     zoomLevel: number;
     textColor: string;

@@ -1,11 +1,11 @@
-import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, StatBonus, CharacterAttributes } from '../types';
-import { generateRelationshipUpdate } from './gemini/npc.service';
+import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, StatBonus, CharacterAttributes, WorldTurnEntry } from '../types';
+import { generateRelationshipUpdate, executeNpcAction } from './gemini/npc.service';
 import { generateNpcActionPlan } from './gemini/planning.service';
 import { generateDynamicWorldEventFromAI } from './gemini/faction.service';
 import { REALM_SYSTEM, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 import * as db from './dbService';
 
-const SIMULATED_NPCS_PER_TURN = 3; // Limit API calls
+const SIMULATED_NPCS_PER_TURN = 2; // Limit API calls
 
 const applyBonuses = (attributes: CharacterAttributes, bonuses: StatBonus[]): CharacterAttributes => {
     const newAttributes = JSON.parse(JSON.stringify(attributes));
@@ -65,7 +65,60 @@ export const simulateWorldTurn = async (
         }
     }
 
-    // --- Pillar 3: Faction Ambition Simulation ---
+    // --- Pillar 3: NPC Action Execution ---
+    const npcsWithPlans = activeNpcs.filter((n: NPC) => n.currentPlan && n.currentPlan.length > 0);
+    const npcsToExecute = npcsWithPlans
+        .sort(() => 0.5 - Math.random())
+        .slice(0, SIMULATED_NPCS_PER_TURN); // Limit API calls
+
+    const worldTurnLog: WorldTurnEntry[] = currentTurnState.worldTurnLog || [];
+
+    for (const npc of npcsToExecute) {
+        const action = npc.currentPlan![0];
+        console.log(`[WorldSim] Executing action for ${npc.identity.name}: "${action}"`);
+        try {
+            const result = await executeNpcAction(npc, action, currentTurnState);
+            if (result && result.outcome.success) {
+                // Update NPC state in the cloned state
+                const npcIndex = currentTurnState.activeNpcs.findIndex((n: NPC) => n.id === npc.id);
+                if (npcIndex > -1) {
+                    const updatedNpc = currentTurnState.activeNpcs[npcIndex];
+                    updatedNpc.currentPlan!.shift(); // Remove completed action
+                    updatedNpc.status = result.outcome.newStatus;
+                    if (result.outcome.locationChange) {
+                        updatedNpc.locationId = result.outcome.locationChange;
+                    }
+                    if (updatedNpc.currentPlan!.length === 0) {
+                        updatedNpc.currentPlan = null; // Clear plan if all steps are done
+                    }
+                }
+                
+                // Add to world turn log
+                worldTurnLog.push({
+                    id: `wt-${Date.now()}-${npc.id}`,
+                    gameDate: { ...currentTurnState.gameDate },
+                    npcId: npc.id,
+                    npcName: npc.identity.name,
+                    narrative: result.narrative,
+                });
+                
+                // Add rumor if exists
+                if (result.rumorText) {
+                    newRumors.push({
+                        id: `rumor-action-${Date.now()}-${npc.id}`,
+                        locationId: npc.locationId, // Rumor originates from where the NPC was
+                        text: result.rumorText,
+                    });
+                }
+            }
+        } catch (error) {
+            console.error(`[WorldSim] Failed to execute action for ${npc.identity.name}:`, error);
+        }
+    }
+    currentTurnState.worldTurnLog = worldTurnLog;
+
+
+    // --- Pillar 4: Faction Ambition Simulation ---
     // FIX: Access worldEventFrequency from gameState's gameplaySettings, not global settings.
     const eventFrequency = gameState.gameplaySettings.worldEventFrequency || 'occasional';
     const eventChanceMap = {

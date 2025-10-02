@@ -1,7 +1,9 @@
 
+
+
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition } from '../../types';
-import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from "../../constants";
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship } from '../../types';
+import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 import * as db from '../dbService';
 
@@ -524,6 +526,169 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");
+    }
+};
+
+interface QuickGenCharacterData {
+    identity: CharacterIdentity;
+    spiritualRoot: SpiritualRoot;
+    initialBonuses: StatBonus[];
+    initialItems: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
+    initialCurrency: Currency;
+}
+
+interface QuickGenResult {
+    mod: FullMod;
+    characterData: QuickGenCharacterData;
+    openingNarrative: string;
+    familyNpcs: NPC[];
+    dynamicNpcs: NPC[];
+    relationships: PlayerNpcRelationship[];
+}
+
+export const generateCompleteWorldFromText = async (
+    text: string, 
+    characterName: string, 
+    mode: 'fast' | 'deep' | 'super_deep'
+): Promise<QuickGenResult> => {
+
+    const masterSchema = {
+        type: Type.OBJECT,
+        properties: {
+            // World Generation Part
+            generatedMod: worldSchema,
+
+            // Character Generation Part
+            characterData: {
+                type: Type.OBJECT,
+                properties: {
+                    identity: { type: Type.OBJECT, properties: { gender: {type: Type.STRING}, origin: { type: Type.STRING }, appearance: { type: Type.STRING } } },
+                    spiritualRoot: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, elements: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING }, purity: { type: Type.NUMBER } } } } } },
+                    initialBonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: { type: Type.NUMBER } } } },
+                    initialItems: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING }, quality: { type: Type.STRING }, icon: { type: Type.STRING } } } },
+                    initialCurrency: { type: Type.OBJECT, properties: { "Bạc": { type: Type.NUMBER }, "Linh thạch hạ phẩm": { type: Type.NUMBER } } }
+                },
+            },
+
+            // Opening Narrative & NPC Part
+            opening_narrative: { type: Type.STRING },
+            family_members: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gender: { type: Type.STRING }, age: { type: Type.NUMBER }, relationship_type: { type: Type.STRING }, status: { type: Type.STRING }, description: { type: Type.STRING }, personality: { type: Type.STRING } } } },
+            dynamic_npcs: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gender: { type: Type.STRING }, status: { type: Type.STRING }, description: { type: Type.STRING }, origin: { type: Type.STRING }, personality: { type: Type.STRING }, locationId: { type: Type.STRING }, realmName: { type: Type.STRING } } } },
+        },
+        required: ['generatedMod', 'characterData', 'opening_narrative', 'family_members', 'dynamic_npcs']
+    };
+
+    const prompt = `Bạn là một AI Sáng Thế Toàn Năng, có khả năng biến một ý tưởng ngắn gọn thành một thế giới game hoàn chỉnh và một câu chuyện mở đầu hấp dẫn.
+    **NHIỆM VỤ TỔNG THỂ:** Dựa trên mô tả của người dùng, hãy thực hiện đồng thời 3 tác vụ sau và trả về kết quả trong MỘT đối tượng JSON duy nhất.
+
+    **Ý Tưởng Cốt Lõi Của Người Dùng:**
+    - Tên nhân vật chính: "${characterName}"
+    - Mô tả thế giới: "${text}"
+
+    ---
+    **TÁC VỤ 1: KIẾN TẠO THẾ GIỚI (TẠO \`generatedMod\`)**
+    Phân tích mô tả để tạo ra một cấu trúc thế giới hoàn chỉnh.
+    1.  **\`modInfo\`:** Tạo ID, tên, thể loại...
+    2.  **\`attributeSystem\`:** Thiết kế một hệ thống thuộc tính MỚI, phù hợp với bối cảnh.
+    3.  **\`namedRealmSystems\`:** Thiết kế một hệ thống cảnh giới/sức mạnh MỚI.
+    4.  **\`worldData\`:** Tạo lịch sử, phe phái, bản đồ, NPC ban đầu...
+    -   **QUAN TRỌNG:** Tên các địa điểm, NPC trong \`worldData\` phải khớp với những gì bạn sẽ tạo trong Tác Vụ 3.
+
+    ---
+    **TÁC VỤ 2: KIẾN TẠO NHÂN VẬT CHÍNH (TẠO \`characterData\`)**
+    Dựa trên thế giới vừa tạo, hãy tạo ra nhân vật chính.
+    1.  **\`identity\`:** Quyết định giới tính (Nam/Nữ), viết một tiểu sử (origin) và mô tả ngoại hình (appearance) chi tiết.
+    2.  **\`spiritualRoot\`:** Tạo một Nguồn Gốc Sức Mạnh độc đáo, bao gồm cả thuộc tính 'elements'.
+    3.  **\`initialBonuses\`, \`initialItems\`, \`initialCurrency\`:** Gán các chỉ số thưởng, vật phẩm, và tiền tệ khởi đầu hợp lý.
+
+    ---
+    **TÁC VỤ 3: VIẾT TRUYỆN MỞ ĐẦU & TẠO DÂN CƯ (TẠO \`opening_narrative\`, \`family_members\`, \`dynamic_npcs\`)**
+    1.  **\`family_members\`:** Tạo 2-3 người thân (phàm nhân) cho nhân vật chính.
+    2.  **\`dynamic_npcs\`:** Tạo 5-10 NPC ngẫu nhiên để làm thế giới sống động.
+    3.  **\`opening_narrative\`:** Viết một đoạn văn mở đầu (4-6 câu) thật hấp dẫn, thiết lập bối cảnh, giới thiệu nhân vật chính và một vài người thân của họ trong thế giới bạn vừa tạo.
+
+    ---
+    Hãy thực hiện tất cả các tác vụ và trả về một đối tượng JSON duy nhất theo schema đã cung cấp.`;
+
+    const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
+    
+    const generationConfig: any = {
+        responseMimeType: "application/json",
+        responseSchema: masterSchema,
+        temperature: 1.0,
+        topK: settings?.topK,
+        topP: settings?.topP,
+    };
+
+    if (mode === 'fast' && model === 'gemini-2.5-flash') {
+        generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    }
+    
+    const response = await generateWithRetry({ model, contents: prompt, config: generationConfig }, specificApiKey);
+    
+    try {
+        const json = JSON.parse(response.text);
+
+        // Post-process the generated data to ensure consistency and correct types
+        const mod = json.generatedMod as FullMod;
+        const characterData = json.characterData as any;
+        
+        // Ensure spiritualRoot.elements exists
+        if (characterData.spiritualRoot && !characterData.spiritualRoot.elements) {
+            characterData.spiritualRoot.elements = [];
+        }
+
+        // Finalize character identity
+        const finalIdentity: CharacterIdentity = {
+            name: characterName,
+            familyName: '',
+            age: 18,
+            personality: 'Trung Lập',
+            ...characterData.identity
+        };
+        characterData.identity = finalIdentity;
+
+        // Create family NPCs and relationships
+        const familyNpcs: NPC[] = (json.family_members || []).map((member: any): NPC => {
+            const npcId = `family-npc-${Math.random().toString(36).substring(2, 9)}`;
+            return {
+                id: npcId,
+                identity: { name: member.name, gender: member.gender, appearance: member.description, origin: `Người thân của ${characterName}.`, personality: member.personality, age: member.age },
+                status: member.status, attributes: {}, emotions: { trust: 70, fear: 10, anger: 5 }, memory: { shortTerm: [], longTerm: [] }, motivation: `Bảo vệ và chăm sóc cho gia đình.`, goals: [`Mong ${characterName} có một cuộc sống bình an.`], currentPlan: null, talents: [], locationId: mod.content.worldData?.[0].initialLocations[0].id || '', cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true }, techniques: [], inventory: { items: [], weightCapacity: 10 }, currencies: { 'Bạc': 10 + Math.floor(Math.random() * 50) }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [], tuoiTho: 80,
+            };
+        });
+        const relationships: PlayerNpcRelationship[] = familyNpcs.map((npc, i) => ({
+            npcId: npc.id, type: json.family_members[i].relationship_type, value: 80, status: 'Tri kỷ',
+        }));
+
+        // Create dynamic NPCs
+        const dynamicNpcs: NPC[] = (json.dynamic_npcs || []).map((npcData: any): NPC => {
+             const realmSystem = mod.content.namedRealmSystems?.[0]?.realms || mod.content.realmConfigs || REALM_SYSTEM;
+             const targetRealm = realmSystem.find(r => r.name === npcData.realmName) || realmSystem[0];
+             const targetStage = (targetRealm.stages && targetRealm.stages.length > 0) ? targetRealm.stages[0] : {id: 'pn_1'};
+            return {
+                id: `dynamic-npc-${Math.random().toString(36).substring(2, 9)}`,
+                identity: { name: npcData.name, gender: npcData.gender, appearance: npcData.description, origin: npcData.origin, personality: npcData.personality, age: 30 + Math.floor(Math.random() * 100) },
+                status: npcData.status, locationId: npcData.locationId, cultivation: { currentRealmId: targetRealm.id, currentStageId: targetStage.id, spiritualQi: 0, hasConqueredInnerDemon: true },
+                attributes: {}, emotions: { trust: 50, fear: 10, anger: 10 }, memory: { shortTerm: [], longTerm: [] }, motivation: 'Sống sót.', goals: [], currentPlan: null, talents: [], techniques: [], inventory: { items: [], weightCapacity: 10 }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [], tuoiTho: 100,
+            };
+        });
+        
+        return {
+            mod: json.generatedMod,
+            characterData: json.characterData,
+            openingNarrative: json.opening_narrative,
+            familyNpcs,
+            dynamicNpcs,
+            relationships,
+        };
+
+    } catch (e) {
+        console.error("Failed to parse AI response for complete world generation:", e);
+        console.error("Raw AI response:", response.text);
+        throw new Error("AI đã trả về dữ liệu JSON không hợp lệ cho việc tạo nhanh.");
     }
 };
 

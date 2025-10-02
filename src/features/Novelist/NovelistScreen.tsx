@@ -231,7 +231,8 @@ const NovelistScreen: React.FC = () => {
 
     const handleDeleteNovel = async (id: number) => {
         if (window.confirm("Bạn có chắc muốn xóa vĩnh viễn tiểu thuyết này?")) {
-            await db.deleteNovel(id);
+            // FIX: Corrected the call to delete a novel from `db.deleteNovel` to `db.novels.delete` to match Dexie's Table API.
+            await db.novels.delete(id);
             if (activeNovel?.id === id) {
                 setActiveNovel(null);
             }
@@ -288,7 +289,7 @@ const NovelistScreen: React.FC = () => {
                             <button 
                                 key={novel.id} 
                                 onClick={() => handleSelectNovel(novel)}
-                                className={`w-full text-left p-3 text-sm flex justify-between items-start transition-colors ${activeNovel?.id === novel.id ? 'bg-amber-500/10 text-amber-200' : 'hover:bg-gray-700/50'}`}
+                                className={`w-full text-left p-3 text-sm flex justify-between items-start transition-colors group ${activeNovel?.id === novel.id ? 'bg-amber-500/10 text-amber-200' : 'hover:bg-gray-700/50'}`}
                             >
                                 <span className="font-semibold truncate">{novel.title}</span>
                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteNovel(novel.id); }} className="p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100"><FaTrash /></button>

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -9,6 +8,7 @@ import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
 import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service';
 import { generateCharacterFromPrompts } from '../services/gemini/character.service';
+import { generateCompleteWorldFromText } from '../services/gemini/modding.service';
 
 export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining';
 
@@ -51,6 +51,7 @@ interface AppContextType {
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
     handleGameStart: (gameStartData: GameStartData) => Promise<void>;
     handleCreateAndStartGame: (worldCreationData: WorldCreationData, slotId: number) => Promise<void>;
+    handleQuickCreateAndStartGame: (description: string, characterName: string, slotId: number) => Promise<void>;
     handlePlayerAction: (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => Promise<void>;
     handleUpdatePlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
     handleSetActiveWorldId: (worldId: string) => Promise<void>;
@@ -317,7 +318,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, [state.isMigratingData, loadSaveSlots]);
 
     useEffect(() => {
-        const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, layoutMode, enablePerformanceMode } = state.settings;
+        const { backgroundMusicUrl, backgroundMusicVolume, fontFamily, zoomLevel, textColor, theme, layoutMode, enablePerformanceMode, customThemeColors } = state.settings;
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
@@ -330,9 +331,24 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         
         document.body.style.fontFamily = fontFamily;
         document.documentElement.style.fontSize = `${zoomLevel}%`;
-        document.documentElement.style.setProperty('--text-color', textColor || '#d1d5db');
+        
         THEME_OPTIONS.forEach(t => document.body.classList.remove(t.value));
         if (theme) document.body.classList.add(theme);
+
+        if (theme === 'theme-custom' && customThemeColors) {
+            Object.entries(customThemeColors).forEach(([key, value]) => {
+                document.documentElement.style.setProperty(key, value);
+            });
+        } else {
+            // Clean up custom properties if not using custom theme
+            const defaultColors = DEFAULT_SETTINGS.customThemeColors;
+            if (defaultColors) {
+                 Object.keys(defaultColors).forEach(key => {
+                    document.documentElement.style.removeProperty(key);
+                });
+            }
+        }
+        
         document.body.classList.toggle('force-desktop', layoutMode === 'desktop');
         document.body.classList.toggle('force-mobile', layoutMode === 'mobile');
         document.body.classList.toggle('performance-mode', enablePerformanceMode);
@@ -527,11 +543,72 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const finalGameState = await migrateGameState(hydratedState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed during custom world creation:", error);
-            throw error;
+            // FIX: The caught 'error' is of type 'unknown' or 'any'. To safely create a new Error with a message, it must first be converted to a string by using `String(error)`. This resolves the TypeScript error where an argument of type 'unknown' cannot be assigned to a parameter of type 'string'.
+            throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
+
+    const handleQuickCreateAndStartGame = useCallback(async (description: string, characterName: string, slotId: number) => {
+        dispatch({ type: 'SET_CURRENT_SLOT_ID', payload: slotId });
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang sáng thế, xin chờ...' } });
+
+        try {
+            const { mod, characterData, openingNarrative, familyNpcs, dynamicNpcs, relationships } = await generateCompleteWorldFromText(description, characterName, 'fast');
+
+            const worldCreationData: WorldCreationData = {
+                genre: mod.modInfo.tags?.[0] || 'Huyền Huyễn Tu Tiên',
+                theme: mod.modInfo.name,
+                setting: mod.modInfo.description || '',
+                mainGoal: '',
+                openingStory: '',
+                importedMod: mod,
+                fanficMode: false,
+                hardcoreMode: false,
+                character: { name: characterName, gender: characterData.identity.gender, bio: '' },
+                attributeSystem: mod.content.attributeSystem,
+                enableRealmSystem: !!(mod.content.namedRealmSystems && mod.content.namedRealmSystems.length > 0),
+                realmTemplateId: 'custom',
+                namedRealmSystem: mod.content.namedRealmSystems?.[0] || null,
+                generationMode: 'fast',
+                npcGenerationMode: 'NONE',
+                locationGenerationMode: 'AI',
+                factionGenerationMode: 'AI',
+                customNpcs: [],
+                customLocations: [],
+                customFactions: [],
+                ...state.settings, // Use default gameplay settings
+            };
+            
+            const setLoading = (msg: string) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } });
+            
+            const newGameState = await createNewGameState({
+                ...worldCreationData,
+                ...characterData,
+                difficulty: 'medium',
+                npcDensity: 'medium',
+                danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
+            }, [mod], mod.content.worldData?.[0].id || 'khoi_nguyen_gioi', setLoading);
+            
+            // Manually inject the pre-generated data, skipping the slow hydration steps
+            newGameState.storyLog = [{ id: 1, type: 'narrative' as const, content: openingNarrative }];
+            newGameState.playerCharacter.relationships.push(...relationships);
+            newGameState.activeNpcs.push(...familyNpcs, ...dynamicNpcs);
+            newGameState.isHydrated = true;
+            delete newGameState.creationData;
+
+            await db.saveGameState(slotId, newGameState);
+            await loadSaveSlots();
+
+            const finalGameState = await migrateGameState(newGameState);
+            dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
+
+        } catch (error) {
+            console.error("Lỗi trong quá trình Tạo Nhanh:", error);
+            throw error;
+        }
+    }, [state.activeWorldId, loadSaveSlots, state.settings]);
 
 
     const handleSetActiveWorldId = async (worldId: string) => {
@@ -689,7 +766,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
         handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice,
         handleInstallMod, handleToggleMod, handleDeleteModFromLibrary, handleEditWorld,
-        handleCreateAndStartGame
+        handleCreateAndStartGame, handleQuickCreateAndStartGame
     };
 
     return (

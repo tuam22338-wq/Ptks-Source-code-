@@ -6,6 +6,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     { 
         id: 'pham_nhan', name: 'Phàm Nhân', 
         description: 'Điểm khởi đầu của vạn vật, thân thể yếu đuối, chưa có linh lực, tuổi thọ hữu hạn.',
+        bonuses: [],
         stages: [
             { id: 'pn_1', name: '', qiRequired: 0, bonuses: [], description: 'Sinh mệnh bình thường, không có khả năng đặc biệt.' },
         ]
@@ -13,6 +14,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     { 
         id: 'luyen_khi', name: 'Luyện Khí Kỳ',
         description: 'Bước đầu tiên trên con đường tu tiên, dẫn khí vào cơ thể, tẩy kinh phạt tủy. Mỗi tầng sẽ gia tăng một chút sức mạnh và thể chất.',
+        bonuses: [],
         stages: [
             { id: 'lk_1', name: 'Tầng 1', qiRequired: 100, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Sơ bộ cảm nhận được linh khí.' },
             { id: 'lk_2', name: 'Tầng 2', qiRequired: 300, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Có thể dẫn khí đi khắp châu thân.' },
@@ -31,6 +33,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
         description: 'Xây dựng nền tảng (Đạo Cơ) cho con đường tu luyện. Linh lực chuyển hóa thành chân nguyên, sức mạnh tăng vọt, tuổi thọ đạt 200 năm.',
         hasTribulation: true,
         tribulationDescription: 'Đây là Thiên Kiếp đầu tiên trên con đường tu tiên, sấm sét sẽ gột rửa phàm thể, xây dựng đạo cơ. Vượt qua thì thoát thai hoán cốt, thất bại thì thân tử đạo tiêu.',
+        bonuses: [],
         stages: [
             { id: 'tc_so_ky', name: 'Sơ Kỳ', qiRequired: 150000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ hình thành, thần thức có thể xuất ra ngoài dò xét.' },
             { id: 'tc_trung_ky', name: 'Trung Kỳ', qiRequired: 400000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ vững chắc, có thể bắt đầu ngự vật phi hành.' },
@@ -41,6 +44,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'ket_dan', name: 'Kết Đan Kỳ',
         description: 'Ngưng tụ toàn bộ chân nguyên trong cơ thể thành một viên Kim Đan. Tu sĩ chính thức bước vào hàng ngũ cao thủ, tuổi thọ tăng lên 500 năm.',
+        bonuses: [],
         stages: [
             { id: 'kd_so_ky', name: 'Sơ Kỳ', qiRequired: 2500000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan sơ thành, có thể sử dụng Đan hỏa.'},
             { id: 'kd_trung_ky', name: 'Trung Kỳ', qiRequired: 6000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan ổn định, uy lực pháp thuật tăng mạnh.'},
@@ -53,6 +57,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
         description: 'Phá vỡ Kim Đan, thai nghén ra "Nguyên Anh". Nguyên Anh có thể xuất khiếu, ngao du thái hư. Tuổi thọ đạt 1000 năm.',
         hasTribulation: true,
         tribulationDescription: 'Phá đan thành anh là nghịch thiên chi举, sẽ phải đối mặt với Tâm Ma Kiếp. Vô số ảo ảnh, dục vọng từ sâu trong tâm thức sẽ trỗi dậy, chỉ có đạo tâm kiên định mới có thể vượt qua.',
+        bonuses: [],
         stages: [
             { id: 'na_so_ky', name: 'Sơ Kỳ', qiRequired: 80000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh được sinh ra, có thể đoạt xá trùng sinh.' },
             { id: 'na_trung_ky', name: 'Trung Kỳ', qiRequired: 200000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh lớn mạnh, có thể thi triển các thần thông mạnh mẽ.'},
@@ -63,6 +68,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'hoa_than', name: 'Hóa Thần Kỳ',
         description: 'Nguyên Anh và nhục thân hoàn toàn dung hợp, lĩnh ngộ được một phần pháp tắc của thiên địa. Tu sĩ có thể di chuyển trong hư không, tuổi thọ trên 2000 năm.',
+        bonuses: [],
         stages: [
             { id: 'ht_so_ky', name: 'Sơ Kỳ', qiRequired: 2E9, bonuses: [{ attribute: 'Thân Pháp', value: 50 }, { attribute: 'Lực Lượng', value: 50 }], description: 'Sơ bộ nắm giữ pháp tắc không gian, có thể thuấn di.'},
             { id: 'ht_trung_ky', name: 'Trung Kỳ', qiRequired: 6E9, bonuses: [{ attribute: 'Thân Pháp', value: 60 }, { attribute: 'Lực Lượng', value: 60 }], description: 'Lĩnh ngộ sâu hơn về pháp tắc, có thể tạo ra lĩnh vực của riêng mình.' },
@@ -73,6 +79,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     { 
         id: 'luyen_hu', name: 'Luyện Hư Kỳ',
         description: 'Dung hợp bản thân với hư không, lĩnh ngộ pháp tắc không gian ở tầng sâu hơn. Thần du thái hư, tuổi thọ tăng lên 5000 năm.',
+        bonuses: [],
         stages: [
             { id: 'lh_so_ky', name: 'Sơ Kỳ', qiRequired: 1E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Nguyên thần có thể dung nhập vào hư không, cảm nhận pháp tắc.' },
             { id: 'lh_trung_ky', name: 'Trung Kỳ', qiRequired: 3E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Thao túng không gian sơ bộ, có thể xé rách không gian để di chuyển.' },
@@ -83,6 +90,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     { 
         id: 'hop_the', name: 'Hợp Thể Kỳ',
         description: 'Nhục thân và pháp tắc dung hợp, trở thành một thể thống nhất. Mỗi hành động đều mang theo uy lực của đại đạo, tuổi thọ đạt 1 vạn năm.',
+        bonuses: [],
         stages: [
             { id: 'hthe_so_ky', name: 'Sơ Kỳ', qiRequired: 2E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Nhục thân bắt đầu dung hợp pháp tắc, trở nên cực kỳ cứng rắn.' },
             { id: 'hthe_trung_ky', name: 'Trung Kỳ', qiRequired: 4E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Pháp tùy thân động, uy lực vô song.' },
@@ -93,6 +101,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     { 
         id: 'dai_thua', name: 'Đại Thừa Kỳ',
         description: 'Đã ở đỉnh cao của phàm nhân tu tiên, lĩnh ngộ viên mãn pháp tắc, chuẩn bị nghênh đón thiên kiếp phi thăng. Tuổi thọ đạt 5 vạn năm.',
+        bonuses: [],
         stages: [
             { id: 'dt_so_ky', name: 'Sơ Kỳ', qiRequired: 2E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Lĩnh ngộ đại đạo, pháp lực thông thiên.' },
             { id: 'dt_trung_ky', name: 'Trung Kỳ', qiRequired: 4E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Sức mạnh đạt đến giới hạn của thế giới này.' },
@@ -105,6 +114,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
         description: 'Giai đoạn đối mặt với thiên kiếp để phi thăng thành tiên. Cửu tử nhất sinh, thành công thì thành tiên, thất bại thì hồn phi phách tán.',
         hasTribulation: true,
         tribulationDescription: 'Cửu Cửu Trọng Kiếp, thiên lôi sẽ hủy diệt tất cả những ai dám nghịch thiên. Vượt qua 81 đạo lôi kiếp, gột rửa phàm trần, mới có thể鑄就仙體.',
+        bonuses: [],
         stages: [
             { id: 'dk_1', name: 'Chuẩn Bị', qiRequired: 9E13, bonuses: [{ attribute: 'Sinh Mệnh', value: 5000 }, { attribute: 'Bền Bỉ', value: 300 }], description: 'Tích lũy sức mạnh, chuẩn bị đối mặt với thiên kiếp.' },
             { id: 'dk_2', name: 'Ứng Kiếp', qiRequired: 9.5E13, bonuses: [{ attribute: 'Nguyên Thần Kháng', value: 300 }, { attribute: 'Căn Cốt', value: 300 }], description: 'Thiên kiếp giáng xuống, dùng toàn lực chống đỡ.' },
@@ -114,6 +124,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'nhan_tien', name: 'Nhân Tiên',
         description: 'Thoát khỏi vòng luân hồi, thân thể hóa thành tiên躯, không còn bị sinh lão bệnh tử trói buộc. Tuổi thọ vĩnh cửu.',
+        bonuses: [],
         stages: [
             { id: 'nt_so_ky', name: 'Sơ Kỳ', qiRequired: 1e14, bonuses: [{ attribute: 'Căn Cốt', value: 200 }], description: 'Tiên lực sơ thành, miễn cưỡng du hành trong hư không.' },
             { id: 'nt_trung_ky', name: 'Trung Kỳ', qiRequired: 3e14, bonuses: [{ attribute: 'Nguyên Thần', value: 200 }], description: 'Tiên thể dần ổn định.' },
@@ -124,6 +135,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'thien_tien', name: 'Thiên Tiên',
         description: 'Tiên nhân của trời cao, hấp thụ thiên địa linh khí, tự do đi lại giữa các tầng trời. Pháp lực cao thâm.',
+        bonuses: [],
         stages: [
             { id: 'tt_so_ky', name: 'Sơ Kỳ', qiRequired: 5e16, bonuses: [{ attribute: 'Thân Pháp', value: 300 }], description: 'Ngự không phi hành, tốc độ như điện.' },
             { id: 'tt_trung_ky', name: 'Trung Kỳ', qiRequired: 1.5e17, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 300 }], description: 'Lĩnh ngộ pháp tắc không gian.' },
@@ -134,6 +146,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'kim_tien', name: 'Kim Tiên',
         description: 'Thân thể bất hoại, vạn kiếp không mài, là cảnh giới của phần lớn cao thủ trong tam giáo. Có tư cách khai tông lập phái.',
+        bonuses: [],
         stages: [
             { id: 'kt_so_ky', name: 'Sơ Kỳ', qiRequired: 2e18, bonuses: [{ attribute: 'Căn Cốt', value: 500 }], description: 'Kim thân sơ thành, miễn nhiễm với phần lớn pháp thuật cấp thấp.' },
             { id: 'kt_trung_ky', name: 'Trung Kỳ', qiRequired: 6e18, bonuses: [{ attribute: 'Bền Bỉ', value: 500 }], description: 'Kim thân cường đại, khó bị tổn thương.' },
@@ -144,6 +157,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'thai_at', name: 'Thái Ất Kim Tiên',
         description: 'Trên đỉnh đầu ngưng tụ tam hoa, trong lồng ngực kết thành ngũ khí. Pháp lực vô biên, là những tồn tại đỉnh cao trong Tiên Giới.',
+        bonuses: [],
         stages: [
             { id: 'ta_so_ky', name: 'Sơ Kỳ', qiRequired: 1e20, bonuses: [{ attribute: 'Nguyên Thần', value: 400 }], description: 'Bắt đầu ngưng tụ Tam hoa.' },
             { id: 'ta_trung_ky', name: 'Trung Kỳ', qiRequired: 5e20, bonuses: [{ attribute: 'Ngộ Tính', value: 250 }], description: 'Tam hoa Tụ đỉnh, vạn pháp bất xâm.' },
@@ -154,6 +168,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'dai_la', name: 'Đại La Kim Tiên',
         description: 'Nhảy ra khỏi tam giới, không còn trong ngũ hành. Đại La có nghĩa là tất cả không gian và thời gian, vĩnh hằng tự tại.',
+        bonuses: [],
         stages: [
             { id: 'dl_so_ky', name: 'Sơ Kỳ', qiRequired: 1e22, bonuses: [{ attribute: 'Cơ Duyên', value: 200 }], description: 'Thoát khỏi xiềng xích của số mệnh.' },
             { id: 'dl_trung_ky', name: 'Trung Kỳ', qiRequired: 5e22, bonuses: [{ attribute: 'Đạo Tâm', value: 200 }], description: 'Không bị nhân quả trói buộc.' },
@@ -164,6 +179,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'chuan_thanh', name: 'Chuẩn Thánh',
         description: 'Chém tam thi, đã bước một chân vào cảnh giới Thánh Nhân. Là những tồn tại kinh khủng nhất dưới Thánh Nhân.',
+        bonuses: [],
         stages: [
             { id: 'ct_so_ky', name: 'Trảm Nhất Thi', qiRequired: 1e25, bonuses: [{ attribute: 'Lực Lượng', value: 2000 }], description: 'Chém bỏ một trong ba xác (thiện, ác, chấp niệm), sức mạnh tăng vọt.' },
             { id: 'ct_trung_ky', name: 'Trảm Nhị Thi', qiRequired: 5e25, bonuses: [{ attribute: 'Nguyên Thần', value: 2000 }], description: 'Chém bỏ hai xác, đã có thể được gọi là Á Thánh.' },
@@ -174,6 +190,7 @@ export const REALM_SYSTEM: RealmConfig[] = [
     {
         id: 'thanh_nhan', name: 'Thánh Nhân',
         description: 'Thiên đạo Thánh Nhân, vạn kiếp bất diệt, nguyên thần ký thác vào thiên đạo. Dưới thiên đạo đều là con kiến.',
+        bonuses: [],
         stages: [
             { id: 'tn_1', name: 'Thánh Nhân', qiRequired: Infinity, bonuses: [], description: 'Ngôn xuất pháp tùy, một lời nói có thể thay đổi thiên đạo.' },
         ]

@@ -1,31 +1,40 @@
+
 import type { CharacterAttributes, AttributeDefinition } from "../types";
 
 /**
  * Safely parses and executes a formula string.
- * It replaces attribute IDs with their values before execution.
+ * It identifies all variables in the formula, maps them to function arguments from the attributes record,
+ * and defaults any missing attributes to 0 to prevent reference errors.
  * @param formula The formula string, e.g., "(strength * 2) + (agility * 0.5)".
  * @param attributes The character's current attributes record.
  * @returns The calculated result of the formula.
  */
 const parseFormula = (formula: string, attributes: CharacterAttributes): number => {
-    // Create a scope object containing only the numeric values of the attributes.
-    const scope: Record<string, number> = {};
-    for (const key in attributes) {
-        scope[key] = attributes[key].value;
-    }
+    // Extract all potential variable names from the formula
+    const formulaVars = [...new Set(formula.match(/[a-zA-Z_][a-zA-Z0-9_]*/g) || [])];
+    
+    const argNames: string[] = [];
+    const argValues: number[] = [];
 
-    // This is a safer alternative to eval(). It creates a new Function
-    // that can only access the variables provided in its scope.
+    // Map formula variables to their values from the attributes object
+    formulaVars.forEach(varName => {
+        argNames.push(varName);
+        const attr = attributes[varName];
+        // Default to 0 if the attribute doesn't exist or its value is not a number
+        argValues.push(Number(attr?.value) || 0);
+    });
+
     try {
-        const attributeIds = Object.keys(scope);
-        // Sanitize formula to prevent access to global scope (e.g., window, document)
+        // Sanitize formula to only allow safe characters.
         if (/[^a-zA-Z0-9_()+\-*/.\s]/.test(formula)) {
             console.error("Formula contains invalid characters:", formula);
             return 0;
         }
-        const func = new Function(...attributeIds, `return ${formula}`);
-        const values = attributeIds.map(id => scope[id]);
-        const result = func(...values);
+
+        // Create a function with named parameters matching the variables in the formula
+        const func = new Function(...argNames, `return ${formula}`);
+        const result = func(...argValues);
+
         return typeof result === 'number' && !isNaN(result) ? result : 0;
     } catch (error) {
         console.error(`Error executing formula "${formula}":`, error);

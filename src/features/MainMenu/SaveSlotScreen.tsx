@@ -15,14 +15,21 @@ import { generateWorldFromText } from '../../services/gemini/modding.service';
 // --- Quick Create Modal ---
 const QuickCreateModal: React.FC<{
     onClose: () => void;
-    onGenerate: (description: string) => void;
+    onGenerate: (description: string, characterName: string) => void;
 }> = ({ onClose, onGenerate }) => {
     const [description, setDescription] = useState('');
+    const [characterName, setCharacterName] = useState('');
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-fade-in" onClick={onClose}>
             <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-xl m-4 p-6" onClick={e => e.stopPropagation()}>
                 <h3 className="text-2xl font-bold font-title text-amber-300 mb-4">Tạo Nhanh Bằng AI</h3>
-                <p className="text-sm text-gray-400 mb-4">Chỉ cần mô tả ý tưởng cốt lõi của bạn. AI sẽ tự động tạo ra một thế giới hoàn chỉnh với thể loại, bối cảnh, hệ thống thuộc tính, và hệ thống cảnh giới phù hợp.</p>
+                <p className="text-sm text-gray-400 mb-4">Chỉ cần mô tả ý tưởng cốt lõi và tên nhân vật. AI sẽ tự động tạo ra một thế giới hoàn chỉnh với thể loại, bối cảnh, hệ thống thuộc tính, hệ thống cảnh giới và chương mở đầu.</p>
+                <input
+                    value={characterName}
+                    onChange={e => setCharacterName(e.target.value)}
+                    className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 mb-3"
+                    placeholder="Nhập tên nhân vật chính của bạn..."
+                />
                 <textarea
                     value={description}
                     onChange={e => setDescription(e.target.value)}
@@ -32,7 +39,7 @@ const QuickCreateModal: React.FC<{
                 />
                 <div className="mt-6 flex justify-end gap-3">
                     <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500">Hủy</button>
-                    <button onClick={() => onGenerate(description)} className="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500">Bắt Đầu Sáng Tạo</button>
+                    <button onClick={() => onGenerate(description, characterName)} disabled={!characterName.trim() || !description.trim()} className="px-6 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-500 disabled:bg-gray-500">Bắt Đầu Sáng Tạo</button>
                 </div>
             </div>
         </div>
@@ -76,7 +83,7 @@ const SlotSelectionModal: React.FC<{
 
 // --- Main World Creator Screen Component ---
 const SaveSlotScreen: React.FC = () => {
-  const { state, handleNavigate, handleCreateAndStartGame } = useAppContext();
+  const { state, handleNavigate, handleCreateAndStartGame, handleQuickCreateAndStartGame } = useAppContext();
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -85,6 +92,9 @@ const SaveSlotScreen: React.FC = () => {
   const [isSlotModalOpen, setSlotModalOpen] = useState(false);
   const [isQuickCreateOpen, setQuickCreateOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const [quickCreateInfo, setQuickCreateInfo] = useState<{description: string; characterName: string} | null>(null);
+
 
   const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState<AttributeDefinition | null>(null);
@@ -152,6 +162,10 @@ const SaveSlotScreen: React.FC = () => {
         let templateId = 'xianxia_default';
         if (value === 'Võ Hiệp Giang Hồ') templateId = 'wuxia';
         if (value === 'Khoa Huyễn Viễn Tưởng') templateId = 'cyberpunk';
+        if (value === 'Kinh Dị Huyền Bí' || value === 'Thám Tử & Huyền Bí') templateId = 'lovecraftian';
+        if (value === 'Hậu Tận Thế & Sinh Tồn') templateId = 'post_apocalypse';
+        if (value === 'Phiêu Lưu & Khám Phá' || value === 'Lịch Sử & Dã Sử') templateId = 'high_fantasy';
+        if (value === 'Steampunk & Ma Thuật') templateId = 'cyberpunk';
         const template = ATTRIBUTE_TEMPLATES.find(t => t.id === templateId);
         setFormData(p => ({
             ...p,
@@ -206,6 +220,7 @@ const SaveSlotScreen: React.FC = () => {
         setError("Vui lòng nhập tên nhân vật chính.");
         return;
     }
+    setQuickCreateInfo(null); // Ensure we're in manual mode
     setError(null);
     setSlotModalOpen(true);
   };
@@ -215,7 +230,13 @@ const SaveSlotScreen: React.FC = () => {
     setIsLoading(true);
     setLoadingMessage("Đấng Sáng Thế đang kiến tạo vũ trụ của bạn...");
     try {
-        await handleCreateAndStartGame(formData, slotId);
+        if (quickCreateInfo) {
+            // New, optimized Quick Create flow
+            await handleQuickCreateAndStartGame(quickCreateInfo.description, quickCreateInfo.characterName, slotId);
+        } else {
+            // Original Manual Create flow
+            await handleCreateAndStartGame(formData, slotId);
+        }
         // On success, AppContext will handle navigation.
     } catch (err: any) {
         setError(`Lỗi tạo thế giới: ${err.message}`);
@@ -273,28 +294,11 @@ const SaveSlotScreen: React.FC = () => {
         setFormData(p => ({ ...p, namedRealmSystem: systems[0] || null }));
     };
 
-    const handleQuickGenerate = async (description: string) => {
+    const handleQuickGenerate = (description: string, characterName: string) => {
         setQuickCreateOpen(false);
-        setIsLoading(true);
-        setLoadingMessage("AI đang phân tích ý tưởng của bạn...");
         setError(null);
-        try {
-            const result: FullMod = await generateWorldFromText(description, 'deep');
-            setFormData(prev => ({
-                ...prev,
-                genre: result.modInfo.tags?.[0] || prev.genre,
-                theme: result.modInfo.name || '',
-                setting: result.modInfo.description || result.content.worldData?.[0]?.description || '',
-                attributeSystem: result.content.attributeSystem || prev.attributeSystem,
-                namedRealmSystem: result.content.namedRealmSystems?.[0] || prev.namedRealmSystem,
-                enableRealmSystem: !!(result.content.namedRealmSystems && result.content.namedRealmSystems.length > 0),
-                realmTemplateId: 'custom',
-            }));
-        } catch (err: any) {
-            setError(`Lỗi tạo nhanh: ${err.message}`);
-        } finally {
-            setIsLoading(false);
-        }
+        setQuickCreateInfo({ description, characterName });
+        setSlotModalOpen(true); // Ask for slot first, then start the combined generation
     };
   
     // --- Custom Data Handlers ---
@@ -357,7 +361,7 @@ const SaveSlotScreen: React.FC = () => {
 
 
   if (isLoading) {
-      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={formData.generationMode}/>;
+      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={'fast'}/>;
   }
 
   return (
@@ -410,6 +414,16 @@ const SaveSlotScreen: React.FC = () => {
                         <option>Khoa Huyễn Viễn Tưởng</option>
                         <option>Kinh Dị Huyền Bí</option>
                         <option>Đô Thị Dị Năng</option>
+                        <option>Hậu Tận Thế & Sinh Tồn</option>
+                        <option>Hệ Thống & Thăng Cấp (LitRPG)</option>
+                        <option>Cung Đấu & Gia Tộc</option>
+                        <option>Steampunk & Ma Thuật</option>
+                        <option>Thám Tử & Huyền Bí</option>
+                        <option>Triệu Hồi & Dưỡng Thú</option>
+                        <option>Lãng Mạn & Tình Duyên</option>
+                        <option>Hài Hước & Châm Biếm</option>
+                        <option>Lịch Sử & Dã Sử</option>
+                        <option>Phiêu Lưu & Khám Phá</option>
                     </select>
                 </Field>
                 <Field label="Chủ Đề (Cụ thể hơn)" description="Giúp AI tập trung vào một khía cạnh cụ thể trong thể loại bạn chọn.">

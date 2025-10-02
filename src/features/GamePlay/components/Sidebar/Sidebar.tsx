@@ -57,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings 
         status: { gameState: gameState },
         map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
-        history: { majorEvents: gameState.majorEvents },
+        history: { worldTurnLog: gameState.worldTurnLog || [] },
         memory: { gameState },
         rules: { gameState: gameState },
         guide: {},

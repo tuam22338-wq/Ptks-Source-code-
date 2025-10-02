@@ -214,7 +214,13 @@ select.input-neumorphic {
   background-position: right 0.75rem center;
   background-repeat: no-repeat;
   background-size: 1.25em 1.25em;
+  color: var(--text-color);
 }
+select.input-neumorphic option {
+  color: var(--text-color);
+  background-color: var(--bg-color);
+}
+
 
 input[type="range"] {
   -webkit-appearance: none;

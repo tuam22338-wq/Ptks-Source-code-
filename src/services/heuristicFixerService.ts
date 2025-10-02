@@ -69,7 +69,9 @@ export const runHeuristicFixer = async (
                 fixed = true;
             }
             
-            const solution = `Thiên Đạo đã can thiệp: ${fixed ? 'Tự động điều chỉnh giá trị về mức hợp lệ.' : 'Yêu cầu AI phân tích và sửa lỗi logic.'}`;
+            // PERFORMANCE FIX: The AI call is removed. We only perform fast, programmatic fixes.
+            // The solution text is now always the programmatic one.
+            const solution = 'Thiên Đạo đã can thiệp: Tự động điều chỉnh giá trị về mức hợp lệ.';
             
             // Log the fix
             const logEntry: Omit<HeuristicFixReport, 'id'> = {
@@ -79,12 +81,6 @@ export const runHeuristicFixer = async (
             };
             await db.addHeuristicFixLog(logEntry);
             notifications.push('[Thiên Đạo] Phát hiện nhân quả rối loạn, đã tự động điều chỉnh.');
-
-            // If not fixed by simple logic, we could call the AI (future improvement)
-            // if (!fixed) {
-            //   const correctedState = await generateCorrectedGameState(currentState, problem);
-            //   currentState = { ...currentState, ...correctedState };
-            // }
 
         } catch (error) {
             console.error(`[Heuristic Fixer] Failed to fix problem: "${problem}"`, error);

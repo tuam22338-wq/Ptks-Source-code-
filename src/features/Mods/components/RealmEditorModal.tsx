@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaEdit, FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import type { RealmConfig, SubTier, ModAttributeSystem, NamedRealmSystem } from '../../../types';
+import type { RealmConfig, SubTier, ModAttributeSystem, NamedRealmSystem, AttributeDefinition, StatBonus } from '../../../types';
 import SubTierEditorModal from './SubTierEditorModal';
 
 interface RealmEditorModalProps {
@@ -10,6 +10,61 @@ interface RealmEditorModalProps {
     initialSystems: NamedRealmSystem[];
     attributeSystem: ModAttributeSystem;
 }
+
+const TierBonusEditor: React.FC<{
+    tier: RealmConfig;
+    onTierChange: (field: keyof RealmConfig, value: any) => void;
+    attributeDefinitions: AttributeDefinition[];
+}> = ({ tier, onTierChange, attributeDefinitions }) => {
+    const [newBonus, setNewBonus] = useState<{ attribute: string; value: number }>({ attribute: attributeDefinitions[0]?.name || '', value: 0 });
+
+    useEffect(() => {
+        if (attributeDefinitions.length > 0 && !attributeDefinitions.find(d => d.name === newBonus.attribute)) {
+            setNewBonus(prev => ({...prev, attribute: attributeDefinitions[0]?.name || ''}));
+        }
+    }, [attributeDefinitions, newBonus.attribute]);
+
+    const handleBonusChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setNewBonus(prev => ({ ...prev, [name]: name === 'value' ? parseInt(value) || 0 : value }));
+    };
+
+    const handleAddBonus = () => {
+        if (newBonus.attribute && newBonus.value !== 0) {
+            const currentBonuses = tier.bonuses || [];
+            onTierChange('bonuses', [...currentBonuses, { ...newBonus }]);
+        }
+    };
+
+    const handleRemoveBonus = (index: number) => {
+        const currentBonuses = tier.bonuses || [];
+        onTierChange('bonuses', currentBonuses.filter((_, i) => i !== index));
+    };
+
+    return (
+        <div className="mt-3 pt-3 border-t border-gray-700/60">
+            <h5 className="text-sm font-semibold mb-2" style={{color: 'var(--text-color)'}}>Thuộc Tính Cộng Thêm (Khi Đạt Đại Cảnh Giới)</h5>
+            <div className="space-y-2 mb-3">
+                {(tier.bonuses || []).map((bonus, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-black/20 rounded">
+                        <span className="flex-grow text-sm" style={{color: 'var(--text-color)'}}>{bonus.attribute}: <span className="font-bold" style={{color: 'var(--success-color)'}}>{bonus.value > 0 ? `+${bonus.value}`: bonus.value}</span></span>
+                        <button onClick={(e) => { e.stopPropagation(); handleRemoveBonus(index); }} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                    </div>
+                ))}
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-black/25 border border-gray-700/60 rounded">
+                 <select name="attribute" value={newBonus.attribute} onChange={handleBonusChange} className="bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm flex-grow" style={{color: 'var(--text-color)'}}>
+                    {attributeDefinitions.map(attr => (
+                        <option key={attr.id} value={attr.name}>{attr.name}</option>
+                    ))}
+                </select>
+                <input type="number" name="value" value={newBonus.value} onChange={handleBonusChange} className="w-24 bg-black/30 border border-gray-600 rounded-lg px-2 py-1 text-sm" style={{color: 'var(--text-color)'}} />
+                <button onClick={handleAddBonus} className="p-2 hover:text-white bg-green-900/50 rounded" style={{color: 'var(--success-color)'}}><FaPlus /></button>
+            </div>
+        </div>
+    );
+};
+
 
 const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, onSave, initialSystems, attributeSystem }) => {
     const [tiers, setTiers] = useState<RealmConfig[]>([]);
@@ -52,7 +107,7 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
     };
     
     const handleAddTier = () => {
-        const newTier: RealmConfig = { id: `tier_${Date.now()}`, name: 'Cấp Bậc Mới', description: '', stages: [] };
+        const newTier: RealmConfig = { id: `tier_${Date.now()}`, name: 'Cấp Bậc Mới', description: '', stages: [], bonuses: [] };
         setTiers([...tiers, newTier]);
     };
     
@@ -129,23 +184,34 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                     <div className="p-3 border-t border-gray-800/80 space-y-3">
                                         <input value={tier.name} onChange={e => handleTierChange(tierIndex, 'name', e.target.value)} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 mb-2" style={{color: 'var(--text-color)'}} placeholder="Tên Đại Cảnh Giới"/>
                                         <textarea value={tier.description} onChange={e => handleTierChange(tierIndex, 'description', e.target.value)} rows={2} className="w-full bg-black/30 border border-gray-600 rounded-lg px-4 py-2 resize-y" style={{color: 'var(--text-color)'}} placeholder="Mô tả..."/>
-                                        <div className="space-y-2">
-                                            {tier.stages.map((subTier, subTierIndex) => (
-                                                <div key={subTier.id || subTierIndex} className="flex justify-between items-center p-2 bg-black/30 rounded">
-                                                    <div>
-                                                        <p className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{subTier.name}</p>
-                                                        <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>{systemInfo.resourceName}: {!isFinite(subTier.qiRequired) ? 'Vô Hạn' : (subTier.qiRequired || 0).toLocaleString()}</p>
+                                        
+                                        <TierBonusEditor
+                                            tier={tier}
+                                            onTierChange={(field, value) => handleTierChange(tierIndex, field, value)}
+                                            attributeDefinitions={attributeSystem.definitions}
+                                        />
+
+                                        <div className="mt-4 pt-3 border-t border-gray-700/60">
+                                            <h5 className="text-sm font-semibold mb-2" style={{color: 'var(--text-color)'}}>Các Cấp Bậc Phụ (Tiểu Cảnh Giới)</h5>
+                                            <div className="space-y-2">
+                                                {tier.stages.map((subTier, subTierIndex) => (
+                                                    <div key={subTier.id || subTierIndex} className="flex justify-between items-center p-2 bg-black/30 rounded">
+                                                        <div>
+                                                            <p className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{subTier.name}</p>
+                                                            <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>{systemInfo.resourceName}: {!isFinite(subTier.qiRequired) ? 'Vô Hạn' : (subTier.qiRequired || 0).toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button onClick={() => handleOpenSubTierModal(subTier, tierIndex)} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                                            <button onClick={() => handleDeleteSubTier(tierIndex, subTierIndex)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <button onClick={() => handleOpenSubTierModal(subTier, tierIndex)} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
-                                                        <button onClick={() => handleDeleteSubTier(tierIndex, subTierIndex)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
+                                            <button onClick={() => handleOpenSubTierModal(null, tierIndex)} className="w-full mt-2 text-sm hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded" style={{color: 'var(--secondary-accent-color)'}}>
+                                                <FaPlus /> Thêm Cấp Bậc Phụ
+                                            </button>
                                         </div>
-                                        <button onClick={() => handleOpenSubTierModal(null, tierIndex)} className="w-full mt-2 text-sm hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded" style={{color: 'var(--secondary-accent-color)'}}>
-                                            <FaPlus /> Thêm Cấp Bậc Phụ
-                                        </button>
+
                                     </div>
                                 )}
                             </div>

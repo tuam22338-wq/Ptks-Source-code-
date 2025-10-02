@@ -37,6 +37,19 @@ interface InterfaceSettingsProps {
     handleSettingChange: (key: keyof GameSettings, value: any) => void;
 }
 
+const customColorVariables = [
+    { key: '--bg-color', label: 'Màu Nền Chính' },
+    { key: '--text-color', label: 'Màu Chữ Chính' },
+    { key: '--text-muted-color', label: 'Màu Chữ Phụ' },
+    { key: '--primary-accent-color', label: 'Màu Nhấn Chính' },
+    { key: '--primary-accent-text-color', label: 'Màu Chữ Trên Nền Nhấn' },
+    { key: '--secondary-accent-color', label: 'Màu Nhấn Phụ' },
+    { key: '--panel-border-color', label: 'Màu Viền Panel' },
+    { key: '--input-focus-ring-color', label: 'Màu Viền Focus' },
+    { key: '--shadow-light', label: 'Màu Đổ Bóng Sáng' },
+    { key: '--shadow-dark', label: 'Màu Đổ Bóng Tối' },
+];
+
 const InterfaceSettings: React.FC<InterfaceSettingsProps> = ({ settings, handleSettingChange }) => {
     const { state, handleDynamicBackgroundChange } = useAppContext();
     const backgroundStatus = state.backgrounds.status;
@@ -80,6 +93,30 @@ const InterfaceSettings: React.FC<InterfaceSettingsProps> = ({ settings, handleS
                     <input type="color" value={settings.textColor} onChange={(e) => handleSettingChange('textColor', e.target.value)} className="h-10 w-full p-1 bg-black/30 border border-gray-600 rounded-lg cursor-pointer" />
                 </SettingsRow>
             </SettingsSection>
+
+            {settings.theme === 'theme-custom' && (
+                <SettingsSection title="Tùy Chỉnh Theme">
+                    <SettingsRow label="Bảng Màu" description="Chọn màu sắc cho các thành phần giao diện. Thay đổi sẽ được áp dụng ngay lập tức.">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {customColorVariables.map(({ key, label }) => (
+                                <div key={key}>
+                                    <label className="block text-sm font-medium mb-1 text-gray-400">{label}</label>
+                                    <input
+                                      type="color"
+                                      value={settings.customThemeColors[key] || '#000000'}
+                                      onChange={e => {
+                                        const newColors = { ...settings.customThemeColors, [key]: e.target.value };
+                                        handleSettingChange('customThemeColors', newColors);
+                                      }}
+                                      className="h-10 w-full p-1 bg-black/30 border border-gray-600 rounded-lg cursor-pointer"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </SettingsRow>
+                </SettingsSection>
+            )}
+
             <SettingsSection title="Hình Nền Động (AI Tạo)">
                 <SettingsRow label="Chọn hình nền" description="Chọn một chủ đề, AI sẽ tạo hình nền độc nhất cho bạn và lưu lại. Quá trình này có thể mất một chút thời gian.">
                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">

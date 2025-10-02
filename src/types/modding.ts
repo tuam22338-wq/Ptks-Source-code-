@@ -61,6 +61,7 @@ export interface RealmConfig {
     hasTribulation?: boolean;
     tribulationDescription?: string;
     description?: string;
+    bonuses?: StatBonus[];
 }
 
 // FIX: Renamed NamedProgressionSystem to NamedRealmSystem
