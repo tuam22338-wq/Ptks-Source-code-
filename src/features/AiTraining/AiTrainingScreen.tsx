@@ -211,7 +211,7 @@ const SettingsModal: React.FC<{
             <div className="bg-stone-900 border border-gray-700 rounded-lg shadow-2xl w-full max-w-2xl m-4 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                     <h3 className="text-xl font-bold" style={{color: 'var(--primary-accent-color)'}}>Cài Đặt Game Master AI</h3>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gemini-surface"><FaTimes /></button>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-800"><FaTimes /></button>
                 </div>
                 <div className="p-4 overflow-y-auto">
                     <SettingsRow label="Độ lớn Phản hồi" description="Đặt độ dài mong muốn cho mỗi phản hồi của AI (1,000 - 100,000 từ). Càng dài, AI càng chi tiết.">
@@ -332,7 +332,7 @@ const GameMasterChatPanel: React.FC<{
     };
     
     return (
-        <div className="flex flex-col h-full w-full bg-gemini-surface-subtle gemini-theme rounded-b-xl">
+        <div className="flex flex-col h-full w-full rounded-b-xl" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)'}}>
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setSettingsOpen(false)} settings={state.settings} handleSettingChange={handleSettingChange} />
             <div className="flex-grow overflow-y-auto p-4 md:p-6 min-h-0">
                 <div className="max-w-4xl mx-auto">
@@ -340,13 +340,13 @@ const GameMasterChatPanel: React.FC<{
                         <div key={index} className="gemini-message-container py-4">
                             {entry.role === 'user' ? (
                                 <div className="flex gap-4">
-                                    <FaUserCircle className="text-3xl text-gemini-text-muted flex-shrink-0" />
+                                    <FaUserCircle className="text-3xl text-[var(--text-muted-color)] flex-shrink-0" />
                                     <p className="pt-1">{entry.content}</p>
                                 </div>
                             ) : (
                                 <div className="flex gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-gemini-accent/80 flex items-center justify-center flex-shrink-0 p-1.5"><GiSparkles className="w-full h-full" /></div>
-                                    <div className="pt-1 prose prose-invert" dangerouslySetInnerHTML={parseContent(entry.content)} />
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 p-1.5" style={{ backgroundColor: 'rgba(var(--primary-accent-color-rgb), 0.8)'}}><GiSparkles className="w-full h-full" style={{ color: 'var(--primary-accent-text-color)'}}/></div>
+                                    <div className="pt-1 prose prose-invert" style={{color: 'var(--text-color)'}} dangerouslySetInnerHTML={parseContent(entry.content)} />
                                 </div>
                             )}
                         </div>
@@ -359,7 +359,7 @@ const GameMasterChatPanel: React.FC<{
             </div>
              <div className="gemini-input-container">
                 <div className="flex items-center gap-2 mb-2">
-                     <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full hover:bg-gemini-surface text-gemini-text-muted"><FaCog /></button>
+                     <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)]"><FaCog /></button>
                      <button 
                         onClick={handleGenerateFromChat} 
                         disabled={isGenerating || isWorldGenLoading || history.length === 0}
@@ -380,9 +380,9 @@ const GameMasterChatPanel: React.FC<{
                     </div>
                 )}
 
-                <div className="gemini-input-bar">
-                    <textarea value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} disabled={isGenerating} placeholder="Trò chuyện với Game Master AI để xây dựng thế giới..." rows={1} className="gemini-textarea" />
-                    <button onClick={handleSendMessage} disabled={isGenerating || !userInput.trim()} className="gemini-send-button">{isGenerating ? <div className="gemini-loader"></div> : <FaPaperPlane />}</button>
+                <div className="flex items-center gap-2 rounded-full p-2" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                    <textarea value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} disabled={isGenerating} placeholder="Trò chuyện với Game Master AI để xây dựng thế giới..." rows={1} className="flex-grow bg-transparent border-none outline-none resize-none text-[var(--text-color)] placeholder-[var(--text-muted-color)] disabled:bg-transparent px-2" />
+                    <button onClick={handleSendMessage} disabled={isGenerating || !userInput.trim()} className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors disabled:cursor-not-allowed" style={{ backgroundColor: isGenerating || !userInput.trim() ? 'transparent' : 'var(--primary-accent-color)', color: 'var(--primary-accent-text-color)'}}>{isGenerating ? <div className="gemini-loader" style={{ borderColor: 'var(--text-muted-color)', borderTopColor: 'transparent'}}></div> : <FaPaperPlane />}</button>
                 </div>
             </div>
         </div>

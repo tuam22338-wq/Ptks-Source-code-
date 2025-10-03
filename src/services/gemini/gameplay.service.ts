@@ -156,7 +156,7 @@ Bạn PHẢI thực hiện các bước sau trong suy nghĩ của mình và ghi 
 4.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 5.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
 ${narrateSystemChangesInstruction}
-8.  **LUẬT ĐỘT PHÁ CẢNH GIỚI (Cập nhật):** Khi người chơi đột phá cảnh giới, bạn PHẢI cập nhật cả \`realmChange\` (ID cảnh giới mới) và \`stageChange\` (ID tiểu cảnh giới mới).
+8.  **LUẬT ĐỘT PHÁ CẢNH GIỚI (Cập nhật):** Khi người chơi đột phá cảnh giới, bạn PHẢI cập nhật cả \`realmChange\` (ID cảnh giới mới) và \`stageChange\` (ID tiểu cảnh giới mới). **QUAN TRỌNG:** Bạn **KHÔNG** được thay đổi chỉ số \`spiritualQi\` khi đột phá. Hệ thống sẽ tự động xử lý. Chỉ cần cung cấp ID cảnh giới mới.
 9.  **LUẬT ĐỘT PHÁ TÙY CHỈNH (CỰC KỲ QUAN TRỌNG):** Bối cảnh game đã cung cấp "Mục tiêu tiếp theo" cho việc đột phá. Khi người chơi đột phá thành công, bạn PHẢI tường thuật lại quá trình đó.
 10. **LUẬT SINH TỒN THEO CẢNH GIỚI:** Cảnh giới tu luyện càng cao, khả năng chống chọi đói và khát càng mạnh. Khi người chơi đột phá đại cảnh giới, hãy tăng GIỚI HẠN TỐI ĐA (sử dụng 'changeMax') của chỉ số 'hunger' và 'thirst'.
 ${cultivationActionInstruction}

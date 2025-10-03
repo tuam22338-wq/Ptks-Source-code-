@@ -12,6 +12,42 @@ import LocationEditorModal from '../../features/Mods/components/LocationEditorMo
 import FactionEditorModal from '../../features/Mods/components/FactionEditorModal';
 import { generateWorldFromText } from '../../services/gemini/modding.service';
 
+const GENRE_OPTIONS = [
+    'Huyền Huyễn Tu Tiên',
+    'Võ Hiệp Giang Hồ',
+    'Khoa Huyễn Viễn Tưởng',
+    'Kinh Dị Huyền Bí',
+    'Đô Thị Dị Năng',
+    'Hậu Tận Thế & Sinh Tồn',
+    'Hệ Thống & Thăng Cấp (LitRPG)',
+    'Cung Đấu & Gia Tộc',
+    'Steampunk & Ma Thuật',
+    'Thám Tử & Huyền Bí',
+    'Triệu Hồi & Dưỡng Thú',
+    'Lãng Mạn & Tình Duyên',
+    'Hài Hước & Châm Biếm',
+    'Lịch Sử & Dã Sử',
+    'Phiêu Lưu & Khám Phá',
+];
+
+const GENRE_TO_ATTRIBUTE_TEMPLATE_MAP: Record<string, string> = {
+    'Huyền Huyễn Tu Tiên': 'xianxia_default',
+    'Võ Hiệp Giang Hồ': 'wuxia',
+    'Khoa Huyễn Viễn Tưởng': 'cyberpunk',
+    'Kinh Dị Huyền Bí': 'lovecraftian',
+    'Đô Thị Dị Năng': 'cyberpunk',
+    'Hậu Tận Thế & Sinh Tồn': 'post_apocalypse',
+    'Hệ Thống & Thăng Cấp (LitRPG)': 'high_fantasy',
+    'Cung Đấu & Gia Tộc': 'wuxia',
+    'Steampunk & Ma Thuật': 'cyberpunk',
+    'Thám Tử & Huyền Bí': 'lovecraftian',
+    'Triệu Hồi & Dưỡng Thú': 'high_fantasy',
+    'Lãng Mạn & Tình Duyên': 'wuxia',
+    'Hài Hước & Châm Biếm': 'wuxia',
+    'Lịch Sử & Dã Sử': 'high_fantasy',
+    'Phiêu Lưu & Khám Phá': 'high_fantasy',
+};
+
 // --- Quick Create Modal ---
 const QuickCreateModal: React.FC<{
     onClose: () => void;
@@ -92,6 +128,7 @@ const SaveSlotScreen: React.FC = () => {
   const [isSlotModalOpen, setSlotModalOpen] = useState(false);
   const [isQuickCreateOpen, setQuickCreateOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showCustomGenreInput, setShowCustomGenreInput] = useState(false);
 
   const [quickCreateInfo, setQuickCreateInfo] = useState<{description: string; characterName: string} | null>(null);
 
@@ -153,25 +190,34 @@ const SaveSlotScreen: React.FC = () => {
     worldInterruptionFrequency: 'occasional',
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    if (name.startsWith('character.')) {
-        const charField = name.split('.')[1];
-        setFormData(p => ({ ...p, character: { ...p.character, [charField]: value } }));
-    } else if (name === 'genre') {
-        let templateId = 'xianxia_default';
-        if (value === 'Võ Hiệp Giang Hồ') templateId = 'wuxia';
-        if (value === 'Khoa Huyễn Viễn Tưởng') templateId = 'cyberpunk';
-        if (value === 'Kinh Dị Huyền Bí' || value === 'Thám Tử & Huyền Bí') templateId = 'lovecraftian';
-        if (value === 'Hậu Tận Thế & Sinh Tồn') templateId = 'post_apocalypse';
-        if (value === 'Phiêu Lưu & Khám Phá' || value === 'Lịch Sử & Dã Sử') templateId = 'high_fantasy';
-        if (value === 'Steampunk & Ma Thuật') templateId = 'cyberpunk';
+  const handleGenreSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    if (value === 'custom') {
+        setShowCustomGenreInput(true);
+        setFormData(p => ({
+            ...p,
+            genre: '', // Clear genre to be typed in
+            attributeSystem: ATTRIBUTE_TEMPLATES.find(t => t.id === 'xianxia_default')!.system
+        }));
+    } else {
+        setShowCustomGenreInput(false);
+        const templateId = GENRE_TO_ATTRIBUTE_TEMPLATE_MAP[value] || 'xianxia_default';
         const template = ATTRIBUTE_TEMPLATES.find(t => t.id === templateId);
         setFormData(p => ({
             ...p,
             genre: value,
             attributeSystem: template ? template.system : p.attributeSystem
         }));
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    if (name.startsWith('character.')) {
+        const charField = name.split('.')[1];
+        setFormData(p => ({ ...p, character: { ...p.character, [charField]: value } }));
+    } else if (name === 'genre') { // This now only handles the custom genre text input
+        setFormData(p => ({ ...p, genre: value }));
     } else {
         const isCheckbox = type === 'checkbox';
         const finalValue = isCheckbox ? (e.target as HTMLInputElement).checked : value;
@@ -221,6 +267,10 @@ const SaveSlotScreen: React.FC = () => {
   const handleStartCreation = () => {
     if (!formData.character.name.trim()) {
         setError("Vui lòng nhập tên nhân vật chính.");
+        return;
+    }
+    if (!formData.genre.trim()) {
+        setError("Vui lòng nhập thể loại cho thế giới của bạn.");
         return;
     }
     setQuickCreateInfo(null); // Ensure we're in manual mode
@@ -421,23 +471,20 @@ const SaveSlotScreen: React.FC = () => {
             
             <Section title="1. Hồn Của Thế Giới">
                 <Field label="Thể Loại" description="Quyết định văn phong và không khí chính của câu chuyện. Sẽ tự động chọn một mẫu thuộc tính phù hợp.">
-                    <select name="genre" value={formData.genre} onChange={handleInputChange} className="input-neumorphic">
-                        <option>Huyền Huyễn Tu Tiên</option>
-                        <option>Võ Hiệp Giang Hồ</option>
-                        <option>Khoa Huyễn Viễn Tưởng</option>
-                        <option>Kinh Dị Huyền Bí</option>
-                        <option>Đô Thị Dị Năng</option>
-                        <option>Hậu Tận Thế & Sinh Tồn</option>
-                        <option>Hệ Thống & Thăng Cấp (LitRPG)</option>
-                        <option>Cung Đấu & Gia Tộc</option>
-                        <option>Steampunk & Ma Thuật</option>
-                        <option>Thám Tử & Huyền Bí</option>
-                        <option>Triệu Hồi & Dưỡng Thú</option>
-                        <option>Lãng Mạn & Tình Duyên</option>
-                        <option>Hài Hước & Châm Biếm</option>
-                        <option>Lịch Sử & Dã Sử</option>
-                        <option>Phiêu Lưu & Khám Phá</option>
+                    <select name="genre-select" value={showCustomGenreInput ? 'custom' : formData.genre} onChange={handleGenreSelectChange} className="input-neumorphic">
+                        {GENRE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        <option value="custom">Tự Định Nghĩa...</option>
                     </select>
+                    {showCustomGenreInput && (
+                         <input
+                            name="genre"
+                            value={formData.genre}
+                            onChange={handleInputChange}
+                            className="input-neumorphic mt-2"
+                            placeholder="Nhập thể loại của bạn..."
+                            autoFocus
+                        />
+                    )}
                 </Field>
                 <Field label="Chủ Đề (Cụ thể hơn)" description="Giúp AI tập trung vào một khía cạnh cụ thể trong thể loại bạn chọn.">
                     <input name="theme" value={formData.theme} onChange={handleInputChange} className="input-neumorphic" placeholder="VD: Ngôi nhà ma ám, Lời nguyền rồng, Tu tiên độ kiếp..."/>
@@ -517,9 +564,9 @@ const SaveSlotScreen: React.FC = () => {
                         <h4 className="font-bold text-lg" style={{color: 'var(--primary-accent-color)'}}>{group.name}</h4>
                         <div className="mt-2 space-y-2">
                             {formData.attributeSystem.definitions.filter(def => def.group === group.id).map(def => (
-                                <div key={def.id} className="flex justify-between items-center p-2 bg-black/20 rounded">
+                                <div key={def.id} className="flex justify-between items-center p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
                                     <div className="flex items-center gap-2">
-                                        {React.createElement(UI_ICONS[def.iconName] || 'span', { className: 'text-cyan-300' })}
+                                        {React.createElement(UI_ICONS[def.iconName] || 'span', { style: { color: 'var(--secondary-accent-color)' } })}
                                         <span className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{def.name}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -529,7 +576,7 @@ const SaveSlotScreen: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        <button onClick={() => handleOpenAttributeModal(group, null)} className="w-full mt-3 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
+                        <button onClick={() => handleOpenAttributeModal(group, null)} className="w-full mt-3 text-sm flex items-center justify-center gap-2 p-1 rounded hover:brightness-125" style={{ color: 'var(--secondary-accent-color)', backgroundColor: 'rgba(var(--secondary-accent-color-rgb), 0.1)'}}>
                             <FaPlus /> Thêm thuộc tính vào nhóm
                         </button>
                     </div>

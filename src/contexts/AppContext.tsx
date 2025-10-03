@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -346,8 +348,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
             const finalGameState = await migrateGameState(fullyHydratedState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: state.currentSlotId } });
-        } catch (error) {
-            // FIX: Explicitly convert 'unknown' error type to string before passing to Error constructor.
+        } catch (error: unknown) {
+            // FIX: Explicitly type caught error as 'unknown' for type safety.
             throw new Error(String(error));
         }
     }, [state.currentSlotId, state.activeWorldId, loadSaveSlots]);
@@ -416,9 +418,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const finalGameState = await migrateGameState(hydratedState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Failed during custom world creation:", error);
-            // FIX: Explicitly convert 'unknown' error type to string before passing to Error constructor.
+            // FIX: Explicitly type caught error as 'unknown' for type safety.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
@@ -478,8 +480,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // FIX: The 'error' object is of type 'unknown' and cannot be directly passed
-            // to the Error constructor, which expects a string. Casting it to a string resolves the type error.
+            // FIX: The 'error' object is of type 'unknown' and cannot be passed directly to the Error constructor. It must be cast to a string first.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);

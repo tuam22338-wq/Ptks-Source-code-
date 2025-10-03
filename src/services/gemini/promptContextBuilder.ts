@@ -83,20 +83,28 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
     const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
 
     let qiToNextStage = Infinity;
+    let nextRealmInfo: string | null = null; 
+
     if (currentRealm && currentStage) {
         const currentStageIndex = currentRealm.stages.findIndex(s => s.id === currentStage.id);
         if (currentStageIndex !== -1 && currentStageIndex < currentRealm.stages.length - 1) {
-            qiToNextStage = currentRealm.stages[currentStageIndex + 1].qiRequired;
+            const nextStage = currentRealm.stages[currentStageIndex + 1];
+            qiToNextStage = nextStage.qiRequired;
+            nextRealmInfo = `Mục tiêu tiếp theo: ${currentRealm.name} - ${nextStage.name} (ID cảnh giới: ${currentRealm.id}, ID tiểu cảnh giới: ${nextStage.id}).`;
         } else {
             const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
             if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
                 const nextRealm = realmSystem[currentRealmIndex + 1];
                 if (nextRealm && nextRealm.stages.length > 0) {
-                    qiToNextStage = nextRealm.stages[0].qiRequired;
+                    const nextStage = nextRealm.stages[0];
+                    qiToNextStage = nextStage.qiRequired;
+                    nextRealmInfo = `Mục tiêu tiếp theo (ĐỘT PHÁ ĐẠI CẢNH GIỚI): ${nextRealm.name} - ${nextStage.name} (ID cảnh giới: ${nextRealm.id}, ID tiểu cảnh giới: ${nextStage.id}).`;
                 }
             }
         }
     }
+
+    const isBreakthroughPossible = playerCharacter.cultivation.spiritualQi >= qiToNextStage && qiToNextStage !== Infinity;
 
   let dialogueContext = '';
   if (dialogueWithNpcId) {
@@ -162,6 +170,8 @@ ${playerRulesContext}
 **Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Trạng thái:** ${playerCharacter.healthStatus}. ${activeEffectsSummary}
 - **Cảnh giới:** ${currentRealm?.name} - ${currentStage?.name || ''} (${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${(qiToNextStage !== Infinity ? qiToNextStage.toLocaleString() : 'MAX')} ${realmSystemInfo.resourceName})
+${nextRealmInfo ? `- ${nextRealmInfo}` : ''}
+${isBreakthroughPossible ? `- **[TRẠNG THÁI QUAN TRỌNG]: ĐÃ ĐỦ ĐIỀU KIỆN ĐỂ ĐỘT PHÁ!**` : ''}
 - **Thuộc tính:**${attributeSummary}
 - **Danh Vọng:** ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value}).
 - **Tiền tệ:** ${currencySummary || 'Không có'}.

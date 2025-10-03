@@ -185,6 +185,15 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                         <input value={tier.name} onChange={e => handleTierChange(tierIndex, 'name', e.target.value)} className="input-neumorphic w-full mb-2" placeholder="Tên Đại Cảnh Giới"/>
                                         <textarea value={tier.description} onChange={e => handleTierChange(tierIndex, 'description', e.target.value)} rows={2} className="input-neumorphic w-full resize-y" placeholder="Mô tả..."/>
                                         
+                                        {(tier.bonuses && tier.bonuses.length > 0) &&
+                                            <div className="mt-2 text-xs">
+                                                <span className="font-semibold" style={{color: 'var(--text-muted-color)'}}>Cộng thêm: </span>
+                                                {tier.bonuses.map((b, i) => (
+                                                    <span key={i} className="inline-block bg-teal-900/50 text-teal-200 rounded-full px-2 py-0.5 mr-1 mb-1">{b.attribute} {b.value > 0 ? `+${b.value}` : b.value}</span>
+                                                ))}
+                                            </div>
+                                        }
+
                                         <TierBonusEditor
                                             tier={tier}
                                             onTierChange={(field, value) => handleTierChange(tierIndex, field, value)}
@@ -199,6 +208,13 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                                                         <div>
                                                             <p className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{subTier.name}</p>
                                                             <p className="text-xs" style={{color: 'var(--text-muted-color)'}}>{systemInfo.resourceName}: {!isFinite(subTier.qiRequired) ? 'Vô Hạn' : (subTier.qiRequired || 0).toLocaleString()}</p>
+                                                             {(subTier.bonuses && subTier.bonuses.length > 0) &&
+                                                                <div className="mt-1 text-xs">
+                                                                    {subTier.bonuses.map((b, i) => (
+                                                                        <span key={i} className="inline-block bg-sky-900/50 text-sky-200 rounded-full px-2 py-0.5 mr-1 mb-1">{b.attribute} {b.value > 0 ? `+${b.value}` : b.value}</span>
+                                                                    ))}
+                                                                </div>
+                                                            }
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <button onClick={() => handleOpenSubTierModal(subTier, tierIndex)} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
