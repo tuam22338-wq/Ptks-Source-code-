@@ -191,7 +191,6 @@ Nhiệm vụ: Dựa vào hành động của người chơi và toàn bộ bối
         temperature: settings.temperature,
         topK: settings.topK,
         topP: settings.topP,
-        maxOutputTokens: 8192,
     };
     
     if (model === 'gemini-2.5-flash') {

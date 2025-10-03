@@ -1,6 +1,7 @@
 
 
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem, GenerationMode } from '../../types';
@@ -164,6 +165,11 @@ export const generateInitialWorldDetails = async (
     
     const { playerCharacter, discoveredLocations, activeNpcs, activeWorldId, realmSystem } = gameState;
     const currentLocation = discoveredLocations.find(loc => loc.id === playerCharacter.currentLocationId);
+    const dlcs = gameState.creationData?.dlcs;
+
+    const dlcContext = (dlcs && dlcs.length > 0)
+        ? `\n\n### BỐI CẢNH MỞ RỘNG TỪ DLC (ƯU TIÊN CAO) ###\n${dlcs.map(dlc => `--- DLC: ${dlc.title} ---\n${dlc.content}`).join('\n\n')}\n### KẾT THÚC DLC ###`
+        : '';
 
     const npcDensity = gameState.creationData!.npcDensity; // Should exist here
     const count = NPC_DENSITY_LEVELS.find(d => d.id === npcDensity)?.count ?? 15;
@@ -311,7 +317,7 @@ export const generateInitialWorldDetails = async (
     - Tính cách: ${playerCharacter.identity.personality}
     - Nguồn Gốc Sức Mạnh: ${playerCharacter.spiritualRoot?.name || 'Chưa xác định'}. (${playerCharacter.spiritualRoot?.description || 'Là một phàm nhân bình thường.'})
     - Địa điểm hiện tại: ${currentLocation?.name}. (${currentLocation?.description})
-
+    ${dlcContext}
     ---
     **NHIỆM VỤ 1: TẠO GIA ĐÌNH & BẠN BÈ**
     Tạo ra 2 đến 4 NPC là người thân hoặc bạn bè gần gũi của nhân vật chính. Họ đều là **PHÀM NHÂN**, không phải tu sĩ, và sống cùng địa điểm với người chơi.

@@ -48,7 +48,6 @@ Bắt đầu viết.`;
         temperature: settings.novelistTemperature,
         topK: settings.novelistTopK,
         topP: settings.novelistTopP,
-        maxOutputTokens: 16384,
     };
     
     if (model === 'gemini-2.5-flash' && settings.novelistEnableThinking) {

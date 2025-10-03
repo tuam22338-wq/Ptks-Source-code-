@@ -385,6 +385,7 @@ export interface WorldCreationData extends GameplaySettings {
     customNpcs: ModNpc[];
     customLocations: ModLocation[];
     customFactions: Faction[];
+    dlcs?: { title: string; content: string }[];
 }
 
 export interface WorldTurnEntry {
@@ -439,6 +440,7 @@ export interface GameState {
         npcGenerationMode?: DataGenerationMode;
         locationGenerationMode?: DataGenerationMode;
         factionGenerationMode?: DataGenerationMode;
+        dlcs?: { title: string; content: string }[];
     };
     gameplaySettings: GameplaySettings;
     worldTurnLog?: WorldTurnEntry[];

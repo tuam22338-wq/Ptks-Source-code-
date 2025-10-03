@@ -14,7 +14,8 @@ const AttributeRow: React.FC<{ label: string; value: string | number; icon: Reac
     </div>
 );
 
-const NpcTooltip: React.FC<{ npc: NPC; gameState: GameState; onClose: () => void; position: { top: number; left: number } }> = ({ npc, gameState, onClose, position }) => {
+const NpcTooltip: React.FC<{ npc: NPC; gameState: GameState; onClose: () => void; }> = ({ npc, gameState, onClose }) => {
+    const [activeTab, setActiveTab] = useState<'status' | 'inventory'>('status');
     const { attributeSystem, realmSystem } = gameState;
 
     const renderAttributeGroup = (group: any) => {
@@ -37,69 +38,123 @@ const NpcTooltip: React.FC<{ npc: NPC; gameState: GameState; onClose: () => void
     
     const realm = realmSystem.find(r => r.id === npc.cultivation.currentRealmId);
     const stage = realm?.stages.find(s => s.id === npc.cultivation.currentStageId);
+    // FIX: Explicitly type 'amount' to resolve 'unknown' type error and handle potential 'undefined' values.
+    const currencies = Object.entries(npc.currencies || {}).filter(([, amount]: [string, number | undefined]) => amount && amount > 0);
 
     return (
-        <div
-            className="fixed z-50 w-80 max-w-[80vw] rounded-lg shadow-2xl text-white animate-fade-in flex flex-col max-h-[70vh]"
-            style={{ 
-                top: position.top, 
-                left: position.left, 
-                animationDuration: '200ms',
-                backgroundColor: 'var(--bg-color)',
-                boxShadow: 'var(--shadow-raised)',
-                border: '1px solid var(--shadow-light)'
-            }}
-            onClick={e => e.stopPropagation()}
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+            style={{ animationDuration: '200ms' }}
+            onClick={onClose}
         >
-            <div className="p-3 border-b border-[var(--shadow-dark)] flex justify-between items-center">
-                <h4 className="text-xl font-bold font-title text-amber-300">{npc.identity.name}</h4>
-                <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><FaTimes /></button>
-            </div>
-            <div className="p-3 overflow-y-auto space-y-3">
-                <p className="text-xs italic text-gray-400">"{npc.identity.origin}"</p>
-                <div className="text-sm space-y-1">
-                    <p><strong className="text-gray-300">Tuổi:</strong> {npc.identity.age}</p>
-                    <p><strong className="text-gray-300">Tính cách:</strong> {npc.identity.personality}</p>
-                    {realm && stage && <p><strong className="text-gray-300">Cảnh giới:</strong> {realm.name} - {stage.name}</p>}
+            <div
+                className="w-96 max-w-[90vw] rounded-lg shadow-2xl text-white flex flex-col max-h-[80vh]"
+                style={{ 
+                    backgroundColor: 'var(--bg-color)',
+                    boxShadow: 'var(--shadow-raised)',
+                    border: '1px solid var(--shadow-light)'
+                }}
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="p-3 border-b border-[var(--shadow-dark)] flex justify-between items-center flex-shrink-0">
+                    <h4 className="text-xl font-bold font-title text-amber-300">{npc.identity.name}</h4>
+                    <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><FaTimes /></button>
                 </div>
-                <div className="space-y-2">
-                    {attributeSystem.groups.map(renderAttributeGroup)}
+                
+                <div className="flex border-b border-[var(--shadow-dark)] flex-shrink-0">
+                    <button 
+                        onClick={() => setActiveTab('status')} 
+                        className={`w-1/2 py-2 text-sm font-semibold transition-colors ${activeTab === 'status' ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-dark)]'}`}
+                    >
+                        Trạng Thái
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('inventory')} 
+                        className={`w-1/2 py-2 text-sm font-semibold transition-colors ${activeTab === 'inventory' ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-dark)]'}`}
+                    >
+                        Túi Đồ
+                    </button>
+                </div>
+
+                <div className="p-3 overflow-y-auto space-y-3">
+                    {activeTab === 'status' && (
+                        <>
+                            <p className="text-xs italic text-gray-400">"{npc.identity.origin}"</p>
+                            <div className="text-sm space-y-1">
+                                <p><strong className="text-gray-300">Tuổi:</strong> {npc.identity.age}</p>
+                                <p><strong className="text-gray-300">Tính cách:</strong> {npc.identity.personality}</p>
+                                {realm && stage && <p><strong className="text-gray-300">Cảnh giới:</strong> {realm.name} - {stage.name}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                {attributeSystem.groups.map(renderAttributeGroup)}
+                            </div>
+                        </>
+                    )}
+                    {activeTab === 'inventory' && (
+                        <div className="space-y-4">
+                            <div>
+                                <h5 className="font-bold text-amber-300 text-sm mb-2">Tài Sản</h5>
+                                {currencies.length > 0 ? (
+                                    currencies.map(([name, amount]) => (
+                                        <div key={name} className="flex justify-between items-center text-sm py-1">
+                                            <span className="text-gray-300">{name}</span>
+                                            <span className="font-mono font-semibold text-amber-200">{Number(amount).toLocaleString()}</span>
+                                        </div>
+                                    ))
+                                ) : <p className="text-xs text-gray-500 italic">Không có tài sản.</p>}
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-amber-300 text-sm mb-2">Vật Phẩm</h5>
+                                {(npc.inventory?.items || []).length > 0 ? (
+                                    <div className="space-y-2">
+                                        {npc.inventory.items.map((item, index) => (
+                                            <div key={index} className="flex items-center gap-3 p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                                                <span className="text-2xl">{item.icon || '📜'}</span>
+                                                <div>
+                                                    <p className={`text-sm font-semibold ${ITEM_QUALITY_STYLES[item.quality]?.color || 'text-gray-300'}`}>{item.name} <span className="text-xs text-gray-400">x{item.quantity}</span></p>
+                                                    <p className="text-xs text-gray-500">{item.description}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-xs text-gray-500 italic">Túi đồ trống.</p>}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
 
+
 // --- InteractiveText Component ---
 const InteractiveText: React.FC<{
     text: string;
-    newNpcs: NPC[];
+    npcs: NPC[];
     gameState: GameState;
-}> = ({ text, newNpcs, gameState }) => {
-    const [tooltipData, setTooltipData] = useState<{ npc: NPC; position: { top: number; left: number } } | null>(null);
+}> = ({ text, npcs, gameState }) => {
+    const [tooltipData, setTooltipData] = useState<{ npc: NPC } | null>(null);
 
     const handleNpcClick = (npc: NPC, event: React.MouseEvent) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        setTooltipData({
-            npc,
-            position: {
-                top: rect.bottom + window.scrollY + 5,
-                left: rect.left + window.scrollX,
-            },
-        });
+        event.stopPropagation();
+        setTooltipData({ npc });
     };
 
     const content = useMemo(() => {
-        if (!text || newNpcs.length === 0) return text;
+        if (!text || npcs.length === 0) return text;
 
-        const allNames = newNpcs.map(npc => npc.identity.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const allNames = npcs.map(npc => npc.identity.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean);
         if (allNames.length === 0) return text;
+        
+        // Sort by length descending to match longer names first (e.g., "Lý Mạc Sầu" before "Lý")
+        allNames.sort((a, b) => b.length - a.length);
         
         const regex = new RegExp(`(${allNames.join('|')})`, 'g');
         const parts = text.split(regex);
 
         return parts.map((part, i) => {
-            const npc = newNpcs.find(n => n.identity.name === part);
+            const npc = npcs.find(n => n.identity.name === part);
             if (npc) {
                 return (
                     <span
@@ -113,11 +168,11 @@ const InteractiveText: React.FC<{
             }
             return part;
         });
-    }, [text, newNpcs]);
+    }, [text, npcs]);
 
     return (
         <>
-            {tooltipData && <NpcTooltip {...tooltipData} gameState={gameState} onClose={() => setTooltipData(null)} />}
+            {tooltipData && <NpcTooltip npc={tooltipData.npc} gameState={gameState} onClose={() => setTooltipData(null)} />}
             {content}
         </>
     );
@@ -202,18 +257,6 @@ const StoryLog: React.FC<{
         onSpeak(cleanText);
     };
 
-    const newNpcsInPage = useMemo(() => {
-        const npcNames = new Set<string>();
-        for (const entry of pageEntries) {
-            const matches = entry.content.matchAll(/Nhân vật mới xuất hiện: (.*?)$/gm);
-            for (const match of matches) {
-                npcNames.add(match[1]);
-            }
-        }
-        return gameState.activeNpcs.filter(npc => npcNames.has(npc.identity.name));
-    }, [pageEntries, gameState.activeNpcs]);
-
-
     return (
         <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
             {pageEntries.map((entry) => {
@@ -221,7 +264,7 @@ const StoryLog: React.FC<{
                 const isSpeakable = ['narrative', 'dialogue', 'action-result', 'system-notification', 'player-dialogue', 'combat'].includes(entry.type);
 
                 const renderContent = () => (
-                    <InteractiveText text={entry.content} newNpcs={newNpcsInPage} gameState={gameState} />
+                    <InteractiveText text={entry.content} npcs={gameState.activeNpcs} gameState={gameState} />
                 );
 
                 const renderEntry = (children: React.ReactNode) => (

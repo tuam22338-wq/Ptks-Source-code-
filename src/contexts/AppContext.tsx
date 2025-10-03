@@ -1,7 +1,5 @@
 
 
-
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -37,6 +35,8 @@ export interface GameStartData extends GameplaySettings {
     customNpcs?: ModNpc[];
     customLocations?: ModLocation[];
     customFactions?: Faction[];
+    // @FIX: Add missing 'dlcs' property to match its usage in `createNewGameState`.
+    dlcs?: { title: string; content: string }[];
 }
 
 
@@ -429,6 +429,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_CURRENT_SLOT_ID', payload: slotId });
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang sáng thế, xin chờ...' } });
 
+        // FIX: Ensure caught error of type 'unknown' is converted to a string before being passed to the Error constructor.
         try {
             const { mod, characterData, openingNarrative, familyNpcs, dynamicNpcs, relationships } = await generateCompleteWorldFromText(description, characterName, 'fast');
 

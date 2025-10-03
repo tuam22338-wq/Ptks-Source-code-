@@ -169,6 +169,7 @@ const SaveSlotScreen: React.FC = () => {
     customNpcs: [],
     customLocations: [],
     customFactions: [],
+    dlcs: [],
     // Default Gameplay Settings
     narrativeStyle: 'classic_wuxia',
     aiResponseWordCount: 1500,
@@ -189,6 +190,24 @@ const SaveSlotScreen: React.FC = () => {
     narrateSystemChanges: true,
     worldInterruptionFrequency: 'occasional',
   });
+
+  const handleAddDlc = () => {
+    setFormData(p => ({ ...p, dlcs: [...(p.dlcs || []), { title: '', content: '' }] }));
+  };
+
+  const handleDlcChange = (index: number, field: 'title' | 'content', value: string) => {
+    setFormData(p => {
+        const newDlcs = [...(p.dlcs || [])];
+        newDlcs[index] = { ...newDlcs[index], [field]: value };
+        return { ...p, dlcs: newDlcs };
+    });
+  };
+
+  const handleDeleteDlc = (index: number) => {
+    if (window.confirm("Bạn có chắc muốn xóa DLC này?")) {
+        setFormData(p => ({ ...p, dlcs: (p.dlcs || []).filter((_, i) => i !== index) }));
+    }
+  };
 
   const handleGenreSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = e.target;
@@ -527,6 +546,35 @@ const SaveSlotScreen: React.FC = () => {
                                 {formData.enableSurvivalMechanics ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
                                 <span>Bật đói và khát</span>
                             </button>
+                        </Field>
+                        <Field label="DLC (Mở Rộng AI)" description="Thêm các đoạn văn bản mở rộng để AI sử dụng làm lore hoặc quy tắc khi tạo thế giới và tường thuật.">
+                            <div className="space-y-3">
+                                {(formData.dlcs || []).map((dlc, index) => (
+                                    <div key={index} className="neumorphic-inset-box p-3 space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                value={dlc.title}
+                                                onChange={(e) => handleDlcChange(index, 'title', e.target.value)}
+                                                className="input-neumorphic !py-1 flex-grow"
+                                                placeholder={`Tiêu đề DLC ${index + 1}`}
+                                            />
+                                            <button onClick={() => handleDeleteDlc(index)} className="p-2 text-[var(--text-muted-color)] hover:text-red-400">
+                                                <FaTrash />
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            value={dlc.content}
+                                            onChange={(e) => handleDlcChange(index, 'content', e.target.value)}
+                                            rows={4}
+                                            className="input-neumorphic w-full resize-y"
+                                            placeholder="Dán nội dung lore, quy tắc, hoặc bối cảnh vào đây..."
+                                        />
+                                    </div>
+                                ))}
+                                <button onClick={handleAddDlc} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-2 bg-cyan-900/30 rounded">
+                                    <FaPlus /> Thêm DLC
+                                </button>
+                            </div>
                         </Field>
                     </div>
                  )}

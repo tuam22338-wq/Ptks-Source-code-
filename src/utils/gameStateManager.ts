@@ -1,4 +1,5 @@
 
+
 import {
     REALM_SYSTEM,
     DEFAULT_ATTRIBUTE_DEFINITIONS,
@@ -358,7 +359,7 @@ export const createNewGameState = async (
     const { 
         identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong, initialCurrency, generationMode = 'fast', attributeSystem, namedRealmSystem, genre,
         npcGenerationMode, locationGenerationMode, factionGenerationMode,
-        customNpcs, customLocations, customFactions,
+        customNpcs, customLocations, customFactions, dlcs,
         ...gameplaySettingsData
      } = gameStartData;
 
@@ -635,6 +636,7 @@ export const createNewGameState = async (
             npcGenerationMode,
             locationGenerationMode,
             factionGenerationMode,
+            dlcs,
         },
         gameplaySettings: {
             ...gameplaySettingsData,
