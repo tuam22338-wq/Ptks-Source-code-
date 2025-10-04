@@ -10,7 +10,7 @@ import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service'
 import { generateCharacterFromPrompts } from '../services/gemini/character.service';
 import { generateCompleteWorldFromText } from '../services/gemini/modding.service';
 
-export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining' | 'scripts';
+export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining' | 'scripts' | 'createScript';
 
 // FIX: Extend GameplaySettings to ensure all settings are passed during game creation.
 export interface GameStartData extends GameplaySettings {
@@ -477,6 +477,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
+            // FIX: The caught 'error' is of type 'unknown' and cannot be passed directly to the `Error` constructor. Casting it to a string resolves the type mismatch.
             // @google-genai-fix: Cast the 'unknown' error type to a string before passing it to the Error constructor to resolve the type error.
             // FIX: Cast the 'unknown' error type to a string before passing it to the Error constructor to resolve the type error.
             throw new Error(String(error));

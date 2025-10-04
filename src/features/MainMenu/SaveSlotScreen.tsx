@@ -500,7 +500,7 @@ const SaveSlotScreen: React.FC = () => {
         </div>
         
         <div className="p-4 bg-teal-900/30 border border-teal-500/50 rounded-lg mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button onClick={() => setQuickCreateOpen(true)} className="flex items-center justify-center gap-3 px-4 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-lg">
                     <FaBolt /> Tạo Nhanh Bằng AI
                 </button>
