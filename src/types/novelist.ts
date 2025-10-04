@@ -11,6 +11,9 @@ export interface Novel {
     synopsis: string;
     content: NovelContentEntry[];
     lastModified: string;
+    // New fields for enhanced AI memory and control
+    lorebook: string;
+    fanficMode: boolean;
     // Optional settings per novel
     aiSettings?: {
         temperature?: number;

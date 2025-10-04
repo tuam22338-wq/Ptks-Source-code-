@@ -1,13 +1,13 @@
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
-import { migrateGameState, createNewGameState, hydrateWorldData } from '../utils/gameStateManager';
+import { migrateGameState, createNewGameState } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
 import { apiKeyManager } from '../services/gemini/gemini.core';
 import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
 import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service';
-import { generateCharacterFromPrompts } from '../services/gemini/character.service';
+import { generateCharacterFromPrompts, generateInitialWorldDetails } from '../services/gemini/character.service';
 import { generateCompleteWorldFromText } from '../services/gemini/modding.service';
 
 export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining' | 'scripts' | 'createScript';
@@ -338,12 +338,24 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const setLoading = (msg: string) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } });
             
             const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, setLoading);
-            const fullyHydratedState = await hydrateWorldData(newGameState, setLoading);
+            
+            setLoading('Đang tạo dựng thế giới, chúng sinh và viết nên chương mở đầu...');
+            const { npcs, relationships, openingNarrative } = await generateInitialWorldDetails(newGameState, newGameState.creationData!.generationMode);
+            
+            if (newGameState.storyLog.length > 0) {
+                newGameState.storyLog[0] = { ...newGameState.storyLog[0], content: openingNarrative };
+            } else {
+                newGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
+            }
+            newGameState.playerCharacter.relationships.push(...relationships);
+            newGameState.activeNpcs.push(...npcs);
+            newGameState.isHydrated = true;
+            delete newGameState.creationData;
 
-            await db.saveGameState(state.currentSlotId, fullyHydratedState);
+            await db.saveGameState(state.currentSlotId, newGameState);
             await loadSaveSlots();
 
-            const finalGameState = await migrateGameState(fullyHydratedState);
+            const finalGameState = await migrateGameState(newGameState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: state.currentSlotId } });
         } catch (error: unknown) {
             // FIX: Explicitly type caught error as 'unknown' for type safety.
@@ -406,18 +418,48 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             };
             
             const setLoading = (msg: string) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } });
+            
+            // Step 1: Create the base game state. It will have `isHydrated: false`.
             const newGameState = await createNewGameState(gameStartData, activeMods, worldIdToUse, setLoading);
-            const hydratedState = await hydrateWorldData(newGameState, setLoading);
+            
+            // Step 2: Directly call the hydration AI service and manually hydrate.
+            setLoading('Đang tạo dựng thế giới, chúng sinh và viết nên chương mở đầu...');
+            const generationMode = newGameState.creationData?.generationMode || 'deep';
+            const { npcs, relationships, openingNarrative } = await generateInitialWorldDetails(
+                newGameState,
+                generationMode
+            );
 
-            await db.saveGameState(slotId, hydratedState);
+            // Step 3: Populate the new game state with the generated data.
+            if (newGameState.storyLog.length > 0) {
+                newGameState.storyLog[0] = { ...newGameState.storyLog[0], content: openingNarrative };
+            } else {
+                newGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
+            }
+
+            newGameState.playerCharacter.relationships.push(...relationships);
+
+            const familyNpcs = npcs.filter(n => n.id.startsWith('family-npc-'));
+            newGameState.activeNpcs.push(...familyNpcs);
+
+            if (newGameState.creationData?.npcGenerationMode === 'AI') {
+                const dynamicNpcs = npcs.filter(n => n.id.startsWith('dynamic-npc-'));
+                newGameState.activeNpcs.push(...dynamicNpcs);
+            }
+            
+            // Step 4: Finalize the state.
+            newGameState.isHydrated = true;
+            delete newGameState.creationData;
+            setLoading('Hoàn tất sáng thế!');
+
+            await db.saveGameState(slotId, newGameState);
             await loadSaveSlots();
 
-            const finalGameState = await migrateGameState(hydratedState);
+            const finalGameState = await migrateGameState(newGameState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
 
         } catch (error: any) {
             console.error("Failed during custom world creation:", error);
-            // FIX: Explicitly type caught error as 'unknown' for type safety.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
@@ -477,9 +519,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // FIX: The caught 'error' is of type 'unknown' and cannot be passed directly to the `Error` constructor. Casting it to a string resolves the type mismatch.
-            // @google-genai-fix: Cast the 'unknown' error type to a string before passing it to the Error constructor to resolve the type error.
-            // FIX: Cast the 'unknown' error type to a string before passing it to the Error constructor to resolve the type error.
+            // @google-genai-fix: The caught 'error' of type 'unknown' cannot be passed to the `Error` constructor directly. Casting it to a string resolves the type mismatch.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);

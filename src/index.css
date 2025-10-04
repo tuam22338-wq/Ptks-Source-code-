@@ -136,13 +136,13 @@
   --primary-accent-color: #58A6FF;
   --primary-accent-text-color: #0D1117;
   --secondary-accent-color: #A371F7;
-  --panel-border-color: rgba(255, 255, 255, 0.12);
+  --panel-border-color: rgba(255, 255, 255, 0.18);
   --input-focus-ring-color: #58A6FF;
 
   /* Glassmorphism specific */
-  --glass-bg: rgba(30, 36, 49, 0.75);
+  --glass-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --glass-blur: 8px;
+  --glass-blur: 16px;
 
   /* Override Neumorphism shadows */
   --shadow-light: transparent;
@@ -313,7 +313,7 @@ input[type="range"]::-moz-range-thumb {
 .theme-luu-ly-ngoc-tinh .player-bubble,
 .theme-luu-ly-ngoc-tinh .npc-bubble,
 .theme-luu-ly-ngoc-tinh .modal-content {
-  background-color: var(--glass-bg);
+  background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--panel-border-color);
@@ -333,20 +333,20 @@ input[type="range"]::-moz-range-thumb {
 
 .theme-luu-ly-ngoc-tinh .input-neumorphic:focus {
    box-shadow: var(--shadow-pressed), 0 0 0 2px var(--input-focus-ring-color);
-   background-color: rgba(255, 255, 255, 0.1);
+   background: rgba(255, 255, 255, 0.1);
 }
 
 .theme-luu-ly-ngoc-tinh .btn-neumorphic {
   box-shadow: var(--shadow-raised-interactive);
 }
 .theme-luu-ly-ngoc-tinh .btn-neumorphic:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
   color: var(--text-color);
 }
 .theme-luu-ly-ngoc-tinh .btn-neumorphic:active {
-  background-color: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(0);
   box-shadow: var(--shadow-pressed);
