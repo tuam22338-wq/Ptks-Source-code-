@@ -101,7 +101,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     validationServiceCap: 'strict',
     narrateSystemChanges: true,
     worldInterruptionFrequency: 'occasional',
-    mainTaskModel: 'gemini-2.5-flash',
+    mainTaskModel: 'gemini-2.5-pro',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',
     itemCraftingModel: 'gemini-2.5-flash',
@@ -167,7 +167,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ttsPitch: 1,
     ttsVolume: 1,
     aiSyncMode: 'intent_driven',
-    isPremium: false,
+    isPremium: true,
     enableAutomaticModelRotation: true,
 };
 
