@@ -27,10 +27,13 @@ export const NARRATIVE_STYLES: { value: NarrativeStyle; label: string }[] = [
     { value: 'lovecraftian_horror', label: 'Kinh Dị Lovecraft' },
     { value: 'comedic', label: 'Hài Hước' },
     { value: 'slice_of_life', label: 'Đời Thường' },
+    { value: 'visual_novel', label: 'Trực Quan (Visual Novel)' },
+    { value: 'dialogue_focused', label: 'Đối Thoại Tự Nhiên' },
 ];
 
 export const THEME_OPTIONS: { value: Theme; label: string; premium?: boolean }[] = [
     { value: 'theme-bich-du-cung', label: 'Bích Du Cung (Mặc định)' },
+    { value: 'theme-luu-ly-ngoc-tinh', label: 'Lưu Ly Ngọc Tinh (Glass)' },
     { value: 'theme-ink-wash-bamboo', label: 'Thủy Mặc Trúc Lâm' },
     { value: 'theme-bamboo-forest', label: 'Rừng Trúc Vàng' },
     { value: 'theme-sunrise-peak', label: 'Bình Minh (Sáng)' },

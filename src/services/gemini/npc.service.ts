@@ -1,4 +1,5 @@
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode, WorldTurnEntry } from '../../types';
@@ -129,7 +130,7 @@ export const generateRelationshipUpdate = async (
 
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
-    // FIX: Corrected model name from 'gemini-2.flash' to 'gemini-2.5-flash' to match supported models.
+    // @google-genai-fix: Corrected model name from 'gemini-2.flash' to 'gemini-2.5-flash' to match supported models.
     const response = await generateWithRetry({
         model: settings?.npcSimulationModel || 'gemini-2.5-flash',
         contents: prompt,

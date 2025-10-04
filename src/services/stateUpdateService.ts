@@ -69,12 +69,6 @@ export const applyMechanicalChanges = (
         }
     }
 
-
-    if (intent.dialogueChoices && intent.dialogueChoices.length > 0) {
-        nextState.dialogueChoices = intent.dialogueChoices;
-        return nextState; // Stop further processing if choices are presented.
-    }
-    
     if (intent.locationChange && nextState.discoveredLocations.some((l: any) => l.id === intent.locationChange)) {
         pc.currentLocationId = intent.locationChange;
         showNotification(`Đã đến: ${nextState.discoveredLocations.find((l:any) => l.id === pc.currentLocationId)?.name || pc.currentLocationId}`);

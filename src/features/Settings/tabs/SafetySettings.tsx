@@ -1,4 +1,5 @@
 
+
 import React, { memo } from 'react';
 import type { GameSettings, SafetyLevel } from '../../../types';
 import { SAFETY_LEVELS, SAFETY_CATEGORIES } from '../../../constants';
@@ -46,10 +47,15 @@ const SafetySettingsTab: React.FC<SafetySettingsProps> = ({ settings, handleSett
                         <span className="ml-3 text-sm font-bold text-red-400 flex items-center gap-2"><FaFire /> Bật chế độ 18+</span>
                     </label>
                     {settings.enableNsfwMode && (
-                        // FIX: Removed duplicate 'color' and redundant 'backgroundColor' properties from the style object.
-                         <p className="mt-2 text-xs p-2 rounded-md" style={{background: 'rgba(var(--error-color-rgb), 0.1)', border: '1px solid rgba(var(--error-color-rgb), 0.5)', color: 'var(--error-color)'}}>
-                            <strong>CẢNH BÁO:</strong> Bạn đã bật chế độ NSFW. AI sẽ tạo ra các nội dung cực kỳ bạo lực, tàn khốc, và tình dục một cách chi tiết, trần trụi. Trải nghiệm có thể chứa các yếu tố kinh dị và gây khó chịu. Các bộ lọc an toàn khác đã bị vô hiệu hóa.
-                        </p>
+                         <div className="mt-2 text-xs p-2 rounded-md" style={{background: 'rgba(var(--error-color-rgb), 0.1)', border: '1px solid rgba(var(--error-color-rgb), 0.5)', color: 'var(--error-color)'}}>
+                            <strong>CẢNH BÁO TUYỆT ĐỐI:</strong> Bạn đã bật chế độ 18+. Khi được kích hoạt, AI sẽ được chỉ thị để tạo ra các nội dung người lớn một cách cực kỳ chi tiết và không bị kiểm duyệt, bao gồm nhưng không giới hạn ở:
+                            <ul className="list-disc list-inside pl-2 mt-1">
+                                <li><strong>Bạo lực cực đoan:</strong> Mô tả chân thực máu me, nội tạng, tra tấn và cái chết tàn bạo.</li>
+                                <li><strong>Nội dung tình dục chi tiết:</strong> Mô tả thẳng thắn và không che đậy các hành vi giao hợp, các bộ phận sinh dục, và các chủ đề tình dục cực đoan (bao gồm cả bạo lực tình dục nếu phù hợp với bối cảnh hắc ám).</li>
+                                <li><strong>Kinh dị tâm lý & thể xác:</strong> Các chủ đề về sự điên loạn, biến đổi cơ thể ghê rợn và nỗi kinh hoàng vũ trụ.</li>
+                            </ul>
+                            Tất cả các bộ lọc an toàn khác sẽ bị vô hiệu hóa hoàn toàn. Hãy chắc chắn rằng bạn đã sẵn sàng cho một trải nghiệm không khoan nhượng.
+                        </div>
                     )}
                 </div>
             </SettingsRow>

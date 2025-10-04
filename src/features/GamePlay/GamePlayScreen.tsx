@@ -1,14 +1,13 @@
 import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
 import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter, EventChoice, GameSettings } from '../../types';
-import StoryLog from './StoryLog';
-import ActionBar from './ActionBar';
+import StoryLog from './components/StoryLog';
+import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
 import LoadingScreen from '../../components/LoadingScreen';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
-import EventPanel from './components/EventPanel';
-// FIX: Changed import path to point to the correct file with the default export.
-import CombatScreen from './CombatScreen';
+import EventPanel from './EventPanel';
+import CombatScreen from './components/CombatScreen';
 import CultivationPathModal from './CultivationPathModal';
 import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
@@ -19,7 +18,6 @@ import { useAppContext } from '../../contexts/AppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import Sidebar from './components/Sidebar/Sidebar';
-import InteractionOverlay from './components/InteractionOverlay';
 
 interface CustomStoryPlayerProps {
     gameState: GameState;
@@ -66,7 +64,7 @@ const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpda
 };
 
 const GamePlayScreenContent: React.FC = memo(() => {
-    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch, handleDialogueChoice } = useAppContext();
+    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch } = useAppContext();
     const { gameState, settings } = state;
     const { 
         notifications, dismissNotification, availablePaths,
@@ -248,13 +246,13 @@ const GamePlayScreenContent: React.FC = memo(() => {
     
     if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
-    const { playerCharacter, combatState, activeStory, discoveredLocations, worldState, dialogueChoices } = gameState;
+    const { playerCharacter, combatState, activeStory, discoveredLocations, worldState } = gameState;
     const currentLocation = useMemo(() => {
         if (!discoveredLocations || discoveredLocations.length === 0) return null;
         return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
     }, [discoveredLocations, playerCharacter.currentLocationId]);
     
-    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory || (dialogueChoices && dialogueChoices.length > 0));
+    const isSpecialPanelActive = !!(combatState || activeEvent || activeStory);
     const isOnLastPage = currentPage === storyPages.length - 1;
 
     if (!currentLocation) {
@@ -306,13 +304,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             {combatState && <CombatScreen />}
                             {activeEvent && <EventPanel event={activeEvent} onChoice={handleEventChoice} playerAttributes={gameState.playerCharacter.attributes} />}
                             {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
-                            {dialogueChoices && dialogueChoices.length > 0 && (
-                                <InteractionOverlay 
-                                    choices={dialogueChoices}
-                                    playerAttributes={playerCharacter.attributes}
-                                    onChoiceSelect={handleDialogueChoice}
-                                />
-                            )}
                         </>
                     ) : (
                         <ActionBar 

@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -12,7 +10,7 @@ import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service'
 import { generateCharacterFromPrompts } from '../services/gemini/character.service';
 import { generateCompleteWorldFromText } from '../services/gemini/modding.service';
 
-export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining';
+export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining' | 'scripts';
 
 // FIX: Extend GameplaySettings to ensure all settings are passed during game creation.
 export interface GameStartData extends GameplaySettings {
@@ -62,7 +60,6 @@ interface AppContextType {
     quitGame: () => void;
     speak: (text: string, force?: boolean) => void;
     cancelSpeech: () => void;
-    handleDialogueChoice: (choice: EventChoice) => void;
     // New Mod Handlers
     handleInstallMod: (modData: FullMod) => Promise<boolean>;
     handleToggleMod: (modId: string) => Promise<void>;
@@ -418,7 +415,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const finalGameState = await migrateGameState(hydratedState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
 
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error("Failed during custom world creation:", error);
             // FIX: Explicitly type caught error as 'unknown' for type safety.
             throw new Error(String(error));
@@ -429,7 +426,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_CURRENT_SLOT_ID', payload: slotId });
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang sáng thế, xin chờ...' } });
 
-        // FIX: Ensure caught error of type 'unknown' is converted to a string before being passed to the Error constructor.
         try {
             const { mod, characterData, openingNarrative, familyNpcs, dynamicNpcs, relationships } = await generateCompleteWorldFromText(description, characterName, 'fast');
 
@@ -481,7 +477,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // FIX: The 'error' object is of type 'unknown' and cannot be passed directly to the Error constructor. It must be cast to a string first.
+            // @google-genai-fix: Cast the 'unknown' error type to a string before passing it to the Error constructor to resolve the type error.
+            // FIX: Cast the 'unknown' error type to a string before passing it to the Error constructor to resolve the type error.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);
@@ -544,10 +541,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
     }, [state.isLoading, state.settings, state.currentSlotId, cancelSpeech, state.gameState, dispatch]);
-
-    const handleDialogueChoice = useCallback((choice: EventChoice) => {
-        handlePlayerAction(choice.text, 'act', 0, () => {});
-    }, [handlePlayerAction]);
 
     const handleUpdatePlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
         dispatch({
@@ -789,7 +782,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         state, dispatch, handleNavigate, handleSettingChange, handleDynamicBackgroundChange, handleSettingsSave,
         handleSlotSelection, handleSaveGame, handleDeleteGame, handleVerifyAndRepairSlot,
         handleGameStart, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
-        handlePlayerAction, handleUpdatePlayerCharacter, handleDialogueChoice,
+        handlePlayerAction, handleUpdatePlayerCharacter,
         handleInstallMod, handleToggleMod, handleDeleteModFromLibrary, handleEditWorld,
         handleCreateAndStartGame, handleQuickCreateAndStartGame
     };

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaArrowLeft, FaFileUpload, FaBrain, FaToggleOn, FaToggleOff, FaSave, FaPlus, FaTrash, FaEdit, FaBolt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+// FIX: Import `FaUpload` icon to resolve usage error.
+import { FaArrowLeft, FaFileUpload, FaBrain, FaToggleOn, FaToggleOff, FaSave, FaPlus, FaTrash, FaEdit, FaBolt, FaChevronDown, FaChevronUp, FaDownload, FaUpload } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
 import { CURRENT_GAME_VERSION, ATTRIBUTE_TEMPLATES, UI_ICONS, NARRATIVE_STYLES, DEATH_PENALTY_LEVELS, WORLD_INTERRUPTION_LEVELS } from '../../constants';
 import { REALM_TEMPLATES } from '../../data/realmTemplates';
@@ -121,6 +122,7 @@ const SlotSelectionModal: React.FC<{
 const SaveSlotScreen: React.FC = () => {
   const { state, handleNavigate, handleCreateAndStartGame, handleQuickCreateAndStartGame } = useAppContext();
   const importInputRef = useRef<HTMLInputElement>(null);
+  const scriptInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -431,6 +433,34 @@ const SaveSlotScreen: React.FC = () => {
         }
     };
 
+    const handleExportTemplate = () => {
+        try {
+            const templateData = { ...formData, importedMod: formData.importedMod ? { modInfo: formData.importedMod.modInfo } : null };
+            const jsonString = JSON.stringify(templateData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            link.href = url;
+            link.download = `tamthienthegioi_template_${timestamp}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err: any) {
+            setError(`Lỗi khi xuất mẫu: ${err.message}`);
+        }
+    };
+    
+    const handleImportScript = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        alert(`Tính năng nhập script [${file.name}] sẽ được hỗ trợ trong tương lai!`);
+        if (event.target) {
+            event.target.value = "";
+        }
+    };
+
 
   if (isLoading) {
       return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={'fast'}/>;
@@ -469,10 +499,21 @@ const SaveSlotScreen: React.FC = () => {
             </button>
         </div>
         
-        <div className="p-4 bg-teal-900/30 border border-teal-500/50 rounded-lg mb-6 flex flex-col sm:flex-row gap-4">
-            <button onClick={() => setQuickCreateOpen(true)} className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-lg">
-                <FaBolt /> Tạo Nhanh Bằng AI
-            </button>
+        <div className="p-4 bg-teal-900/30 border border-teal-500/50 rounded-lg mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onClick={() => setQuickCreateOpen(true)} className="flex items-center justify-center gap-3 px-4 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-lg">
+                    <FaBolt /> Tạo Nhanh Bằng AI
+                </button>
+                <button onClick={() => importInputRef.current?.click()} className="flex items-center justify-center gap-3 px-4 py-3 bg-sky-700/80 text-white font-bold rounded-lg hover:bg-sky-600/80 text-lg">
+                    <FaFileUpload /> Nhập World Data (.json)
+                </button>
+                <button onClick={handleExportTemplate} className="flex items-center justify-center gap-3 px-4 py-3 bg-green-700/80 text-white font-bold rounded-lg hover:bg-green-600/80 text-lg">
+                    <FaDownload /> Xuất Mẫu
+                </button>
+                <button onClick={() => scriptInputRef.current?.click()} className="flex items-center justify-center gap-3 px-4 py-3 bg-purple-700/80 text-white font-bold rounded-lg hover:bg-purple-600/80 text-lg">
+                    <FaUpload /> Nhập Script
+                </button>
+            </div>
             <input
                 type="file"
                 ref={importInputRef}
@@ -480,9 +521,13 @@ const SaveSlotScreen: React.FC = () => {
                 className="hidden"
                 accept=".json"
             />
-            <button onClick={() => importInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-sky-700/80 text-white font-bold rounded-lg hover:bg-sky-600/80 text-lg">
-                <FaFileUpload /> Nhập World Data (.json)
-            </button>
+            <input
+                type="file"
+                ref={scriptInputRef}
+                onChange={handleImportScript}
+                className="hidden"
+                accept=".js,.json"
+            />
         </div>
       
         <div className="flex-grow min-h-0 overflow-y-auto pr-2 space-y-6">

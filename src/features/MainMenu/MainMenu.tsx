@@ -1,7 +1,8 @@
 
 
+
 import React, { memo, useState, useEffect } from 'react';
-import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy, FaPenFancy, FaSave, FaBrain } from 'react-icons/fa';
+import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy, FaPenFancy, FaSave, FaBrain, FaCode } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import UpdateModal from './UpdateModal';
@@ -57,12 +58,13 @@ const DonateModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 const menuItems = [
     { label: "Tạo Thế Giới Mới", icon: GiScrollUnfurled, view: 'saveSlots' as const, delay: 500 },
     { label: "Tải Game", icon: FaSave, view: 'loadGame' as const, delay: 650 },
-    { label: "Tiểu Thuyết Gia AI", icon: FaPenFancy, view: 'novelist' as const, delay: 800 },
-    { label: "Huấn Luyện AI", icon: FaBrain, view: 'aiTraining' as const, delay: 950 },
-    { label: "Cài Đặt", icon: FaCog, view: 'settings' as const, delay: 1100 },
-    { label: "Thông Tin", icon: FaInfoCircle, view: 'info' as const, delay: 1250 },
-    { label: "Discord", icon: FaDiscord, href: 'https://discord.gg/sPq3Y37eR7', delay: 1400 },
-    { label: "Ủng Hộ", icon: FaHeart, action: 'donate' as const, delay: 1550 },
+    { label: "Scripts", icon: FaCode, view: 'scripts' as const, delay: 800 },
+    { label: "Tiểu Thuyết Gia AI", icon: FaPenFancy, view: 'novelist' as const, delay: 950 },
+    { label: "Huấn Luyện AI", icon: FaBrain, view: 'aiTraining' as const, delay: 1100 },
+    { label: "Cài Đặt", icon: FaCog, view: 'settings' as const, delay: 1250 },
+    { label: "Thông Tin", icon: FaInfoCircle, view: 'info' as const, delay: 1400 },
+    { label: "Discord", icon: FaDiscord, href: 'https://discord.gg/sPq3Y37eR7', delay: 1550 },
+    { label: "Ủng Hộ", icon: FaHeart, action: 'donate' as const, delay: 1700 },
 ];
 
 const MainMenu: React.FC = () => {

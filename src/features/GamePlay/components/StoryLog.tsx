@@ -150,7 +150,7 @@ const InteractiveText: React.FC<{
         // Sort by length descending to match longer names first (e.g., "Lý Mạc Sầu" before "Lý")
         allNames.sort((a, b) => b.length - a.length);
         
-        const regex = new RegExp(`(${allNames.join('|')})`, 'g');
+        const regex = new RegExp(`\\b(${allNames.join('|')})\\b`, 'g');
         const parts = text.split(regex);
 
         return parts.map((part, i) => {

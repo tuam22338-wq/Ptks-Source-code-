@@ -20,6 +20,7 @@ const LazyGamePlayScreen = lazy(() => import('./features/GamePlay/GamePlayScreen
 const LazyInfoScreen = lazy(() => import('./features/Info/InfoScreen'));
 const LazyNovelistScreen = lazy(() => import('./features/Novelist/NovelistScreen'));
 const LazyAiTrainingScreen = lazy(() => import('./features/AiTraining/AiTrainingScreen'));
+const LazyScriptsScreen = lazy(() => import('./features/Scripts/ScriptsScreen'));
 
 
 const BackgroundOverlay: React.FC = () => {
@@ -186,6 +187,8 @@ const AppContent: React.FC = () => {
             return <LazyNovelistScreen />;
           case 'aiTraining':
             return <LazyAiTrainingScreen />;
+          case 'scripts':
+            return <LazyScriptsScreen />;
           case 'gamePlay':
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
@@ -196,8 +199,8 @@ const AppContent: React.FC = () => {
         }
     };
     
-    const showHeader = !['mainMenu', 'gamePlay', 'novelist', 'aiTraining'].includes(view) && !isLoading && !isMigratingData;
-    const isPanelScreen = !['mainMenu', 'gamePlay', 'novelist', 'aiTraining'].includes(view);
+    const showHeader = !['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts'].includes(view) && !isLoading && !isMigratingData;
+    const isPanelScreen = !['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts'].includes(view);
     
     const containerClasses = isPanelScreen 
         ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col min-h-0'

@@ -128,6 +128,30 @@
     --shadow-dark: #C1B59F;
 }
 
+/* Lưu Ly Ngọc Tinh (Glassmorphism) */
+.theme-luu-ly-ngoc-tinh {
+  --bg-color: #0D1117;
+  --text-color: #E6EDF3;
+  --text-muted-color: #909DAB;
+  --primary-accent-color: #58A6FF;
+  --primary-accent-text-color: #0D1117;
+  --secondary-accent-color: #A371F7;
+  --panel-border-color: rgba(255, 255, 255, 0.12);
+  --input-focus-ring-color: #58A6FF;
+
+  /* Glassmorphism specific */
+  --glass-bg: rgba(30, 36, 49, 0.75);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-blur: 8px;
+
+  /* Override Neumorphism shadows */
+  --shadow-light: transparent;
+  --shadow-dark: transparent;
+  --shadow-raised: var(--glass-shadow);
+  --shadow-raised-interactive: 0 4px 12px 0 rgba(0, 0, 0, 0.2);
+  --shadow-pressed: inset 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+}
+
 body {
   font-family: var(--font-family-body);
   background-color: var(--bg-color);
@@ -280,6 +304,58 @@ input[type="range"]::-moz-range-thumb {
 }
 .player-bubble { border-radius: 1rem 1rem 0.25rem 1rem; }
 .npc-bubble { border-radius: 1rem 1rem 1rem 0.25rem; }
+
+/* --- Glassmorphism Theme Overrides --- */
+.theme-luu-ly-ngoc-tinh .panel-container,
+.theme-luu-ly-ngoc-tinh .neumorphic-inset-box,
+.theme-luu-ly-ngoc-tinh .btn-neumorphic,
+.theme-luu-ly-ngoc-tinh .input-neumorphic,
+.theme-luu-ly-ngoc-tinh .player-bubble,
+.theme-luu-ly-ngoc-tinh .npc-bubble,
+.theme-luu-ly-ngoc-tinh .modal-content {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--panel-border-color);
+}
+
+.theme-luu-ly-ngoc-tinh .panel-container,
+.theme-luu-ly-ngoc-tinh .modal-content {
+  box-shadow: var(--shadow-raised);
+}
+
+.theme-luu-ly-ngoc-tinh .input-neumorphic,
+.theme-luu-ly-ngoc-tinh .neumorphic-inset-box,
+.theme-luu-ly-ngoc-tinh .player-bubble,
+.theme-luu-ly-ngoc-tinh .npc-bubble {
+   box-shadow: var(--shadow-pressed);
+}
+
+.theme-luu-ly-ngoc-tinh .input-neumorphic:focus {
+   box-shadow: var(--shadow-pressed), 0 0 0 2px var(--input-focus-ring-color);
+   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-luu-ly-ngoc-tinh .btn-neumorphic {
+  box-shadow: var(--shadow-raised-interactive);
+}
+.theme-luu-ly-ngoc-tinh .btn-neumorphic:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  color: var(--text-color);
+}
+.theme-luu-ly-ngoc-tinh .btn-neumorphic:active {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(0);
+  box-shadow: var(--shadow-pressed);
+  color: var(--primary-accent-color);
+}
+
+.theme-luu-ly-ngoc-tinh .main-menu-title {
+    text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
 
 /* Dynamic & Special Effects */
 .dynamic-bg-container { position: fixed; inset: 0; z-index: -10; overflow: hidden; background-color: var(--bg-color); }

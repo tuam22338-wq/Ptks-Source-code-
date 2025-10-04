@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { GameState, ShopItem, InventoryItem } from '../../../types';
-import { SHOPS, ITEM_QUALITY_STYLES } from '../../../constants';
+import { ITEM_QUALITY_STYLES } from '../../../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
@@ -17,7 +17,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, shopId }) => {
     const { showNotification, closeShopModal } = useGameUIContext();
     const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
     
-    const shop = useMemo(() => SHOPS.find(s => s.id === shopId), [shopId]);
+    const shop = useMemo(() => [].find(s => (s as any).id === shopId), [shopId]);
 
     if (!isOpen || !shop || !gameState) return null;
     
