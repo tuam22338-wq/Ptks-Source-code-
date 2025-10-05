@@ -541,6 +541,31 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         
     }, []);
 
+    // Effect for background music
+    useEffect(() => {
+        if (!audioRef.current) {
+            audioRef.current = new Audio();
+            audioRef.current.loop = true;
+        }
+
+        const audio = audioRef.current;
+        const { backgroundMusicUrl, backgroundMusicVolume } = state.settings;
+
+        if (backgroundMusicUrl && audio.src !== backgroundMusicUrl) {
+            audio.src = backgroundMusicUrl;
+            audio.load();
+            audio.play().catch(error => console.warn("Lỗi tự động phát nhạc nền: Trình duyệt có thể đã chặn âm thanh tự động. Vui lòng tương tác với trang trước.", error));
+        } else if (!backgroundMusicUrl && audio.src) {
+            audio.pause();
+            audio.src = '';
+        }
+
+        if (audio) {
+            audio.volume = backgroundMusicVolume;
+        }
+
+    }, [state.settings.backgroundMusicUrl, state.settings.backgroundMusicVolume]);
+
     // Update API Key Manager when settings change
     useEffect(() => {
         apiKeyManager.updateKeys(state.settings.apiKeys);
