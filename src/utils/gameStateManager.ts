@@ -208,10 +208,18 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
     dataToProcess.activeMods = activeMods;
     
     // --- Realm System Hydration (with new flexible system) ---
+    const savedNamedSystem = dataToProcess.namedRealmSystems?.[0]; // Check for saved system first
     const modNamedSystems = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems;
     const modLegacyRealms = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
 
-    if (modNamedSystems && modNamedSystems.length > 0) {
+    if (savedNamedSystem) {
+        dataToProcess.realmSystem = savedNamedSystem.realms.map((r: any) => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
+        dataToProcess.realmSystemInfo = {
+            name: savedNamedSystem.name,
+            resourceName: savedNamedSystem.resourceName || 'Linh Khí',
+            resourceUnit: savedNamedSystem.resourceUnit || 'điểm',
+        };
+    } else if (modNamedSystems && modNamedSystems.length > 0) {
         const mainSystem = modNamedSystems[0];
         dataToProcess.realmSystem = mainSystem.realms.map(r => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
         dataToProcess.realmSystemInfo = {

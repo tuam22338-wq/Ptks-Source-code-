@@ -1,3 +1,4 @@
+
 import type { GameSettings, AIModel, ImageModel, RagEmbeddingModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, AiSyncMode, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap, WorldInterruptionFrequency } from '../types';
 
 export const AI_SYNC_MODES: { value: AiSyncMode; label: string, description: string }[] = [
@@ -66,7 +67,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     gameSpeed: 'normal',
     fontFamily: "'Noto Serif', serif",
     // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the assignment error here.
-    theme: 'theme-bich-du-cung',
+    theme: 'theme-ink-wash-bamboo',
     customThemeColors: {
         '--bg-color': '#2A3F3A',
         '--text-color': '#E0EFEA',

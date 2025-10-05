@@ -89,7 +89,7 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
             }, {} as Record<string, boolean>);
             setExpandedTiers(initialExpanded);
         }
-    }, [initialSystems, isOpen]);
+    }, [isOpen]);
     
     const handleSystemInfoChange = (field: keyof typeof systemInfo, value: string) => {
         setSystemInfo(prev => ({ ...prev, [field]: value }));
