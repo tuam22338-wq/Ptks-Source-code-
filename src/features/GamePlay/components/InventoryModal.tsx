@@ -164,8 +164,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             acc[item.name] = (acc[item.name] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
-
-        const summary = Object.entries(itemCounts).map(([name, count]) => `${count > 1 ? `${count} ` : ''}${name}`).join(', ');
+        // FIX: Operator '>' cannot be applied to types 'unknown' and 'number'. Explicitly cast `count` to a Number before comparison to ensure type safety.
+        const summary = Object.entries(itemCounts).map(([name, count]) => `${Number(count) > 1 ? `${count} ` : ''}${name}`).join(', ');
         createAndDispatchAction(`Sử dụng ${summary}`);
     }, [selectedItems, playerCharacter, showNotification, createAndDispatchAction]);
 

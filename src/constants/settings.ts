@@ -157,7 +157,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     modelApiKeyAssignments: {},
     enableDeveloperConsole: false,
     enableTestingMode: false,
-    enableHeuristicFixerAI: false, // Add default value
+    enableHeuristicFixerAI: true, // Add default value
     backgroundMusicUrl: 'https://files.catbox.moe/f86nal.mp3',
     backgroundMusicName: 'Nhạc Nền Mặc Định',
     backgroundMusicVolume: 0.5,

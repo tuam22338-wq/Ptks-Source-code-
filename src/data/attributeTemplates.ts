@@ -62,6 +62,103 @@ export const ATTRIBUTE_TEMPLATES: { id: string; name: string; description: strin
         }
     },
     {
+        id: 'douluo',
+        name: 'Hồn Sư (Đấu La)',
+        description: 'Hệ thống thuộc tính cho thế giới Hồn Sư, tập trung vào Hồn Lực và Tinh Thần Lực.',
+        system: {
+            groups: [
+                { id: 'core', name: 'Thuộc Tính Cốt Lõi', order: 1 },
+                { id: 'combat', name: 'Thuộc Tính Chiến Đấu', order: 2 },
+                { id: 'vitals', name: 'Sinh Tồn', order: 3 },
+            ],
+            definitions: [
+                { id: 'tinh_than_luc', name: 'Tinh Thần Lực', description: 'Sức mạnh tinh thần, ảnh hưởng đến khả năng khống chế Hồn Thú và uy lực Hồn Kỹ.', iconName: 'FaBrain', type: 'PRIMARY', baseValue: 10, group: 'core' },
+                { id: 'hon_luc', name: 'Hồn Lực', description: 'Năng lượng cơ bản của Hồn Sư để thi triển Hồn Kỹ.', iconName: 'GiMagicSwirl', type: 'VITAL', baseValue: 10, group: 'core' },
+                { id: 'luc_luong', name: 'Lực Lượng', description: 'Sức mạnh của các đòn tấn công vật lý.', iconName: 'GiMuscularTorso', type: 'PRIMARY', baseValue: 10, group: 'combat' },
+                { id: 'phong_ngu', name: 'Phòng Ngự', description: 'Khả năng chống chịu sát thương.', iconName: 'FaShieldAlt', type: 'PRIMARY', baseValue: 10, group: 'combat' },
+                { id: 'toc_do', name: 'Tốc Độ', description: 'Sự nhanh nhẹn, tốc độ di chuyển và ra đòn.', iconName: 'GiRunningShoe', type: 'PRIMARY', baseValue: 10, group: 'combat' },
+                { id: 'sinh_menh', name: 'Thể Lực', description: 'Sức sống của Hồn Sư.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 100, group: 'vitals' },
+            ]
+        }
+    },
+    {
+        id: 'body_cultivation',
+        name: 'Luyện Thể',
+        description: 'Thuộc tính cho con đường Luyện Thể, tập trung vào sức mạnh và độ bền của nhục thân.',
+        system: {
+            groups: [
+                { id: 'physical', name: 'Nhục Thân', order: 1 },
+                { id: 'vitals', name: 'Sinh Tồn', order: 2 },
+            ],
+            definitions: [
+                { id: 'khi_huyet', name: 'Khí Huyết', description: 'Năng lượng sinh mệnh, nguồn gốc sức mạnh của Luyện Thể Sư.', iconName: 'GiHeartTower', type: 'VITAL', baseValue: 100, group: 'physical' },
+                { id: 'luc_boc_phat', name: 'Lực Bộc Phát', description: 'Sát thương vật lý trong một đòn đánh.', iconName: 'GiMuscularTorso', type: 'PRIMARY', baseValue: 15, group: 'physical' },
+                { id: 'do_ben_nhuc_than', name: 'Độ Bền Nhục Thân', description: 'Khả năng chống chịu sát thương vật lý.', iconName: 'FaShieldAlt', type: 'PRIMARY', baseValue: 15, group: 'physical' },
+                { id: 'toc_do_hoi_phuc', name: 'Tốc Độ Hồi Phục', description: 'Khả năng tự chữa lành vết thương.', iconName: 'GiHealthNormal', type: 'PRIMARY', baseValue: 5, group: 'physical' },
+                { id: 'sinh_menh', name: 'Sinh Mệnh', description: 'Sức sống của bạn.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 150, group: 'vitals' },
+            ]
+        }
+    },
+    {
+        id: 'mage',
+        name: 'Ma Pháp Sư (Fantasy)',
+        description: 'Các thuộc tính cho thế giới ma pháp phương Tây, nhấn mạnh Trí Tuệ và Tinh Thần.',
+        system: {
+            groups: [
+                { id: 'core', name: 'Thuộc Tính Ma Pháp', order: 1 },
+                { id: 'mental', name: 'Thuộc Tính Tinh Thần', order: 2 },
+                { id: 'vitals', name: 'Sinh Tồn', order: 3 },
+            ],
+            definitions: [
+                { id: 'tri_tue', name: 'Trí Tuệ', description: 'Ảnh hưởng đến sức mạnh và độ phức tạp của phép thuật.', iconName: 'FaBrain', type: 'PRIMARY', baseValue: 15, group: 'core' },
+                { id: 'nguyen_to_thong_thao', name: 'Nguyên Tố Tinh Thông', description: 'Khả năng điều khiển các nguyên tố (Lửa, Nước, Khí, Đất).', iconName: 'GiPentacle', type: 'PRIMARY', baseValue: 10, group: 'core' },
+                { id: 'toc_do_thi_phap', name: 'Tốc Độ Thi Pháp', description: 'Tốc độ niệm chú và thi triển phép thuật.', iconName: 'GiRunningShoe', type: 'PRIMARY', baseValue: 10, group: 'core' },
+                { id: 'tinh_than', name: 'Tinh Thần', description: 'Ý chí, khả năng chống lại ma pháp tinh thần và sự hỗn loạn.', iconName: 'GiSoulVessel', type: 'PRIMARY', baseValue: 10, group: 'mental' },
+                { id: 'sinh_menh', name: 'Máu', description: 'Sức sống của pháp sư.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 80, group: 'vitals' },
+                { id: 'linh_luc', name: 'Mana', description: 'Năng lượng để thi triển phép thuật.', iconName: 'GiMagicSwirl', type: 'VITAL', baseValue: 150, group: 'vitals' },
+            ]
+        }
+    },
+    {
+        id: 'mecha',
+        name: 'Cơ Giáp Sư (Sci-fi)',
+        description: 'Thuộc tính cho phi công và cơ giáp trong bối cảnh khoa huyễn.',
+        system: {
+            groups: [
+                { id: 'pilot', name: 'Chỉ Số Người Lái', order: 1 },
+                { id: 'mech', name: 'Chỉ Số Cơ Giáp', order: 2 },
+                { id: 'vitals', name: 'Sinh Tồn', order: 3 },
+            ],
+            definitions: [
+                { id: 'toc_do_phan_ung', name: 'Tốc Độ Phản Ứng', description: 'Phản xạ của phi công, ảnh hưởng đến khả năng né tránh.', iconName: 'GiRunningShoe', type: 'PRIMARY', baseValue: 10, group: 'pilot' },
+                { id: 'tinh_than_luc', name: 'Tinh Thần Lực', description: 'Sức mạnh ý chí, ảnh hưởng đến tỷ lệ đồng bộ.', iconName: 'FaBrain', type: 'PRIMARY', baseValue: 10, group: 'pilot' },
+                { id: 'nang_luong_loi', name: 'Năng Lượng Lõi', description: 'Năng lượng của cơ giáp để di chuyển và chiến đấu.', iconName: 'GiBoltSpellCast', type: 'VITAL', baseValue: 1000, group: 'mech' },
+                { id: 'do_ben_giap', name: 'Độ Bền Giáp', description: 'Khả năng chống chịu sát thương của cơ giáp.', iconName: 'FaShieldAlt', type: 'PRIMARY', baseValue: 100, group: 'mech' },
+                { id: 'hoa_luc', name: 'Hỏa Lực', description: 'Sát thương gây ra bởi vũ khí của cơ giáp.', iconName: 'GiBroadsword', type: 'PRIMARY', baseValue: 20, group: 'mech' },
+                { id: 'sinh_menh', name: 'Độ Bền Khoang Lái', description: 'Sức sống của phi công.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 100, group: 'vitals' },
+            ]
+        }
+    },
+     {
+        id: 'gu_master',
+        name: 'Cổ Sư',
+        description: 'Hệ thống thuộc tính cho thế giới Cổ, nơi sức mạnh đến từ việc luyện và dùng Cổ trùng.',
+        system: {
+            groups: [
+                { id: 'master', name: 'Chỉ Số Cổ Sư', order: 1 },
+                { id: 'vitals', name: 'Sinh Tồn', order: 2 },
+            ],
+            definitions: [
+                { id: 'khong_khieu', name: 'Không Khiếu', description: 'Nguồn gốc và nơi chứa đựng chân nguyên. Tư chất càng cao, không khiếu càng lớn.', iconName: 'GiYinYang', type: 'INFORMATIONAL', group: 'master' },
+                { id: 'chan_nguyen', name: 'Chân Nguyên', description: 'Năng lượng để thôi động Cổ trùng.', iconName: 'GiMagicSwirl', type: 'VITAL', baseValue: 100, group: 'master' },
+                { id: 'than_niem', name: 'Thần Niệm', description: 'Ý chí của Cổ sư, dùng để điều khiển và cảm nhận Cổ trùng.', iconName: 'FaBrain', type: 'PRIMARY', baseValue: 10, group: 'master' },
+                { id: 'the_phach', name: 'Thể Phách', description: 'Sức mạnh và độ bền của nhục thân Cổ sư.', iconName: 'GiSpinalCoil', type: 'PRIMARY', baseValue: 10, group: 'master' },
+                { id: 'luyen_co_thuat', name: 'Luyện Cổ Thuật', description: 'Kỹ năng luyện hóa và hợp thành Cổ trùng.', iconName: 'GiCauldron', type: 'PRIMARY', baseValue: 5, group: 'master' },
+                { id: 'sinh_menh', name: 'Sinh Mệnh', description: 'Sức sống của Cổ sư.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 100, group: 'vitals' },
+            ]
+        }
+    },
+    {
         id: 'cyberpunk',
         name: 'Cyberpunk: Thành Phố Ne-On',
         description: 'Hệ thống thuộc tính cho bối cảnh tương lai đen tối, tập trung vào cấy ghép, hack và chiến đấu đường phố.',

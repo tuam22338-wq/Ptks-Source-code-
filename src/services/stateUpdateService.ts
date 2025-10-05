@@ -31,7 +31,7 @@ export const applyMechanicalChanges = (
     if (canAfford && intent.itemsLost) {
         for (const itemLost of intent.itemsLost) {
             const itemInInventory = currentState.playerCharacter.inventory.items.find((i: InventoryItem) => i.name === itemLost.name);
-            if (!itemInInventory || Number(itemInInventory.quantity) < Number(itemLost.quantity)) {
+            if (!itemInInventory || (Number(itemInInventory.quantity) || 0) < (Number(itemLost.quantity) || 0)) {
                 canAfford = false;
                 showNotification(`Hành động thất bại! Không đủ ${itemLost.name}.`);
                 break;
@@ -88,7 +88,8 @@ export const applyMechanicalChanges = (
         intent.itemsLost.forEach(itemLost => {
             const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.name === itemLost.name);
             if (itemIndex > -1) {
-                pc.inventory.items[itemIndex].quantity = Number(pc.inventory.items[itemIndex].quantity) - Number(itemLost.quantity);
+                // FIX: Make quantity math safer by ensuring both operands are numbers.
+                pc.inventory.items[itemIndex].quantity = (Number(pc.inventory.items[itemIndex].quantity) || 0) - (Number(itemLost.quantity) || 0);
                 if (pc.inventory.items[itemIndex].quantity <= 0) {
                     pc.inventory.items.splice(itemIndex, 1);
                 }
@@ -102,7 +103,8 @@ export const applyMechanicalChanges = (
             const gainedQuantity = Number(itemData.quantity) || 1;
             const existingItem = pc.inventory.items.find((i: InventoryItem) => i.name === itemData.name);
             if (existingItem) {
-                existingItem.quantity = Number(existingItem.quantity) + gainedQuantity;
+                // FIX: Make quantity math safer by ensuring both operands are numbers.
+                existingItem.quantity = (Number(existingItem.quantity) || 0) + gainedQuantity;
             } else {
                 pc.inventory.items.push({
                     ...itemData, id: `item-${Date.now()}-${Math.random()}`, quantity: gainedQuantity, isEquipped: false,
