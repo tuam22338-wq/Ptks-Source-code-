@@ -233,6 +233,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 }
                 
                 dispatch({ type: 'LOAD_GAME', payload: { gameState: migratedState, slotId } });
+// @google-genai-fix: Cast error to 'any' to access the 'message' property.
             } catch (error: any) {
                 console.error("Error loading or migrating game state:", error);
                 alert(`Lỗi tải game: ${error.message}`);
@@ -286,7 +287,66 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const installedMods = state.installedMods.filter(m => m.isEnabled);
             const activeMods = (await Promise.all(installedMods.map(m => db.getModContent(m.modInfo.id)))).filter((mod): mod is FullMod => !!mod);
 
-            const newGameState = await createNewGameState(worldCreationData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
+            // @google-genai-fix: Construct a valid GameStartData object from WorldCreationData to match the expected type of createNewGameState.
+            const gameStartData: GameStartData = {
+                // Map GameplaySettings properties
+                narrativeStyle: worldCreationData.narrativeStyle,
+                aiResponseWordCount: worldCreationData.aiResponseWordCount,
+                aiCreativityLevel: worldCreationData.aiCreativityLevel,
+                narrativePacing: worldCreationData.narrativePacing,
+                playerAgencyLevel: worldCreationData.playerAgencyLevel,
+                aiMemoryDepth: worldCreationData.aiMemoryDepth,
+                npcComplexity: worldCreationData.npcComplexity,
+                worldEventFrequency: worldCreationData.worldEventFrequency,
+                worldReactivity: worldCreationData.worldReactivity,
+                cultivationRateMultiplier: worldCreationData.cultivationRateMultiplier,
+                resourceRateMultiplier: worldCreationData.resourceRateMultiplier,
+                damageDealtMultiplier: worldCreationData.damageDealtMultiplier,
+                damageTakenMultiplier: worldCreationData.damageTakenMultiplier,
+                enableSurvivalMechanics: worldCreationData.enableSurvivalMechanics,
+                deathPenalty: worldCreationData.deathPenalty,
+                validationServiceCap: worldCreationData.validationServiceCap,
+                narrateSystemChanges: worldCreationData.narrateSystemChanges,
+                worldInterruptionFrequency: worldCreationData.worldInterruptionFrequency,
+                enableRealmSystem: worldCreationData.enableRealmSystem,
+                enableStorySystem: worldCreationData.enableStorySystem,
+            
+                // Map and default properties specific to GameStartData
+                identity: {
+                    name: worldCreationData.character.name,
+                    gender: worldCreationData.character.gender,
+                    origin: worldCreationData.character.bio,
+                    appearance: '', // To be filled by AI later
+                    age: 18, // Default age
+                    personality: 'Trung Lập', // Default personality
+                },
+                npcDensity: 'medium', // Default value as it's not in the new form
+                difficulty: 'medium', // Default value as it's not in the new form
+                initialBonuses: [], // Default value
+                initialItems: [], // Default value
+                spiritualRoot: { // Default value
+                    elements: [],
+                    quality: 'Phàm Căn',
+                    name: 'Phàm Nhân',
+                    description: 'Là một phàm nhân bình thường.',
+                    bonuses: [],
+                },
+                danhVong: { value: 0, status: 'Vô danh tiểu tốt' }, // Default value
+                initialCurrency: { 'Bạc': 50 }, // Default value
+                generationMode: worldCreationData.generationMode,
+                attributeSystem: worldCreationData.attributeSystem,
+                namedRealmSystem: worldCreationData.namedRealmSystem,
+                genre: worldCreationData.genre,
+                npcGenerationMode: worldCreationData.npcGenerationMode,
+                locationGenerationMode: worldCreationData.locationGenerationMode,
+                factionGenerationMode: worldCreationData.factionGenerationMode,
+                customNpcs: worldCreationData.customNpcs,
+                customLocations: worldCreationData.customLocations,
+                customFactions: worldCreationData.customFactions,
+                dlcs: worldCreationData.dlcs,
+            };
+
+            const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
             
             // Hydration is now a separate step, happens after load or just after create
             const hydratedGameState = await hydrateWorldData(newGameState, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
@@ -324,8 +384,25 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 npcGenerationMode: 'CUSTOM',
                 locationGenerationMode: 'CUSTOM',
                 factionGenerationMode: 'CUSTOM',
-                customNpcs: [...(mod.content.worldData?.[0]?.initialNpcs || []), ...dynamicNpcs.map(n => ({...n.identity, ...n, id: n.id, locationId: n.locationId, status: n.status, tags: []}))],
-                customLocations: mod.content.worldData?.[0]?.initialLocations,
+                // @google-genai-fix: Ensure all elements in customNpcs array conform to the ModNpc type by adding missing 'id' and mapping NPC objects correctly.
+                customNpcs: [
+                    ...(mod.content.worldData?.[0]?.initialNpcs || []).map((n, i) => ({ ...n, id: n.id || `gen_npc_${i}` })),
+                    ...dynamicNpcs.map((n): ModNpc => ({
+                        id: n.id,
+                        name: n.identity.name,
+                        status: n.status,
+                        description: n.identity.appearance,
+                        origin: n.identity.origin,
+                        personality: n.identity.personality,
+                        locationId: n.locationId,
+                        tags: [],
+                    }))
+                ],
+                // @google-genai-fix: Ensure all elements in customLocations array conform to the ModLocation type by providing a fallback 'id'.
+                customLocations: (mod.content.worldData?.[0]?.initialLocations || []).map(loc => ({
+                    ...loc,
+                    id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '')
+                })),
                 customFactions: mod.content.worldData?.[0]?.factions,
             };
             
@@ -491,6 +568,13 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             }
         }
     }, [state.settings.theme, state.settings.customThemeColors]);
+
+    // Apply global UI settings like zoom and text color
+    useEffect(() => {
+        const root = document.documentElement;
+        root.style.fontSize = `${state.settings.zoomLevel}%`;
+        root.style.setProperty('--text-color', state.settings.textColor);
+    }, [state.settings.zoomLevel, state.settings.textColor]);
     
     // Calculate storage usage
     useEffect(() => {

@@ -80,7 +80,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
         '--shadow-dark': '#1C2925',
     },
     dynamicBackground: 'mystic_violet',
-    zoomLevel: 55,
+    zoomLevel: 100,
     textColor: '#e0e0e0',
     // @google-genai-fix: Added missing GameplaySettings properties to the DEFAULT_SETTINGS object to satisfy the GameSettings type.
     narrativeStyle: 'classic_wuxia',

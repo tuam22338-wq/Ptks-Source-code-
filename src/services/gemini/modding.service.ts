@@ -1,6 +1,7 @@
 
 
 
+
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
@@ -842,7 +843,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         // Ensure worldData structure exists
         if (!finalMod.content.worldData || finalMod.content.worldData.length === 0) {
             finalMod.content.worldData = [{
-// FIX: Added missing 'id' property required by ModWorldData type.
+// @google-genai-fix: Added missing 'id' property required by ModWorldData type.
                 id: finalMod.modInfo.id,
                 name: finalMod.modInfo.name,
                 description: generatedJson.content?.worldData?.[0]?.description || finalMod.modInfo.description || '',
