@@ -1,3 +1,4 @@
+
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload, ArbiterDecision } from '../types';
 import { generateActionResponseStream } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
@@ -7,6 +8,7 @@ import { addEntryToMemory, retrieveMemoryContext } from './memoryService';
 import { validateMechanicalChanges } from './validationService';
 import { applyMechanicalChanges } from './stateUpdateService';
 import { runHeuristicFixer } from './heuristicFixerService';
+import { orchestrateRagQuery } from './ragOrchestrator';
 
 export const processPlayerAction = async (
     gameState: GameState,
@@ -36,16 +38,17 @@ export const processPlayerAction = async (
         }
     }
 
+    // Combine both memory systems
     const rawMemoryContext = await retrieveMemoryContext(text, stateAfterSim, currentSlotId);
+    const ragContext = await orchestrateRagQuery(text, type, stateAfterSim);
+    const fullMemoryContext = [rawMemoryContext, ragContext].filter(Boolean).join('\n\n');
 
     // --- GIAI ĐOẠN 1: GỌI AI HỢP NHẤT ---
-    // The decideAction call has been removed. The main narrative AI now handles intent detection.
-    
     const stream = generateActionResponseStream(
         stateAfterSim, 
         text, 
         type, 
-        rawMemoryContext, 
+        fullMemoryContext, 
         settings
     );
 

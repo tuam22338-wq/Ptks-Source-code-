@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 import type { GameSettings } from '../../../types';
 import { FaSearchPlus } from 'react-icons/fa';

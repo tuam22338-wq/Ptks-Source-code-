@@ -1,3 +1,4 @@
+
 import React, { useState, memo } from 'react';
 import type { GameSettings } from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaPenFancy, FaCheckCircle } from 'react-icons/fa';

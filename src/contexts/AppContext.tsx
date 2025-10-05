@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -233,7 +234,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 }
                 
                 dispatch({ type: 'LOAD_GAME', payload: { gameState: migratedState, slotId } });
-// @google-genai-fix: Cast error to 'any' to access the 'message' property.
             } catch (error: any) {
                 console.error("Error loading or migrating game state:", error);
                 alert(`Lỗi tải game: ${error.message}`);
@@ -505,6 +505,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         }
     }, []);
     
+    // @FIX: The type 'unknown' is not assignable to type 'string'. Changed 'worldId' to be of type 'string'.
     const handleEditWorld = useCallback(async (worldId: string) => {
         // This is a placeholder for a more complex feature
         alert(`Chỉnh sửa thế giới '${worldId}' chưa được hỗ trợ.`);

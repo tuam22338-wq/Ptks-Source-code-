@@ -1,3 +1,4 @@
+
 import type { GameState, GameSettings } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
@@ -130,8 +131,8 @@ ${(dialogueHistory || []).map(h => `  - ${h.speaker === 'player' ? playerCharact
 ` : '';
 
   const memoryContext = instantMemoryReport ? `
-### KÝ ỨC LIÊN QUAN (TỪ TRÍ NHỚ DÀI HẠN) ###
-- ${instantMemoryReport}
+### BỐI CẢNH BỔ SUNG (Ký Ức & Tri Thức) ###
+${instantMemoryReport}
 ` : '';
 
   const thoughtContext = thoughtBubble ? `
