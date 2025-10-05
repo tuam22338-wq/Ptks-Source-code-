@@ -20,6 +20,9 @@ export interface GameplaySettings {
     validationServiceCap: ValidationServiceCap;
     narrateSystemChanges: boolean;
     worldInterruptionFrequency: WorldInterruptionFrequency;
+    // @FIX: Added missing property to satisfy usage in gameStateManager.ts.
+    enableRealmSystem: boolean;
+    enableStorySystem: boolean;
 }
 
 

@@ -460,6 +460,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: any) {
             console.error("Failed during custom world creation:", error);
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots]);
@@ -519,7 +520,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // @google-genai-fix: The caught 'error' of type 'unknown' cannot be passed to the `Error` constructor directly. Casting it to a string resolves the type mismatch.
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
+            // FIX: The caught 'error' of type 'unknown' cannot be passed to the Error constructor directly. It must be cast to a string first.
             throw new Error(String(error));
         }
     }, [state.activeWorldId, loadSaveSlots, state.settings]);

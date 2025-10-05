@@ -1,5 +1,3 @@
-
-
 import {
     REALM_SYSTEM,
     DEFAULT_ATTRIBUTE_DEFINITIONS,
@@ -185,6 +183,10 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
         };
     }
 
+    if (typeof dataToProcess.gameplaySettings.enableStorySystem === 'undefined') {
+        dataToProcess.gameplaySettings.enableStorySystem = true; // Default old saves to story mode
+    }
+
     if (!dataToProcess.worldTurnLog) {
         dataToProcess.worldTurnLog = [];
     }
@@ -217,8 +219,15 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
             resourceName: mainSystem.resourceName || 'Linh Khí',
             resourceUnit: mainSystem.resourceUnit || 'điểm',
         };
-    } else {
-        dataToProcess.realmSystem = (modLegacyRealms && modLegacyRealms.length > 0 ? modLegacyRealms : REALM_SYSTEM).map(r => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
+    } else if (modLegacyRealms && modLegacyRealms.length > 0) {
+        dataToProcess.realmSystem = modLegacyRealms.map(r => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
+        dataToProcess.realmSystemInfo = {
+            name: 'Hệ Thống Tu Luyện Tùy Chỉnh',
+            resourceName: 'Linh Khí',
+            resourceUnit: 'điểm',
+        };
+    } else if (dataToProcess.realmSystem === undefined) { // Only default for old saves lacking the property
+        dataToProcess.realmSystem = REALM_SYSTEM.map(r => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
         dataToProcess.realmSystemInfo = {
             name: 'Hệ Thống Tu Luyện Mặc Định',
             resourceName: 'Linh Khí',
@@ -360,6 +369,8 @@ export const createNewGameState = async (
         identity, npcDensity, difficulty, initialBonuses, initialItems, spiritualRoot, danhVong, initialCurrency, generationMode = 'fast', attributeSystem, namedRealmSystem, genre,
         npcGenerationMode, locationGenerationMode, factionGenerationMode,
         customNpcs, customLocations, customFactions, dlcs,
+        enableRealmSystem,
+        enableStorySystem,
         ...gameplaySettingsData
      } = gameStartData;
 
@@ -426,38 +437,40 @@ export const createNewGameState = async (
         resourceUnit: 'điểm'
     };
 
-    const modNamedSystems = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems;
-    const modLegacyRealms = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
+    if (enableRealmSystem) {
+        const modNamedSystems = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems;
+        const modLegacyRealms = activeMods.find(m => m.content.realmConfigs)?.content.realmConfigs;
 
-    if (namedRealmSystem) {
-        realmSystemToUse = namedRealmSystem.realms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
-        realmSystemInfoToUse = {
-            name: namedRealmSystem.name,
-            resourceName: namedRealmSystem.resourceName || 'Linh Khí',
-            resourceUnit: namedRealmSystem.resourceUnit || 'điểm',
-        };
-    } else if (modNamedSystems && modNamedSystems.length > 0) {
-        const mainSystem = modNamedSystems[0];
-        realmSystemToUse = mainSystem.realms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
-        realmSystemInfoToUse = {
-            name: mainSystem.name,
-            resourceName: mainSystem.resourceName || 'Linh Khí',
-            resourceUnit: mainSystem.resourceUnit || 'điểm',
-        };
-    } else if (modLegacyRealms && modLegacyRealms.length > 0) {
-        realmSystemToUse = modLegacyRealms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
-        realmSystemInfoToUse = {
-            name: 'Hệ Thống Tu Luyện Tùy Chỉnh',
-            resourceName: 'Linh Khí',
-            resourceUnit: 'điểm',
-        };
-    } else if (genre === 'Huyền Huyễn Tu Tiên') {
-        realmSystemToUse = REALM_SYSTEM.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
-        realmSystemInfoToUse = {
-            name: 'Hệ Thống Tu Luyện Mặc Định',
-            resourceName: 'Linh Khí',
-            resourceUnit: 'điểm',
-        };
+        if (namedRealmSystem) {
+            realmSystemToUse = namedRealmSystem.realms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
+            realmSystemInfoToUse = {
+                name: namedRealmSystem.name,
+                resourceName: namedRealmSystem.resourceName || 'Linh Khí',
+                resourceUnit: namedRealmSystem.resourceUnit || 'điểm',
+            };
+        } else if (modNamedSystems && modNamedSystems.length > 0) {
+            const mainSystem = modNamedSystems[0];
+            realmSystemToUse = mainSystem.realms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
+            realmSystemInfoToUse = {
+                name: mainSystem.name,
+                resourceName: mainSystem.resourceName || 'Linh Khí',
+                resourceUnit: mainSystem.resourceUnit || 'điểm',
+            };
+        } else if (modLegacyRealms && modLegacyRealms.length > 0) {
+            realmSystemToUse = modLegacyRealms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
+            realmSystemInfoToUse = {
+                name: 'Hệ Thống Tu Luyện Tùy Chỉnh',
+                resourceName: 'Linh Khí',
+                resourceUnit: 'điểm',
+            };
+        } else if (genre === 'Huyền Huyễn Tu Tiên') {
+            realmSystemToUse = REALM_SYSTEM.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
+            realmSystemInfoToUse = {
+                name: 'Hệ Thống Tu Luyện Mặc Định',
+                resourceName: 'Linh Khí',
+                resourceUnit: 'điểm',
+            };
+        }
     }
     
     const modAttributeSystem = activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem;
@@ -640,6 +653,8 @@ export const createNewGameState = async (
         },
         gameplaySettings: {
             ...gameplaySettingsData,
+            enableRealmSystem: enableRealmSystem,
+            enableStorySystem: enableStorySystem,
             cultivationRateMultiplier: 100,
             resourceRateMultiplier: 100,
             damageDealtMultiplier: 100,

@@ -101,6 +101,9 @@ export const DEFAULT_SETTINGS: GameSettings = {
     validationServiceCap: 'strict',
     narrateSystemChanges: true,
     worldInterruptionFrequency: 'occasional',
+    // @FIX: Added missing property to satisfy type.
+    enableRealmSystem: true,
+    enableStorySystem: true,
     mainTaskModel: 'gemini-2.5-pro',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',

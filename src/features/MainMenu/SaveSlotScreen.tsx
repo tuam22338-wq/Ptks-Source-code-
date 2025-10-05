@@ -161,6 +161,7 @@ const SaveSlotScreen: React.FC = () => {
     character: { name: '', gender: 'AI', bio: '' },
     attributeSystem: ATTRIBUTE_TEMPLATES.find(t => t.id === 'xianxia_default')!.system,
     enableRealmSystem: true,
+    enableStorySystem: true,
     realmTemplateId: 'xianxia_default',
     namedRealmSystem: REALM_TEMPLATES.find(t => t.id === 'xianxia_default')!.system,
     generationMode: 'deep',
@@ -314,7 +315,7 @@ const SaveSlotScreen: React.FC = () => {
         // On success, AppContext will handle navigation.
     } catch (err: any) {
         setError(`Lỗi tạo thế giới: ${err.message}`);
-        setIsLoading(false);
+        setIsLoading(false); // Make sure loading stops on error
     }
   };
 
@@ -349,19 +350,74 @@ const SaveSlotScreen: React.FC = () => {
     };
 
     const handleTemplateChange = (templateId: string) => {
-        const template = ATTRIBUTE_TEMPLATES.find(t => t.id === templateId);
-        if (template) {
-            setFormData(p => ({ ...p, attributeSystem: template.system }));
+        if (templateId === 'custom') {
+            setFormData(p => ({ ...p, attributeSystem: { definitions: [], groups: [] } }));
+        } else {
+            const template = ATTRIBUTE_TEMPLATES.find(t => t.id === templateId);
+            if (template) {
+                setFormData(p => ({ ...p, attributeSystem: template.system }));
+            }
+        }
+    };
+
+    const handleAddGroup = () => {
+        setFormData(prev => {
+            const newSystem = { ...prev.attributeSystem! };
+            const newGroup: AttributeGroupDefinition = {
+                id: `group_${Date.now()}`,
+                name: 'Nhóm Mới',
+                order: (newSystem.groups.length > 0 ? Math.max(...newSystem.groups.map(g => g.order)) : 0) + 1
+            };
+            return { ...prev, attributeSystem: { ...newSystem, groups: [...newSystem.groups, newGroup] } };
+        });
+    };
+
+    const handleGroupNameChange = (groupId: string, newName: string) => {
+        setFormData(prev => {
+            const newSystem = { ...prev.attributeSystem! };
+            const groupIndex = newSystem.groups.findIndex(g => g.id === groupId);
+            if (groupIndex > -1) {
+                const updatedGroups = [...newSystem.groups];
+                updatedGroups[groupIndex] = { ...updatedGroups[groupIndex], name: newName };
+                return { ...prev, attributeSystem: { ...newSystem, groups: updatedGroups } };
+            }
+            return prev;
+        });
+    };
+    
+    const handleDeleteGroup = (groupId: string) => {
+        if (window.confirm("Bạn có chắc muốn xóa nhóm này và tất cả thuộc tính bên trong không?")) {
+            setFormData(prev => {
+                const newSystem = { ...prev.attributeSystem! };
+                const newGroups = newSystem.groups.filter(g => g.id !== groupId);
+                const newDefinitions = newSystem.definitions.filter(def => def.group !== groupId);
+                return { ...prev, attributeSystem: { groups: newGroups, definitions: newDefinitions } };
+            });
         }
     };
     
     const handleRealmTemplateChange = (templateId: string) => {
-        const template = REALM_TEMPLATES.find(t => t.id === templateId);
-        setFormData(prev => ({
-            ...prev,
-            realmTemplateId: templateId,
-            namedRealmSystem: template ? template.system : null
-        }));
+        if (templateId === 'custom') {
+            setFormData(prev => ({
+                ...prev,
+                realmTemplateId: 'custom',
+                namedRealmSystem: {
+                    id: `custom_system_${Date.now()}`,
+                    name: 'Hệ Thống Tùy Chỉnh',
+                    description: 'Một hệ thống cảnh giới do người dùng tạo.',
+                    resourceName: 'Năng Lượng',
+                    resourceUnit: 'điểm',
+                    realms: [],
+                }
+            }));
+        } else {
+            const template = REALM_TEMPLATES.find(t => t.id === templateId);
+            setFormData(prev => ({
+                ...prev,
+                realmTemplateId: templateId,
+                namedRealmSystem: template ? JSON.parse(JSON.stringify(template.system)) : null
+            }));
+        }
     };
     
     const handleSaveRealmSystem = (systems: NamedRealmSystem[]) => {
@@ -550,6 +606,22 @@ const SaveSlotScreen: React.FC = () => {
                         />
                     )}
                 </Field>
+                <Field label="Hệ Thống Thiên Mệnh" description="Bật để trải nghiệm một cốt truyện chính có định hướng. Tắt để chơi trong một thế giới mở (sandbox).">
+                    <div className="flex items-center p-1 rounded-lg w-full" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                        <button 
+                            onClick={() => setFormData(p => ({ ...p, enableStorySystem: true }))}
+                            className={`w-1/2 text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 ${formData.enableStorySystem ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-light)]/50'}`}
+                        >
+                            Bật (Cốt truyện)
+                        </button>
+                        <button 
+                            onClick={() => setFormData(p => ({ ...p, enableStorySystem: false }))}
+                            className={`w-1/2 text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 ${!formData.enableStorySystem ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-light)]/50'}`}
+                        >
+                            Tắt (Sandbox)
+                        </button>
+                    </div>
+                </Field>
                 <Field label="Chủ Đề (Cụ thể hơn)" description="Giúp AI tập trung vào một khía cạnh cụ thể trong thể loại bạn chọn.">
                     <input name="theme" value={formData.theme} onChange={handleInputChange} className="input-neumorphic" placeholder="VD: Ngôi nhà ma ám, Lời nguyền rồng, Tu tiên độ kiếp..."/>
                 </Field>
@@ -635,26 +707,35 @@ const SaveSlotScreen: React.FC = () => {
                  {formData.enableRealmSystem && (
                      <Field label="Chọn Mẫu Cảnh Giới" description="Bắt đầu với một hệ thống có sẵn hoặc tự tạo.">
                         <div className="flex items-center gap-2">
-                           <select value={formData.realmTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="input-neumorphic">
+                           <select value={formData.realmTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="input-neumorphic flex-grow">
                                 {REALM_TEMPLATES.map(template => (
                                     <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
                                 ))}
-                                <option value="custom">Tùy Chỉnh</option>
+                                <option value="custom">Tùy Chỉnh...</option>
                             </select>
                             <button onClick={() => setRealmEditorOpen(true)} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 flex items-center gap-2"><FaEdit /> Sửa</button>
                         </div>
                     </Field>
                  )}
-                <Field label="Hệ Thống Thuộc Tính" description="Bắt đầu với một hệ thống thuộc tính có sẵn.">
-                    <select onChange={e => handleTemplateChange(e.target.value)} className="input-neumorphic">
+                <Field label="Hệ Thống Thuộc Tính" description="Bắt đầu với một hệ thống thuộc tính có sẵn hoặc tự tạo.">
+                    <select onChange={e => handleTemplateChange(e.target.value)} className="input-neumorphic" value={ATTRIBUTE_TEMPLATES.find(t => JSON.stringify(t.system) === JSON.stringify(formData.attributeSystem))?.id || 'custom'}>
                         {ATTRIBUTE_TEMPLATES.map(template => (
                             <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
                         ))}
+                        <option value="custom">Tùy Chỉnh...</option>
                     </select>
                 </Field>
                 {formData.attributeSystem?.groups.map(group => (
                     <div key={group.id} className="neumorphic-inset-box p-3">
-                        <h4 className="font-bold text-lg" style={{color: 'var(--primary-accent-color)'}}>{group.name}</h4>
+                        <div className="flex justify-between items-center mb-2">
+                            <input
+                                value={group.name}
+                                onChange={(e) => handleGroupNameChange(group.id, e.target.value)}
+                                className="font-bold text-lg bg-transparent border-0 focus:ring-1 focus:ring-inset focus:ring-gray-500 rounded p-1 -m-1"
+                                style={{color: 'var(--primary-accent-color)'}}
+                            />
+                            <button onClick={() => handleDeleteGroup(group.id)} className="p-1 text-gray-500 hover:text-red-400"><FaTrash /></button>
+                        </div>
                         <div className="mt-2 space-y-2">
                             {formData.attributeSystem.definitions.filter(def => def.group === group.id).map(def => (
                                 <div key={def.id} className="flex justify-between items-center p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
@@ -674,6 +755,9 @@ const SaveSlotScreen: React.FC = () => {
                         </button>
                     </div>
                 ))}
+                <button onClick={handleAddGroup} className="w-full mt-3 text-sm flex items-center justify-center gap-2 p-2 rounded hover:brightness-125" style={{ color: 'var(--primary-accent-color)', backgroundColor: 'rgba(var(--primary-accent-color-rgb), 0.1)'}}>
+                    <FaPlus /> Thêm Nhóm Thuộc Tính
+                </button>
             </Section>
 
             <Section title="4. Tạo Nhân Vật Chính">

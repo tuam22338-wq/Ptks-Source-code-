@@ -93,6 +93,13 @@ Bạn được phép và được khuyến khích mô tả các cảnh sau một
     - Nếu người chơi đang trong một cuộc hội thoại (\`dialogueWithNpcId\` tồn tại) và hành động của họ không liên quan (ví dụ: di chuyển, tấn công), hãy đặt \`dialogueState\` thành \`{ "status": "END" }\`.
     - Trong các trường hợp khác, không cần đặt \`dialogueState\`.`;
 
+    let storyModeInstruction = '';
+    if (gameplaySettings.enableStorySystem) {
+        storyModeInstruction = `18. **LUẬT CHẾ ĐỘ CỐT TRUYỆN:** Bạn là một người kể chuyện có chủ đích. Hãy thúc đẩy cốt truyện chính một cách tự nhiên. Nếu người chơi đi chệch hướng, hãy tạo ra các sự kiện hoặc NPC để nhẹ nhàng hướng họ trở lại con đường định mệnh. Phản ứng của các NPC Định Mệnh phải luôn phục vụ cho cốt truyện.`;
+    } else {
+        storyModeInstruction = `18. **LUẬT CHẾ ĐỘ SANDBOX:** Bạn là một người mô phỏng thế giới. KHÔNG có cốt truyện chính. Hãy phản ứng một cách hoàn toàn tự nhiên với hành động của người chơi dựa trên các quy luật của thế giới và mục tiêu riêng của từng NPC. Ưu tiên sự tự do, hậu quả logic, và câu chuyện nổi (emergent narrative).`;
+    }
+
     const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
     const validStatNames = attributeSystem.definitions.map(def => def.name);
     
@@ -197,6 +204,7 @@ ${interruptionInstruction}
 ${dialogueInstruction}
 ${dynamicPacingInstruction}
 ${dialogueStateInstruction}
+${storyModeInstruction}
 ${specialNarrativeInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}

@@ -1,7 +1,3 @@
-
-
-
-
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem, GenerationMode } from '../../types';
@@ -163,7 +159,8 @@ export const generateInitialWorldDetails = async (
     generationMode: GenerationMode
 ): Promise<{ npcs: NPC[], relationships: PlayerNpcRelationship[], openingNarrative: string }> => {
     
-    const { playerCharacter, discoveredLocations, activeNpcs, activeWorldId, realmSystem } = gameState;
+    const { playerCharacter, discoveredLocations, activeNpcs, activeWorldId, realmSystem, gameplaySettings } = gameState;
+    const isStoryMode = gameplaySettings.enableStorySystem;
     const currentLocation = discoveredLocations.find(loc => loc.id === playerCharacter.currentLocationId);
     const dlcs = gameState.creationData?.dlcs;
 
@@ -305,7 +302,21 @@ export const generateInitialWorldDetails = async (
             break;
     }
     
-    // FIX: Access narrativeStyle from gameState.gameplaySettings instead of global settings.
+    let storyModeInstruction = '';
+    if (isStoryMode) {
+        storyModeInstruction = `
+        **NHIỆM VỤ CHẾ ĐỘ CỐT TRUYỆN (ƯU TIÊN CAO):**
+        1.  **TẠO CỐT TRUYỆN CHÍNH:** Dựa trên xuất thân của nhân vật, hãy tạo ra một dàn bài cho một tuyến nhiệm vụ chính đầu tiên. Nó nên có một mục tiêu rõ ràng và một phản diện hoặc trở ngại ban đầu.
+        2.  **TẠO NPC ĐỊNH MỆNH:** Trong danh sách NPC, hãy tạo ít nhất 1-2 "NPC Định Mệnh" (Key NPC) có vai trò quan trọng trong cốt truyện chính (ví dụ: một người thầy, một đối thủ, một người đưa tin). Hãy ghi chú vai trò của họ trong phần "origin".
+        3.  **VIẾT MỞ ĐẦU HƯỚNG TRUYỆN:** Đoạn văn mở đầu phải giới thiệu xung đột hoặc mục tiêu đầu tiên của cốt truyện chính, lôi kéo người chơi vào hành trình.`;
+    } else {
+        storyModeInstruction = `
+        **NHIỆM VỤ CHẾ ĐỘ SANDBOX (ƯU TIÊN CAO):**
+        1.  **KHÔNG TẠO CỐT TRUYỆN CHÍNH:** Tuyệt đối không tạo ra một tuyến nhiệm vụ chính nào.
+        2.  **TẠO THẾ GIỚI MỞ:** Thay vào đó, hãy tập trung tạo ra một thế giới có nhiều "điểm bắt đầu" tiềm năng. Tạo ra các NPC có mục tiêu và kế hoạch riêng thú vị, các tin đồn về những địa điểm bí ẩn, và các xung đột nhỏ giữa các phe phái.
+        3.  **VIẾT MỞ ĐẦU TỰ DO:** Đoạn văn mở đầu chỉ nên mô tả trạng thái hiện tại của nhân vật trong một thế giới đang tự vận hành, để người chơi tự quyết định phải làm gì.`;
+    }
+
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === gameState.gameplaySettings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
     const prompt = `Bạn là một AI Sáng Thế, có khả năng kiến tạo thế giới game tu tiên "Tam Thiên Thế Giới". Dựa trên thông tin về nhân vật chính, hãy thực hiện đồng thời 3 nhiệm vụ sau và trả về kết quả trong một đối tượng JSON duy nhất.
@@ -319,6 +330,9 @@ export const generateInitialWorldDetails = async (
     - Địa điểm hiện tại: ${currentLocation?.name}. (${currentLocation?.description})
     ${dlcContext}
     ---
+    **HƯỚNG DẪN CHẾ ĐỘ CHƠI:**
+    ${storyModeInstruction}
+    ---
     **NHIỆM VỤ 1: TẠO GIA ĐÌNH & BẠN BÈ**
     Tạo ra 2 đến 4 NPC là người thân hoặc bạn bè gần gũi của nhân vật chính. Họ đều là **PHÀM NHÂN**, không phải tu sĩ, và sống cùng địa điểm với người chơi.
     - **Yêu cầu theo chế độ sáng thế:** ${familyModeInstruction}
@@ -328,13 +342,13 @@ export const generateInitialWorldDetails = async (
     Viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     - **MỆNH LỆNH TỐI THƯỢỢNG:** Phải bám sát 100% vào "Xuất thân & Câu chuyện nền" được cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra.
     - **Giọng văn:** ${narrativeStyle}.
-    - **Nội dung:** Thiết lập bối cảnh nhân vật đang ở đâu, làm gì, cảm xúc của họ, và phải lồng ghép cả những người thân vừa được tạo ra ở Nhiệm Vụ 1.
+    - **Nội dung:** Thiết lập bối cảnh nhân vật đang ở đâu, làm gì, cảm xúc của họ, và phải lồng ghép cả những người thân vừa được tạo ra ở Nhiệm Vụ 1. Phải tuân thủ theo **HƯỚNG DẪN CHẾ ĐỘ CHƠI**.
     - **Yêu cầu độ dài:** ${openingModeInstruction}
 
     ---
     **NHIỆM VỤ 3: TẠO DÂN CƯ CHO THẾ GIỚI (DYNAMIC NPCS)**
     Tạo ra **${count}** NPC độc đáo để làm thế giới sống động. Họ có thể là tu sĩ, yêu ma, dân thường...
-    - **QUAN TRỌNG:** KHÔNG tạo ra các NPC có tên trùng với nhân vật chính hoặc những người thân vừa tạo ở Nhiệm Vụ 1.
+    - **QUAN TRỌNG:** KHÔNG tạo ra các NPC có tên trùng với nhân vật chính hoặc những người thân vừa tạo ở Nhiệm Vụ 1. Phải tuân thủ theo **HƯỚNG DẪN CHẾ ĐỘ CHƠI**.
     - **Yêu cầu chi tiết:**
         1. **Chỉ số:** Gán cho họ các chỉ số Thiên Hướng, chiến đấu, cảnh giới, ngũ hành, và tài sản phù hợp.
         2. ${npcModeInstruction}

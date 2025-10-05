@@ -58,11 +58,16 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
     
     const getAttributeValue = (id: string) => playerCharacter.attributes[id] || { value: 0 };
     
-    const isProgressionSystem = realmSystem.length > 1 || (realmSystem.length === 1 && realmSystem[0].stages.length > 1);
+    const isProgressionSystem = realmSystem && (realmSystem.length > 1 || (realmSystem.length === 1 && realmSystem[0].stages.length > 1));
     
     const renderAttributeGroup = (group: (typeof attributeSystem.groups)[0]) => {
+        // Hide the entire "Cultivation Info" group if the realm system is disabled.
+        if (group.id === 'cultivation' && (!realmSystem || realmSystem.length === 0)) {
+            return null;
+        }
+
         const attributesInGroup = attributeSystem.definitions
-            .filter(def => def.group === group.id && playerCharacter.attributes[def.id]);
+            .filter(def => def.group === group.id && (playerCharacter.attributes[def.id] || def.type === 'INFORMATIONAL'));
         
         if (attributesInGroup.length === 0) return null;
 
@@ -80,12 +85,15 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
                                 <AttributeRow
                                     key={def.id}
                                     label={def.name}
-                                    value={`${currentRealm?.name || ''} - ${currentStage?.name || ''}`}
+                                    value={`${currentRealm?.name || 'Vô'} - ${currentStage?.name || ''}`}
                                     icon={Icon}
                                     description={def.description}
                                 />
                             )
                         }
+
+                        // Don't render attributes that don't have a value (unless they are informational)
+                        if(!playerCharacter.attributes[def.id]) return null;
 
                         return (
                             <AttributeRow
