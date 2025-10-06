@@ -279,7 +279,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
              />
             
             <div className={`flex-grow w-full flex min-h-0 relative`}>
-                <main className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:mr-96' : ''}`}>
+                <div className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:mr-96' : ''}`}>
                     <StoryLog 
                         pageEntries={storyPages[currentPage] || []} 
                         gameState={gameState}
@@ -317,7 +317,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             onToggleSidebar={() => setIsSidebarOpen(v => !v)}
                         />
                     )}
-                </main>
+                </div>
 
             </div>
         </div>

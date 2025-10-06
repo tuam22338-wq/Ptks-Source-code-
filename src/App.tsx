@@ -228,7 +228,7 @@ const AppContent: React.FC = () => {
     // --- END DYNAMIC LAYOUT LOGIC ---
 
     return (
-        <div className="relative w-full h-full flex flex-col items-center">
+        <div className="relative w-full h-full flex flex-col">
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
             <InkSplatterOverlay />
@@ -236,7 +236,7 @@ const AppContent: React.FC = () => {
             {gameState && <SpecialEffectsOverlay />}
 
             {showHeader && (
-              <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex-shrink-0">
+              <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-shrink-0">
                 <Header />
               </div>
             )}

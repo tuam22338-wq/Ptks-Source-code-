@@ -167,7 +167,7 @@ const NovelistScreen: React.FC = () => {
 
     const handleSubmitPrompt = async () => {
         if (!userInput.trim() || isGenerating || !activeNovel) return;
-        
+
         const userEntry: NovelContentEntry = { id: `prompt-${Date.now()}`, type: 'prompt', content: userInput, timestamp: new Date().toISOString() };
         const aiPlaceholder: NovelContentEntry = { id: `ai-${Date.now()}`, type: 'ai_generation', content: '', timestamp: new Date().toISOString() };
 
@@ -175,6 +175,10 @@ const NovelistScreen: React.FC = () => {
         await handleUpdateNovel({ ...activeNovel, content: newContent });
         setUserInput('');
         setIsGenerating(true);
+
+        // This variable will be updated inside the functional state update
+        // to hold the latest version of the novel state, preventing stale closures.
+        let currentNovelState: Novel | null = activeNovel;
 
         try {
             const stream = generateNovelChapter(userInput, activeNovel.content, activeNovel.synopsis, activeNovel.lorebook, activeNovel.fanficMode, state.settings);
@@ -189,22 +193,33 @@ const NovelistScreen: React.FC = () => {
                     if (aiEntryIndex !== -1) {
                         updatedContent[aiEntryIndex] = { ...updatedContent[aiEntryIndex], content: fullResponse };
                     }
-                    return { ...prev, content: updatedContent };
+                    // Update our tracker variable with the newest state
+                    currentNovelState = { ...prev, content: updatedContent };
+                    return currentNovelState;
                 });
             }
             
-            const finalNovel = { ...activeNovel, content: activeNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: fullResponse} : e) };
-            await handleUpdateNovel(finalNovel);
+            // After streaming is complete, save the final, most up-to-date state.
+            await handleUpdateNovel(currentNovelState);
 
         } catch (error: any) {
             console.error("Lỗi khi tạo chương mới:", error);
             const errorContent = `[Lỗi hệ thống: ${error.message}]`;
-            const finalNovel = { ...activeNovel, content: activeNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: errorContent} : e) };
-            await handleUpdateNovel(finalNovel);
+            
+            // Use the last known good state from our tracker variable, or fall back to the stale closure
+            const baseNovelForError = currentNovelState || activeNovel;
+            const errorNovelState = {
+                ...baseNovelForError,
+                content: baseNovelForError.content.map(e => 
+                    e.id === aiPlaceholder.id ? {...e, content: errorContent} : e
+                ),
+            };
+            await handleUpdateNovel(errorNovelState);
         } finally {
             setIsGenerating(false);
         }
     };
+
 
     const handleDeleteNovel = async (id: number) => {
         if (window.confirm("Bạn có chắc muốn xóa vĩnh viễn tiểu thuyết này?")) {
