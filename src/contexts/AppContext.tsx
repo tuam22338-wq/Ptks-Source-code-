@@ -449,9 +449,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         try {
             const onStreamUpdate = (content: string) => dispatch({ type: 'STREAMING_NARRATIVE_UPDATE', payload: content });
             
-            const newGameState = await processPlayerAction(state.gameState, text, type, apCost, state.settings, showNotification, abortControllerRef.current.signal, state.currentSlotId, onStreamUpdate);
+            const { finalState, narrativeEntryPayload } = await processPlayerAction(state.gameState, text, type, apCost, state.settings, showNotification, abortControllerRef.current.signal, state.currentSlotId, onStreamUpdate);
 
-            dispatch({ type: 'PLAYER_ACTION_RESOLVED', payload: newGameState });
+            dispatch({ type: 'PLAYER_ACTION_RESOLVED', payload: { finalState, narrativeEntryPayload } });
         } catch (error: any) {
             if (error.name !== 'AbortError') {
                 console.error("Error processing player action:", error);

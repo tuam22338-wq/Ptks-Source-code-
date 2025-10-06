@@ -1,4 +1,3 @@
-
 import type { GameState, StoryEntry, GameSettings, MechanicalIntent, AIResponsePayload, ArbiterDecision } from '../types';
 import { generateActionResponseStream } from './geminiService';
 import { advanceGameTime } from '../utils/timeManager';
@@ -20,7 +19,7 @@ export const processPlayerAction = async (
     abortSignal: AbortController['signal'],
     currentSlotId: number,
     onStreamUpdate: (content: string) => void
-): Promise<GameState> => {
+): Promise<{ finalState: GameState, narrativeEntryPayload: Omit<StoryEntry, 'id'> }> => {
     
     // --- GIAI ĐOẠN 0: CHUẨN BỊ, MÔ PHỎNG THẾ GIỚI & KÝ ỨC ---
     const { newState: stateAfterTime, newDay, notifications: timeNotifications } = advanceGameTime(gameState, apCost);
@@ -95,18 +94,6 @@ export const processPlayerAction = async (
     let finalState = applyMechanicalChanges(stateAfterSim, validatedIntent, showNotification);
     
     const finalNarrative = aiPayload.narrative;
-
-    // Rebuild story log with final, non-pending entries
-    finalState.storyLog = finalState.storyLog.filter(entry => !entry.isPending && !(entry.type === 'narrative' && entry.content === ''));
-    
-    const lastId = finalState.storyLog.length > 0 ? finalState.storyLog[finalState.storyLog.length - 1].id : 0;
-    const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
-    const narrativeEntryWithId: StoryEntry = { id: lastId + 2, type: 'narrative', content: finalNarrative, effects: validatedIntent };
-    finalState.storyLog.push(playerActionEntry, narrativeEntryWithId);
-
-    // Add new memory fragments for the events that just transpired
-    await addEntryToMemory(playerActionEntry, finalState, currentSlotId);
-    await addEntryToMemory(narrativeEntryWithId, finalState, currentSlotId);
     
     // --- GIAI ĐOẠN 3: XỬ LÝ HẬU KỲ & DỌN DẸP ---
     const finalQuestCheck = questManager.processQuestUpdates(finalState);
@@ -124,5 +111,15 @@ export const processPlayerAction = async (
         }
     }
     
-    return finalStateForReturn;
+    const narrativeEntryPayload: Omit<StoryEntry, 'id'> = {
+        type: 'narrative',
+        content: finalNarrative,
+        effects: validatedIntent,
+    };
+
+    // Note: Memory saving should be triggered after the state is fully resolved in the context.
+    // The previous implementation here was flawed as it operated on stale state.
+    // This logic should be moved to AppContext after PLAYER_ACTION_RESOLVED is processed.
+
+    return { finalState: finalStateForReturn, narrativeEntryPayload };
 };

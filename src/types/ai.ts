@@ -1,6 +1,7 @@
 
+
 // FIX: Add missing CultivationTechnique import
-import type { GameDate, StoryEntry, CurrencyType, ItemType, ItemQuality, CultivationTechnique, ActiveEffect, ActiveQuest, StatBonus, NPC, EventChoice } from './';
+import type { GameDate, StoryEntry, CurrencyType, ItemType, ItemQuality, CultivationTechnique, ActiveEffect, ActiveQuest, StatBonus, NPC, EventChoice, Location, Faction, MajorEvent } from './';
 
 // --- AI Memory System Types ---
 export interface EntityReference {
@@ -78,6 +79,9 @@ export interface MechanicalIntent {
     newEffects?: Omit<ActiveEffect, 'id'>[];
     npcEncounters?: string[]; // Names of newly encountered NPCs
     newNpcsCreated?: Omit<NPC, 'id'>[]; // AI can create new NPCs on the fly
+    newLocationsDiscovered?: Partial<Location>[];
+    newFactionsIntroduced?: Partial<Faction>[];
+    newMajorEventsRevealed?: Partial<MajorEvent>[];
     locationChange?: string; // New location ID
     timeJump?: { years?: number; seasons?: number; days?: number; };
     emotionChanges?: { npcName: string; emotion: 'trust' | 'fear' | 'anger'; change: number; reason: string; }[];

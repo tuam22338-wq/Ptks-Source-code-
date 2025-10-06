@@ -1,6 +1,7 @@
 
+
 import { Type, FunctionDeclaration } from "@google/genai";
-import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC } from '../../types';
+import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC, Location, Faction, MajorEvent } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
@@ -121,6 +122,11 @@ export async function* generateActionResponseStream(
         storyModeInstruction = `19. **LUẬT CHẾ ĐỘ SANDBOX:** Bạn là một người mô phỏng thế giới. KHÔNG có cốt truyện chính. Hãy phản ứng một cách hoàn toàn tự nhiên với hành động của người chơi dựa trên các quy luật của thế giới và mục tiêu riêng của từng NPC. Ưu tiên sự tự do, hậu quả logic, và câu chuyện nổi (emergent narrative).`;
     }
 
+    const wikiUpdateInstruction = `20. **LUẬT BÁCH KHOA TOÀN THƯ TỰ ĐỘNG (QUAN TRỌNG):** Để thế giới sống động, bạn phải giúp người chơi xây dựng Bách Khoa Toàn Thư của họ. Nếu trong đoạn tường thuật, bạn **LẦN ĐẦU TIÊN** giới thiệu hoặc mô tả một thực thể mới, bạn **BẮT BUỘC** phải ghi lại thông tin đó vào các trường tương ứng trong \`mechanicalIntent\`:
+    - **Địa điểm mới:** Nếu bạn mô tả một địa danh mới (thành phố, khu rừng, hang động...), hãy thêm một đối tượng vào \`newLocationsDiscovered\`.
+    - **Phe phái mới:** Nếu bạn giới thiệu một tổ chức, giáo phái, hoặc gia tộc mới, hãy thêm một đối tượng vào \`newFactionsIntroduced\`.
+    - **Sự kiện lịch sử mới:** Nếu bạn tiết lộ một sự kiện quan trọng trong quá khứ, hãy thêm một đối tượng vào \`newMajorEventsRevealed\`.`;
+
     const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
     const validStatNames = attributeSystem.definitions.map(def => def.name);
     
@@ -184,6 +190,9 @@ export async function* generateActionResponseStream(
             newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
             npcEncounters: { type: Type.ARRAY, items: { type: Type.STRING } },
             newNpcsCreated: { type: Type.ARRAY, items: newNpcSchema },
+            newLocationsDiscovered: { type: Type.ARRAY, description: "Các địa điểm mới được giới thiệu trong tường thuật.", items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Thành Thị', 'Thôn Làng', 'Hoang Dã', 'Sơn Mạch', 'Thánh Địa', 'Bí Cảnh', 'Quan Ải'] } } } },
+            newFactionsIntroduced: { type: Type.ARRAY, description: "Các phe phái mới được giới thiệu.", items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING } } } },
+            newMajorEventsRevealed: { type: Type.ARRAY, description: "Các sự kiện lịch sử mới được hé lộ.", items: { type: Type.OBJECT, properties: { year: { type: Type.NUMBER }, title: { type: Type.STRING }, summary: { type: Type.STRING } } } },
             locationChange: { type: Type.STRING, description: "ID của địa điểm mới nếu người chơi di chuyển thành công." },
             timeJump: { type: Type.OBJECT, properties: { years: { type: Type.NUMBER }, seasons: { type: Type.NUMBER }, days: { type: Type.NUMBER } } },
             emotionChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { npcName: { type: Type.STRING }, emotion: { type: Type.STRING, enum: ['trust', 'fear', 'anger'] }, change: { type: Type.NUMBER }, reason: { type: Type.STRING } }, required: ['npcName', 'emotion', 'change', 'reason'] } },
@@ -229,6 +238,7 @@ ${dialogueInstruction}
 ${dynamicPacingInstruction}
 ${dialogueStateInstruction}
 ${storyModeInstruction}
+${wikiUpdateInstruction}
 ${specialNarrativeInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}

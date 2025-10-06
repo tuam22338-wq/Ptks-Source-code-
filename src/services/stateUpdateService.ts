@@ -1,4 +1,4 @@
-import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC, Currency } from '../types';
+import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC, Currency, Location, Faction, MajorEvent } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
 /**
@@ -217,6 +217,54 @@ export const applyMechanicalChanges = (
                 };
                 nextState.activeNpcs.push(newNpc);
                 showNotification(`Nhân vật mới xuất hiện: ${newNpc.identity.name}`);
+            }
+        });
+    }
+
+    if (intent.newLocationsDiscovered) {
+        intent.newLocationsDiscovered.forEach(locData => {
+            if (locData.name && !nextState.discoveredLocations.some((l: Location) => l.name === locData.name)) {
+                const newLocation: Location = {
+                    id: locData.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+                    name: locData.name,
+                    description: locData.description || 'Một nơi chưa được khám phá.',
+                    type: locData.type || 'Hoang Dã',
+                    neighbors: [],
+                    coordinates: { x: Math.random() * 100, y: Math.random() * 100 },
+                    qiConcentration: locData.qiConcentration || 10,
+                };
+                nextState.discoveredLocations.push(newLocation);
+                showNotification(`Đã khám phá địa điểm mới: ${newLocation.name}`);
+            }
+        });
+    }
+
+    if (intent.newFactionsIntroduced) {
+        intent.newFactionsIntroduced.forEach(factionData => {
+            if (factionData.name && !pc.reputation.some(r => r.factionName === factionData.name)) {
+                pc.reputation.push({
+                    factionName: factionData.name,
+                    value: 0,
+                    status: 'Trung Lập',
+                });
+                showNotification(`Bạn đã biết đến một thế lực mới: ${factionData.name}`);
+            }
+        });
+    }
+
+    if (intent.newMajorEventsRevealed) {
+        intent.newMajorEventsRevealed.forEach(eventData => {
+            if (eventData.title && !nextState.majorEvents.some((e: MajorEvent) => e.title === eventData.title)) {
+                const newEvent: MajorEvent = {
+                    year: eventData.year || nextState.gameDate.year,
+                    title: eventData.title,
+                    summary: eventData.summary || 'Chi tiết chưa rõ.',
+                    location: eventData.location || 'Không rõ',
+                    involvedParties: eventData.involvedParties || 'Không rõ',
+                    consequences: eventData.consequences || 'Chưa rõ',
+                };
+                nextState.majorEvents.push(newEvent);
+                showNotification(`Một trang sử đã được hé lộ: ${newEvent.title}`);
             }
         });
     }
