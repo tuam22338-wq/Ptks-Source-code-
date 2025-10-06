@@ -163,6 +163,9 @@ export const generateInitialWorldDetails = async (
     const isStoryMode = gameplaySettings.enableStorySystem;
     const currentLocation = discoveredLocations.find(loc => loc.id === playerCharacter.currentLocationId);
     const dlcs = gameState.creationData?.dlcs;
+    const userOpeningStory = gameState.storyLog[0]?.content;
+    const hasUserOpening = userOpeningStory && !userOpeningStory.includes('Thế giới xung quanh đang dần được kiến tạo...');
+
 
     const dlcContext = (dlcs && dlcs.length > 0)
         ? `\n\n### BỐI CẢNH MỞ RỘNG TỪ DLC (ƯU TIÊN CAO) ###\n${dlcs.map(dlc => `--- DLC: ${dlc.title} ---\n${dlc.content}`).join('\n\n')}\n### KẾT THÚC DLC ###`
@@ -319,6 +322,23 @@ export const generateInitialWorldDetails = async (
 
     const narrativeStyle = NARRATIVE_STYLES.find(s => s.value === gameState.gameplaySettings.narrativeStyle)?.label || 'Cổ điển Tiên hiệp';
 
+    let openingTaskInstruction = '';
+    if (hasUserOpening) {
+        openingTaskInstruction = `
+**NHIỆM VỤ 2: VIẾT TIẾP CỐT TRUYỆN MỞ ĐẦU**
+Người chơi đã cung cấp một đoạn mở đầu. Nhiệm vụ của bạn là **VIẾT TIẾP** đoạn văn đó, lồng ghép các nhân vật gia đình/bạn bè (từ Nhiệm vụ 1) vào câu chuyện một cách tự nhiên và liền mạch. Đoạn văn viết tiếp phải tuân theo văn phong và không khí của đoạn mở đầu.
+- **ĐOẠN MỞ ĐẦU CỦA NGƯỜI CHƠI (Bối cảnh để viết tiếp):** "${userOpeningStory}"
+- **Yêu cầu độ dài:** ${openingModeInstruction}`;
+    } else {
+        openingTaskInstruction = `
+**NHIỆM VỤ 2: VIẾT CỐT TRUYỆN MỞ ĐẦU**
+Viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
+- **MỆNH LỆNH TỐI THƯỢỢNG:** Phải bám sát 100% vào "Xuất thân & Câu chuyện nền" được cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra.
+- **Giọng văn:** ${narrativeStyle}.
+- **Nội dung:** Thiết lập bối cảnh nhân vật đang ở đâu, làm gì, cảm xúc của họ, và phải lồng ghép cả những người thân vừa được tạo ra ở Nhiệm vụ 1. Phải tuân thủ theo **HƯỚNG DẪN CHẾ ĐỘ CHƠI**.
+- **Yêu cầu độ dài:** ${openingModeInstruction}`;
+    }
+
     const prompt = `Bạn là một AI Sáng Thế, có khả năng kiến tạo thế giới game tu tiên "Tam Thiên Thế Giới". Dựa trên thông tin về nhân vật chính, hãy thực hiện đồng thời 3 nhiệm vụ sau và trả về kết quả trong một đối tượng JSON duy nhất.
 
     **Thông tin Nhân Vật Chính:**
@@ -338,13 +358,7 @@ export const generateInitialWorldDetails = async (
     - **Yêu cầu theo chế độ sáng thế:** ${familyModeInstruction}
 
     ---
-    **NHIỆM VỤ 2: VIẾT CỐT TRUYỆN MỞ ĐẦU**
-    Viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
-    - **MỆNH LỆNH TỐI THƯỢỢNG:** Phải bám sát 100% vào "Xuất thân & Câu chuyện nền" được cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra.
-    - **Giọng văn:** ${narrativeStyle}.
-    - **Nội dung:** Thiết lập bối cảnh nhân vật đang ở đâu, làm gì, cảm xúc của họ, và phải lồng ghép cả những người thân vừa được tạo ra ở Nhiệm Vụ 1. Phải tuân thủ theo **HƯỚNG DẪN CHẾ ĐỘ CHƠI**.
-    - **Yêu cầu độ dài:** ${openingModeInstruction}
-
+    ${openingTaskInstruction}
     ---
     **NHIỆM VỤ 3: TẠO DÂN CƯ CHO THẾ GIỚI (DYNAMIC NPCS)**
     Tạo ra **${count}** NPC độc đáo để làm thế giới sống động. Họ có thể là tu sĩ, yêu ma, dân thường...
@@ -450,5 +464,10 @@ export const generateInitialWorldDetails = async (
         allNewNpcs.push(...dynamicNpcs);
     }
     
-    return { npcs: allNewNpcs, relationships: generatedRelationships, openingNarrative: data.opening_narrative };
+    const aiGeneratedContinuation = data.opening_narrative || '';
+    const finalOpeningNarrative = hasUserOpening
+      ? `${userOpeningStory}\n\n${aiGeneratedContinuation}`
+      : aiGeneratedContinuation;
+    
+    return { npcs: allNewNpcs, relationships: generatedRelationships, openingNarrative: finalOpeningNarrative };
 };

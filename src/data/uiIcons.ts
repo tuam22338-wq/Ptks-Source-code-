@@ -8,7 +8,7 @@ import {
   GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire, GiGroundbreaker,
   GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace, GiMeal
 } from 'react-icons/gi';
-import { FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain } from 'react-icons/fa';
+import { FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain, FaBookOpen } from 'react-icons/fa';
 
 export const UI_ICONS: { [key: string]: ElementType } = {
   GiCauldron, GiBroadsword, GiHealthNormal, GiHourglass, GiMagicSwirl,
@@ -19,5 +19,5 @@ export const UI_ICONS: { [key: string]: ElementType } = {
   GiHerbsBundle, GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire,
   GiGroundbreaker, GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace,
   GiMeal,
-  FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain
+  FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain, FaBookOpen
 };

@@ -379,6 +379,7 @@ export const createNewGameState = async (
         customNpcs, customLocations, customFactions, dlcs,
         enableRealmSystem,
         enableStorySystem,
+        openingStory,
         ...gameplaySettingsData
      } = gameStartData;
 
@@ -593,7 +594,7 @@ export const createNewGameState = async (
     
     const allNpcs = [...initialNpcsFromData];
     
-    const initialStory = [ { id: 1, type: 'narrative' as const, content: `Bạn bắt đầu hành trình của mình tại ${startingLocation.name}. Thế giới xung quanh đang dần được kiến tạo...` } ];
+    const initialStory = [ { id: 1, type: 'narrative' as const, content: openingStory || `Bạn bắt đầu hành trình của mình tại ${startingLocation.name}. Thế giới xung quanh đang dần được kiến tạo...` } ];
     const initialGameDate: GameDate = {
         era: eraName,
         year: startingYear,

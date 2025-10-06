@@ -35,6 +35,7 @@ export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.i
 
 export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
     { id: 'inventory', label: 'Túi Đồ', description: 'Mở túi đồ của bạn', iconName: 'GiSwapBag', actionText: 'mở túi đồ' },
+    { id: 'wiki', label: 'Bách Khoa', description: 'Mở Bách Khoa Toàn Thư để tra cứu thông tin thế giới.', iconName: 'FaBookOpen', actionText: 'mở bách khoa' },
     { id: 'dashboard', label: 'Trạng Thái', description: 'Mở bảng trạng thái nhân vật', iconName: 'FaUser', actionText: 'mở bảng trạng thái' },
 ];
 

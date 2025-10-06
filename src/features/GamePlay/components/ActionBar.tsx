@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FaPaperPlane, FaComment, FaBolt, FaBrain, FaChevronUp, FaChevronDown, FaUser, FaMapMarkedAlt } from 'react-icons/fa';
+import { FaPaperPlane, FaComment, FaBolt, FaBrain, FaChevronUp, FaChevronDown, FaUser, FaMapMarkedAlt, FaBookOpen } from 'react-icons/fa';
 import { GiSprout, GiSwapBag, GiStairsGoal, GiPerson } from 'react-icons/gi';
 import type { Location, GameState, QuickActionButtonConfig } from '../../../types';
 import { UI_ICONS, DEFAULT_BUTTONS } from '../../../constants';
@@ -76,8 +76,9 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
             openInventoryModal();
             return;
         }
-        if (button.id === 'dashboard') {
+        if (button.id === 'dashboard' || button.id === 'wiki') {
             onToggleSidebar();
+            // Sidebar itself will handle which panel to show, this just toggles visibility
             return;
         }
         handlePlayerAction(button.actionText, 'act', 1, showNotification);

@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 // FIX: Import `FaUpload` icon to resolve usage error.
 import { FaArrowLeft, FaFileUpload, FaBrain, FaToggleOn, FaToggleOff, FaSave, FaPlus, FaTrash, FaEdit, FaBolt, FaChevronDown, FaChevronUp, FaDownload, FaUpload } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
 import { CURRENT_GAME_VERSION, ATTRIBUTE_TEMPLATES, UI_ICONS, NARRATIVE_STYLES, DEATH_PENALTY_LEVELS, WORLD_INTERRUPTION_LEVELS } from '../../constants';
 import { REALM_TEMPLATES } from '../../data/realmTemplates';
+import { STORY_TEMPLATES } from '../../data/storyTemplates';
 import type { SaveSlot, FullMod, WorldCreationData, ModAttributeSystem, AttributeDefinition, AttributeGroupDefinition, NamedRealmSystem, GenerationMode, NarrativeStyle, DeathPenalty, WorldInterruptionFrequency, DataGenerationMode, ModNpc, ModLocation, Faction } from '../../types';
 import LoadingScreen from '../../components/LoadingScreen';
 import AttributeEditorModal from '../../features/Mods/components/AttributeEditorModal';
@@ -131,6 +132,8 @@ const SaveSlotScreen: React.FC = () => {
   const [isQuickCreateOpen, setQuickCreateOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showCustomGenreInput, setShowCustomGenreInput] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('sandbox');
+
 
   const [quickCreateInfo, setQuickCreateInfo] = useState<{description: string; characterName: string} | null>(null);
 
@@ -194,6 +197,32 @@ const SaveSlotScreen: React.FC = () => {
     worldInterruptionFrequency: 'occasional',
   });
 
+  const filteredTemplates = useMemo(() => {
+    return STORY_TEMPLATES.filter(t => t.genre === formData.genre);
+  }, [formData.genre]);
+
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const templateId = e.target.value;
+      setSelectedTemplateId(templateId);
+
+      if (templateId === 'sandbox') {
+          setFormData(p => ({
+              ...p,
+              mainGoal: '',
+              openingStory: '',
+          }));
+      } else {
+          const template = STORY_TEMPLATES.find(t => t.id === templateId);
+          if (template) {
+              setFormData(p => ({
+                  ...p,
+                  mainGoal: template.mainGoal,
+                  openingStory: template.openingStory,
+              }));
+          }
+      }
+  };
+
   const handleAddDlc = () => {
     setFormData(p => ({ ...p, dlcs: [...(p.dlcs || []), { title: '', content: '' }] }));
   };
@@ -214,6 +243,8 @@ const SaveSlotScreen: React.FC = () => {
 
   const handleGenreSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = e.target;
+    setSelectedTemplateId('sandbox'); // Reset template selection on genre change
+    setFormData(p => ({ ...p, mainGoal: '', openingStory: '' })); // Clear story fields
     if (value === 'custom') {
         setShowCustomGenreInput(true);
         setFormData(p => ({
@@ -349,7 +380,7 @@ const SaveSlotScreen: React.FC = () => {
         }
     };
 
-    const handleTemplateChange = (templateId: string) => {
+    const handleTemplateChangeAttribute = (templateId: string) => {
         if (templateId === 'custom') {
             setFormData(p => ({ ...p, attributeSystem: { definitions: [], groups: [] } }));
         } else {
@@ -606,31 +637,27 @@ const SaveSlotScreen: React.FC = () => {
                         />
                     )}
                 </Field>
-                <Field label="Hệ Thống Thiên Mệnh" description="Bật để trải nghiệm một cốt truyện chính có định hướng. Tắt để chơi trong một thế giới mở (sandbox).">
-                    <div className="flex items-center p-1 rounded-lg w-full" style={{boxShadow: 'var(--shadow-pressed)'}}>
-                        <button 
-                            onClick={() => setFormData(p => ({ ...p, enableStorySystem: true }))}
-                            className={`w-1/2 text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 ${formData.enableStorySystem ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-light)]/50'}`}
-                        >
-                            Bật (Cốt truyện)
-                        </button>
-                        <button 
-                            onClick={() => setFormData(p => ({ ...p, enableStorySystem: false }))}
-                            className={`w-1/2 text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 ${!formData.enableStorySystem ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-light)]/50'}`}
-                        >
-                            Tắt (Sandbox)
-                        </button>
-                    </div>
-                </Field>
-                <Field label="Chủ Đề (Cụ thể hơn)" description="Giúp AI tập trung vào một khía cạnh cụ thể trong thể loại bạn chọn.">
-                    <input name="theme" value={formData.theme} onChange={handleInputChange} className="input-neumorphic" placeholder="VD: Ngôi nhà ma ám, Lời nguyền rồng, Tu tiên độ kiếp..."/>
-                </Field>
                 <Field label="Bối Cảnh (Thế giới/Môi trường)" description="Mô tả nơi câu chuyện sẽ diễn ra.">
                     <textarea name="setting" value={formData.setting} onChange={handleInputChange} rows={3} className="input-neumorphic resize-y" placeholder="VD: Thành phố bỏ hoang sau đại dịch, Vương quốc Eldoria huyền bí, Tam Giới hỗn loạn..."/>
                 </Field>
             </Section>
 
-             <Section title="2. Cài Đặt Sáng Thế Nâng Cao">
+            <Section title="2. Kịch Bản & Cốt Truyện">
+                <Field label="Chọn Mẫu Cốt Truyện" description="Bắt đầu với một kịch bản có sẵn hoặc chọn 'Tự Do' để AI tự tạo một khởi đầu độc nhất.">
+                    <select onChange={handleTemplateChange} value={selectedTemplateId} className="input-neumorphic">
+                        <option value="sandbox">Tự Do (Sandbox / Thế giới mở)</option>
+                        {filteredTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                    </select>
+                </Field>
+                <Field label="Mục Tiêu Chính" description="Mục tiêu ban đầu của nhân vật. Sẽ định hướng cho AI ở những chương đầu.">
+                    <textarea name="mainGoal" value={formData.mainGoal} onChange={handleInputChange} rows={2} className="input-neumorphic resize-y" placeholder="VD: Tìm ra sự thật về cái chết của cha, Trở thành đệ nhất thiên hạ..."/>
+                </Field>
+                <Field label="Chương Mở Đầu" description="Đoạn văn bắt đầu câu chuyện của bạn. Nếu để trống, AI sẽ tự viết dựa trên các thông tin khác.">
+                    <textarea name="openingStory" value={formData.openingStory} onChange={handleInputChange} rows={4} className="input-neumorphic resize-y" placeholder="VD: 'Trong một đêm mưa tầm tã, bạn tỉnh dậy giữa một khu rừng xa lạ, không một chút ký ức...'"/>
+                </Field>
+            </Section>
+
+             <Section title="3. Cài Đặt Sáng Thế Nâng Cao">
                 <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full flex justify-between items-center px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-left text-[var(--text-color)] hover:bg-black/40">
                     <span className="font-semibold">Tùy Chỉnh Lối Chơi & AI</span>
                     {showAdvanced ? <FaChevronUp /> : <FaChevronDown />}
@@ -697,7 +724,7 @@ const SaveSlotScreen: React.FC = () => {
                  )}
             </Section>
 
-            <Section title="3. Hệ Thống Cảnh Giới & Thuộc Tính">
+            <Section title="4. Hệ Thống Cảnh Giới & Thuộc Tính">
                  <Field label="Hệ thống Cảnh giới" description="Thế giới của bạn có hệ thống cấp bậc, tu luyện, hay sức mạnh không?">
                     <button onClick={() => setFormData(p => ({ ...p, enableRealmSystem: !p.enableRealmSystem }))} className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
                         {formData.enableRealmSystem ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
@@ -718,7 +745,7 @@ const SaveSlotScreen: React.FC = () => {
                     </Field>
                  )}
                 <Field label="Hệ Thống Thuộc Tính" description="Bắt đầu với một hệ thống thuộc tính có sẵn hoặc tự tạo.">
-                    <select onChange={e => handleTemplateChange(e.target.value)} className="input-neumorphic" value={ATTRIBUTE_TEMPLATES.find(t => JSON.stringify(t.system) === JSON.stringify(formData.attributeSystem))?.id || 'custom'}>
+                    <select onChange={e => handleTemplateChangeAttribute(e.target.value)} className="input-neumorphic" value={ATTRIBUTE_TEMPLATES.find(t => JSON.stringify(t.system) === JSON.stringify(formData.attributeSystem))?.id || 'custom'}>
                         {ATTRIBUTE_TEMPLATES.map(template => (
                             <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
                         ))}
@@ -760,7 +787,7 @@ const SaveSlotScreen: React.FC = () => {
                 </button>
             </Section>
 
-            <Section title="4. Tạo Nhân Vật Chính">
+            <Section title="5. Tạo Nhân Vật Chính">
                 <Field label="Tên Nhân Vật" description="Nhập tên cho nhân vật của bạn.">
                     <input name="character.name" value={formData.character.name} onChange={handleInputChange} className="input-neumorphic"/>
                 </Field>
@@ -776,7 +803,7 @@ const SaveSlotScreen: React.FC = () => {
                 </Field>
             </Section>
 
-            <Section title="5. Dữ Liệu Thế Giới">
+            <Section title="6. Dữ Liệu Thế Giới">
                 <Field label="NPC Ban Đầu" description="Chọn cách tạo các NPC ban đầu trong thế giới.">
                     <div className="flex gap-2 items-start">
                         <select name="npcGenerationMode" value={formData.npcGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic flex-grow">
