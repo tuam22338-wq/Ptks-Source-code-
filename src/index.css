@@ -185,11 +185,23 @@ body {
 }
 @media (min-width: 640px) { .panel-container { padding: 2rem; } }
 
+/* Add mobile-first padding to auto-layout panels to prevent content from touching edges on small screens. */
+.panel-container-auto {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .panel-container-auto {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
 @media (min-width: 768px) { /* Tailwind's md breakpoint */
   .panel-container-auto {
     background-color: var(--bg-color);
     border-radius: 1.5rem;
     box-shadow: var(--shadow-raised);
+    /* This larger padding will override the mobile-first paddings on desktop. */
     padding: 2rem;
   }
   /* Ensure glassmorphism theme override applies */

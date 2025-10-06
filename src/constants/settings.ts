@@ -1,4 +1,5 @@
 
+
 import type { GameSettings, AIModel, ImageModel, RagEmbeddingModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, AiSyncMode, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap, WorldInterruptionFrequency } from '../types';
 
 export const AI_SYNC_MODES: { value: AiSyncMode; label: string, description: string }[] = [
@@ -66,7 +67,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     layoutMode: 'auto',
     gameSpeed: 'normal',
     fontFamily: "'Noto Serif', serif",
-    // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the assignment error here.
+    // The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the assignment error here.
     theme: 'theme-ink-wash-bamboo',
     customThemeColors: {
         '--bg-color': '#2A3F3A',
@@ -105,7 +106,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     // @FIX: Added missing property to satisfy type.
     enableRealmSystem: true,
     enableStorySystem: true,
-    mainTaskModel: 'gemini-2.5-pro',
+    mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',
     itemCraftingModel: 'gemini-2.5-flash',

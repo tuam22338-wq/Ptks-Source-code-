@@ -258,7 +258,7 @@ const StoryLog: React.FC<{
     };
 
     return (
-        <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
             {pageEntries.map((entry) => {
                 const animationStyle = { animationDuration: '600ms' };
                 const isSpeakable = ['narrative', 'dialogue', 'action-result', 'system-notification', 'player-dialogue', 'combat'].includes(entry.type);

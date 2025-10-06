@@ -21,6 +21,7 @@ const KHOI_NGUYEN_NPC_LIST: ModWorldData['initialNpcs'] = [
 
 export const DEFAULT_WORLDS_DATA: ModWorldData[] = [
     {
+        // @google-genai-fix: Added missing 'id' property required by ModWorldData type.
         id: 'khoi_nguyen_gioi',
         name: 'Khởi Nguyên Giới',
         description: 'Một thế giới khởi đầu đơn giản, là một tấm canvas trắng để bạn bắt đầu viết nên câu chuyện của riêng mình.',

@@ -69,7 +69,7 @@ const InkSplatterOverlay: React.FC = () => {
     const { state } = useAppContext();
     const theme = state.settings.theme;
 
-    // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the comparison error here.
+    // The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the comparison error here.
     if (state.settings.enablePerformanceMode || theme !== 'theme-ink-wash-bamboo') {
         return null;
     }
@@ -209,23 +209,25 @@ const AppContent: React.FC = () => {
     const forceFullScreenViews = ['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts', 'createScript', 'wikiScreen'];
     const isPotentiallyPanelScreen = !forceFullScreenViews.includes(view);
 
-    let mainClasses = 'w-full flex-grow flex flex-col';
+    // Use flex-1 instead of flex-grow for better cross-browser compatibility in filling space. Add min-h-0 to prevent flex item overflow.
+    let mainClasses = 'w-full flex-1 flex flex-col min-h-0';
     if (isPotentiallyPanelScreen) {
         switch (settings.layoutMode) {
             case 'desktop':
-                mainClasses += ' max-w-7xl mx-auto min-h-0 panel-container';
+                mainClasses += ' max-w-7xl mx-auto panel-container';
                 break;
             case 'mobile':
-                // No change, remains full-width
+                // Add padding for mobile view to prevent content touching screen edges.
+                mainClasses += ' px-4 sm:px-6';
                 break;
             case 'auto':
-                mainClasses += ' md:max-w-7xl md:mx-auto md:min-h-0 panel-container-auto';
+                 // Apply panel class directly; its styles are controlled by media queries in index.css for responsiveness.
+                mainClasses += ' panel-container-auto md:max-w-7xl md:mx-auto';
                 break;
         }
     }
     
     const showHeader = isPotentiallyPanelScreen && !isLoading && !isMigratingData;
-    // --- END DYNAMIC LAYOUT LOGIC ---
 
     return (
         <div className="relative w-full h-full flex flex-col">

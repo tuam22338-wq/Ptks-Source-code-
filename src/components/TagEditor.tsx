@@ -1,6 +1,6 @@
 import React from 'react';
 
-// FIX: Added a placeholder implementation to make this file a valid module.
+// A placeholder implementation to make this file a valid module.
 const TagEditor: React.FC = () => {
   return (
     <div>

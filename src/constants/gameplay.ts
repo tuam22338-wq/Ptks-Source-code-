@@ -3,7 +3,7 @@ import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../data/attributes';
 
 export const SYSTEM_SHOP_ITEMS = [
     { id: 'sys_item_stat_boost', name: 'Dịch Cân Tẩy Tủy Dịch', description: 'Một liều thuốc từ thế giới khác, giúp cải thiện toàn bộ thuộc tính cơ bản vĩnh viễn.', cost: 250, effect: { type: 'CHANGE_STAT', details: { attribute: 'all_base', change: 1 } } },
-    { id: 'sys_item_qi_boost', name: 'Linh Khí Kết Tinh', description: 'Một khối tinh thể chứa đựng linh khí thuần khiết, giúp tăng mạnh tu vi hiện tại.', cost: 100, effect: { type: 'CHANGE_STAT', details: { attribute: 'progressionPoints', change: 5000 } } },
+    { id: 'sys_item_qi_boost', name: 'Linh Khí Kết Tinh', description: 'Một khối tinh thể chứa đựng linh khí thuần khiết, giúp tăng mạnh tu vi hiện tại.', cost: 100, effect: { type: 'CHANGE_STAT', details: { attribute: 'spiritualQi', change: 5000 } } },
     { id: 'sys_item_gacha_ticket', name: 'Vé Gacha Vận Mệnh', description: 'Một chiếc vé bí ẩn, có thể rút ra một vật phẩm hoặc kỳ ngộ ngẫu nhiên.', cost: 50, effect: { type: 'START_EVENT', details: { eventId: 'system_gacha' } } },
 ];
 
@@ -30,7 +30,7 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
 ];
 
 export const ALL_ATTRIBUTES = DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name);
-// FIX: Changed progressionPoints to spiritualQi to match new type
+// FIX: Changed spiritualQi to spiritualQi to match new type
 export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'spiritualQi'];
 
 export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [

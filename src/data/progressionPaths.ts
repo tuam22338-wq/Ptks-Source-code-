@@ -1,4 +1,4 @@
-// FIX: Rename ProgressionPath to CultivationPath
+// FIX: Rename CultivationPath to CultivationPath
 import type { CultivationPath } from '../types';
 
 export const CULTIVATION_PATHS: CultivationPath[] = [

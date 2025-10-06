@@ -3,7 +3,8 @@ import type { GameState, NPC, Location, Faction, InventoryItem, MajorEvent, RagS
 import { useAppContext } from '../../../../../contexts/AppContext';
 import { createAiHooksInstruction } from '../../../../../utils/modManager';
 import { getAllSources } from '../../../../../services/ragService';
-import { FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaGears, FaSitemap } from 'react-icons/fa';
+import { FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaSitemap } from 'react-icons/fa';
+import { GiGears } from 'react-icons/gi';
 import StoryGraphPanel from './StoryGraphPanel'; // Import the new graph panel
 
 interface WikiPanelProps {
@@ -18,7 +19,7 @@ const CATEGORIES: { id: Category; label: string; icon: React.ElementType }[] = [
     { id: 'factions', label: 'Phe Phái', icon: FaFlag },
     { id: 'items', label: 'Vật Phẩm', icon: FaBoxOpen },
     { id: 'events', label: 'Sự Kiện', icon: FaScroll },
-    { id: 'rules', label: 'Quy Luật', icon: FaGears },
+    { id: 'rules', label: 'Quy Luật', icon: GiGears },
     { id: 'graph', label: 'Đồ Thị', icon: FaSitemap },
 ];
 
