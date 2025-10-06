@@ -40,7 +40,7 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
     const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
     
     const { openInventoryModal, showNotification } = useGameUIContext();
-    const { handlePlayerAction } = useAppContext();
+    const { handlePlayerAction, handleNavigate } = useAppContext();
 
     const { activeMods } = gameState;
    
@@ -76,9 +76,12 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
             openInventoryModal();
             return;
         }
-        if (button.id === 'dashboard' || button.id === 'wiki') {
+        if (button.id === 'dashboard') {
             onToggleSidebar();
-            // Sidebar itself will handle which panel to show, this just toggles visibility
+            return;
+        }
+        if (button.id === 'wiki') {
+            handleNavigate('wikiScreen');
             return;
         }
         handlePlayerAction(button.actionText, 'act', 1, showNotification);

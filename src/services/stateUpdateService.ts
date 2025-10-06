@@ -1,4 +1,4 @@
-import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC } from '../types';
+import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC, Currency } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
 /**
@@ -50,8 +50,34 @@ export const applyMechanicalChanges = (
 
     // Clear previous interaction states first.
     nextState.dialogueChoices = null;
+
+    const allStatChanges: Record<string, { change: number; changeMax: number }> = {};
+    const addChange = (attrId: string, change: number, changeMax: number = 0) => {
+        if (!allStatChanges[attrId]) allStatChanges[attrId] = { change: 0, changeMax: 0 };
+        allStatChanges[attrId].change += Number(change) || 0;
+        allStatChanges[attrId].changeMax += Number(changeMax) || 0;
+    };
     
-    // Handle dialogue state changes first
+    // --- STEP 1: APPLY BREAKTHROUGH FIRST ---
+    // This is critical to ensure all subsequent stat changes are calculated against the new state.
+    if (intent.realmChange && intent.stageChange) {
+        const newRealm = currentState.realmSystem.find(r => r.id === intent.realmChange);
+        const newStage = newRealm?.stages.find(s => s.id === intent.stageChange);
+        if (newRealm && newStage) {
+            pc.cultivation.currentRealmId = intent.realmChange;
+            pc.cultivation.currentStageId = intent.stageChange;
+            showNotification(`Đột phá thành công! Cảnh giới mới: ${newRealm.name} - ${newStage.name}`);
+            (newStage.bonuses || []).forEach(bonus => {
+                const attrDef = currentState.attributeSystem.definitions.find(def => def.name === bonus.attribute);
+                if (attrDef) {
+                    addChange(attrDef.id, bonus.value, bonus.value);
+                    showNotification(`Thuộc tính tăng: ${bonus.attribute} +${bonus.value}`);
+                }
+            });
+        }
+    }
+    
+    // --- STEP 2: APPLY ALL OTHER CHANGES ---
     if (intent.dialogueState) {
         if (intent.dialogueState.status === 'START' && intent.dialogueState.npcName) {
             const targetNpc = nextState.activeNpcs.find((n: NPC) => n.identity.name === intent.dialogueState.npcName);
@@ -88,7 +114,6 @@ export const applyMechanicalChanges = (
         intent.itemsLost.forEach(itemLost => {
             const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.name === itemLost.name);
             if (itemIndex > -1) {
-                // FIX: Make quantity math safer by ensuring both operands are numbers.
                 pc.inventory.items[itemIndex].quantity = (Number(pc.inventory.items[itemIndex].quantity) || 0) - (Number(itemLost.quantity) || 0);
                 if (pc.inventory.items[itemIndex].quantity <= 0) {
                     pc.inventory.items.splice(itemIndex, 1);
@@ -103,7 +128,6 @@ export const applyMechanicalChanges = (
             const gainedQuantity = Number(itemData.quantity) || 1;
             const existingItem = pc.inventory.items.find((i: InventoryItem) => i.name === itemData.name);
             if (existingItem) {
-                // FIX: Make quantity math safer by ensuring both operands are numbers.
                 existingItem.quantity = (Number(existingItem.quantity) || 0) + gainedQuantity;
             } else {
                 pc.inventory.items.push({
@@ -197,34 +221,10 @@ export const applyMechanicalChanges = (
         });
     }
 
-    // --- UNIFIED ATTRIBUTE & CULTIVATION UPDATE ---
-    const allStatChanges: Record<string, { change: number; changeMax: number }> = {};
-    const addChange = (attrId: string, change: number, changeMax: number = 0) => {
-        if (!allStatChanges[attrId]) allStatChanges[attrId] = { change: 0, changeMax: 0 };
-        allStatChanges[attrId].change += Number(change) || 0;
-        allStatChanges[attrId].changeMax += Number(changeMax) || 0;
-    };
-
+    // --- STEP 3: UNIFIED ATTRIBUTE UPDATE ---
     (intent.statChanges || []).forEach(sc => {
         if (sc.attribute) addChange(sc.attribute, sc.change || 0, sc.changeMax || 0);
     });
-
-    if (intent.realmChange && intent.stageChange) {
-        const newRealm = currentState.realmSystem.find(r => r.id === intent.realmChange);
-        const newStage = newRealm?.stages.find(s => s.id === intent.stageChange);
-        if (newRealm && newStage) {
-            pc.cultivation.currentRealmId = intent.realmChange;
-            pc.cultivation.currentStageId = intent.stageChange;
-            showNotification(`Đột phá thành công! Cảnh giới mới: ${newRealm.name} - ${newStage.name}`);
-            (newStage.bonuses || []).forEach(bonus => {
-                const attrDef = currentState.attributeSystem.definitions.find(def => def.name === bonus.attribute);
-                if (attrDef) {
-                    addChange(attrDef.id, bonus.value, bonus.value);
-                    showNotification(`Thuộc tính tăng: ${bonus.attribute} +${bonus.value}`);
-                }
-            });
-        }
-    }
 
     Object.entries(allStatChanges).forEach(([attrId, changes]) => {
         const attrDef = nextState.attributeSystem.definitions.find((def: any) => def.id === attrId);

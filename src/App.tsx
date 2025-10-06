@@ -22,6 +22,7 @@ const LazyNovelistScreen = lazy(() => import('./features/Novelist/NovelistScreen
 const LazyAiTrainingScreen = lazy(() => import('./features/AiTraining/AiTrainingScreen'));
 const LazyScriptsScreen = lazy(() => import('./features/Scripts/ScriptsScreen'));
 const LazyCreateScriptScreen = lazy(() => import('./features/Scripts/CreateScriptScreen'));
+const LazyWikiScreen = lazy(() => import('./features/Wiki/WikiScreen'));
 
 
 const BackgroundOverlay: React.FC = () => {
@@ -192,6 +193,8 @@ const AppContent: React.FC = () => {
             return <LazyScriptsScreen />;
           case 'createScript':
             return <LazyCreateScriptScreen />;
+          case 'wikiScreen':
+            return <LazyWikiScreen />;
           case 'gamePlay':
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
@@ -202,15 +205,27 @@ const AppContent: React.FC = () => {
         }
     };
     
-    const excludedFullScreenViews = ['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts', 'createScript'];
-    const showHeader = !excludedFullScreenViews.includes(view) && !isLoading && !isMigratingData;
-    const isPanelScreen = !excludedFullScreenViews.includes(view);
+    // --- DYNAMIC LAYOUT LOGIC ---
+    const forceFullScreenViews = ['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts', 'createScript', 'wikiScreen'];
+    const isPotentiallyPanelScreen = !forceFullScreenViews.includes(view);
+
+    let mainClasses = 'w-full flex-grow flex flex-col';
+    if (isPotentiallyPanelScreen) {
+        switch (settings.layoutMode) {
+            case 'desktop':
+                mainClasses += ' max-w-7xl mx-auto min-h-0 panel-container';
+                break;
+            case 'mobile':
+                // No change, remains full-width
+                break;
+            case 'auto':
+                mainClasses += ' md:max-w-7xl md:mx-auto md:min-h-0 panel-container-auto';
+                break;
+        }
+    }
     
-    const containerClasses = isPanelScreen 
-        ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col min-h-0'
-        : 'w-full flex-grow flex flex-col';
-    
-    const panelClasses = 'panel-container';
+    const showHeader = isPotentiallyPanelScreen && !isLoading && !isMigratingData;
+    // --- END DYNAMIC LAYOUT LOGIC ---
 
     return (
         <div className="relative w-full h-full flex flex-col items-center">
@@ -226,7 +241,7 @@ const AppContent: React.FC = () => {
               </div>
             )}
       
-            <main className={`${containerClasses} ${isPanelScreen ? panelClasses : ''}`}>
+            <main className={mainClasses}>
                 <Suspense fallback={<LoadingScreen message="Đang tải..." />}>
                     {renderContent()}
                 </Suspense>
