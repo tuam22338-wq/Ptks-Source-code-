@@ -83,6 +83,8 @@ Khi gán "bonuses", bạn CHỈ ĐƯỢC PHÉP sử dụng tên thuộc tính t�
 
     const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game nhập vai giả tưởng. Dựa trên các ý tưởng của người chơi và hệ thống thuộc tính của thế giới, hãy diễn giải và kiến tạo nên một nhân vật hoàn chỉnh.
 
+    **MỆNH LỆNH TỐI THƯỢỢNG:** Phải bám sát 100% vào "Huyết Mạch / Chủng Tộc" và "Xuất Thân / Trưởng Thành" do người chơi cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra. KHÔNG được bịa ra một thân phận hay bối cảnh mới.
+
     **Ý Tưởng Cốt Lõi Của Người Chơi:**
     - **Thông tin cơ bản:**
         - Tên: ${context.draftIdentity.name || '(chưa có)'}, Họ: ${context.draftIdentity.familyName || '(chưa có)'}
@@ -362,7 +364,7 @@ Viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     ---
     **NHIỆM VỤ 3: TẠO DÂN CƯ CHO THẾ GIỚI (DYNAMIC NPCS)**
     Tạo ra **${count}** NPC độc đáo để làm thế giới sống động. Họ có thể là tu sĩ, yêu ma, dân thường...
-    - **QUAN TRỌNG:** KHÔNG tạo ra các NPC có tên trùng với nhân vật chính hoặc những người thân vừa tạo ở Nhiệm Vụ 1. Phải tuân thủ theo **HƯỚNG DẪN CHẾ ĐỘ CHƠI**.
+    - **QUAN TRỌNG:** KHÔNG tạo ra các NPC có tên trùng với nhân vật chính hoặc những người thân vừa tạo ở Nhiệm vụ 1. Phải tuân thủ theo **HƯỚNG DẪN CHẾ ĐỘ CHƠI**.
     - **Yêu cầu chi tiết:**
         1. **Chỉ số:** Gán cho họ các chỉ số Thiên Hướng, chiến đấu, cảnh giới, ngũ hành, và tài sản phù hợp.
         2. ${npcModeInstruction}

@@ -298,11 +298,8 @@ const GameMasterChatPanel: React.FC<{
                 throw new Error("Không có nội dung phản hồi từ AI để phân tích.");
             }
 
-            setWorldGenMessage('AI đang tóm tắt nội dung (bước 1/2)...');
-            const summarizedText = await summarizeLargeTextForWorldGen(combinedText);
-
-            setWorldGenMessage('AI đang kiến tạo thế giới từ tóm tắt (bước 2/2)...');
-            const rawMod = await generateWorldFromText(summarizedText, 'deep');
+            setWorldGenMessage('AI đang kiến tạo thế giới từ hội thoại...');
+            const rawMod = await generateWorldFromText(combinedText, 'deep');
             const mod = fixModStructure(rawMod);
             setGeneratedMod(mod);
 

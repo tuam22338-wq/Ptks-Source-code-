@@ -1,6 +1,7 @@
 
 
 
+
 import React, { memo, useState, useEffect } from 'react';
 import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy, FaPenFancy, FaSave, FaBrain, FaCode } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
@@ -119,12 +120,12 @@ const MainMenu: React.FC = () => {
                 </h2>
             </div>
 
-            <div className="flex flex-col items-center space-y-3 md:space-y-4">
+            <div className="flex flex-col items-center space-y-3 md:space-y-4 w-full">
                 {menuItems.map(item => (
                     <button 
                         key={item.label}
                         onClick={() => handleMenuItemClick(item)}
-                        className="btn btn-neumorphic w-72 h-16 text-xl font-title animate-menu-item"
+                        className="btn btn-neumorphic w-full max-w-xs sm:w-72 h-16 text-xl font-title animate-menu-item"
                         style={{ animationDelay: `${item.delay}ms` }}
                     >
                         <item.icon className="absolute left-4 text-2xl" />

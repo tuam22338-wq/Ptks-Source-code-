@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
-import { FaArrowLeft, FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaGears, FaSitemap } from 'react-icons/fa';
+import { FaArrowLeft, FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaGears, FaSitemap, FaBars } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
 import type { GameState, NPC, Location, InventoryItem, MajorEvent } from '../../types';
 import StoryGraphPanel from '../GamePlay/components/Sidebar/panels/StoryGraphPanel';
@@ -22,6 +22,7 @@ const WikiScreen: React.FC = () => {
     const [activeCategory, setActiveCategory] = useState<Category>('npcs');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
+    const [isNavOpen, setIsNavOpen] = useState(false);
 
     const allItems = useMemo(() => {
         if (!gameState) return [];
@@ -149,13 +150,19 @@ const WikiScreen: React.FC = () => {
     return (
         <div className="fixed inset-0 z-40 bg-[var(--bg-color)] animate-fade-in flex flex-col h-full">
             <header className="flex-shrink-0 flex items-center justify-between p-4 border-b border-[var(--shadow-light)]">
-                <h2 className="text-3xl font-bold font-title text-[var(--primary-accent-color)]">Bách Khoa Toàn Thư</h2>
+                 <div className="flex items-center gap-2">
+                    <button onClick={() => setIsNavOpen(true)} className="p-2 rounded-full sm:hidden text-[var(--text-muted-color)] hover:text-[var(--text-color)]">
+                        <FaBars />
+                    </button>
+                    <h2 className="text-2xl sm:text-3xl font-bold font-title text-[var(--primary-accent-color)]">Bách Khoa Toàn Thư</h2>
+                </div>
                 <button onClick={() => handleNavigate('gamePlay')} className="btn btn-neumorphic !rounded-full !p-3" title="Quay Lại Game"><FaArrowLeft /></button>
             </header>
             <div className="flex flex-grow min-h-0">
-                <nav className="w-64 flex-shrink-0 border-r border-[var(--shadow-light)] p-4 space-y-2 overflow-y-auto hidden sm:block">
+                {isNavOpen && <div className="fixed inset-0 bg-black/50 z-20 sm:hidden" onClick={() => setIsNavOpen(false)}></div>}
+                <nav className={`fixed sm:relative top-0 left-0 h-full z-30 w-64 flex-shrink-0 bg-[var(--bg-color)] border-r border-[var(--shadow-light)] p-4 space-y-2 overflow-y-auto transition-transform duration-300 ${isNavOpen ? 'translate-x-0' : '-translate-x-full'} sm:translate-x-0`}>
                     {CATEGORIES.map(cat => (
-                        <button key={cat.id} onClick={() => { setActiveCategory(cat.id); setSelectedItem(null); setSearchTerm(''); }} className={`w-full flex items-center gap-3 p-3 rounded-lg text-left text-lg font-semibold transition-colors ${activeCategory === cat.id ? 'bg-[var(--primary-accent-color)]/20 text-[var(--primary-accent-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-light)] hover:text-[var(--text-color)]'}`}>
+                        <button key={cat.id} onClick={() => { setActiveCategory(cat.id); setSelectedItem(null); setSearchTerm(''); setIsNavOpen(false); }} className={`w-full flex items-center gap-3 p-3 rounded-lg text-left text-lg font-semibold transition-colors ${activeCategory === cat.id ? 'bg-[var(--primary-accent-color)]/20 text-[var(--primary-accent-color)]' : 'text-[var(--text-muted-color)] hover:bg-[var(--shadow-light)] hover:text-[var(--text-color)]'}`}>
                             <cat.icon />
                             <span>{cat.label}</span>
                         </button>

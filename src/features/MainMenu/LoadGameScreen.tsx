@@ -42,7 +42,7 @@ const SaveSlotCard: React.FC<SaveSlotCardProps> = memo(({ slot, onSelect, onDele
     const outdatedClass = isOutdated ? 'ring-2 ring-offset-2 ring-offset-[var(--bg-color)] ring-[var(--primary-accent-color)]' : '';
 
     return (
-        <div className={`group relative h-64 rounded-xl transition-all duration-300 ease-in-out transform focus:outline-none ${outdatedClass}`}
+        <div className={`group relative h-56 sm:h-64 rounded-xl transition-all duration-300 ease-in-out transform focus:outline-none ${outdatedClass}`}
              style={{boxShadow: 'var(--shadow-raised-interactive)'}}
         >
             <button

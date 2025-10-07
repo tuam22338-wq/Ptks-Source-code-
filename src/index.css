@@ -335,6 +335,11 @@ input[type="range"]::-moz-range-thumb {
 .player-bubble { border-radius: 1rem 1rem 0.25rem 1rem; }
 .npc-bubble { border-radius: 1rem 1rem 1rem 0.25rem; }
 
+.writing-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
 /* --- Glassmorphism Theme Overrides --- */
 .theme-luu-ly-ngoc-tinh .panel-container,
 .theme-luu-ly-ngoc-tinh .neumorphic-inset-box,
