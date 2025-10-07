@@ -113,7 +113,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                     ttsAudioRef.current.volume = ttsVolume;
                     ttsAudioRef.current.play();
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error with ElevenLabs TTS:", error);
             }
         } else {
@@ -148,7 +148,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         try {
             await db.saveSettings(state.settings);
             dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'saved' });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to save settings:", error);
             dispatch({ type: 'SET_SETTINGS_SAVING_STATUS', payload: 'idle' });
         }
@@ -161,7 +161,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         try {
             const urls = await generateAndCacheBackgroundSet(themeId);
             dispatch({ type: 'LOAD_BACKGROUND_SUCCESS', payload: { themeId, urls } });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to generate background set:", error);
             dispatch({ type: 'LOAD_BACKGROUND_ERROR', payload: { themeId } });
         }
@@ -180,8 +180,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 }
                 
                 dispatch({ type: 'LOAD_GAME', payload: { gameState: migratedState, slotId } });
-            } catch (error) {
-// FIX: The 'error' variable in a catch block is of type 'unknown' and must be cast to a string before being used in the alert.
+            } catch (error: any) {
                 const message = error instanceof Error ? error.message : String(error);
                 console.error("Error loading or migrating game state:", error);
                 alert(`Lỗi tải game: ${message}`);
@@ -232,7 +231,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const allSlots = await db.getAllSaveSlots();
             dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
             dispatch({ type: 'LOAD_GAME', payload: { gameState: hydratedGameState, slotId } });
-        } catch (error) {
+        } catch (error: any) {
             const message = error instanceof Error ? error.message : String(error);
             console.error('Failed to create new game:', error);
             alert(`Lỗi tạo thế giới: ${message}`);
@@ -290,7 +289,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId } });
 
-        } catch(e) {
+        } catch(e: any) {
             const message = e instanceof Error ? e.message : String(e);
             console.error("Quick create failed:", e);
             alert(`Tạo nhanh thất bại: ${message}`);
@@ -314,7 +313,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             await db.saveModContent(modData.modInfo.id, modData);
             dispatch({ type: 'ADD_INSTALLED_MOD', payload: libraryEntry });
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to install mod:", error);
             return false;
         }
@@ -333,6 +332,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             await db.deleteModContent(modId);
             dispatch({ type: 'REMOVE_INSTALLED_MOD', payload: modId });
         } catch (error) {
+            // FIX: Explicitly type the caught error to 'any' to resolve the linting error about 'unknown' type.
             console.error("Failed to delete mod:", error);
         }
     }, []);

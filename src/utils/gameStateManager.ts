@@ -387,50 +387,66 @@ export const createNewGameState = async (
      } = gameStartData;
 
     // --- DYNAMIC WORLD LOADING ---
-    let modWorldData: ModWorldData | undefined;
-    
+    let modWorldData: ModWorldData;
     const worldMod = activeMods.find(m => m.content.worldData && m.content.worldData.length > 0);
-    if (worldMod) {
+
+    if (worldMod?.content.worldData?.[0]) {
+        // Case 1: A full world mod is active. Use it as the base.
         modWorldData = worldMod.content.worldData[0];
         activeWorldId = modWorldData.id;
+        console.log(`Đang tải dữ liệu thế giới từ mod: ${modWorldData.name}`);
     } else {
-        modWorldData = DEFAULT_WORLDS_DATA.find(w => w.id === activeWorldId);
+        // Case 2: No world mod. Dynamically construct world data from user's creation settings.
+        // This is the core of the fix, preventing the default world from being loaded.
+        console.log(`Không tìm thấy mod thế giới. Đang kiến tạo thế giới mới từ thiết lập của người chơi.`);
+
+        // Determine factions based on user choice. 'AI' will use defaults, 'NONE' is empty, 'CUSTOM' uses custom.
+        let factions: Faction[] = [];
+        if (factionGenerationMode === 'CUSTOM' && customFactions) {
+            factions = customFactions;
+        } else if (factionGenerationMode === 'AI') {
+            factions = DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.factions || [];
+        }
+
+        // Determine locations based on user choice.
+        let locations: ModLocation[] = [];
+        if (locationGenerationMode === 'CUSTOM' && customLocations) {
+            locations = customLocations as ModLocation[];
+        } else if (locationGenerationMode === 'AI') {
+            locations = (DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.initialLocations || []) as ModLocation[];
+        }
+
+        // Determine NPCs based on user choice.
+        let npcs: (Omit<ModNpc, 'id'> & { id?: string })[] = [];
+        if (npcGenerationMode === 'CUSTOM' && customNpcs) {
+            npcs = customNpcs;
+        } else if (npcGenerationMode === 'AI') {
+            npcs = DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.initialNpcs || [];
+        }
+
+        modWorldData = {
+            id: `custom_world_${Date.now()}`,
+            name: genre || 'Thế Giới Tùy Chỉnh',
+            description: setting || 'Một thế giới mới được tạo ra từ ý niệm.',
+            startingYear: 1,
+            eraName: 'Kỷ Nguyên Mới',
+            majorEvents: [], // Custom worlds always start with a clean slate
+            factions: factions,
+            initialLocations: locations,
+            initialNpcs: npcs,
+        };
+        activeWorldId = modWorldData.id;
     }
     
-    if (!modWorldData) {
-        modWorldData = DEFAULT_WORLDS_DATA[0];
-        activeWorldId = modWorldData.id;
-        console.warn(`Không tìm thấy thế giới cho ID "${activeWorldId}", đang tải thế giới mặc định "${modWorldData.id}".`);
-    }
-
     console.log(`Đang tải dữ liệu thế giới từ: ${modWorldData.name}`);
 
-    // --- OVERRIDE WORLD DATA BASED ON USER CHOICE ---
-    let factionsToUse: Faction[];
-    if (factionGenerationMode === 'CUSTOM' && customFactions) {
-        factionsToUse = customFactions;
-    } else if (factionGenerationMode === 'NONE') {
-        factionsToUse = [];
-    } else {
-        factionsToUse = modWorldData.factions || [];
-    }
-
-    let worldMapToUse: Location[];
-    if (locationGenerationMode === 'CUSTOM' && customLocations) {
-        worldMapToUse = customLocations.map(loc => ({
-            ...loc,
-            id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
-        })) as Location[];
-    } else if (locationGenerationMode === 'NONE') {
-        worldMapToUse = [];
-    } else {
-        worldMapToUse = (modWorldData.initialLocations || []).map(loc => ({
-            ...loc,
-            id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
-        })) as Location[];
-    }
-
-    const majorEventsToUse = modWorldData.majorEvents;
+    // --- USE THE CONSTRUCTED WORLD DATA ---
+    const factionsToUse = modWorldData.factions || [];
+    const worldMapToUse = (modWorldData.initialLocations || []).map(loc => ({
+        ...loc,
+        id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+    })) as Location[];
+    const majorEventsToUse = modWorldData.majorEvents || [];
     const startingYear = modWorldData.startingYear;
     const eraName = modWorldData.eraName;
 
@@ -496,14 +512,7 @@ export const createNewGameState = async (
         groups: DEFAULT_ATTRIBUTE_GROUPS
     };
 
-    let initialNpcsFromData: NPC[];
-    if (npcGenerationMode === 'CUSTOM' && customNpcs) {
-        initialNpcsFromData = customNpcs.map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
-    } else if (npcGenerationMode === 'NONE') {
-        initialNpcsFromData = [];
-    } else {
-        initialNpcsFromData = (modWorldData.initialNpcs || []).map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
-    }
+    const initialNpcsFromData = (modWorldData.initialNpcs || []).map(modNpc => convertModNpcToNpc(modNpc, realmSystemToUse, attributeSystemToUse));
 
     const initialAttributes: CharacterAttributes = {};
     const selectedDifficulty = DIFFICULTY_LEVELS.find(d => d.id === difficulty) || DIFFICULTY_LEVELS.find(d => d.id === 'medium')!;
