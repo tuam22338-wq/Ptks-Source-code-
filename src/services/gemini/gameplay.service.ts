@@ -164,6 +164,14 @@ export async function* generateActionResponseStream(
             attributes: {
                 type: Type.OBJECT,
                 description: `Đối tượng chứa các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS. Ví dụ: { "luc_luong": { "value": 15 }, "sinh_menh": { "value": 120, "maxValue": 120 } }`,
+                additionalProperties: {
+                    type: Type.OBJECT,
+                    properties: {
+                        value: { type: Type.NUMBER },
+                        maxValue: { type: Type.NUMBER }
+                    },
+                    required: ['value']
+                }
             }
         },
         required: ['identity', 'status', 'cultivation', 'attributes']
