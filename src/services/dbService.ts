@@ -313,7 +313,7 @@ export const importAllData = async (data: Record<string, any>): Promise<void> =>
       if (data[table.name] && Array.isArray(data[table.name])) {
         try {
           await table.bulkPut(data[table.name]);
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Lỗi khi nhập dữ liệu cho bảng ${table.name}:`, error);
           // Optional: re-throw to abort the entire transaction
           throw new Error(`Nhập dữ liệu cho bảng ${table.name} thất bại.`);

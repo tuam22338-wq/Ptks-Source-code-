@@ -268,7 +268,7 @@ const NovelistScreen: React.FC = () => {
             };
             await handleUpdateNovel(updatedNovel);
             setUploadedText(null);
-        } catch (error) {
+        } catch (error: any) {
             alert('Lỗi khi trích xuất Lorebook.');
             console.error(error);
         } finally {

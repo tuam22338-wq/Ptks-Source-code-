@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, memo } from 'react';
 import type { GameSettings } from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaPenFancy, FaCheckCircle } from 'react-icons/fa';
@@ -12,7 +9,7 @@ import SoundSettings from './tabs/SoundSettings';
 import AiModelSettings from './tabs/AiModelSettings';
 import RagSettings from './tabs/RagSettings';
 import SafetySettings from './tabs/SafetySettings';
-import AdvancedSettings from './tabs/AdvancedSettings';
+import { AdvancedSettings } from './tabs/AdvancedSettings';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'advanced';

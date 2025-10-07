@@ -72,7 +72,7 @@ QUAN TRỌNG: Nếu bạn sửa một thuộc tính của người chơi (ví d�
         const correctedData = JSON.parse(response.text);
         return correctedData;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Heuristic Fixer AI failed to generate a correction:", error);
         throw error;
     }

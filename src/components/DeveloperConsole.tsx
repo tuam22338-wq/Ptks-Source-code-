@@ -20,7 +20,7 @@ const formatLogMessage = (args: any[]): React.ReactNode => {
         if (typeof arg === 'object' && arg !== null) {
             try {
                 return <pre key={index} className="whitespace-pre-wrap">{JSON.stringify(arg, null, 2)}</pre>;
-            } catch (e) {
+            } catch (e: any) {
                 return <span key={index}>[Unserializable Object]</span>;
             }
         }

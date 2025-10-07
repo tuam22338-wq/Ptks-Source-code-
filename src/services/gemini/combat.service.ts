@@ -58,6 +58,7 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
         }
     }, specificApiKey);
 
+    // FIX: Explicitly type the caught error as 'any' to resolve the 'unknown' type error.
     try {
         if (!response.text || response.text.trim() === '') {
             throw new Error('AI response is empty.');
@@ -68,7 +69,7 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
             return result;
         }
         throw new Error("Invalid combat action structure from AI.");
-    } catch (e) {
+    } catch (e: any) {
         console.error("Lỗi phân tích JSON khi quyết định hành động NPC:", response.text, e);
         // Fallback to a basic attack to prevent combat from stalling
         return {

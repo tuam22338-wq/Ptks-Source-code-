@@ -97,7 +97,7 @@ export const runHeuristicFixer = async (
 
         return { newState: sanitizeGameState(newState), notifications };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(`[Heuristic Fixer] AI-based fix failed:`, error);
         notifications.push('[Thiên Đạo] Can thiệp thất bại, thiên cơ hỗn loạn.');
         return { newState: gameState, notifications }; // Return original state on failure

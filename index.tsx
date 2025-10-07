@@ -35,7 +35,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         const settings = await getSettings();
         const zoomLevel = settings?.zoomLevel || DEFAULT_SETTINGS.zoomLevel;
         document.documentElement.style.fontSize = `${zoomLevel}%`;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Không thể tải cài đặt cho màn hình khởi động:", error);
         // Áp dụng thu phóng mặc định nếu có lỗi
         document.documentElement.style.fontSize = `${DEFAULT_SETTINGS.zoomLevel}%`;

@@ -60,7 +60,7 @@ export const analyzeItemWithAI = async (item: InventoryItem, gameState: GameStat
     try {
         const json = JSON.parse(response.text);
         return (json.bonuses || []) as StatBonus[];
-    } catch (e) {
+    } catch (e: any) {
         console.error("Lỗi phân tích JSON khi giám định vật phẩm:", response.text, e);
         // Fallback to empty bonuses to prevent crash
         return [];

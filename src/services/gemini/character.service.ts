@@ -408,9 +408,10 @@ Viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     }
 
     let data;
+    // FIX: Explicitly type the caught error as 'any' to resolve the 'unknown' type error.
     try {
         data = JSON.parse(response.text);
-    } catch (e) {
+    } catch (e: any) {
         console.error("Lỗi phân tích JSON khi khởi tạo thế giới:", response.text, e);
         throw new Error("AI đã trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
     }

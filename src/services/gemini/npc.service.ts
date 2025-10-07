@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode, WorldTurnEntry } from '../../types';
@@ -80,7 +74,7 @@ export const executeNpcAction = async (npc: NPC, action: string, gameState: Game
         const result = JSON.parse(response.text);
         return result as NpcActionOutcome;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Failed to execute action for NPC ${npc.identity.name}:`, error);
         return null;
     }

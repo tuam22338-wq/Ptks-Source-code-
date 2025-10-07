@@ -55,7 +55,7 @@ export const processPlayerAction = async (
                     } else {
                         arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã cố gắng giám định vật phẩm '${item.name}' nhưng thất bại, không phát hiện được gì đặc biệt. Hãy tường thuật lại sự thất bại này.`;
                     }
-                } catch (e) {
+                } catch (e: any) {
                     console.error("Item identification AI call failed:", e);
                     arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã cố gắng giám định vật phẩm '${item.name}' nhưng thất bại do thiên cơ hỗn loạn. Hãy tường thuật lại sự thất bại này.`;
                 }
@@ -94,7 +94,7 @@ export const processPlayerAction = async (
     let aiPayload: AIResponsePayload;
     try {
         aiPayload = JSON.parse(fullResponseJsonString);
-    } catch (e) {
+    } catch (e: any) {
         console.error("Lỗi phân tích JSON từ AI:", e, "\nNội dung JSON:", fullResponseJsonString);
         throw new Error("AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
     }
@@ -116,7 +116,7 @@ export const processPlayerAction = async (
             const fixResult = await runHeuristicFixer(finalStateForReturn, currentSlotId);
             finalStateForReturn = fixResult.newState;
             fixResult.notifications.forEach(showNotification);
-        } catch (error) {
+        } catch (error: any) {
             console.error("[Heuristic Fixer] Failed to run AI validation:", error);
             showNotification("[Hệ Thống] Thiên Đạo Trật Tự Giám gặp lỗi.");
         }

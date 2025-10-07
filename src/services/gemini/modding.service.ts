@@ -1,4 +1,3 @@
-
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
@@ -13,7 +12,7 @@ export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
         }
         const data: CommunityMod[] = await response.json();
         return data;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to fetch community mods:", error);
         return [{
             modInfo: {
@@ -545,7 +544,7 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
             });
         }
         return json as FullMod;
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");
@@ -708,7 +707,7 @@ export const generateCompleteWorldFromText = async (
             relationships,
         };
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to parse AI response for complete world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ cho việc tạo nhanh.");
@@ -918,7 +917,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
             }
         }
         return finalMod;
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");

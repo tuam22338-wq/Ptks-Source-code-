@@ -351,7 +351,7 @@ export const hydrateWorldData = async (
             hydratedGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Hydration task [generateInitialWorldDetails] failed:", error);
         if (hydratedGameState.storyLog.length > 0) {
              hydratedGameState.storyLog[0].content += "\n\n(Lỗi khi tạo thế giới, một vài chi tiết có thể bị thiếu.)";
@@ -397,10 +397,8 @@ export const createNewGameState = async (
         console.log(`Đang tải dữ liệu thế giới từ mod: ${modWorldData.name}`);
     } else {
         // Case 2: No world mod. Dynamically construct world data from user's creation settings.
-        // This is the core of the fix, preventing the default world from being loaded.
         console.log(`Không tìm thấy mod thế giới. Đang kiến tạo thế giới mới từ thiết lập của người chơi.`);
 
-        // Determine factions based on user choice. 'AI' will use defaults, 'NONE' is empty, 'CUSTOM' uses custom.
         let factions: Faction[] = [];
         if (factionGenerationMode === 'CUSTOM' && customFactions) {
             factions = customFactions;
@@ -408,7 +406,6 @@ export const createNewGameState = async (
             factions = DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.factions || [];
         }
 
-        // Determine locations based on user choice.
         let locations: ModLocation[] = [];
         if (locationGenerationMode === 'CUSTOM' && customLocations) {
             locations = customLocations as ModLocation[];
@@ -416,7 +413,6 @@ export const createNewGameState = async (
             locations = (DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.initialLocations || []) as ModLocation[];
         }
 
-        // Determine NPCs based on user choice.
         let npcs: (Omit<ModNpc, 'id'> & { id?: string })[] = [];
         if (npcGenerationMode === 'CUSTOM' && customNpcs) {
             npcs = customNpcs;

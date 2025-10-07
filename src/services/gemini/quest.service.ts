@@ -1,4 +1,3 @@
-
 import { Type } from "@google/genai";
 import type { GameState, MajorEvent, NPC, ActiveQuest, PlayerNpcRelationship } from '../../types';
 import { generateWithRetry } from './gemini.core';
@@ -89,7 +88,7 @@ export const generateMainQuestFromEvent = async (event: MajorEvent, gameState: G
 
     try {
         return JSON.parse(response.text);
-    } catch (e) {
+    } catch (e: any) {
         console.error(`Lỗi phân tích JSON khi tạo nhiệm vụ chính cho sự kiện "${event.title}":`, response.text, e);
         return {}; // Return empty object to prevent crash
     }
@@ -134,7 +133,7 @@ export const generateSideQuestFromNpc = async (npc: NPC, relationship: PlayerNpc
 
     try {
         return JSON.parse(response.text);
-    } catch (e) {
+    } catch (e: any) {
         console.error(`Lỗi phân tích JSON khi tạo nhiệm vụ phụ từ NPC "${npc.identity.name}":`, response.text, e);
         return {};
     }
@@ -175,7 +174,7 @@ export const generateSystemQuest = async (gameState: GameState): Promise<Partial
 
     try {
         return JSON.parse(response.text);
-    } catch (e) {
+    } catch (e: any) {
         console.error("Lỗi phân tích JSON khi tạo nhiệm vụ hệ thống:", response.text, e);
         return {};
     }
