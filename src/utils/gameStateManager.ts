@@ -380,6 +380,8 @@ export const createNewGameState = async (
         enableRealmSystem,
         enableStorySystem,
         openingStory,
+        setting,
+        mainGoal,
         ...gameplaySettingsData
      } = gameStartData;
 
@@ -431,8 +433,9 @@ export const createNewGameState = async (
     const startingYear = modWorldData.startingYear;
     const eraName = modWorldData.eraName;
 
-    const startingLocationId = worldMapToUse.length > 0 ? worldMapToUse[0].id : '';
-    const startingLocation = worldMapToUse.find(l => l.id === startingLocationId) || (worldMapToUse.length > 0 ? worldMapToUse[0] : null);
+    const startingLocation = worldMapToUse.length > 0
+        ? worldMapToUse[Math.floor(Math.random() * worldMapToUse.length)]
+        : null;
 
     if (!startingLocation) {
         throw new Error("Không thể xác định địa điểm bắt đầu. Vui lòng cung cấp ít nhất một địa điểm nếu ở chế độ 'Tự Định Nghĩa'.");
@@ -536,8 +539,8 @@ export const createNewGameState = async (
 
     const initialInventory: Inventory = { weightCapacity: initialWeightCapacity, items: startingInventoryItems };
     const initialCultivation: CultivationState = {
-        currentRealmId: (realmSystemToUse[0]?.id) || 'pham_nhan',
-        currentStageId: (realmSystemToUse[0]?.stages?.[0]?.id) || 'pn_1',
+        currentRealmId: 'pham_nhan',
+        currentStageId: 'pn_1',
         spiritualQi: 0,
         hasConqueredInnerDemon: false,
     };
@@ -557,8 +560,21 @@ export const createNewGameState = async (
 
     const attributesWithDerived = calculateDerivedStats(initialAttributes, attributeSystemToUse.definitions);
 
+    const storyBackgroundParts = [];
+    if (genre) storyBackgroundParts.push(`- Thể Loại: ${genre}`);
+    if (setting) storyBackgroundParts.push(`- Bối Cảnh: ${setting}`);
+    if (identity.origin) storyBackgroundParts.push(`- Sơ Lược Nhân Vật: ${identity.origin}`);
+    if (mainGoal) storyBackgroundParts.push(`- Mục Tiêu Chính: ${mainGoal}`);
+
+    const storyBackground = storyBackgroundParts.length > 0
+        ? `Người chơi đã cung cấp các thông tin nền sau đây. Hãy dựa vào chúng để tạo ra thân phận và chương mở đầu:\n${storyBackgroundParts.join('\n')}`
+        : 'Người chơi đã chọn chế độ tự do (sandbox), không cung cấp bối cảnh cụ thể. Hãy sáng tạo một khởi đầu thú vị và độc đáo cho họ.';
+
     let playerCharacter: PlayerCharacter = {
-        identity: identity,
+        identity: {
+            ...identity,
+            origin: storyBackground,
+        },
         attributes: attributesWithDerived,
         spiritualRoot: spiritualRoot,
         inventory: initialInventory,

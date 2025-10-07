@@ -12,7 +12,7 @@ import RealmEditorModal from '../../features/Mods/components/RealmEditorModal';
 import NpcEditorModal from '../../features/Mods/components/NpcEditorModal';
 import LocationEditorModal from '../../features/Mods/components/LocationEditorModal';
 import FactionEditorModal from '../../features/Mods/components/FactionEditorModal';
-import { generateWorldFromText } from '../../services/gemini/modding.service';
+import { generateWorldFromText, summarizeLargeTextForWorldGen, fixModStructure } from '../../services/gemini/modding.service';
 
 const GENRE_OPTIONS = [
     'Huyền Huyễn Tu Tiên',
@@ -118,12 +118,27 @@ const SlotSelectionModal: React.FC<{
     );
 };
 
+const extractTextFromPdf = async (file: File): Promise<string> => {
+    const pdfjsLib = (window as any).pdfjsLib;
+    if (!pdfjsLib) throw new Error("Thư viện PDF chưa được tải.");
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    let textContent = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const text = await page.getTextContent();
+        textContent += text.items.map((item: any) => item.str).join(' ');
+        textContent += '\n\n';
+    }
+    return textContent;
+};
+
 
 // --- Main World Creator Screen Component ---
 const SaveSlotScreen: React.FC = () => {
   const { state, handleNavigate, handleCreateAndStartGame, handleQuickCreateAndStartGame } = useAppContext();
   const importInputRef = useRef<HTMLInputElement>(null);
-  const scriptInputRef = useRef<HTMLInputElement>(null);
+  const textFileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -539,18 +554,56 @@ const SaveSlotScreen: React.FC = () => {
         }
     };
     
-    const handleImportScript = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleGenerateWorldFromTextFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        alert(`Tính năng nhập script [${file.name}] sẽ được hỗ trợ trong tương lai!`);
-        if (event.target) {
-            event.target.value = "";
+
+        setIsLoading(true);
+        setLoadingMessage('Đang đọc và phân tích tệp...');
+        setError(null);
+        
+        try {
+            let text = '';
+            if (file.type === 'application/pdf') text = await extractTextFromPdf(file);
+            else text = await file.text();
+            
+            setLoadingMessage('AI đang tóm tắt nội dung (bước 1/2)...');
+            const summarizedText = await summarizeLargeTextForWorldGen(text);
+            
+            setLoadingMessage('AI đang kiến tạo thế giới từ tóm tắt (bước 2/2)...');
+            const rawMod = await generateWorldFromText(summarizedText, 'deep'); // Use 'deep' by default
+            const mod = fixModStructure(rawMod);
+
+            // Populate form with generated mod data
+            setFormData(p => ({
+                ...p,
+                importedMod: mod,
+                genre: mod.modInfo.tags?.[0] || p.genre,
+                theme: mod.modInfo.name || p.theme,
+                setting: mod.modInfo.description || mod.content.worldData?.[0]?.description || p.setting,
+                attributeSystem: mod.content.attributeSystem || p.attributeSystem,
+                namedRealmSystem: mod.content.namedRealmSystems?.[0] || p.namedRealmSystem,
+                enableRealmSystem: !!(mod.content.namedRealmSystems && mod.content.namedRealmSystems.length > 0),
+                // custom data from mod
+                customNpcs: mod.content.worldData?.[0]?.initialNpcs || [],
+                customLocations: mod.content.worldData?.[0]?.initialLocations || [],
+                customFactions: mod.content.worldData?.[0]?.factions || [],
+                npcGenerationMode: (mod.content.worldData?.[0]?.initialNpcs?.length || 0) > 0 ? 'CUSTOM' : 'AI',
+                locationGenerationMode: (mod.content.worldData?.[0]?.initialLocations?.length || 0) > 0 ? 'CUSTOM' : 'AI',
+                factionGenerationMode: (mod.content.worldData?.[0]?.factions?.length || 0) > 0 ? 'CUSTOM' : 'AI',
+            }));
+
+        } catch (err: any) {
+            setError(`Lỗi khi tạo thế giới từ văn bản: ${err.message}`);
+        } finally {
+            setIsLoading(false);
+            if (textFileInputRef.current) textFileInputRef.current.value = "";
         }
     };
 
 
   if (isLoading) {
-      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={'fast'}/>;
+      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={'deep'}/>;
   }
 
   return (
@@ -591,14 +644,14 @@ const SaveSlotScreen: React.FC = () => {
                 <button onClick={() => setQuickCreateOpen(true)} className="flex items-center justify-center gap-3 px-4 py-3 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-lg">
                     <FaBolt /> Tạo Nhanh Bằng AI
                 </button>
+                <button onClick={() => textFileInputRef.current?.click()} className="flex items-center justify-center gap-3 px-4 py-3 bg-indigo-700/80 text-white font-bold rounded-lg hover:bg-indigo-600/80 text-lg">
+                    <FaBrain /> Sáng Thế từ Tệp
+                </button>
                 <button onClick={() => importInputRef.current?.click()} className="flex items-center justify-center gap-3 px-4 py-3 bg-sky-700/80 text-white font-bold rounded-lg hover:bg-sky-600/80 text-lg">
                     <FaFileUpload /> Nhập World Data (.json)
                 </button>
                 <button onClick={handleExportTemplate} className="flex items-center justify-center gap-3 px-4 py-3 bg-green-700/80 text-white font-bold rounded-lg hover:bg-green-600/80 text-lg">
                     <FaDownload /> Xuất Mẫu
-                </button>
-                <button onClick={() => scriptInputRef.current?.click()} className="flex items-center justify-center gap-3 px-4 py-3 bg-purple-700/80 text-white font-bold rounded-lg hover:bg-purple-600/80 text-lg">
-                    <FaUpload /> Nhập Script
                 </button>
             </div>
             <input
@@ -610,10 +663,10 @@ const SaveSlotScreen: React.FC = () => {
             />
             <input
                 type="file"
-                ref={scriptInputRef}
-                onChange={handleImportScript}
+                ref={textFileInputRef}
+                onChange={handleGenerateWorldFromTextFile}
                 className="hidden"
-                accept=".js,.json"
+                accept=".txt,.pdf"
             />
         </div>
       

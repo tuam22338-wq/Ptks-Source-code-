@@ -51,6 +51,19 @@ export const applyMechanicalChanges = (
     // Clear previous interaction states first.
     nextState.dialogueChoices = null;
 
+    // --- HANDLE ITEM IDENTIFICATION ---
+    if (intent.itemIdentified) {
+        const { itemId, newBonuses } = intent.itemIdentified;
+        const itemIndex = pc.inventory.items.findIndex((i: InventoryItem) => i.id === itemId);
+        if (itemIndex > -1) {
+            const item = pc.inventory.items[itemIndex];
+            item.bonuses = newBonuses;
+            item.isIdentified = true;
+            pc.inventory.items[itemIndex] = item;
+            showNotification(`Giám định thành công: [${item.name}]`);
+        }
+    }
+
     const allStatChanges: Record<string, { change: number; changeMax: number }> = {};
     const addChange = (attrId: string, change: number, changeMax: number = 0) => {
         if (!allStatChanges[attrId]) allStatChanges[attrId] = { change: 0, changeMax: 0 };

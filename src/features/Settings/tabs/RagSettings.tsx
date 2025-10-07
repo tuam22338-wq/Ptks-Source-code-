@@ -1,4 +1,6 @@
 
+
+
 import React, { memo } from 'react';
 import type { GameSettings } from '../../../types';
 import { FaSearchPlus } from 'react-icons/fa';
@@ -33,10 +35,9 @@ const SettingsRow: React.FC<SettingsRowProps> = ({ label, description, children,
 interface RagSettingsProps {
     settings: GameSettings;
     handleSettingChange: (key: keyof GameSettings, value: any) => void;
-    onOpenRagManager: () => void;
 }
 
-const RagSettings: React.FC<RagSettingsProps> = ({ settings, handleSettingChange, onOpenRagManager }) => {
+const RagSettings: React.FC<RagSettingsProps> = ({ settings, handleSettingChange }) => {
     return (
         <SettingsSection title="Hệ Thống Tri Thức (RAG)">
             <SettingsRow label="Số Lượng Tri Thức (Top K)" description="Số lượng thông tin liên quan nhất được truy xuất từ cơ sở dữ liệu tri thức để cung cấp cho AI. Giá trị cao hơn tăng độ chính xác nhưng có thể làm tăng độ trễ.">
@@ -57,10 +58,8 @@ const RagSettings: React.FC<RagSettingsProps> = ({ settings, handleSettingChange
                    <span className="font-mono text-sm neumorphic-inset-box px-3 py-1 text-[var(--text-color)] w-20 text-center">{settings.ragChunkOverlap}</span>
                 </div>
             </SettingsRow>
-            <SettingsRow label="Quản lý Nguồn Tri Thức" description="Thêm, xóa, và quản lý các nguồn tri thức cho AI, bao gồm lore mặc định, lore từ mod, và các ghi chép của riêng bạn.">
-                 <button onClick={onOpenRagManager} className="btn btn-neumorphic flex items-center gap-2">
-                    <FaSearchPlus /> Mở Bảng Quản Lý
-                </button>
+            <SettingsRow label="Quản lý Nguồn Tri Thức" description="Quản lý các nguồn tri thức cho AI hiện đã được chuyển đến màn hình 'Huấn Luyện AI' ở menu chính.">
+                 {/* The button has been removed from here. */}
             </SettingsRow>
         </SettingsSection>
     );

@@ -2,6 +2,9 @@
 
 
 
+
+
+
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
@@ -331,6 +334,31 @@ const worldSchema = {
         }
     },
     required: ['modInfo', 'content']
+};
+
+export const fixModStructure = (mod: any): FullMod => {
+    if (mod && mod.modInfo && mod.content) {
+        return mod as FullMod; // Already valid
+    }
+    console.warn("AI returned an incomplete mod structure. Attempting to fix.", mod);
+    // Attempt to fix a common mistake where 'content' is at the top level
+    if (mod && mod.worldData) {
+        return {
+            modInfo: mod.modInfo || { // Use modInfo if it exists, otherwise create one
+                id: `generated_world_${Date.now()}`,
+                name: mod.worldData[0]?.name || "Generated World (Fixed)",
+                description: mod.worldData[0]?.description || "World generated from text, structure was fixed.",
+                version: "1.0.0",
+                tags: mod.worldData[0]?.tags || [],
+            },
+            content: {
+                ...mod,
+                // Remove modInfo from content if it was there
+                ...(mod.modInfo && { modInfo: undefined })
+            }
+        };
+    }
+    throw new Error("AI đã trả về một cấu trúc mod không hợp lệ và không thể tự động sửa chữa. JSON phải có thuộc tính `modInfo` và `content` ở cấp cao nhất.");
 };
 
 const MAX_CHUNK_CHARS = 1000000;

@@ -8,6 +8,7 @@ import { validateMechanicalChanges } from './validationService';
 import { applyMechanicalChanges } from './stateUpdateService';
 import { runHeuristicFixer } from './heuristicFixerService';
 import { orchestrateRagQuery } from './ragOrchestrator';
+import { analyzeItemWithAI } from './gemini/item.service';
 
 export const processPlayerAction = async (
     gameState: GameState,
@@ -37,6 +38,32 @@ export const processPlayerAction = async (
         }
     }
 
+    let arbiterHint: string | undefined = undefined;
+
+    // --- ITEM IDENTIFICATION PRE-PROCESSING ---
+    if (type === 'act' && text.toLowerCase().includes('giám định')) {
+        const itemNameMatch = text.match(/giám định (.*)/i);
+        const itemName = itemNameMatch ? itemNameMatch[1].trim() : null;
+
+        if (itemName) {
+            const item = stateAfterSim.playerCharacter.inventory.items.find(i => i.name === itemName && !i.isIdentified);
+            if (item) {
+                try {
+                    const newBonuses = await analyzeItemWithAI(item, stateAfterSim);
+                    if (newBonuses.length > 0) {
+                        const itemIdentifiedIntent = { itemIdentified: { itemId: item.id, newBonuses } };
+                        arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã giám định thành công vật phẩm '${item.name}'. Hãy tường thuật lại quá trình này (ví dụ: người chơi nhỏ máu, truyền linh lực, v.v. và thấy các dòng chữ/hào quang hiện ra) và BẮT BUỘC phải bao gồm 'mechanicalIntent' sau trong phản hồi JSON của bạn: ${JSON.stringify(itemIdentifiedIntent)}`;
+                    } else {
+                        arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã cố gắng giám định vật phẩm '${item.name}' nhưng thất bại, không phát hiện được gì đặc biệt. Hãy tường thuật lại sự thất bại này.`;
+                    }
+                } catch (e) {
+                    console.error("Item identification AI call failed:", e);
+                    arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã cố gắng giám định vật phẩm '${item.name}' nhưng thất bại do thiên cơ hỗn loạn. Hãy tường thuật lại sự thất bại này.`;
+                }
+            }
+        }
+    }
+
     // Combine both memory systems
     const rawMemoryContext = await retrieveMemoryContext(text, stateAfterSim, currentSlotId);
     const ragContext = await orchestrateRagQuery(text, type, stateAfterSim);
@@ -48,7 +75,8 @@ export const processPlayerAction = async (
         text, 
         type, 
         fullMemoryContext, 
-        settings
+        settings,
+        arbiterHint
     );
 
     let fullResponseJsonString = '';

@@ -1,7 +1,3 @@
-
-
-
-
 import { Type, FunctionDeclaration } from "@google/genai";
 import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC, Location, Faction, MajorEvent } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -128,6 +124,8 @@ export async function* generateActionResponseStream(
     - **Địa điểm mới:** Nếu bạn mô tả một địa danh mới (thành phố, khu rừng, hang động...), hãy thêm một đối tượng vào \`newLocationsDiscovered\`.
     - **Phe phái mới:** Nếu bạn giới thiệu một tổ chức, giáo phái, hoặc gia tộc mới, hãy thêm một đối tượng vào \`newFactionsIntroduced\`.
     - **Sự kiện lịch sử mới:** Nếu bạn tiết lộ một sự kiện quan trọng trong quá khứ, hãy thêm một đối tượng vào \`newMajorEventsRevealed\`.`;
+    
+    const firstCultivationRule = `21. **LUẬT KÍCH HOẠT TU LUYỆN (QUAN TRỌNG):** NẾU cảnh giới hiện tại của người chơi là 'Phàm Nhân' VÀ hành động của họ là "tu luyện" (hoặc các từ đồng nghĩa như thiền, hấp thụ linh khí), bạn BẮT BUỘC phải tường thuật lại lần đầu tiên họ cảm nhận được linh khí và chính thức bước vào con đường tu luyện. Sau đó, trong 'mechanicalIntent', hãy đặt 'realmChange' và 'stageChange' thành ID của cảnh giới và tiểu cảnh giới đầu tiên trong hệ thống tu luyện của thế giới (ví dụ: 'luyen_khi' và 'lk_1'). Đây là bước đột phá đầu tiên của họ.`;
 
     const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
     const validStatNames = attributeSystem.definitions.map(def => def.name);
@@ -187,6 +185,25 @@ export async function* generateActionResponseStream(
             currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING, enum: Object.keys(CURRENCY_DEFINITIONS) }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
             itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
             itemsLost: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
+            itemIdentified: {
+                type: Type.OBJECT,
+                description: "Kết quả của việc giám định vật phẩm thành công.",
+                properties: {
+                    itemId: { type: Type.STRING, description: "ID của vật phẩm đã được giám định." },
+                    newBonuses: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                attribute: { type: Type.STRING, enum: validStatNames },
+                                value: { type: Type.NUMBER }
+                            },
+                            required: ['attribute', 'value']
+                        }
+                    }
+                },
+                required: ['itemId', 'newBonuses']
+            },
             newTechniques: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] } }, required: ['name', 'description', 'type', 'rank'] } },
             newQuests: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, source: { type: Type.STRING }, objectives: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] }, description: { type: Type.STRING }, target: { type: Type.STRING }, required: { type: Type.NUMBER } }, required: ['type', 'description', 'target', 'required'] } } }, required: ['title', 'description', 'source', 'objectives'] } },
             newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
@@ -241,6 +258,7 @@ ${dynamicPacingInstruction}
 ${dialogueStateInstruction}
 ${storyModeInstruction}
 ${wikiUpdateInstruction}
+${firstCultivationRule}
 ${specialNarrativeInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}

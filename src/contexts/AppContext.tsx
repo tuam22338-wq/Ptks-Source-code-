@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
 import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
@@ -39,6 +37,8 @@ export interface GameStartData extends GameplaySettings {
     dlcs?: { title: string; content: string }[];
     // @FIX: Add missing 'openingStory' property to fix type error in createNewGameState.
     openingStory?: string;
+    setting?: string;
+    mainGoal?: string;
 }
 
 
@@ -288,7 +288,15 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang tạo dữ liệu thế giới...' } });
         try {
             const installedMods = state.installedMods.filter(m => m.isEnabled);
-            const activeMods = (await Promise.all(installedMods.map(m => db.getModContent(m.modInfo.id)))).filter((mod): mod is FullMod => !!mod);
+            let activeMods = (await Promise.all(installedMods.map(m => db.getModContent(m.modInfo.id)))).filter((mod): mod is FullMod => !!mod);
+
+            // FIX: Prioritize the imported mod data if it exists.
+            if (worldCreationData.importedMod) {
+                // Prepend the imported mod to prioritize it.
+                // Remove any existing mod with the same ID from the active list to avoid conflicts.
+                activeMods = activeMods.filter(m => m.modInfo.id !== worldCreationData.importedMod!.modInfo.id);
+                activeMods.unshift(worldCreationData.importedMod);
+            }
 
             // @google-genai-fix: Construct a valid GameStartData object from WorldCreationData to match the expected type of createNewGameState.
             const gameStartData: GameStartData = {
@@ -348,6 +356,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 customFactions: worldCreationData.customFactions,
                 dlcs: worldCreationData.dlcs,
                 openingStory: worldCreationData.openingStory,
+                setting: worldCreationData.setting,
+                mainGoal: worldCreationData.mainGoal,
             };
 
             const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
@@ -430,9 +440,12 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId } });
 
-        } catch(e: any) {
+        } catch(e) {
             console.error("Quick create failed:", e);
-            alert(`Tạo nhanh thất bại: ${e.message}`);
+            // FIX: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+            // Safely get error message before passing it to alert.
+            const message = e instanceof Error ? e.message : String(e);
+            alert(`Tạo nhanh thất bại: ${message}`);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
     }, []);
@@ -510,7 +523,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         }
     }, []);
     
-    // FIX: Explicitly typed 'worldId' as 'string' to resolve 'unknown' type error and removed suppressive @ts-ignore.
     const handleEditWorld = useCallback(async (worldId: string) => {
         // This is a placeholder for a more complex feature
         alert(`Chỉnh sửa thế giới '${worldId}' chưa được hỗ trợ.`);

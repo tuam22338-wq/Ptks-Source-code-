@@ -141,6 +141,10 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
         const actionText = itemToUse.type === 'Đan Phương' ? `Học ${itemToUse.name}` : `Sử dụng ${itemToUse.name}`;
         createAndDispatchAction(actionText);
     }, [createAndDispatchAction]);
+
+    const handleIdentify = useCallback((itemToIdentify: InventoryItem) => {
+        createAndDispatchAction(`Ta giám định ${itemToIdentify.name}`);
+    }, [createAndDispatchAction]);
     
     const handleToggleSelectItem = useCallback((itemId: string) => {
         setSelectedItems(prev => {
@@ -246,15 +250,27 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                 <div className="animate-fade-in" style={{animationDuration: '200ms'}}>
                                     <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[selectedItem.quality].color}`}>{selectedItem.name}</h4>
                                     <p className="text-xs text-[var(--text-muted-color)] italic truncate">{selectedItem.description}</p>
-                                    {selectedItem.vitalEffects && selectedItem.vitalEffects.length > 0 && <div className="mt-1 text-xs text-yellow-300">{selectedItem.vitalEffects.map(b => `${b.vital === 'hunger' ? 'No bụng' : 'Nước uống'} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
-                                    {selectedItem.slot && !selectedItem.isEquipped && <ItemComparison item={selectedItem} equipped={equippedItemForComparison} />}
+                                    
+                                    {selectedItem.isIdentified === false ? (
+                                        <div className="mt-2 pt-2 border-t border-[var(--shadow-light)]/50">
+                                            <p className="text-sm text-center text-yellow-300/80 italic">Vật phẩm này ẩn chứa sức mạnh chưa biết. Cần được giám định.</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {selectedItem.vitalEffects && selectedItem.vitalEffects.length > 0 && <div className="mt-1 text-xs text-yellow-300">{selectedItem.vitalEffects.map(b => `${b.vital === 'hunger' ? 'No bụng' : 'Nước uống'} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
+                                            {selectedItem.slot && !selectedItem.isEquipped && <ItemComparison item={selectedItem} equipped={equippedItemForComparison} />}
+                                        </>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="h-full flex items-center justify-center text-[var(--text-muted-color)]">Di chuột qua vật phẩm để xem chi tiết.</div>
                             )}
                             <div className="flex justify-end items-center gap-2 mt-2">
+                                {selectedItem && (selectedItem.type === 'Vũ Khí' || selectedItem.type === 'Phòng Cụ' || selectedItem.type === 'Pháp Bảo') && selectedItem.isIdentified === false && (
+                                    <button onClick={() => handleIdentify(selectedItem)} className="btn btn-primary !bg-purple-700/80 !text-sm !px-4 !py-1">Giám Định</button>
+                                )}
                                 {selectedItem && selectedItem.isEquipped && selectedItem.slot && <button onClick={() => handleUnequip(selectedItem.slot!)} className="btn btn-neumorphic !text-sm !px-4 !py-1">Tháo Ra</button>}
-                                {selectedItem && selectedItem.slot && !selectedItem.isEquipped && <button onClick={() => handleEquip(selectedItem)} className="btn btn-primary !bg-green-700/80 !text-sm !px-4 !py-1">Trang Bị</button>}
+                                {selectedItem && selectedItem.slot && !selectedItem.isEquipped && selectedItem.isIdentified !== false && <button onClick={() => handleEquip(selectedItem)} className="btn btn-primary !bg-green-700/80 !text-sm !px-4 !py-1">Trang Bị</button>}
                                 {selectedItem && (selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương' || selectedItem.type === 'Linh Dược') && <button onClick={() => handleUse(selectedItem)} className="btn btn-primary !bg-blue-700/80 !text-sm !px-4 !py-1">{selectedItem.type === 'Đan Phương' ? 'Học' : 'Sử Dụng'}</button>}
                                 {selectedItem && <button onClick={() => handleDrop(selectedItem, 1)} className="btn btn-primary !bg-red-800/80 !text-sm !px-4 !py-1">Vứt Bỏ</button>}
                             </div>

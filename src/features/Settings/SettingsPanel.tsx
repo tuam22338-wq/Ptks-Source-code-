@@ -1,10 +1,11 @@
 
+
+
 import React, { useState, memo } from 'react';
 import type { GameSettings } from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaPenFancy, FaCheckCircle } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
-import RagSourceManagerModal from './RagSourceManagerModal';
 // Import tab components
 import InterfaceSettings from './tabs/InterfaceSettings';
 import SoundSettings from './tabs/SoundSettings';
@@ -36,11 +37,9 @@ export const SettingsPanel: React.FC = () => {
     const { state, handleNavigate, handleSettingChange } = useAppContext();
     const { settings } = state;
     const [activeTab, setActiveTab] = useState<SettingsTab>('interface');
-    const [isRagManagerOpen, setIsRagManagerOpen] = useState(false);
 
     return (
         <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
-            {isRagManagerOpen && <RagSourceManagerModal onClose={() => setIsRagManagerOpen(false)} />}
             <div className="flex-shrink-0 flex justify-between items-center mb-6">
                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-gray-700/50 transition-colors" title="Quay Lại Menu">
                     <FaArrowLeft className="w-5 h-5" />
@@ -62,7 +61,7 @@ export const SettingsPanel: React.FC = () => {
                 {activeTab === 'interface' && <InterfaceSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'sound' && <SoundSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'ai_models' && <AiModelSettings settings={settings} handleSettingChange={handleSettingChange} />}
-                {activeTab === 'rag' && <RagSettings settings={settings} handleSettingChange={handleSettingChange} onOpenRagManager={() => setIsRagManagerOpen(true)} />}
+                {activeTab === 'rag' && <RagSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'safety' && <SafetySettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'advanced' && <AdvancedSettings settings={settings} handleSettingChange={handleSettingChange} />}
             </div>

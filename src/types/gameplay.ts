@@ -109,6 +109,7 @@ export interface InventoryItem {
     slot?: EquipmentSlot;
     recipeId?: string;
     vitalEffects?: { vital: string; value: number }[];
+    isIdentified?: boolean;
 }
 
 export interface Inventory {

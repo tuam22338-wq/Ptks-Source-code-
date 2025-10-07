@@ -1,5 +1,3 @@
-
-
 // FIX: Add missing CultivationTechnique import
 import type { GameDate, StoryEntry, CurrencyType, ItemType, ItemQuality, CultivationTechnique, ActiveEffect, ActiveQuest, StatBonus, NPC, EventChoice, Location, Faction, MajorEvent } from './';
 
@@ -91,6 +89,7 @@ export interface MechanicalIntent {
     stageChange?: string; // ID of the new stage after breakthrough
     dialogueState?: { status: 'START' | 'END'; npcName?: string };
     knownRecipeIdsGained?: string[];
+    itemIdentified?: { itemId: string; newBonuses: StatBonus[]; };
 }
 
 export interface AIResponsePayload {
