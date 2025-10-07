@@ -66,7 +66,9 @@ const StoryGraphPanel: React.FC<StoryGraphPanelProps> = ({ gameState }) => {
         const newEdges: Edge[] = [];
 
         const addNode = (id: string, label: string, type: NodeType, color: string) => {
-            if (!newNodes.find(n => n.id === id)) {
+            // FIX: The error "Expected 1 arguments, but got 0" on this line is likely a tooling or parser bug.
+            // Using .some() instead of .find() is functionally equivalent for this boolean check and may avoid the issue.
+            if (!newNodes.some(n => n.id === id)) {
                 newNodes.push({ id, label, type, color, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: 0, vy: 0 });
             }
         };

@@ -1,5 +1,3 @@
-
-
 import type { GameSettings, AIModel, ImageModel, RagEmbeddingModel, SafetyLevel, LayoutMode, GameSpeed, NarrativeStyle, AiSyncMode, AiCreativityLevel, NarrativePacing, PlayerAgencyLevel, AiMemoryDepth, NpcComplexity, WorldEventFrequency, WorldReactivity, DeathPenalty, ValidationServiceCap, WorldInterruptionFrequency } from '../types';
 
 export const AI_SYNC_MODES: { value: AiSyncMode; label: string, description: string }[] = [

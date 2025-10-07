@@ -1,6 +1,7 @@
 
 
 
+
 import React, { memo } from 'react';
 import type { GameSettings } from '../../../types';
 import { FaSearchPlus } from 'react-icons/fa';
@@ -59,7 +60,8 @@ const RagSettings: React.FC<RagSettingsProps> = ({ settings, handleSettingChange
                 </div>
             </SettingsRow>
             <SettingsRow label="Quản lý Nguồn Tri Thức" description="Quản lý các nguồn tri thức cho AI hiện đã được chuyển đến màn hình 'Huấn Luyện AI' ở menu chính.">
-                 {/* The button has been removed from here. */}
+                 {/* FIX: Add a child element to satisfy the required 'children' prop. */}
+                 <div/>
             </SettingsRow>
         </SettingsSection>
     );

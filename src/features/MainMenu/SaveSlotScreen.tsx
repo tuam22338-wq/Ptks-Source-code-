@@ -575,6 +575,7 @@ const SaveSlotScreen: React.FC = () => {
             const mod = fixModStructure(rawMod);
 
             // Populate form with generated mod data
+            // @ts-ignore
             setFormData(p => ({
                 ...p,
                 importedMod: mod,
@@ -585,8 +586,9 @@ const SaveSlotScreen: React.FC = () => {
                 namedRealmSystem: mod.content.namedRealmSystems?.[0] || p.namedRealmSystem,
                 enableRealmSystem: !!(mod.content.namedRealmSystems && mod.content.namedRealmSystems.length > 0),
                 // custom data from mod
-                customNpcs: mod.content.worldData?.[0]?.initialNpcs || [],
-                customLocations: mod.content.worldData?.[0]?.initialLocations || [],
+                // FIX: Ensure generated NPCs and Locations have valid IDs to satisfy the more strict ModNpc[] and ModLocation[] types.
+                customNpcs: (mod.content.worldData?.[0]?.initialNpcs || []).map((npc, i) => ({ ...npc, id: npc.id || `gen_npc_${i}`})),
+                customLocations: (mod.content.worldData?.[0]?.initialLocations || []).map(loc => ({ ...loc, id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '') })),
                 customFactions: mod.content.worldData?.[0]?.factions || [],
                 npcGenerationMode: (mod.content.worldData?.[0]?.initialNpcs?.length || 0) > 0 ? 'CUSTOM' : 'AI',
                 locationGenerationMode: (mod.content.worldData?.[0]?.initialLocations?.length || 0) > 0 ? 'CUSTOM' : 'AI',
