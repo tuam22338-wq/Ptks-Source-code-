@@ -389,6 +389,18 @@ export interface WorldCreationData extends GameplaySettings {
     dlcs?: { title: string; content: string }[];
 }
 
+// FIX: Add GameStartData definition
+export interface GameStartData extends WorldCreationData {
+  identity: CharacterIdentity;
+  npcDensity: NpcDensity;
+  difficulty: DifficultyLevel;
+  initialBonuses: StatBonus[];
+  initialItems: { name: string; description: string; quantity: number; type: ItemType; quality: ItemQuality; icon: string; }[];
+  spiritualRoot: SpiritualRoot;
+  danhVong: DanhVong;
+  initialCurrency: Currency;
+}
+
 export interface WorldTurnEntry {
     id: string;
     gameDate: GameDate;

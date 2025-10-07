@@ -65,7 +65,7 @@ const WikiScreen: React.FC = () => {
         return (
             <div className="space-y-2">
                 {data.map((item: any, index: number) => (
-                    <button key={item.id || item.name || index} onClick={() => setSelectedItem(item)} className="w-full text-left p-3 rounded-lg transition-colors hover:bg-[var(--shadow-light)]">
+                    <button key={item.id || item.name || index} onClick={() => setSelectedItem(item)} className={`w-full text-left p-3 rounded-lg transition-colors hover:bg-[var(--shadow-light)] ${selectedItem?.id === item.id || selectedItem?.name === item.name ? 'bg-[var(--shadow-light)]' : ''}`}>
                         <h4 className="font-bold text-[var(--text-color)]">{item.name || item.identity?.name || item.title || item.factionName}</h4>
                         <p className="text-xs text-[var(--text-muted-color)] truncate">{item.description || item.summary || item.status}</p>
                     </button>
@@ -134,7 +134,7 @@ const WikiScreen: React.FC = () => {
 
         return (
             <div className="animate-fade-in" style={{animationDuration: '300ms'}}>
-                <button onClick={() => setSelectedItem(null)} className="mb-4 text-sm text-[var(--secondary-accent-color)] hover:underline">&larr; Quay lại danh sách</button>
+                <button onClick={() => setSelectedItem(null)} className="mb-4 text-sm text-[var(--secondary-accent-color)] hover:underline md:hidden">&larr; Quay lại danh sách</button>
                 <h3 className="text-3xl font-bold font-title text-[var(--primary-accent-color)] mb-4">{title}</h3>
                 {content}
             </div>
@@ -168,21 +168,39 @@ const WikiScreen: React.FC = () => {
                         </button>
                     ))}
                 </nav>
-                <main className="flex-grow p-4 sm:p-6 flex flex-col min-h-0">
+                <main className="flex-grow flex flex-col md:flex-row min-h-0">
                     {activeCategory === 'graph' ? (
-                        <div className="h-full w-full flex-grow">
-                           <StoryGraphPanel gameState={gameState} />
-                        </div>
+                        <div className="h-full w-full p-4 sm:p-6"><StoryGraphPanel gameState={gameState} /></div>
                     ) : (
                         <>
-                            {!selectedItem && (
+                            {/* --- Left Pane / Mobile List View --- */}
+                            <div className={`
+                                w-full md:w-1/3 lg:w-1/4 
+                                border-r border-[var(--shadow-light)] p-4
+                                flex-col
+                                ${selectedItem ? 'hidden md:flex' : 'flex'}
+                            `}>
                                 <div className="relative mb-4 flex-shrink-0">
                                     <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted-color)]" />
                                     <input type="text" placeholder={`Tìm kiếm trong ${CATEGORIES.find(c => c.id === activeCategory)?.label}...`} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-neumorphic w-full !pl-10 !py-3"/>
                                 </div>
-                            )}
-                            <div className="flex-grow overflow-y-auto pr-2 sm:pr-4">
-                                {selectedItem ? renderDetailView() : renderItemList()}
+                                <div className="flex-grow overflow-y-auto pr-2">
+                                    {renderItemList()}
+                                </div>
+                            </div>
+
+                            {/* --- Right Pane / Mobile Detail View --- */}
+                            <div className={`
+                                w-full md:w-2/3 lg:w-3/4 
+                                p-4 sm:p-6
+                                flex-col overflow-y-auto
+                                ${selectedItem ? 'flex' : 'hidden md:flex'}
+                            `}>
+                                {selectedItem ? renderDetailView() : (
+                                    <div className="h-full flex items-center justify-center text-[var(--text-muted-color)]">
+                                        <p>Chọn một mục từ danh sách để xem chi tiết.</p>
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}

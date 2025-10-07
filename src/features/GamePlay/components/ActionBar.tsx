@@ -5,6 +5,8 @@ import type { Location, GameState, QuickActionButtonConfig } from '../../../type
 import { UI_ICONS, DEFAULT_BUTTONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
+// FIX: Import useGameContext to access game-specific actions.
+import { useGameContext } from '../../../contexts/GameContext';
 
 type ActionType = 'say' | 'act' | 'ask';
 
@@ -40,7 +42,9 @@ const ActionBar: React.FC<ActionBarProps> = ({ onInputSubmit, onContextualAction
     const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(true);
     
     const { openInventoryModal, showNotification } = useGameUIContext();
-    const { handlePlayerAction, handleNavigate } = useAppContext();
+    // FIX: handleNavigate is from AppContext, but handlePlayerAction has moved to GameContext.
+    const { handleNavigate } = useAppContext();
+    const { handlePlayerAction } = useGameContext();
 
     const { activeMods } = gameState;
    

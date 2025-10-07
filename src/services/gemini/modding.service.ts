@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
@@ -196,7 +190,7 @@ const attributeSystemSchema = {
                     id: { type: Type.STRING, description: "ID duy nhất, không dấu, không khoảng trắng, vd: 'suc_ben_may_moc'." },
                     name: { type: Type.STRING, description: "Tên hiển thị, vd: 'Sức Bền Máy Móc'." },
                     description: { type: Type.STRING },
-                    iconName: { type: Type.STRING, enum: availableIconNames, description: "Tên icon từ danh sách có sẵn." },
+                    iconName: { type: Type.STRING, description: `Tên icon từ danh sách có sẵn. PHẢI là một trong các giá trị sau: ${availableIconNames.join(', ')}` },
                     type: { type: Type.STRING, enum: ['PRIMARY', 'SECONDARY', 'VITAL', 'INFORMATIONAL'], description: "Loại thuộc tính." },
                     baseValue: { type: Type.NUMBER, description: "Giá trị khởi điểm cho PRIMARY và VITAL." },
                     formula: { type: Type.STRING, description: "Công thức tính cho SECONDARY, vd: '(suc_manh * 2)'." },

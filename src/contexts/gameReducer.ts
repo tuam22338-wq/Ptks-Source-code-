@@ -2,7 +2,6 @@ import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary, 
 import type { View } from './AppContext';
 import { sanitizeGameState } from '../utils/gameStateSanitizer';
 
-// Define the shape of our global state
 export interface AppState {
     view: View;
     isLoading: boolean;
@@ -19,13 +18,11 @@ export interface AppState {
     installedMods: ModInLibrary[];
     modBeingEdited: FullMod | null;
     pdfTextForGenesis: string | null;
-    // State for Novelist AI feature
     novels: Novel[];
     activeNovelId: number | null;
     settingsSavingStatus: 'idle' | 'saving' | 'saved';
 }
 
-// Define action types
 export type Action =
   | { type: 'NAVIGATE'; payload: View }
   | { type: 'SET_LOADING'; payload: { isLoading: boolean; message?: string } }
@@ -46,22 +43,15 @@ export type Action =
   | { type: 'SET_INSTALLED_MODS'; payload: ModInLibrary[] }
   | { type: 'ADD_INSTALLED_MOD'; payload: ModInLibrary }
   | { type: 'UPDATE_INSTALLED_MODS'; payload: ModInLibrary[] }
-  | { type: 'REMOVE_INSTALLED_MOD'; payload: string } // payload is modId
+  | { type: 'REMOVE_INSTALLED_MOD'; payload: string }
   | { type: 'SET_MOD_FOR_EDITING'; payload: FullMod | null }
-  | { type: 'PLAYER_ACTION_PENDING'; payload: { text: string; type: 'say' | 'act' } }
-  | { type: 'STREAMING_NARRATIVE_UPDATE'; payload: string }
-  | { type: 'PLAYER_ACTION_RESOLVED'; payload: { finalState: GameState; narrativeEntryPayload: Omit<StoryEntry, 'id'> } }
   | { type: 'SET_PDF_TEXT_FOR_GENESIS'; payload: string | null }
-  // Actions for Novelist AI
   | { type: 'SET_NOVELS'; payload: Novel[] }
   | { type: 'SET_ACTIVE_NOVEL_ID'; payload: number | null }
   | { type: 'UPDATE_NOVEL'; payload: Novel }
-  // FIX: Add action to set current slot ID
   | { type: 'SET_CURRENT_SLOT_ID'; payload: number | null }
   | { type: 'SET_SETTINGS_SAVING_STATUS'; payload: 'idle' | 'saving' | 'saved' };
 
-
-// The reducer function
 export const gameReducer = (state: AppState, action: Action): AppState => {
     switch (action.type) {
         case 'NAVIGATE':
@@ -97,7 +87,6 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             return { ...state, activeWorldId: action.payload };
         
         case 'START_CHARACTER_CREATION':
-            // FIX: The 'characterCreation' view is deprecated and not a valid View type. Redirecting to 'saveSlots' which now handles the world/character creation flow.
             return { ...state, currentSlotId: action.payload, view: 'saveSlots' };
 
         case 'LOAD_GAME':
@@ -118,11 +107,7 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
                 ? (action.payload as (prevState: GameState | null) => GameState | null)(state.gameState)
                 : action.payload;
              
-             if (!state.gameState && !newGameState) return state;
-
-             if (newGameState) {
-                 newGameState = sanitizeGameState(newGameState);
-             }
+             if (newGameState) newGameState = sanitizeGameState(newGameState);
 
              return { ...state, gameState: newGameState };
         
@@ -160,80 +145,6 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
 
         case 'SET_MOD_FOR_EDITING':
             return { ...state, modBeingEdited: action.payload };
-
-        case 'PLAYER_ACTION_PENDING':
-            if (!state.gameState) return state;
-            const lastId = state.gameState.storyLog.length > 0 ? state.gameState.storyLog[state.gameState.storyLog.length - 1].id : 0;
-            const playerActionEntry: StoryEntry = {
-                id: lastId + 1,
-                type: action.payload.type === 'say' ? 'player-dialogue' : 'player-action',
-                content: action.payload.text,
-                isPending: true,
-            };
-            const aiNarrativePlaceholder: StoryEntry = {
-                id: lastId + 2,
-                type: 'narrative',
-                content: '', // Start empty for streaming
-            };
-            return {
-                ...state,
-                gameState: {
-                    ...state.gameState,
-                    storyLog: [...state.gameState.storyLog, playerActionEntry, aiNarrativePlaceholder],
-                },
-            };
-
-        case 'STREAMING_NARRATIVE_UPDATE':
-            if (!state.gameState) return state;
-            const newStoryLogStream = [...state.gameState.storyLog];
-            const lastEntryStream = newStoryLogStream[newStoryLogStream.length - 1];
-            if (lastEntryStream) {
-                // Update the placeholder with streamed content
-                lastEntryStream.content = action.payload;
-            }
-            return {
-                ...state,
-                gameState: {
-                    ...state.gameState,
-                    storyLog: newStoryLogStream,
-                },
-            };
-        
-        case 'PLAYER_ACTION_RESOLVED': {
-            const { finalState, narrativeEntryPayload } = action.payload;
-            const currentState = state.gameState;
-
-            if (!finalState || !currentState) return state; // Should not happen
-
-            // Create a new state object. Take all properties from the calculated finalState...
-            const newState = { ...finalState };
-
-            // ...but replace its storyLog with a corrected version from our current UI state.
-            const newStoryLog = [...currentState.storyLog];
-
-            const playerActionIndex = newStoryLog.findIndex(e => e.isPending);
-            if (playerActionIndex > -1) {
-                // Finalize player action entry
-                newStoryLog[playerActionIndex] = {
-                    ...newStoryLog[playerActionIndex],
-                    isPending: false,
-                };
-
-                // Finalize AI narrative entry
-                const narrativeIndex = playerActionIndex + 1;
-                if (narrativeIndex < newStoryLog.length) {
-                    const currentNarrativeEntry = newStoryLog[narrativeIndex];
-                    newStoryLog[narrativeIndex] = {
-                        ...currentNarrativeEntry,
-                        ...narrativeEntryPayload, // Apply final content and effects
-                    };
-                }
-            }
-            
-            newState.storyLog = newStoryLog;
-            
-            return { ...state, gameState: newState };
-        }
         
         case 'SET_PDF_TEXT_FOR_GENESIS':
             return { ...state, pdfTextForGenesis: action.payload };

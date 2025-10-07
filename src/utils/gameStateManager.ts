@@ -15,11 +15,12 @@ import {
     VALIDATION_CAP_LEVELS,
     WORLD_INTERRUPTION_LEVELS
 } from "../constants";
-import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent, NamedRealmSystem, GameplaySettings, WorldCreationData, Faction } from "../types";
+import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent, NamedRealmSystem, GameplaySettings, WorldCreationData, Faction, GameStartData } from "../types";
 import { generateInitialWorldDetails } from '../services/geminiService';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
-import type { GameStartData } from '../contexts/AppContext';
+// FIX: GameStartData is not exported from AppContext, it should be imported from types. This import is removed, and GameStartData is added to the import from '../types'.
+// import type { GameStartData } from '../contexts/AppContext';
 import { sanitizeGameState } from './gameStateSanitizer';
 import { DEFAULT_WORLDS_DATA } from '../data/defaultWorlds';
 
@@ -475,7 +476,11 @@ export const createNewGameState = async (
                 resourceName: 'Linh Khí',
                 resourceUnit: 'điểm',
             };
-        } else if (genre === 'Huyền Huyễn Tu Tiên') {
+        }
+        
+        // NEW GENERIC FALLBACK: If no system was loaded from user input or mods, use the default cultivation system.
+        // This decouples the logic from the 'genre' field.
+        if (realmSystemToUse.length === 0) {
             realmSystemToUse = REALM_SYSTEM.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
             realmSystemInfoToUse = {
                 name: 'Hệ Thống Tu Luyện Mặc Định',

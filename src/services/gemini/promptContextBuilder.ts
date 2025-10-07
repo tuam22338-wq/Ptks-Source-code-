@@ -1,5 +1,6 @@
 
 
+
 import type { GameState, GameSettings } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
@@ -74,10 +75,12 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
   
   const npcsHereWithMindState = npcsHere.length > 0
     ? npcsHere.map(n => {
+        const relationship = playerCharacter.relationships.find(r => r.npcId === n.id);
+        const relationshipText = relationship ? ` (Quan hệ: ${relationship.type} - ${relationship.status})` : '';
         const emotions = `[Tâm trạng: Tin tưởng(${n.emotions.trust}), Sợ hãi(${n.emotions.fear}), Tức giận(${n.emotions.anger})]`;
         const memories = n.memory.shortTerm.length > 0 ? ` [Ký ức gần đây: ${n.memory.shortTerm.join('; ')}]` : '';
         const willpower = ` [Động lực: ${n.motivation}, Mục tiêu: ${n.goals.join(', ')}]`;
-        return `- ${n.identity.name} (${n.status}). ${emotions}${memories}${willpower}`;
+        return `- ${n.identity.name} (${n.identity.gender}, ${n.identity.age} tuổi, ${n.status})${relationshipText}. ${emotions}${memories}${willpower}`;
       }).join('\n')
     : 'Không có ai đáng chú ý ở đây.';
   

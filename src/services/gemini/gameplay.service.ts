@@ -1,3 +1,7 @@
+
+
+
+
 import { Type, FunctionDeclaration } from "@google/genai";
 import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC, Location, Faction, MajorEvent } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -117,7 +121,7 @@ export async function* generateActionResponseStream(
     if (gameplaySettings.enableStorySystem) {
         storyModeInstruction = `19. **LUẬT CHẾ ĐỘ CỐT TRUYỆN:** Bạn là một người kể chuyện có chủ đích. Hãy thúc đẩy cốt truyện chính một cách tự nhiên. Nếu người chơi đi chệch hướng, hãy tạo ra các sự kiện hoặc NPC để nhẹ nhàng hướng họ trở lại con đường định mệnh. Phản ứng của các NPC Định Mệnh phải luôn phục vụ cho cốt truyện.`;
     } else {
-        storyModeInstruction = `19. **LUẬT CHẾ ĐỘ SANDBOX:** Bạn là một người mô phỏng thế giới. KHÔNG có cốt truyện chính. Hãy phản ứng một cách hoàn toàn tự nhiên với hành động của người chơi dựa trên các quy luật của thế giới và mục tiêu riêng của từng NPC. Ưu tiên sự tự do, hậu quả logic, và câu chuyện nổi (emergent narrative).`;
+        storyModeInstruction = `19. **LUẬT CHẾ ĐỘ SANDBOX (TUYỆT ĐỐI):** Bạn là một người MÔ PHỎNG THẾ GIỚI, không phải người kể chuyện. **TUYỆT ĐỐI KHÔNG** được tự ý tạo ra nhiệm vụ, mục tiêu, hay sự kiện để "hướng" người chơi. Chỉ phản ứng một cách thụ động và logic với hành động của người chơi. Hãy để người chơi tự khám phá và tạo ra câu chuyện của riêng họ. Nếu người chơi không làm gì, hãy mô tả thế giới xung quanh vẫn đang vận hành một cách tự nhiên.`;
     }
 
     const wikiUpdateInstruction = `20. **LUẬT BÁCH KHOA TOÀN THƯ TỰ ĐỘNG (QUAN TRỌNG):** Để thế giới sống động, bạn phải giúp người chơi xây dựng Bách Khoa Toàn Thư của họ. Nếu trong đoạn tường thuật, bạn **LẦN ĐẦU TIÊN** giới thiệu hoặc mô tả một thực thể mới, bạn **BẮT BUỘC** phải ghi lại thông tin đó vào các trường tương ứng trong \`mechanicalIntent\`:
@@ -126,6 +130,15 @@ export async function* generateActionResponseStream(
     - **Sự kiện lịch sử mới:** Nếu bạn tiết lộ một sự kiện quan trọng trong quá khứ, hãy thêm một đối tượng vào \`newMajorEventsRevealed\`.`;
     
     const firstCultivationRule = `21. **LUẬT KÍCH HOẠT TU LUYỆN (QUAN TRỌNG):** NẾU cảnh giới hiện tại của người chơi là 'Phàm Nhân' VÀ hành động của họ là "tu luyện" (hoặc các từ đồng nghĩa như thiền, hấp thụ linh khí), bạn BẮT BUỘC phải tường thuật lại lần đầu tiên họ cảm nhận được linh khí và chính thức bước vào con đường tu luyện. Sau đó, trong 'mechanicalIntent', hãy đặt 'realmChange' và 'stageChange' thành ID của cảnh giới và tiểu cảnh giới đầu tiên trong hệ thống tu luyện của thế giới (ví dụ: 'luyen_khi' và 'lk_1'). Đây là bước đột phá đầu tiên của họ.`;
+
+    const superLogicRule = `22. **LUẬT LOGIC TỐI THƯỢNG (SIÊU LOGIC):** Mọi diễn biến trong tường thuật và mọi thay đổi cơ chế PHẢI tuân thủ nghiêm ngặt quy luật nhân quả. Phân tích sâu sắc hành động của người chơi và bối cảnh để tạo ra kết quả hợp lý nhất có thể. Cân nhắc các hậu quả ngắn hạn và dài hạn. Nếu một hành động có vẻ đơn giản, hãy suy nghĩ về những tác động ngầm hoặc không lường trước được của nó. Hãy hành động như một Trọng Tài AI (Arbiter AI) cực kỳ thông minh và công bằng.`;
+
+    const multiDimensionalThinkingRule = `23. **LUẬT TƯ DUY ĐA CHIỀU (MULTI-DIMENSIONAL THINKING):** Khi phân tích hành động của người chơi trong \`thought\`, bạn BẮT BUỘC phải xem xét ít nhất 2-3 hệ quả hoặc góc nhìn khác nhau. Ví dụ:
+    - **Góc nhìn NPC:** "NPC A sẽ nghĩ gì về hành động này? Nó có phù hợp với mục tiêu của họ không?"
+    - **Góc nhìn Phe phái:** "Hành động này ảnh hưởng đến phe phái B như thế nào? Liệu nó có làm tăng/giảm danh vọng không?"
+    - **Hệ quả ngắn hạn vs. dài hạn:** "Hành động này giải quyết vấn đề ngay lập tức, nhưng liệu nó có tạo ra một tin đồn hoặc một kẻ thù mới trong tương lai không?"
+    - **Nhân quả bất ngờ:** "Liệu có một hệ quả không lường trước được nào có thể xảy ra không? (Vd: Giết một con yêu thú yếu có thể khiến yêu thú mẹ mạnh hơn xuất hiện)."
+    Quá trình này PHẢI được ghi lại trong \`thought\` để đảm bảo bạn đã suy nghĩ thấu đáo trước khi viết tường thuật.`;
 
     const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
     const validStatNames = attributeSystem.definitions.map(def => def.name);
@@ -157,16 +170,7 @@ export async function* generateActionResponseStream(
             },
             attributes: {
                 type: Type.OBJECT,
-                description: "Các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS.",
-                properties: {
-                    ...Object.fromEntries(attributeSystem.definitions.map(def => [def.id, {
-                        type: Type.OBJECT,
-                        properties: {
-                            value: { type: Type.NUMBER },
-                            ...(def.type === 'VITAL' && { maxValue: { type: Type.NUMBER } })
-                        }
-                    }]))
-                }
+                description: `Các chỉ số cơ bản của NPC, là một đối tượng có key là ID thuộc tính và value là { value: number, maxValue?: number }. Chỉ điền các chỉ số PRIMARY và VITALS. Các ID thuộc tính hợp lệ: ${attributeSystem.definitions.map(d => d.id).join(', ')}`,
             }
         },
         required: ['identity', 'status', 'cultivation', 'attributes']
@@ -220,6 +224,7 @@ export async function* generateActionResponseStream(
             stageChange: { type: Type.STRING, description: "ID của tiểu cảnh giới mới nếu người chơi đột phá. Ví dụ: 'tc_so_ky'." },
             dialogueState: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['START', 'END'] }, npcName: { type: Type.STRING, description: "Tên NPC để bắt đầu hội thoại." } } },
             knownRecipeIdsGained: { type: Type.ARRAY, items: { type: Type.STRING } },
+// FIX: Removed duplicate `itemIdentified` property.
           }
         }
       },
@@ -230,6 +235,10 @@ export async function* generateActionResponseStream(
     const prompt = `
 Bạn là một Game Master AI Toàn Năng, người kể chuyện cho game tu tiên "Tam Thiên Thế Giới". Nhiệm vụ của bạn là tiếp nối câu chuyện một cách hấp dẫn, logic và tạo ra các thay đổi cơ chế game tương ứng.
 ${arbiterHint || ''}
+**LUẬT TỐI THƯỢNG CỦA GAME MASTER (PHẢI TUÂN THEO TUYỆT ĐỐI):**
+1.  **LUẬT MỆNH LỆNH HỆ THỐNG:** Bất kỳ dòng chữ nào bắt đầu bằng "[TRẠNG THÁI QUAN TRỌNG]:" là một MỆNH LỆNH trực tiếp từ game engine, không phải gợi ý. Bạn BẮT BUỘC phải thực hiện hành động tương ứng trong \`mechanicalIntent\`. Ví dụ: nếu thấy "[TRẠNG THÁI QUAN TRỌNG]: ĐÃ ĐỦ ĐIỀU KIỆN ĐỂ ĐỘT PHÁ!", bạn PHẢI tạo ra một sự đột phá và điền \`realmChange\`, \`stageChange\`.
+2.  **LUẬT NHẤT QUÁN NHÂN VẬT:** Trước khi viết về bất kỳ NPC nào, hãy đọc lại thông tin của họ trong "BỐI CẢNH GAME" (tuổi tác, giới tính, mối quan hệ, tính cách). Mọi hành động và lời nói của NPC PHẢI nhất quán 100% với những thông tin này. TUYỆT ĐỐI KHÔNG được thay đổi vai trò hay mối quan hệ của họ một cách vô lý (ví dụ: biến một người trẻ thành người già, biến bạn bè thành kẻ thù mà không có lý do).
+
 **QUY TRÌNH SUY LUẬN BẮT BUỘC:**
 Bạn PHẢI thực hiện các bước sau trong suy nghĩ của mình và ghi lại toàn bộ quá trình đó vào trường \`thought\` của JSON trả về:
 1.  **Phân Tích & Phán Quyết (Logic Lõi):** Phân tích hành động của người chơi. Dựa trên chỉ số, bối cảnh, và quy luật thế giới, hãy quyết định hành động này **THÀNH CÔNG** hay **THẤT BẠI** và nêu rõ **LÝ DO**.
@@ -259,6 +268,8 @@ ${dialogueStateInstruction}
 ${storyModeInstruction}
 ${wikiUpdateInstruction}
 ${firstCultivationRule}
+${superLogicRule}
+${multiDimensionalThinkingRule}
 ${specialNarrativeInstruction}
 ${nsfwInstruction}
 ${lengthInstruction}
@@ -414,7 +425,7 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealm:
     - Tên: ${playerCharacter.identity.name}
     - Tính cách: ${playerCharacter.identity.personality}
     - Xuất thân: ${playerCharacter.identity.origin}
-    - Tóm tắt cốt truyện gần đây: ${gameState.storySummary || "Chưa có sự kiện gì đáng chú chú ý."}
+    - Tóm tắt cốt truyện gần đây: ${gameState.storySummary || "Chưa có sự kiện gì đáng chú ý."}
 
     **Bối cảnh đột phá:**
     - Đang cố gắng đột phá lên: ${targetRealm.name} - ${targetStageName}

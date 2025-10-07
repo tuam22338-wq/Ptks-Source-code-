@@ -2,6 +2,8 @@
 
 
 
+
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode, WorldTurnEntry } from '../../types';
@@ -124,7 +126,7 @@ export const generateRelationshipUpdate = async (
     - Danh tiếng của người chơi: ${gameState.playerCharacter.danhVong.status}
 
     **Nhiệm vụ:**
-    1.  **Phân tích:** Dựa trên tính cách, mục tiêu của hai NPC và bối cảnh thế giới, hãy suy nghĩ xem mối quan hệ của họ sẽ phát triển như thế nào. Ví dụ: hai người cùng phe có thể trở nên thân thiết hơn sau một chiến thắng, hai kẻ đối địch có thể mâu thuẫn sâu sắc hơn.
+    1.  **Phân tích Đa Chiều:** Dựa trên tính cách, mục tiêu của hai NPC và bối cảnh thế giới, hãy suy nghĩ xem mối quan hệ của họ sẽ phát triển như thế nào. Hãy cân nhắc cả những yếu tố bên ngoài có thể tác động đến họ (ví dụ: áp lực từ phe phái, sự kiện thế giới, danh tiếng của người chơi). Ví dụ: hai người cùng phe có thể trở nên thân thiết hơn sau một chiến thắng, hai kẻ đối địch có thể mâu thuẫn sâu sắc hơn, hoặc một sự kiện lớn có thể buộc họ phải tạm thời hợp tác.
     2.  **Cập nhật mô tả:** Viết lại mô tả cho mối quan hệ của họ để phản ánh sự phát triển này. Kể cả khi không có thay đổi lớn, hãy làm mới câu chữ một chút.
     3.  **Tạo tin đồn (Tùy chọn):** Nếu tương tác của họ đủ đáng chú ý, hãy tạo ra một câu tin đồn mà người chơi có thể nghe được. Ví dụ: "Nghe nói hai vị trưởng lão của hai phe lại tranh cãi kịch liệt về tài nguyên khoáng mạch."
 

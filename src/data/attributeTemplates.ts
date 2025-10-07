@@ -188,24 +188,24 @@ export const ATTRIBUTE_TEMPLATES: { id: string; name: string; description: strin
     },
     {
         id: 'litrpg',
-        name: 'LitRPG/Hệ Thống',
-        description: 'Hệ thống thuộc tính như trong game, tập trung vào cấp độ, điểm kinh nghiệm và các chỉ số cơ bản.',
+        name: 'Hệ Thống Tu Luyện Số Hóa',
+        description: 'Một hệ thống tu luyện hiện đại, nơi mọi sức mạnh được số hóa thành các chỉ số rõ ràng, giống như trong một trò chơi.',
         system: {
             groups: [
-                { id: 'base', name: 'Chỉ số Cơ bản', order: 1 },
-                { id: 'vitals', name: 'Chỉ số Sống', order: 2 },
-                { id: 'info', name: 'Thông tin', order: 3 },
+                { id: 'combat_stats', name: 'Thuộc tính Chiến đấu', order: 1 },
+                { id: 'vitals', name: 'Chỉ số Sinh tồn', order: 2 },
+                { id: 'system_info', name: 'Thông tin Hệ thống', order: 3 },
             ],
             definitions: [
-                { id: 'str', name: 'Sức Mạnh (STR)', description: 'Tăng sát thương vật lý.', iconName: 'GiMuscularTorso', type: 'PRIMARY', baseValue: 10, group: 'base' },
-                { id: 'agi', name: 'Nhanh Nhẹn (AGI)', description: 'Tăng tốc độ tấn công và né tránh.', iconName: 'GiRunningShoe', type: 'PRIMARY', baseValue: 10, group: 'base' },
-                { id: 'vit', name: 'Thể Lực (VIT)', description: 'Tăng máu tối đa và phòng ngự.', iconName: 'GiHeartTower', type: 'PRIMARY', baseValue: 10, group: 'base' },
-                { id: 'int', name: 'Trí Tuệ (INT)', description: 'Tăng sát thương phép và năng lượng tối đa.', iconName: 'FaBrain', type: 'PRIMARY', baseValue: 10, group: 'base' },
-                { id: 'luk', name: 'May Mắn (LUK)', description: 'Ảnh hưởng đến tỷ lệ rơi đồ và chí mạng.', iconName: 'GiPerspectiveDiceSixFacesRandom', type: 'PRIMARY', baseValue: 5, group: 'base' },
-                { id: 'hp', name: 'Máu (HP)', description: 'Sức sống. Về 0 là chết.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 100, group: 'vitals' },
-                { id: 'mp', name: 'Năng Lượng (MP)', description: 'Năng lượng cho kỹ năng.', iconName: 'GiMagicSwirl', type: 'VITAL', baseValue: 50, group: 'vitals' },
-                { id: 'level', name: 'Cấp Độ', description: 'Cấp độ hiện tại.', iconName: 'GiStairsGoal', type: 'INFORMATIONAL', group: 'info' },
-                { id: 'exp', name: 'Kinh Nghiệm', description: 'Điểm kinh nghiệm để lên cấp.', iconName: 'GiStairsGoal', type: 'INFORMATIONAL', group: 'info' },
+                { id: 'luc_luong', name: 'Lực Lượng', description: 'Tăng sát thương vật lý và các kỹ năng dựa trên sức mạnh.', iconName: 'GiMuscularTorso', type: 'PRIMARY', baseValue: 10, group: 'combat_stats' },
+                { id: 'than_phap', name: 'Thân Pháp', description: 'Tăng tốc độ, né tránh và độ chính xác.', iconName: 'GiRunningShoe', type: 'PRIMARY', baseValue: 10, group: 'combat_stats' },
+                { id: 'the_chat', name: 'Thể Chất', description: 'Tăng Khí Huyết tối đa, phòng ngự và kháng hiệu ứng.', iconName: 'GiHeartTower', type: 'PRIMARY', baseValue: 10, group: 'combat_stats' },
+                { id: 'tinh_than', name: 'Tinh Thần', description: 'Tăng Chân Nguyên tối đa, sức mạnh kỹ năng và kháng phép.', iconName: 'FaBrain', type: 'PRIMARY', baseValue: 10, group: 'combat_stats' },
+                { id: 'khi_van', name: 'Khí Vận', description: 'Ảnh hưởng đến tỷ lệ rơi vật phẩm hiếm, cơ duyên và tỷ lệ chí mạng.', iconName: 'GiPerspectiveDiceSixFacesRandom', type: 'PRIMARY', baseValue: 5, group: 'combat_stats' },
+                { id: 'khi_huyet', name: 'Khí Huyết (HP)', description: 'Sinh lực của bạn. Về 0 là tử vong.', iconName: 'GiHealthNormal', type: 'VITAL', baseValue: 100, group: 'vitals' },
+                { id: 'chan_nguyen', name: 'Chân Nguyên (MP)', description: 'Năng lượng để sử dụng kỹ năng.', iconName: 'GiMagicSwirl', type: 'VITAL', baseValue: 50, group: 'vitals' },
+                { id: 'cap_do', name: 'Cấp Độ', description: 'Cấp độ hiện tại của bạn trong Hệ Thống.', iconName: 'GiStairsGoal', type: 'INFORMATIONAL', group: 'system_info' },
+                { id: 'diem_kinh_nghiem', name: 'Điểm Kinh Nghiệm (EXP)', description: 'Điểm kinh nghiệm cần thiết để thăng cấp.', iconName: 'GiStairsGoal', type: 'INFORMATIONAL', group: 'system_info' },
             ]
         }
     },

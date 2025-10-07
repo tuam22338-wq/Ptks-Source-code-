@@ -1,46 +1,15 @@
 import React, { useEffect, useCallback, createContext, useContext, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
-import type { GameState, SaveSlot, GameSettings, FullMod, PlayerCharacter, NpcDensity, AIModel, DanhVong, DifficultyLevel, SpiritualRoot, PlayerVitals, StoryEntry, StatBonus, ItemType, ItemQuality, InventoryItem, EventChoice, EquipmentSlot, Currency, ModInLibrary, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
-import { DEFAULT_SETTINGS, THEME_OPTIONS, CURRENT_GAME_VERSION, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS } from '../constants';
+// FIX: Import missing types GameStartData and ModNpc
+import type { GameState, SaveSlot, GameSettings, FullMod, ModInLibrary, WorldCreationData, GameStartData, ModNpc } from '../types';
+import { DEFAULT_SETTINGS } from '../constants';
 import { migrateGameState, createNewGameState, hydrateWorldData } from '../utils/gameStateManager';
 import * as db from '../services/dbService';
 import { apiKeyManager } from '../services/gemini/gemini.core';
 import { gameReducer, AppState, Action } from './gameReducer';
-import { processPlayerAction } from '../services/actionService';
 import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service';
-import { generateCharacterFromPrompts, generateInitialWorldDetails } from '../services/gemini/character.service';
 import { generateCompleteWorldFromText } from '../services/gemini/modding.service';
 
 export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining' | 'scripts' | 'createScript' | 'wikiScreen';
-
-// FIX: Extend GameplaySettings to ensure all settings are passed during game creation.
-export interface GameStartData extends GameplaySettings {
-    identity: PlayerCharacter['identity'];
-    npcDensity: NpcDensity;
-    difficulty: DifficultyLevel;
-    initialBonuses: StatBonus[];
-    initialItems: { name: string; quantity: number; description: string; type: ItemType; quality: ItemQuality; icon: string; }[];
-    spiritualRoot: SpiritualRoot;
-    danhVong: DanhVong;
-    initialCurrency?: Currency;
-    generationMode: GenerationMode;
-    attributeSystem?: ModAttributeSystem;
-    namedRealmSystem?: NamedRealmSystem | null;
-    genre: string;
-    // New data generation controls
-    npcGenerationMode: DataGenerationMode;
-    locationGenerationMode: DataGenerationMode;
-    factionGenerationMode: DataGenerationMode;
-    customNpcs?: ModNpc[];
-    customLocations?: ModLocation[];
-    customFactions?: Faction[];
-    // @FIX: Add missing 'dlcs' property to match its usage in `createNewGameState`.
-    dlcs?: { title: string; content: string }[];
-    // @FIX: Add missing 'openingStory' property to fix type error in createNewGameState.
-    openingStory?: string;
-    setting?: string;
-    mainGoal?: string;
-}
-
 
 interface AppContextType {
     state: AppState;
@@ -52,14 +21,10 @@ interface AppContextType {
     handleDynamicBackgroundChange: (themeId: string) => Promise<void>;
     handleSettingsSave: () => Promise<void>;
     handleSlotSelection: (slotId: number) => void;
-    handleSaveGame: () => Promise<void>;
     handleDeleteGame: (slotId: number) => Promise<void>;
     handleVerifyAndRepairSlot: (slotId: number) => Promise<void>;
-    handleGameStart: (gameStartData: GameStartData) => Promise<void>;
     handleCreateAndStartGame: (worldCreationData: WorldCreationData, slotId: number) => Promise<void>;
     handleQuickCreateAndStartGame: (description: string, characterName: string, slotId: number) => Promise<void>;
-    handlePlayerAction: (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => Promise<void>;
-    handleUpdatePlayerCharacter: (updater: (pc: PlayerCharacter) => PlayerCharacter) => void;
     handleSetActiveWorldId: (worldId: string) => Promise<void>;
     quitGame: () => void;
     speak: (text: string, force?: boolean) => void;
@@ -73,7 +38,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// FIX: Export useAppContext hook to resolve import errors in multiple components.
 export const useAppContext = (): AppContextType => {
     const context = useContext(AppContext);
     if (!context) {
@@ -104,23 +68,19 @@ const initialState: AppState = {
     installedMods: [],
     modBeingEdited: null,
     pdfTextForGenesis: null,
-    // State for Novelist AI
     novels: [],
     activeNovelId: null,
     settingsSavingStatus: 'idle',
 };
 
 export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
-    // --- PART 1: HOOKS (State, Refs) ---
     const [state, dispatch] = useReducer(gameReducer, initialState);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
     const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-    const abortControllerRef = useRef<AbortController | null>(null);
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hasLoadedInitialSettings = useRef(false);
 
-    // --- PART 2: CALLBACKS (Memoized Handlers) ---
     const speak = useCallback(async (text: string, force = false) => {
         if (!text || (!state.settings.enableTTS && !force)) return;
 
@@ -140,25 +100,11 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             try {
                 const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elevenLabsVoiceId}`, {
                     method: 'POST',
-                    headers: {
-                        'Accept': 'audio/mpeg',
-                        'Content-Type': 'application/json',
-                        'xi-api-key': elevenLabsApiKey,
-                    },
-                    body: JSON.stringify({
-                        text: text,
-                        model_id: 'eleven_multilingual_v2',
-                        voice_settings: {
-                            stability: 0.5,
-                            similarity_boost: 0.75,
-                        }
-                    })
+                    headers: { 'Accept': 'audio/mpeg', 'Content-Type': 'application/json', 'xi-api-key': elevenLabsApiKey },
+                    body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`ElevenLabs API error: ${errorData.detail?.message || response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`ElevenLabs API error: ${response.statusText}`);
 
                 const blob = await response.blob();
                 if (ttsAudioRef.current) {
@@ -170,7 +116,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             } catch (error) {
                 console.error("Error with ElevenLabs TTS:", error);
             }
-        } else { // Browser TTS
+        } else {
             const utterance = new SpeechSynthesisUtterance(text);
             const selectedVoice = voices.find(v => v.voiceURI === state.settings.ttsVoiceURI);
             if (selectedVoice) utterance.voice = selectedVoice;
@@ -210,9 +156,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
     const handleDynamicBackgroundChange = useCallback(async (themeId: string) => {
         handleSettingChange('dynamicBackground', themeId);
-        if (themeId === 'none' || state.backgrounds.status[themeId] === 'loaded') {
-            return;
-        }
+        if (themeId === 'none' || state.backgrounds.status[themeId] === 'loaded') return;
         dispatch({ type: 'LOAD_BACKGROUND_START', payload: { themeId } });
         try {
             const urls = await generateAndCacheBackgroundSet(themeId);
@@ -230,16 +174,17 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             try {
                 let migratedState = await migrateGameState(selectedSlot.data);
                 
-                // Hydrate world if needed
                 if (!migratedState.isHydrated && migratedState.creationData) {
                     migratedState = await hydrateWorldData(migratedState, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
-                    await db.saveGameState(slotId, migratedState); // Save hydrated state
+                    await db.saveGameState(slotId, migratedState);
                 }
                 
                 dispatch({ type: 'LOAD_GAME', payload: { gameState: migratedState, slotId } });
-            } catch (error: any) {
+            } catch (error) {
+// FIX: The 'error' variable in a catch block is of type 'unknown' and must be cast to a string before being used in the alert.
+                const message = error instanceof Error ? error.message : String(error);
                 console.error("Error loading or migrating game state:", error);
-                alert(`Lỗi tải game: ${error.message}`);
+                alert(`Lỗi tải game: ${message}`);
                 dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
             }
         } else {
@@ -247,29 +192,10 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         }
     }, [state.saveSlots]);
     
-    const handleSaveGame = useCallback(async () => {
-        if (!state.gameState || state.currentSlotId === null) return;
-        const saveIndicator = document.getElementById('save-indicator');
-        if(saveIndicator) saveIndicator.classList.add('saving');
-        try {
-            const stateToSave = { ...state.gameState, lastSaved: new Date().toISOString() };
-            await db.saveGameState(state.currentSlotId, stateToSave);
-            dispatch({ type: 'UPDATE_GAME_STATE', payload: stateToSave });
-            const allSlots = await db.getAllSaveSlots();
-            dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
-        } catch (error) {
-            console.error('Error saving game:', error);
-        } finally {
-            setTimeout(() => {
-                if(saveIndicator) saveIndicator.classList.remove('saving');
-            }, 500);
-        }
-    }, [state.gameState, state.currentSlotId]);
-
     const handleDeleteGame = useCallback(async (slotId: number) => {
         if (window.confirm(`Bạn có chắc muốn xóa vĩnh viễn hành trình ở ô ${slotId}?`)) {
             await db.deleteGameState(slotId);
-            await db.deleteMemoryForSlot(slotId); // Also delete associated memories
+            await db.deleteMemoryForSlot(slotId);
             const allSlots = await db.getAllSaveSlots();
             dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
         }
@@ -279,99 +205,37 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         alert('Tính năng này sẽ được triển khai trong tương lai để kiểm tra và sửa lỗi file save.');
     }, []);
 
-    const handleGameStart = useCallback(async (gameStartData: GameStartData) => {
-        if (state.currentSlotId === null) return;
-        handleNavigate('gamePlay');
-    }, [state.currentSlotId]);
-
     const handleCreateAndStartGame = useCallback(async (worldCreationData: WorldCreationData, slotId: number) => {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang tạo dữ liệu thế giới...' } });
         try {
             const installedMods = state.installedMods.filter(m => m.isEnabled);
             let activeMods = (await Promise.all(installedMods.map(m => db.getModContent(m.modInfo.id)))).filter((mod): mod is FullMod => !!mod);
 
-            // FIX: Prioritize the imported mod data if it exists.
             if (worldCreationData.importedMod) {
-                // Prepend the imported mod to prioritize it.
-                // Remove any existing mod with the same ID from the active list to avoid conflicts.
                 activeMods = activeMods.filter(m => m.modInfo.id !== worldCreationData.importedMod!.modInfo.id);
                 activeMods.unshift(worldCreationData.importedMod);
             }
 
-            // @google-genai-fix: Construct a valid GameStartData object from WorldCreationData to match the expected type of createNewGameState.
             const gameStartData: GameStartData = {
-                // Map GameplaySettings properties
-                narrativeStyle: worldCreationData.narrativeStyle,
-                aiResponseWordCount: worldCreationData.aiResponseWordCount,
-                aiCreativityLevel: worldCreationData.aiCreativityLevel,
-                narrativePacing: worldCreationData.narrativePacing,
-                playerAgencyLevel: worldCreationData.playerAgencyLevel,
-                aiMemoryDepth: worldCreationData.aiMemoryDepth,
-                npcComplexity: worldCreationData.npcComplexity,
-                worldEventFrequency: worldCreationData.worldEventFrequency,
-                worldReactivity: worldCreationData.worldReactivity,
-                cultivationRateMultiplier: worldCreationData.cultivationRateMultiplier,
-                resourceRateMultiplier: worldCreationData.resourceRateMultiplier,
-                damageDealtMultiplier: worldCreationData.damageDealtMultiplier,
-                damageTakenMultiplier: worldCreationData.damageTakenMultiplier,
-                enableSurvivalMechanics: worldCreationData.enableSurvivalMechanics,
-                deathPenalty: worldCreationData.deathPenalty,
-                validationServiceCap: worldCreationData.validationServiceCap,
-                narrateSystemChanges: worldCreationData.narrateSystemChanges,
-                worldInterruptionFrequency: worldCreationData.worldInterruptionFrequency,
-                enableRealmSystem: worldCreationData.enableRealmSystem,
-                enableStorySystem: worldCreationData.enableStorySystem,
-            
-                // Map and default properties specific to GameStartData
-                identity: {
-                    name: worldCreationData.character.name,
-                    gender: worldCreationData.character.gender,
-                    origin: worldCreationData.character.bio,
-                    appearance: '', // To be filled by AI later
-                    age: 18, // Default age
-                    personality: 'Trung Lập', // Default personality
-                },
-                npcDensity: 'medium', // Default value as it's not in the new form
-                difficulty: 'medium', // Default value as it's not in the new form
-                initialBonuses: [], // Default value
-                initialItems: [], // Default value
-                spiritualRoot: { // Default value
-                    elements: [],
-                    quality: 'Phàm Căn',
-                    name: 'Phàm Nhân',
-                    description: 'Là một phàm nhân bình thường.',
-                    bonuses: [],
-                },
-                danhVong: { value: 0, status: 'Vô danh tiểu tốt' }, // Default value
-                initialCurrency: { 'Bạc': 50 }, // Default value
-                generationMode: worldCreationData.generationMode,
-                attributeSystem: worldCreationData.attributeSystem,
-                namedRealmSystem: worldCreationData.namedRealmSystem,
-                genre: worldCreationData.genre,
-                npcGenerationMode: worldCreationData.npcGenerationMode,
-                locationGenerationMode: worldCreationData.locationGenerationMode,
-                factionGenerationMode: worldCreationData.factionGenerationMode,
-                customNpcs: worldCreationData.customNpcs,
-                customLocations: worldCreationData.customLocations,
-                customFactions: worldCreationData.customFactions,
-                dlcs: worldCreationData.dlcs,
-                openingStory: worldCreationData.openingStory,
-                setting: worldCreationData.setting,
-                mainGoal: worldCreationData.mainGoal,
+                ...worldCreationData,
+                identity: { name: worldCreationData.character.name, gender: worldCreationData.character.gender, origin: worldCreationData.character.bio, appearance: '', age: 18, personality: 'Trung Lập' },
+                npcDensity: 'medium', difficulty: 'medium', initialBonuses: [], initialItems: [],
+                spiritualRoot: { elements: [], quality: 'Phàm Căn', name: 'Phàm Nhân', description: 'Là một phàm nhân bình thường.', bonuses: [] },
+                danhVong: { value: 0, status: 'Vô danh tiểu tốt' }, initialCurrency: { 'Bạc': 50 },
             };
 
             const newGameState = await createNewGameState(gameStartData, activeMods, state.activeWorldId, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
             
-            // Hydration is now a separate step, happens after load or just after create
             const hydratedGameState = await hydrateWorldData(newGameState, (msg) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } }));
             
             await db.saveGameState(slotId, hydratedGameState);
             const allSlots = await db.getAllSaveSlots();
             dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
             dispatch({ type: 'LOAD_GAME', payload: { gameState: hydratedGameState, slotId } });
-        } catch (error: any) {
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             console.error('Failed to create new game:', error);
-            alert(`Lỗi tạo thế giới: ${error.message}`);
+            alert(`Lỗi tạo thế giới: ${message}`);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
         }
     }, [state.installedMods, state.activeWorldId]);
@@ -381,43 +245,33 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         try {
             const { mod, characterData, openingNarrative, familyNpcs, dynamicNpcs, relationships } = await generateCompleteWorldFromText(description, characterName, 'fast');
 
+// @google-genai-fix: Added missing properties to 'gameStartData' to satisfy the 'GameStartData' type, preventing a TypeScript error.
             const gameStartData: GameStartData = {
-                ...DEFAULT_SETTINGS, // Start with default gameplay settings
+                ...DEFAULT_SETTINGS,
+                // Properties from WorldCreationData
+                setting: mod.modInfo.description || `Một thế giới được tạo bởi AI dựa trên: ${description}`,
+                mainGoal: '', // Quick create is a sandbox experience
+                importedMod: null, // The mod itself is passed as an activeMod, not imported via this prop
+                fanficMode: false,
+                hardcoreMode: false,
+                character: {
+                    name: characterName,
+                    gender: characterData.identity.gender,
+                    bio: characterData.identity.origin,
+                },
+                theme: DEFAULT_SETTINGS.theme,
+                realmTemplateId: mod.content.namedRealmSystems?.[0]?.id || 'custom',
+                dlcs: [],
+                
+                // Existing/Overwritten properties
                 identity: characterData.identity,
-                npcDensity: 'medium',
-                difficulty: 'medium',
-                initialBonuses: characterData.initialBonuses,
-                initialItems: characterData.initialItems,
-                spiritualRoot: characterData.spiritualRoot,
-                danhVong: { value: 0, status: 'Vô danh tiểu tốt' },
-                initialCurrency: characterData.initialCurrency,
-                generationMode: 'fast',
-                attributeSystem: mod.content.attributeSystem,
-                namedRealmSystem: mod.content.namedRealmSystems?.[0],
-                genre: mod.modInfo.tags?.[0] || 'Huyền Huyễn',
-                npcGenerationMode: 'CUSTOM',
-                locationGenerationMode: 'CUSTOM',
-                factionGenerationMode: 'CUSTOM',
-                // @google-genai-fix: Ensure all elements in customNpcs array conform to the ModNpc type by adding missing 'id' and mapping NPC objects correctly.
-                customNpcs: [
-                    ...(mod.content.worldData?.[0]?.initialNpcs || []).map((n, i) => ({ ...n, id: n.id || `gen_npc_${i}` })),
-                    ...dynamicNpcs.map((n): ModNpc => ({
-                        id: n.id,
-                        name: n.identity.name,
-                        status: n.status,
-                        description: n.identity.appearance,
-                        origin: n.identity.origin,
-                        personality: n.identity.personality,
-                        locationId: n.locationId,
-                        tags: [],
-                    }))
-                ],
-                // @google-genai-fix: Ensure all elements in customLocations array conform to the ModLocation type by providing a fallback 'id'.
-                customLocations: (mod.content.worldData?.[0]?.initialLocations || []).map(loc => ({
-                    ...loc,
-                    id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '')
-                })),
-                customFactions: mod.content.worldData?.[0]?.factions,
+                npcDensity: 'medium', difficulty: 'medium', initialBonuses: characterData.initialBonuses, initialItems: characterData.initialItems,
+                spiritualRoot: characterData.spiritualRoot, danhVong: { value: 0, status: 'Vô danh tiểu tốt' }, initialCurrency: characterData.initialCurrency,
+                generationMode: 'fast', attributeSystem: mod.content.attributeSystem, namedRealmSystem: mod.content.namedRealmSystems?.[0], genre: mod.modInfo.tags?.[0] || 'Huyền Huyễn',
+                npcGenerationMode: 'CUSTOM', locationGenerationMode: 'CUSTOM', factionGenerationMode: 'CUSTOM',
+                customNpcs: [...(mod.content.worldData?.[0]?.initialNpcs || []).map((n, i) => ({ ...n, id: n.id || `gen_npc_${i}` })), ...dynamicNpcs.map((n): ModNpc => ({ id: n.id, name: n.identity.name, status: n.status, description: n.identity.appearance, origin: n.identity.origin, personality: n.identity.personality, locationId: n.locationId, tags: [] }))],
+                customLocations: (mod.content.worldData?.[0]?.initialLocations || []).map(loc => ({ ...loc, id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '') })),
+                customFactions: mod.content.worldData?.[0]?.factions || [], 
                 openingStory: openingNarrative,
             };
             
@@ -426,12 +280,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const finalGameState: GameState = {
                 ...newGameState,
                 activeNpcs: [...newGameState.activeNpcs, ...familyNpcs],
-                playerCharacter: {
-                    ...newGameState.playerCharacter,
-                    relationships: [...newGameState.playerCharacter.relationships, ...relationships]
-                },
-                storyLog: [{...(newGameState.storyLog[0] || {id: 1, type: 'narrative', content: ''}), content: openingNarrative}],
-                isHydrated: true,
+                playerCharacter: { ...newGameState.playerCharacter, relationships: [...newGameState.playerCharacter.relationships, ...relationships] },
+                storyLog: [{...(newGameState.storyLog[0] || {id: 1, type: 'narrative', content: ''}), content: openingNarrative}], isHydrated: true,
             };
             delete finalGameState.creationData;
 
@@ -441,52 +291,16 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId } });
 
         } catch(e) {
-            console.error("Quick create failed:", e);
-            // FIX: Argument of type 'unknown' is not assignable to parameter of type 'string'.
-            // Safely get error message before passing it to alert.
             const message = e instanceof Error ? e.message : String(e);
+            console.error("Quick create failed:", e);
             alert(`Tạo nhanh thất bại: ${message}`);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
     }, []);
 
-    const handlePlayerAction = useCallback(async (text: string, type: 'say' | 'act', apCost: number, showNotification: (message: string) => void) => {
-        if (!state.gameState || state.isLoading || state.currentSlotId === null) return;
-
-        if (abortControllerRef.current) abortControllerRef.current.abort();
-        abortControllerRef.current = new AbortController();
-
-        dispatch({ type: 'PLAYER_ACTION_PENDING', payload: { text, type } });
-        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang suy nghĩ...' } });
-
-        try {
-            const onStreamUpdate = (content: string) => dispatch({ type: 'STREAMING_NARRATIVE_UPDATE', payload: content });
-            
-            const { finalState, narrativeEntryPayload } = await processPlayerAction(state.gameState, text, type, apCost, state.settings, showNotification, abortControllerRef.current.signal, state.currentSlotId, onStreamUpdate);
-
-            dispatch({ type: 'PLAYER_ACTION_RESOLVED', payload: { finalState, narrativeEntryPayload } });
-        } catch (error: any) {
-            if (error.name !== 'AbortError') {
-                console.error("Error processing player action:", error);
-                const errorEntry: StoryEntry = { id: Date.now(), type: 'system', content: `[Lỗi hệ thống: ${error.message}]` };
-                dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs) => gs ? { ...gs, storyLog: [...gs.storyLog.filter(e => !e.isPending), errorEntry] } : null });
-            }
-        } finally {
-            dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
-        }
-    }, [state.gameState, state.isLoading, state.settings, state.currentSlotId]);
-
-    const handleUpdatePlayerCharacter = useCallback((updater: (pc: PlayerCharacter) => PlayerCharacter) => {
-        dispatch({ type: 'UPDATE_GAME_STATE', payload: (gs) => gs ? { ...gs, playerCharacter: updater(gs.playerCharacter) } : null });
-    }, []);
-
     const quitGame = useCallback(() => {
-        if (window.confirm("Bạn có muốn lưu trước khi thoát không?")) {
-            handleSaveGame().then(() => dispatch({ type: 'QUIT_GAME' }));
-        } else {
-            dispatch({ type: 'QUIT_GAME' });
-        }
-    }, [handleSaveGame]);
+        dispatch({ type: 'QUIT_GAME' });
+    }, []);
 
     const handleSetActiveWorldId = useCallback(async (worldId: string) => {
         await db.setActiveWorldId(worldId);
@@ -524,23 +338,15 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     }, []);
     
     const handleEditWorld = useCallback(async (worldId: string) => {
-        // This is a placeholder for a more complex feature
         alert(`Chỉnh sửa thế giới '${worldId}' chưa được hỗ trợ.`);
     }, []);
 
-    // --- PART 3: EFFECTS ---
-
-    // Initial load
     useEffect(() => {
         const init = async () => {
             dispatch({ type: 'SET_MIGRATION_STATE', payload: { isMigrating: true, message: 'Đang khởi tạo cơ sở dữ liệu...' } });
             
             const [settings, saveSlots, activeWorldId, cachedBgs, installedMods] = await Promise.all([
-                db.getSettings(),
-                db.getAllSaveSlots(),
-                db.getActiveWorldId(),
-                db.getAllAssets(),
-                db.getModLibrary()
+                db.getSettings(), db.getAllSaveSlots(), db.getActiveWorldId(), db.getAllAssets(), db.getModLibrary()
             ]);
             
             dispatch({ type: 'SET_SETTINGS', payload: settings || DEFAULT_SETTINGS });
@@ -554,43 +360,31 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         };
         init();
         
-        // Setup audio context
         if (!ttsAudioRef.current) ttsAudioRef.current = new Audio();
         
     }, []);
 
-    // Effect for background music
     useEffect(() => {
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.loop = true;
         }
-
-        const audio = audioRef.current;
         const { backgroundMusicUrl, backgroundMusicVolume } = state.settings;
-
-        if (backgroundMusicUrl && audio.src !== backgroundMusicUrl) {
-            audio.src = backgroundMusicUrl;
-            audio.load();
-            audio.play().catch(error => console.warn("Lỗi tự động phát nhạc nền: Trình duyệt có thể đã chặn âm thanh tự động. Vui lòng tương tác với trang trước.", error));
-        } else if (!backgroundMusicUrl && audio.src) {
-            audio.pause();
-            audio.src = '';
+        if (backgroundMusicUrl && audioRef.current.src !== backgroundMusicUrl) {
+            audioRef.current.src = backgroundMusicUrl;
+            audioRef.current.play().catch(e => console.warn("Lỗi tự động phát nhạc:", e));
+        } else if (!backgroundMusicUrl && audioRef.current.src) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
         }
-
-        if (audio) {
-            audio.volume = backgroundMusicVolume;
-        }
-
+        audioRef.current.volume = backgroundMusicVolume;
     }, [state.settings.backgroundMusicUrl, state.settings.backgroundMusicVolume]);
 
-    // Update API Key Manager when settings change
     useEffect(() => {
         apiKeyManager.updateKeys(state.settings.apiKeys);
         apiKeyManager.updateModelRotationSetting(state.settings.enableAutomaticModelRotation);
     }, [state.settings.apiKeys, state.settings.enableAutomaticModelRotation]);
     
-    // Auto-save settings on change
     useEffect(() => {
         if (!hasLoadedInitialSettings.current) return;
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -601,7 +395,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current) };
     }, [state.settings, handleSettingsSave]);
     
-    // Update Theme & CSS Variables
     useEffect(() => {
         document.documentElement.className = state.settings.theme;
         const root = document.documentElement;
@@ -612,27 +405,19 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         }
     }, [state.settings.theme, state.settings.customThemeColors]);
 
-    // Apply global UI settings like zoom and text color
     useEffect(() => {
         const root = document.documentElement;
         root.style.fontSize = `${state.settings.zoomLevel}%`;
         root.style.setProperty('--text-color', state.settings.textColor);
     }, [state.settings.zoomLevel, state.settings.textColor]);
     
-    // Calculate storage usage
     useEffect(() => {
         const calculateUsage = async () => {
             if (navigator.storage && navigator.storage.estimate) {
                 const estimate = await navigator.storage.estimate();
                 const usage = estimate.usage || 0;
                 const quota = estimate.quota || 1;
-                dispatch({
-                    type: 'SET_STORAGE_USAGE',
-                    payload: {
-                        usageString: `${formatBytes(usage)} / ${formatBytes(quota)}`,
-                        percentage: (usage / quota) * 100
-                    }
-                });
+                dispatch({ type: 'SET_STORAGE_USAGE', payload: { usageString: `${formatBytes(usage)} / ${formatBytes(quota)}`, percentage: (usage / quota) * 100 } });
             }
         };
         const interval = setInterval(calculateUsage, 10000);
@@ -640,33 +425,11 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         return () => clearInterval(interval);
     }, []);
 
-
-    // --- PART 4: CONTEXT VALUE & RENDER ---
-
     const contextValue: AppContextType = {
-        state,
-        dispatch,
-        handleNavigate,
-        handleSettingChange,
-        handleDynamicBackgroundChange,
-        handleSettingsSave,
-        handleSlotSelection,
-        handleSaveGame,
-        handleDeleteGame,
-        handleVerifyAndRepairSlot,
-        handleGameStart,
-        handleCreateAndStartGame,
-        handleQuickCreateAndStartGame,
-        handlePlayerAction,
-        handleUpdatePlayerCharacter,
-        handleSetActiveWorldId,
-        quitGame,
-        speak,
-        cancelSpeech,
-        handleInstallMod,
-        handleToggleMod,
-        handleDeleteModFromLibrary,
-        handleEditWorld,
+        state, dispatch, handleNavigate, handleSettingChange, handleDynamicBackgroundChange, handleSettingsSave,
+        handleSlotSelection, handleDeleteGame, handleVerifyAndRepairSlot, handleCreateAndStartGame,
+        handleQuickCreateAndStartGame, handleSetActiveWorldId, quitGame, speak, cancelSpeech,
+        handleInstallMod, handleToggleMod, handleDeleteModFromLibrary, handleEditWorld,
     };
 
     return (

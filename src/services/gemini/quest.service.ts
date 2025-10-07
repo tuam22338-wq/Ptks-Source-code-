@@ -18,7 +18,7 @@ const questObjectiveSchema = {
 const questRewardSchema = {
     type: Type.OBJECT,
     properties: {
-        spiritualQi: { type: Type.NUMBER, description: "Lượng linh khí thưởng." },
+        spiritualQi: { type: Type.NUMBER, description: "Lượng linh khí hoặc điểm kinh nghiệm thưởng." },
         danhVong: { type: Type.NUMBER, description: "Lượng danh vọng thưởng." },
         items: {
             type: Type.ARRAY,
@@ -30,8 +30,11 @@ const questRewardSchema = {
         },
         currencies: {
             type: Type.OBJECT,
+            description: "Các loại tiền tệ thưởng. Ví dụ: { 'Bạc': 100, 'Linh thạch hạ phẩm': 5 }",
             properties: {
-                "Điểm Nguồn": { type: Type.NUMBER, description: "Lượng Điểm Nguồn thưởng." }
+                "Bạc": { type: Type.NUMBER },
+                "Linh thạch hạ phẩm": { type: Type.NUMBER },
+                "Điểm Nguồn": { type: Type.NUMBER }
             }
         }
     }

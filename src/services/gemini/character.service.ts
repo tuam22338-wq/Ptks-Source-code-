@@ -83,7 +83,7 @@ Khi gán "bonuses", bạn CHỈ ĐƯỢC PHÉP sử dụng tên thuộc tính t�
 
     const prompt = `Bạn là một nhà văn AI, chuyên tạo ra những nhân vật có chiều sâu cho game nhập vai giả tưởng. Dựa trên các ý tưởng của người chơi và hệ thống thuộc tính của thế giới, hãy diễn giải và kiến tạo nên một nhân vật hoàn chỉnh.
 
-    **MỆNH LỆNH TỐI THƯỢỢNG:** Phải bám sát 100% vào "Huyết Mạch / Chủng Tộc" và "Xuất Thân / Trưởng Thành" do người chơi cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra. KHÔNG được bịa ra một thân phận hay bối cảnh mới.
+    **MỆNH LỆNH TỐI THƯỢNG:** Phải bám sát 100% vào "Huyết Mạch / Chủng Tộc" và "Xuất Thân / Trưởng Thành" do người chơi cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra. KHÔNG được bịa ra một thân phận hay bối cảnh mới.
 
     **Ý Tưởng Cốt Lõi Của Người Chơi:**
     - **Thông tin cơ bản:**
@@ -206,7 +206,7 @@ export const generateInitialWorldDetails = async (
             personality: { type: Type.STRING, description: 'Tính cách của NPC (ví dụ: Trung Lập, Tà Ác, Hỗn Loạn, Chính Trực).' },
             motivation: { type: Type.STRING, description: "Động lực cốt lõi, sâu xa nhất của NPC. Ví dụ: 'Chứng tỏ bản thân', 'Tìm kiếm sự thật', 'Báo thù cho gia tộc'." },
             goals: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách 1-3 mục tiêu dài hạn mà NPC đang theo đuổi. Ví dụ: ['Trở thành đệ nhất luyện đan sư', 'Tìm ra kẻ đã hãm hại sư phụ']." },
-            realmName: { type: Type.STRING, enum: availableRealms.length > 0 ? availableRealms : ['Phàm Nhân'], description: 'Cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
+            realmName: { type: Type.STRING, description: `Cảnh giới tu luyện của NPC. PHẢI là một trong các giá trị sau: ${availableRealms.length > 0 ? availableRealms.join(', ') : 'Phàm Nhân'}` },
             element: { type: Type.STRING, enum: elements, description: 'Thuộc tính ngũ hành của NPC.' },
             initialEmotions: {
                 type: Type.OBJECT,
@@ -248,7 +248,7 @@ export const generateInitialWorldDetails = async (
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                                    attribute: { type: Type.STRING, description: `Tên thuộc tính. PHẢI là một trong các giá trị sau: ${ALL_ATTRIBUTES.join(', ')}` },
                                     value: { type: Type.NUMBER }
                                 },
                                 required: ['attribute', 'value']
@@ -258,7 +258,7 @@ export const generateInitialWorldDetails = async (
                     required: ['name', 'description', 'rank', 'effect'],
                 },
             },
-            locationId: { type: Type.STRING, enum: availableLocations },
+            locationId: { type: Type.STRING, description: `ID địa điểm NPC đang ở. PHẢI là một trong các giá trị sau: ${availableLocations.join(', ')}` },
         },
         required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'motivation', 'goals', 'realmName', 'element', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'LucLuong', 'LinhLucSatThuong', 'CanCot', 'NguyenThanKhang', 'SinhMenh', 'currency', 'initialEmotions'],
     };
@@ -335,7 +335,7 @@ Người chơi đã cung cấp một đoạn mở đầu. Nhiệm vụ của b�
         openingTaskInstruction = `
 **NHIỆM VỤ 2: VIẾT CỐT TRUYỆN MỞ ĐẦU**
 Viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
-- **MỆNH LỆNH TỐI THƯỢỢNG:** Phải bám sát 100% vào "Xuất thân & Câu chuyện nền" được cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra.
+- **MỆNH LỆNH TỐI THƯỢNG:** Phải bám sát 100% vào "Xuất thân & Câu chuyện nền" được cung cấp. Tôn trọng tuyệt đối câu chuyện người chơi đã tạo ra.
 - **Giọng văn:** ${narrativeStyle}.
 - **Nội dung:** Thiết lập bối cảnh nhân vật đang ở đâu, làm gì, cảm xúc của họ, và phải lồng ghép cả những người thân vừa được tạo ra ở Nhiệm vụ 1. Phải tuân thủ theo **HƯỚNG DẪN CHẾ ĐỘ CHƠI**.
 - **Yêu cầu độ dài:** ${openingModeInstruction}`;
@@ -354,6 +354,8 @@ Viết một đoạn văn mở đầu thật hấp dẫn cho người chơi.
     ---
     **HƯỚNG DẪN CHẾ ĐỘ CHƠI:**
     ${storyModeInstruction}
+    ---
+    **QUY TẮC SÁNG TẠO (CHỐNG LẶP LẠI):** Tránh các khuôn mẫu nhàm chán như "thanh mai trúc mã" hoặc "gia đình bị diệt môn" TRỪ KHI câu chuyện nền của người chơi rõ ràng gợi ý điều đó. Hãy tạo ra các mối quan hệ và kịch bản mở đầu độc đáo, bất ngờ và phù hợp với bối cảnh đã cho.
     ---
     **NHIỆM VỤ 1: TẠO GIA ĐÌNH & BẠN BÈ**
     Tạo ra 2 đến 4 NPC là người thân hoặc bạn bè gần gũi của nhân vật chính. Họ đều là **PHÀM NHÂN**, không phải tu sĩ, và sống cùng địa điểm với người chơi.

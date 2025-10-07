@@ -6,6 +6,8 @@ import { FaTimes, FaArrowLeft, FaArrowRight, FaSearch, FaFilter, FaSort, FaCheck
 import { useAppContext } from '../../../contexts/AppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 import { calculateDerivedStats } from '../../../utils/statCalculator';
+// FIX: Import useGameContext to access game-specific actions.
+import { useGameContext } from '../../../contexts/GameContext';
 
 interface InventoryModalProps {
     isOpen: boolean;
@@ -91,7 +93,9 @@ const ItemComparison: React.FC<{ item: InventoryItem; equipped: InventoryItem | 
 };
 
 export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
-    const { state, handlePlayerAction } = useAppContext();
+    // FIX: handlePlayerAction has been moved to GameContext.
+    const { state } = useAppContext();
+    const { handlePlayerAction } = useGameContext();
     const { gameState } = state;
     const { showNotification, closeInventoryModal } = useGameUIContext();
     

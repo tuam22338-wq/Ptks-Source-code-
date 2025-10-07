@@ -9,7 +9,8 @@ import InfoScreen from './features/Info/InfoScreen';
 import DeveloperConsole from './components/DeveloperConsole';
 import SpecialEffectsOverlay from './components/SpecialEffectsOverlay';
 import { AppProvider, useAppContext } from './contexts/AppContext';
-import NovelistScreen from './features/Novelist/NovelistScreen'; // Import a tela mới
+import { GameProvider } from './contexts/GameContext'; // ** MỚI: Import GameProvider **
+import NovelistScreen from './features/Novelist/NovelistScreen';
 import LoadGameScreen from './features/MainMenu/LoadGameScreen';
 
 // --- Lazy Loaded Components ---
@@ -69,7 +70,6 @@ const InkSplatterOverlay: React.FC = () => {
     const { state } = useAppContext();
     const theme = state.settings.theme;
 
-    // The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the comparison error here.
     if (state.settings.enablePerformanceMode || theme !== 'theme-ink-wash-bamboo') {
         return null;
     }
@@ -82,8 +82,8 @@ const InkSplatterOverlay: React.FC = () => {
                     top: `${Math.random() * 100}%`,
                     width: `${size}px`,
                     height: `${size}px`,
-                    animationDuration: `${Math.random() * 5 + 5}s`, // 5 to 10 seconds
-                    animationDelay: `${Math.random() * 10}s`, // 0 to 10 seconds
+                    animationDuration: `${Math.random() * 5 + 5}s`,
+                    animationDelay: `${Math.random() * 10}s`,
                 };
                 return <div className="ink-splatter" key={i} style={style}></div>;
             })}
@@ -93,10 +93,10 @@ const InkSplatterOverlay: React.FC = () => {
 
 
 const WeatherOverlay: React.FC = () => {
+    // ** MỚI: Truy cập gameState từ useAppContext vì nó vẫn là một phần của AppState **
     const { state } = useAppContext();
     const weather = state.gameState?.gameDate?.weather;
 
-    // HOOKS MUST BE CALLED BEFORE EARLY RETURNS
     const weatherEffect = useMemo(() => {
         switch (weather) {
             case 'RAIN':
@@ -169,7 +169,6 @@ const AppContent: React.FC = () => {
         if (isMigratingData) {
           return <LoadingScreen message={migrationMessage} />;
         }
-        // Only show fullscreen loader if it's NOT a gameplay AI response
         if (isLoading && view !== 'gamePlay') {
           return <LoadingScreen message={loadingMessage} />;
         }
@@ -185,7 +184,7 @@ const AppContent: React.FC = () => {
             return <LazySettingsPanel />;
           case 'info':
             return <LazyInfoScreen />;
-          case 'novelist': // Thêm case mới
+          case 'novelist':
             return <LazyNovelistScreen />;
           case 'aiTraining':
             return <LazyAiTrainingScreen />;
@@ -199,7 +198,12 @@ const AppContent: React.FC = () => {
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
             }
-            return <LazyGamePlayScreen />;
+            // ** MỚI: Bao bọc GamePlayScreen bằng GameProvider **
+            return (
+                <GameProvider initialGameState={gameState}>
+                    <LazyGamePlayScreen />
+                </GameProvider>
+            );
           default:
             return <MainMenu />;
         }
@@ -209,7 +213,6 @@ const AppContent: React.FC = () => {
     const forceFullScreenViews = ['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts', 'createScript', 'wikiScreen'];
     const isPotentiallyPanelScreen = !forceFullScreenViews.includes(view);
 
-    // Use flex-1 instead of flex-grow for better cross-browser compatibility in filling space. Add min-h-0 to prevent flex item overflow.
     let mainClasses = 'w-full flex-1 flex flex-col min-h-0';
     if (isPotentiallyPanelScreen) {
         switch (settings.layoutMode) {
@@ -217,11 +220,9 @@ const AppContent: React.FC = () => {
                 mainClasses += ' max-w-7xl mx-auto panel-container';
                 break;
             case 'mobile':
-                // Add padding for mobile view to prevent content touching screen edges.
                 mainClasses += ' px-4 sm:px-6';
                 break;
             case 'auto':
-                 // Apply panel class directly; its styles are controlled by media queries in index.css for responsiveness.
                 mainClasses += ' panel-container-auto md:max-w-7xl md:mx-auto';
                 break;
         }
