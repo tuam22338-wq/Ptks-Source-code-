@@ -17,6 +17,7 @@ import {
 } from "../constants";
 import type { GameState, CharacterAttributes, PlayerCharacter, NpcDensity, Inventory, Currency, CultivationState, GameDate, WorldState, Location, FullMod, NPC, Sect, DanhVong, ModNpc, ModLocation, RealmConfig, ModWorldData, DifficultyLevel, InventoryItem, CaveAbode, SystemInfo, SpiritualRoot, PlayerVitals, CultivationTechnique, ModAttributeSystem, StatBonus, GenerationMode, ForeshadowedEvent, NamedRealmSystem, GameplaySettings, WorldCreationData, Faction, GameStartData } from "../types";
 import { generateInitialWorldDetails } from '../services/geminiService';
+import { generateWorldEntities } from '../services/gemini/world.service';
 import * as db from '../services/dbService';
 import { calculateDerivedStats } from './statCalculator';
 // FIX: GameStartData is not exported from AppContext, it should be imported from types. This import is removed, and GameStartData is added to the import from '../types'.
@@ -324,27 +325,59 @@ export const hydrateWorldData = async (
     }
 
     const hydratedGameState: GameState = JSON.parse(JSON.stringify(partialGameState));
+    const { creationData } = hydratedGameState;
 
     try {
-        setLoadingMessage('Đang tạo dựng thế giới, chúng sinh và viết nên chương mở đầu...');
-
-        const { npcs, relationships, openingNarrative } = await generateInitialWorldDetails(
+        // --- AI ENTITY GENERATION ---
+        if (creationData && (creationData.npcGenerationMode === 'AI' || creationData.locationGenerationMode === 'AI' || creationData.factionGenerationMode === 'AI')) {
+            setLoadingMessage('AI đang sáng tạo thế giới...');
+            const { genre, setting } = hydratedGameState.playerCharacter.identity.origin.includes('Thế Giới Tùy Chỉnh')
+                ? { genre: 'Thế Giới Tùy Chỉnh', setting: 'Một thế giới mới được tạo ra từ ý niệm.' }
+                : { genre: 'Huyền Huyễn Tu Tiên', setting: 'Một thế giới tu tiên rộng lớn.' };
+            
+            const worldEntities = await generateWorldEntities(
+                genre,
+                setting,
+                creationData.npcGenerationMode === 'AI',
+                creationData.locationGenerationMode === 'AI',
+                creationData.factionGenerationMode === 'AI'
+            );
+            
+            if (worldEntities.npcs) {
+                const newNpcs = worldEntities.npcs.map(modNpc => convertModNpcToNpc(modNpc, hydratedGameState.realmSystem, hydratedGameState.attributeSystem));
+                hydratedGameState.activeNpcs.push(...newNpcs);
+            }
+            if (worldEntities.locations) {
+                const newLocations: Location[] = worldEntities.locations.map(modLoc => ({
+                    ...modLoc,
+                    id: modLoc.id || modLoc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+                }));
+                hydratedGameState.discoveredLocations.push(...newLocations);
+                // Ensure starting location is valid if it was generated
+                if (!hydratedGameState.discoveredLocations.find(l => l.id === hydratedGameState.playerCharacter.currentLocationId)) {
+                    hydratedGameState.playerCharacter.currentLocationId = newLocations[0]?.id || 'unknown_start';
+                }
+            }
+            if (worldEntities.factions) {
+                 worldEntities.factions.forEach(faction => {
+                     if (!hydratedGameState.playerCharacter.reputation.some(r => r.factionName === faction.name)) {
+                         hydratedGameState.playerCharacter.reputation.push({
+                             factionName: faction.name,
+                             value: 0,
+                             status: 'Trung Lập',
+                         });
+                     }
+                 });
+            }
+        }
+        
+        // --- NARRATIVE GENERATION ---
+        setLoadingMessage('Đang viết nên chương mở đầu...');
+        const { openingNarrative } = await generateInitialWorldDetails(
             hydratedGameState,
             hydratedGameState.creationData.generationMode
         );
-
-        // Family members are part of the story, always add them and their relationships.
-        const familyNpcs = npcs.filter(n => n.id.startsWith('family-npc-'));
-        hydratedGameState.playerCharacter.relationships.push(...relationships);
-        hydratedGameState.activeNpcs.push(...familyNpcs);
-
-        // Only add randomly generated "dynamic" NPCs if the user selected 'AI' mode.
-        if (hydratedGameState.creationData.npcGenerationMode === 'AI') {
-            const dynamicNpcs = npcs.filter(n => n.id.startsWith('dynamic-npc-'));
-            hydratedGameState.activeNpcs.push(...dynamicNpcs);
-        }
-
-        // Always use the AI opening narrative
+        
         if (hydratedGameState.storyLog.length > 0) {
             hydratedGameState.storyLog[0] = { ...hydratedGameState.storyLog[0], content: openingNarrative };
         } else {
@@ -352,15 +385,18 @@ export const hydrateWorldData = async (
         }
 
     } catch (error: any) {
-        console.error("Hydration task [generateInitialWorldDetails] failed:", error);
+        console.error("Hydration task failed:", error);
+        const errorMessage = "\n\n(Lỗi Sáng Thế: AI không thể kiến tạo thế giới. Một vài chi tiết có thể bị thiếu hoặc không nhất quán.)";
         if (hydratedGameState.storyLog.length > 0) {
-             hydratedGameState.storyLog[0].content += "\n\n(Lỗi khi tạo thế giới, một vài chi tiết có thể bị thiếu.)";
+             hydratedGameState.storyLog[0].content += errorMessage;
+        } else {
+            hydratedGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: errorMessage.trim()});
         }
     }
 
-    // --- 4. Finalize ---
+    // --- FINALIZE ---
     hydratedGameState.isHydrated = true;
-    delete hydratedGameState.creationData; // Clean up the creation data
+    delete hydratedGameState.creationData;
     
     setLoadingMessage('Hoàn tất sáng thế!');
     
@@ -386,39 +422,22 @@ export const createNewGameState = async (
         ...gameplaySettingsData
      } = gameStartData;
 
-    // --- DYNAMIC WORLD LOADING ---
     let modWorldData: ModWorldData;
     const worldMod = activeMods.find(m => m.content.worldData && m.content.worldData.length > 0);
 
     if (worldMod?.content.worldData?.[0]) {
-        // Case 1: A full world mod is active. Use it as the base.
         modWorldData = worldMod.content.worldData[0];
         activeWorldId = modWorldData.id;
         console.log(`Đang tải dữ liệu thế giới từ mod: ${modWorldData.name}`);
     } else {
-        // Case 2: No world mod. Dynamically construct world data from user's creation settings.
         console.log(`Không tìm thấy mod thế giới. Đang kiến tạo thế giới mới từ thiết lập của người chơi.`);
-
-        let factions: Faction[] = [];
-        if (factionGenerationMode === 'CUSTOM' && customFactions) {
-            factions = customFactions;
-        } else if (factionGenerationMode === 'AI') {
-            factions = DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.factions || [];
-        }
-
-        let locations: ModLocation[] = [];
-        if (locationGenerationMode === 'CUSTOM' && customLocations) {
-            locations = customLocations as ModLocation[];
-        } else if (locationGenerationMode === 'AI') {
-            locations = (DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.initialLocations || []) as ModLocation[];
-        }
-
-        let npcs: (Omit<ModNpc, 'id'> & { id?: string })[] = [];
-        if (npcGenerationMode === 'CUSTOM' && customNpcs) {
-            npcs = customNpcs;
-        } else if (npcGenerationMode === 'AI') {
-            npcs = DEFAULT_WORLDS_DATA.find(w => w.id === 'khoi_nguyen_gioi')?.initialNpcs || [];
-        }
+        
+        // If generation modes are AI, start with empty arrays. They will be populated by hydrateWorldData.
+        // If CUSTOM, use the user-provided data.
+        // If NONE, the arrays will remain empty.
+        const factions: Faction[] = (factionGenerationMode === 'CUSTOM' && customFactions) ? customFactions : [];
+        const locations: ModLocation[] = (locationGenerationMode === 'CUSTOM' && customLocations) ? customLocations as ModLocation[] : [];
+        const npcs: (Omit<ModNpc, 'id'> & { id?: string })[] = (npcGenerationMode === 'CUSTOM' && customNpcs) ? customNpcs : [];
 
         modWorldData = {
             id: `custom_world_${Date.now()}`,
@@ -426,7 +445,7 @@ export const createNewGameState = async (
             description: setting || 'Một thế giới mới được tạo ra từ ý niệm.',
             startingYear: 1,
             eraName: 'Kỷ Nguyên Mới',
-            majorEvents: [], // Custom worlds always start with a clean slate
+            majorEvents: [],
             factions: factions,
             initialLocations: locations,
             initialNpcs: npcs,
@@ -434,9 +453,6 @@ export const createNewGameState = async (
         activeWorldId = modWorldData.id;
     }
     
-    console.log(`Đang tải dữ liệu thế giới từ: ${modWorldData.name}`);
-
-    // --- USE THE CONSTRUCTED WORLD DATA ---
     const factionsToUse = modWorldData.factions || [];
     const worldMapToUse = (modWorldData.initialLocations || []).map(loc => ({
         ...loc,
@@ -446,12 +462,13 @@ export const createNewGameState = async (
     const startingYear = modWorldData.startingYear;
     const eraName = modWorldData.eraName;
 
-    const startingLocation = worldMapToUse.length > 0
-        ? worldMapToUse[Math.floor(Math.random() * worldMapToUse.length)]
-        : null;
-
-    if (!startingLocation) {
-        throw new Error("Không thể xác định địa điểm bắt đầu. Vui lòng cung cấp ít nhất một địa điểm nếu ở chế độ 'Tự Định Nghĩa'.");
+    let startingLocation = worldMapToUse.find(loc => loc.id === 'lang_khoi_nguyen') || worldMapToUse[0];
+    if (!startingLocation && worldMapToUse.length > 0) {
+        startingLocation = worldMapToUse[Math.floor(Math.random() * worldMapToUse.length)];
+    }
+    
+    if (!startingLocation && locationGenerationMode !== 'AI') {
+         throw new Error("Không thể xác định địa điểm bắt đầu. Vui lòng cung cấp ít nhất một địa điểm nếu ở chế độ 'Tự Định Nghĩa'.");
     }
     
     // --- Realm System Loading (Data-driven) ---
@@ -490,8 +507,6 @@ export const createNewGameState = async (
             };
         }
         
-        // NEW GENERIC FALLBACK: If no system was loaded from user input or mods, use the default cultivation system.
-        // This decouples the logic from the 'genre' field.
         if (realmSystemToUse.length === 0) {
             realmSystemToUse = REALM_SYSTEM.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
             realmSystemInfoToUse = {
@@ -590,7 +605,7 @@ export const createNewGameState = async (
         inventory: initialInventory,
         currencies: initialCurrencies,
         cultivation: initialCultivation,
-        currentLocationId: startingLocation.id,
+        currentLocationId: startingLocation?.id || 'unknown_start',
         equipment: {},
         vitals: initialVitals,
         mainCultivationTechniqueInfo: null,
@@ -620,7 +635,7 @@ export const createNewGameState = async (
     
     const allNpcs = [...initialNpcsFromData];
     
-    const initialStory = [ { id: 1, type: 'narrative' as const, content: openingStory || `Bạn bắt đầu hành trình của mình tại ${startingLocation.name}. Thế giới xung quanh đang dần được kiến tạo...` } ];
+    const initialStory = [ { id: 1, type: 'narrative' as const, content: openingStory || `Bạn bắt đầu hành trình của mình. Thế giới xung quanh đang dần được kiến tạo...` } ];
     const initialGameDate: GameDate = {
         era: eraName,
         year: startingYear,
@@ -646,7 +661,7 @@ export const createNewGameState = async (
         }));
     }
 
-    const discoveredLocations: Location[] = [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))];
+    const discoveredLocations: Location[] = startingLocation ? [startingLocation, ...worldMapToUse.filter(l => l.neighbors.includes(startingLocation.id))] : [...worldMapToUse];
 
     const newGameState: GameState = {
         version: CURRENT_GAME_VERSION,

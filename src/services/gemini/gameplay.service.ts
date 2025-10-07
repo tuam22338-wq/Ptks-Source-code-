@@ -162,15 +162,16 @@ export async function* generateActionResponseStream(
                 required: ['currentRealmId', 'currentStageId']
             },
             attributes: {
-                type: Type.OBJECT,
-                description: `Đối tượng chứa các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS. Ví dụ: { "luc_luong": { "value": 15 }, "sinh_menh": { "value": 120, "maxValue": 120 } }`,
-                additionalProperties: {
+                type: Type.ARRAY,
+                description: "Một danh sách các thuộc tính cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS.",
+                items: {
                     type: Type.OBJECT,
                     properties: {
+                        id: { type: Type.STRING, description: "ID của thuộc tính, vd: 'luc_luong', 'sinh_menh'." },
                         value: { type: Type.NUMBER },
-                        maxValue: { type: Type.NUMBER }
+                        maxValue: { type: Type.NUMBER, description: "Chỉ điền cho các thuộc tính VITAL như 'sinh_menh'." }
                     },
-                    required: ['value']
+                    required: ['id', 'value']
                 }
             }
         },

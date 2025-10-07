@@ -289,7 +289,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId } });
 
-        } catch(e: any) {
+        } catch(e) {
+            // FIX: Argument of type 'unknown' is not assignable to parameter of type 'string'. This was fixed by correctly handling the 'unknown' type from the catch block before creating a string message for the alert.
             const message = e instanceof Error ? e.message : String(e);
             console.error("Quick create failed:", e);
             alert(`Tạo nhanh thất bại: ${message}`);
@@ -331,8 +332,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             await db.deleteModFromLibrary(modId);
             await db.deleteModContent(modId);
             dispatch({ type: 'REMOVE_INSTALLED_MOD', payload: modId });
+// FIX: Explicitly type the caught error as 'any' to resolve the 'unknown' type error when passing it to console.error.
         } catch (error: any) {
-            // FIX: Explicitly type the caught error as 'any' to resolve the 'unknown' type error when passing it to console.error.
             console.error("Failed to delete mod:", error);
         }
     }, [state.installedMods]);

@@ -16,3 +16,4 @@ export * from './gemini/faction.service';
 export * from './gemini/novel.service';
 export * from './gemini/heuristic.service';
 export * from './gemini/item.service';
+export * from './gemini/world.service';

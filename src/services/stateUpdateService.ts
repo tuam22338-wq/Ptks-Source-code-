@@ -1,4 +1,4 @@
-import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC, Currency, Location, Faction, MajorEvent } from '../types';
+import type { GameState, MechanicalIntent, PlayerCharacter, InventoryItem, CultivationTechnique, ActiveEffect, ActiveQuest, NPC, Currency, Location, Faction, MajorEvent, CharacterAttributes } from '../types';
 import { calculateDerivedStats } from '../utils/statCalculator';
 
 /**
@@ -211,9 +211,24 @@ export const applyMechanicalChanges = (
     if (intent.newNpcsCreated) {
         intent.newNpcsCreated.forEach(npcData => {
             if (!nextState.activeNpcs.some((n: NPC) => n.identity.name === npcData.identity.name)) {
+                const { attributes: attributesArray, ...restOfNpcData } = npcData as any;
+                
+                const attributesAsRecord: CharacterAttributes = {};
+                if (Array.isArray(attributesArray)) {
+                    attributesArray.forEach(attr => {
+                        if (attr.id && attr.value !== undefined) {
+                            attributesAsRecord[attr.id] = { value: attr.value };
+                            if (attr.maxValue !== undefined) {
+                                attributesAsRecord[attr.id].maxValue = attr.maxValue;
+                            }
+                        }
+                    });
+                }
+
                 const newNpc: NPC = {
-                    ...npcData,
+                    ...(restOfNpcData as Omit<NPC, 'id' | 'attributes'>),
                     id: `npc-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                    attributes: attributesAsRecord,
                     locationId: pc.currentLocationId, // Assume they appear where the player is
                     emotions: { trust: 50, fear: 10, anger: 10 },
                     memory: { shortTerm: [], longTerm: [] },
