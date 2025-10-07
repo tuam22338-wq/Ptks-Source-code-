@@ -1,6 +1,6 @@
-import React, { useState, memo, useMemo } from 'react';
+import React, { useState, memo, useMemo, useRef, useEffect } from 'react';
 import type { StoryEntry, NPC, GameState, MechanicalIntent, ActiveQuest } from '../../../types';
-import { FaVolumeUp, FaTimes, FaArrowUp, FaArrowDown, FaBook } from 'react-icons/fa';
+import { FaVolumeUp, FaTimes, FaArrowUp, FaArrowDown, FaBook, FaInfoCircle } from 'react-icons/fa';
 import { UI_ICONS, ITEM_QUALITY_STYLES, CURRENCY_DEFINITIONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
@@ -128,6 +128,68 @@ const NpcTooltip: React.FC<{ npc: NPC; gameState: GameState; onClose: () => void
 };
 
 
+// --- NEW NpcPopover Component ---
+const NpcPopover: React.FC<{
+    npc: NPC;
+    targetRect: DOMRect;
+    onClose: () => void;
+    onShowDetails: () => void;
+    gameState: GameState;
+}> = ({ npc, targetRect, onClose, onShowDetails, gameState }) => {
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+
+    useEffect(() => {
+        if (popoverRef.current) {
+            const popoverRect = popoverRef.current.getBoundingClientRect();
+            let top = targetRect.top - popoverRect.height - 8; // Position above the text
+            let left = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
+
+            // Adjust if out of viewport
+            if (top < 0) top = targetRect.bottom + 8;
+            if (left < 0) left = 0;
+            if (left + popoverRect.width > window.innerWidth) {
+                left = window.innerWidth - popoverRect.width;
+            }
+
+            setPosition({ top, left });
+        }
+    }, [targetRect]);
+    
+    const realm = gameState.realmSystem.find(r => r.id === npc.cultivation.currentRealmId);
+    const stage = realm?.stages.find(s => s.id === npc.cultivation.currentStageId);
+
+    return (
+        <div className="fixed inset-0 z-40" onClick={onClose}>
+            <div
+                ref={popoverRef}
+                className="fixed p-3 rounded-lg shadow-xl text-white w-64 animate-fade-in"
+                style={{ 
+                    top: position.top, 
+                    left: position.left,
+                    backgroundColor: 'var(--bg-color)',
+                    boxShadow: 'var(--shadow-raised)',
+                    border: '1px solid var(--shadow-light)',
+                    animationDuration: '150ms'
+                }}
+                onClick={e => e.stopPropagation()}
+            >
+                <h5 className="font-bold font-title text-amber-300">{npc.identity.name}</h5>
+                <p className="text-xs italic text-gray-400 my-1">"{npc.status}"</p>
+                {realm && stage && <p className="text-sm font-semibold text-cyan-400">{realm.name} - {stage.name}</p>}
+                <button 
+                    onClick={onShowDetails} 
+                    className="w-full mt-2 text-sm text-center py-1 rounded transition-colors"
+                    style={{ backgroundColor: 'rgba(var(--primary-accent-color-rgb), 0.2)', color: 'var(--primary-accent-color)'}}
+                >
+                    Xem Chi Tiết
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
 // --- InteractiveText Component ---
 const InteractiveText: React.FC<{
     text: string;
@@ -135,11 +197,22 @@ const InteractiveText: React.FC<{
     gameState: GameState;
 }> = ({ text, npcs, gameState }) => {
     const [tooltipData, setTooltipData] = useState<{ npc: NPC } | null>(null);
+    const [popoverData, setPopoverData] = useState<{ npc: NPC; targetRect: DOMRect } | null>(null);
 
     const handleNpcClick = (npc: NPC, event: React.MouseEvent) => {
         event.stopPropagation();
-        setTooltipData({ npc });
+        const rect = (event.target as HTMLElement).getBoundingClientRect();
+        setPopoverData({ npc, targetRect: rect });
     };
+
+    const handleShowDetails = () => {
+        if (popoverData) {
+            setTooltipData({ npc: popoverData.npc });
+            setPopoverData(null);
+        }
+    };
+
+    const closePopover = () => setPopoverData(null);
 
     const content = useMemo(() => {
         if (!text || npcs.length === 0) return text;
@@ -173,6 +246,7 @@ const InteractiveText: React.FC<{
     return (
         <>
             {tooltipData && <NpcTooltip npc={tooltipData.npc} gameState={gameState} onClose={() => setTooltipData(null)} />}
+            {popoverData && <NpcPopover npc={popoverData.npc} targetRect={popoverData.targetRect} onClose={closePopover} onShowDetails={handleShowDetails} gameState={gameState} />}
             {content}
         </>
     );

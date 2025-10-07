@@ -14,25 +14,30 @@ export const generateCorrectedGameState = async (
     problemDescription: string
 ): Promise<Partial<GameState>> => {
 
-    // Define a schema that represents the GameState. This is a simplified version.
-    // A full implementation would require a much more detailed schema.
     const gameStateSchema = {
         type: Type.OBJECT,
         properties: {
             playerCharacter: {
                 type: Type.OBJECT,
                 properties: {
-                    attributes: { type: Type.OBJECT }
+                    attributes: { type: Type.OBJECT },
+                    inventory: { type: Type.OBJECT },
+                    currencies: { type: Type.OBJECT },
+                    cultivation: { type: Type.OBJECT },
                 }
             },
-            activeNpcs: { type: Type.ARRAY, items: { type: Type.OBJECT } },
-            storyLog: { type: Type.ARRAY, items: { type: Type.OBJECT } },
+            activeNpcs: {
+                type: Type.ARRAY,
+                items: { type: Type.OBJECT }
+            },
+            activeQuests: {
+                type: Type.ARRAY,
+                items: { type: Type.OBJECT }
+            },
         },
-        // We only require the parts we are trying to fix for efficiency
-        required: ['playerCharacter'] 
     };
 
-    const prompt = `Bạn là một AI chuyên sửa lỗi dữ liệu game. Dữ liệu GameState sau đây bị hỏng hoặc không nhất quán.
+    const prompt = `Bạn là một AI chuyên sửa lỗi dữ liệu game ("Thiên Đạo Giám Sát"). Dữ liệu GameState sau đây bị hỏng hoặc không nhất quán.
     
 **Vấn đề được phát hiện:**
 ${problemDescription}
@@ -43,8 +48,8 @@ ${JSON.stringify(gameState, null, 2)}
 \`\`\`
 
 **Nhiệm vụ:**
-Phân tích vấn đề và dữ liệu. Sau đó, trả về một đối tượng JSON chứa phiên bản đã được sửa lỗi của GameState.
-Chỉ sửa những gì cần thiết để giải quyết vấn đề. Giữ nguyên các phần khác của dữ liệu.`;
+Phân tích vấn đề và dữ liệu. Sau đó, trả về một đối tượng JSON chứa phiên bản đã được sửa lỗi của các thành phần trong GameState.
+QUAN TRỌNG: Nếu bạn sửa một thuộc tính của người chơi (ví dụ: 'attributes'), hãy trả về TOÀN BỘ đối tượng \`playerCharacter\` với giá trị đã được cập nhật. Tương tự với \`activeNpcs\`. Điều này đảm bảo dữ liệu được đồng bộ chính xác.`;
 
     const settings = await db.getSettings();
     if (!settings) {

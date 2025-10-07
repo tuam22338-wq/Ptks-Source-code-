@@ -136,27 +136,6 @@ export async function* generateActionResponseStream(
     - **Nhân quả bất ngờ:** "Liệu có một hệ quả không lường trước được nào có thể xảy ra không? (Vd: Giết một con yêu thú yếu có thể khiến yêu thú mẹ mạnh hơn xuất hiện)."
     Quá trình này PHẢI được ghi lại trong \`thought\` để đảm bảo bạn đã suy nghĩ thấu đáo trước khi viết tường thuật.`;
 
-    const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
-    const validStatNames = attributeSystem.definitions.map(def => def.name);
-    
-    // Dynamically build the schema for NPC attributes to avoid schema validation errors.
-    const npcAttributeProperties: Record<string, any> = {};
-    const attributeDefsForNpc = attributeSystem.definitions.filter(
-        def => def.type === 'PRIMARY' || def.type === 'VITAL'
-    );
-
-    for (const def of attributeDefsForNpc) {
-        npcAttributeProperties[def.id] = {
-            type: Type.OBJECT,
-            description: def.name,
-            properties: {
-                value: { type: Type.NUMBER },
-                ...(def.type === 'VITAL' && { maxValue: { type: Type.NUMBER } })
-            },
-            required: ['value']
-        };
-    }
-
     const newNpcSchema = {
         type: Type.OBJECT,
         description: "Đối tượng NPC hoàn chỉnh.",
@@ -184,8 +163,7 @@ export async function* generateActionResponseStream(
             },
             attributes: {
                 type: Type.OBJECT,
-                description: `Các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS.`,
-                properties: npcAttributeProperties
+                description: `Đối tượng chứa các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS. Ví dụ: { "luc_luong": { "value": 15 }, "sinh_menh": { "value": 120, "maxValue": 120 } }`,
             }
         },
         required: ['identity', 'status', 'cultivation', 'attributes']
@@ -200,9 +178,9 @@ export async function* generateActionResponseStream(
           type: Type.OBJECT,
           description: "Tất cả các thay đổi cơ chế game được suy ra từ đoạn tường thuật.",
           properties: {
-            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatIds }, change: { type: Type.NUMBER, description: "Thay đổi giá trị hiện tại của chỉ số." }, changeMax: { type: Type.NUMBER, description: "Thay đổi giá trị TỐI ĐA của chỉ số (chỉ dành cho Sinh Mệnh, Linh Lực, Độ No, Độ Khát...)." } }, required: ['attribute'] } },
-            currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING, enum: Object.keys(CURRENCY_DEFINITIONS) }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
-            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
+            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, change: { type: Type.NUMBER, description: "Thay đổi giá trị hiện tại của chỉ số." }, changeMax: { type: Type.NUMBER, description: "Thay đổi giá trị TỐI ĐA của chỉ số (chỉ dành cho Sinh Mệnh, Linh Lực, Độ No, Độ Khát...)." } }, required: ['attribute'] } },
+            currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
+            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
             itemsLost: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
             itemIdentified: {
                 type: Type.OBJECT,
@@ -214,7 +192,7 @@ export async function* generateActionResponseStream(
                         items: {
                             type: Type.OBJECT,
                             properties: {
-                                attribute: { type: Type.STRING, enum: validStatNames },
+                                attribute: { type: Type.STRING },
                                 value: { type: Type.NUMBER }
                             },
                             required: ['attribute', 'value']
@@ -225,7 +203,7 @@ export async function* generateActionResponseStream(
             },
             newTechniques: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] } }, required: ['name', 'description', 'type', 'rank'] } },
             newQuests: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, source: { type: Type.STRING }, objectives: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] }, description: { type: Type.STRING }, target: { type: Type.STRING }, required: { type: Type.NUMBER } }, required: ['type', 'description', 'target', 'required'] } } }, required: ['title', 'description', 'source', 'objectives'] } },
-            newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, enum: validStatNames }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
+            newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
             npcEncounters: { type: Type.ARRAY, items: { type: Type.STRING } },
             newNpcsCreated: { type: Type.ARRAY, items: newNpcSchema },
             newLocationsDiscovered: { type: Type.ARRAY, description: "Các địa điểm mới được giới thiệu trong tường thuật.", items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Thành Thị', 'Thôn Làng', 'Hoang Dã', 'Sơn Mạch', 'Thánh Địa', 'Bí Cảnh', 'Quan Ải'] } } } },
@@ -239,7 +217,6 @@ export async function* generateActionResponseStream(
             stageChange: { type: Type.STRING, description: "ID của tiểu cảnh giới mới nếu người chơi đột phá. Ví dụ: 'tc_so_ky'." },
             dialogueState: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['START', 'END'] }, npcName: { type: Type.STRING, description: "Tên NPC để bắt đầu hội thoại." } } },
             knownRecipeIdsGained: { type: Type.ARRAY, items: { type: Type.STRING } },
-// FIX: Removed duplicate `itemIdentified` property.
           }
         }
       },

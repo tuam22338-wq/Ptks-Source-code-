@@ -1,6 +1,7 @@
 import type { GameState, HeuristicFixReport } from '../types';
 import * as db from './dbService';
 import { generateCorrectedGameState } from './gemini/heuristic.service';
+import { sanitizeGameState } from '../utils/gameStateSanitizer';
 
 /**
  * Scans the game state for logical inconsistencies.
@@ -11,7 +12,6 @@ const detectInconsistencies = (gameState: GameState): string[] => {
     const problems: string[] = [];
     const { playerCharacter, activeNpcs } = gameState;
 
-    // Player checks
     if (playerCharacter) {
         const hp = playerCharacter.attributes.sinh_menh;
         if (hp && hp.value < 0) {
@@ -20,20 +20,31 @@ const detectInconsistencies = (gameState: GameState): string[] => {
         if (hp && hp.maxValue !== undefined && hp.value > hp.maxValue) {
             problems.push(`Player HP (${hp.value}) is greater than max HP (${hp.maxValue}).`);
         }
+        if (playerCharacter.cultivation && playerCharacter.cultivation.spiritualQi < 0) {
+            problems.push(`Player spiritualQi is negative (${playerCharacter.cultivation.spiritualQi}).`);
+        }
+        for (const currency in playerCharacter.currencies) {
+            const amount = playerCharacter.currencies[currency as keyof typeof playerCharacter.currencies];
+            if (amount && amount < 0) {
+                problems.push(`Player has negative currency: ${currency} (${amount}).`);
+            }
+        }
+        playerCharacter.inventory.items.forEach(item => {
+            if (item.quantity < 0) {
+                problems.push(`Player has negative quantity for item '${item.name}' (${item.quantity}).`);
+            }
+        });
     }
 
-    // NPC checks
     activeNpcs.forEach(npc => {
         const npcHp = npc.attributes.sinh_menh;
         if (npcHp && npcHp.value < 0) {
             problems.push(`NPC ${npc.identity.name} HP is negative (${npcHp.value}). It should be >= 0.`);
         }
+        if (npc.cultivation && npc.cultivation.spiritualQi < 0) {
+            problems.push(`NPC ${npc.identity.name} spiritualQi is negative (${npc.cultivation.spiritualQi}).`);
+        }
     });
-
-    // Add more checks here...
-    // - Quest state vs. completed objectives
-    // - Player location validity
-    // - Inventory item validity
 
     return problems;
 };
@@ -52,40 +63,43 @@ export const runHeuristicFixer = async (
         return { newState: gameState, notifications: [] };
     }
 
-    console.log(`[Heuristic Fixer] Detected ${problems.length} potential issue(s).`, problems);
-
-    let currentState = { ...gameState };
+    console.log(`[Heuristic Fixer] Detected ${problems.length} potential issue(s). Attempting AI correction.`, problems);
     const notifications: string[] = [];
 
-    for (const problem of problems) {
-        try {
-            // For now, we'll try a simple programmatic fix first.
-            let fixed = false;
-            if (problem.startsWith('Player HP is negative')) {
-                currentState.playerCharacter.attributes.sinh_menh.value = 0;
-                fixed = true;
-            } else if (problem.startsWith('Player HP is greater than max HP')) {
-                currentState.playerCharacter.attributes.sinh_menh.value = currentState.playerCharacter.attributes.sinh_menh.maxValue!;
-                fixed = true;
-            }
-            
-            // PERFORMANCE FIX: The AI call is removed. We only perform fast, programmatic fixes.
-            // The solution text is now always the programmatic one.
-            const solution = 'Thiên Đạo đã can thiệp: Tự động điều chỉnh giá trị về mức hợp lệ.';
-            
-            // Log the fix
-            const logEntry: Omit<HeuristicFixReport, 'id'> = {
-                timestamp: new Date().toISOString(),
-                problem: problem,
-                solution: solution,
-            };
-            await db.addHeuristicFixLog(logEntry);
-            notifications.push('[Thiên Đạo] Phát hiện nhân quả rối loạn, đã tự động điều chỉnh.');
+    try {
+        const problemDescription = `Phát hiện ${problems.length} vấn đề tiềm ẩn:\n- ${problems.join('\n- ')}`;
+        
+        const partialGameState = {
+            playerCharacter: gameState.playerCharacter,
+            activeNpcs: gameState.activeNpcs,
+            activeQuests: gameState.playerCharacter.activeQuests,
+        };
 
-        } catch (error) {
-            console.error(`[Heuristic Fixer] Failed to fix problem: "${problem}"`, error);
+        const correctedData = await generateCorrectedGameState(partialGameState, problemDescription);
+
+        const newState = { ...gameState };
+        if (correctedData.playerCharacter) {
+            newState.playerCharacter = correctedData.playerCharacter;
         }
-    }
+        if (correctedData.activeNpcs) {
+            newState.activeNpcs = correctedData.activeNpcs;
+        }
+        
+        const solution = "Thiên Đạo đã can thiệp: Đã phân tích và điều chỉnh lại dữ liệu game không nhất quán bằng AI.";
 
-    return { newState: currentState, notifications };
+        const logEntry: Omit<HeuristicFixReport, 'id'> = {
+            timestamp: new Date().toISOString(),
+            problem: problems.join('; '),
+            solution: solution,
+        };
+        await db.addHeuristicFixLog(logEntry);
+        notifications.push('[Thiên Đạo] Phát hiện nhân quả rối loạn, đã tự động điều chỉnh bằng AI.');
+
+        return { newState: sanitizeGameState(newState), notifications };
+
+    } catch (error) {
+        console.error(`[Heuristic Fixer] AI-based fix failed:`, error);
+        notifications.push('[Thiên Đạo] Can thiệp thất bại, thiên cơ hỗn loạn.');
+        return { newState: gameState, notifications }; // Return original state on failure
+    }
 };

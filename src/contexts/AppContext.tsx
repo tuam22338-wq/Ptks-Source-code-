@@ -332,7 +332,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             await db.deleteModContent(modId);
             dispatch({ type: 'REMOVE_INSTALLED_MOD', payload: modId });
         } catch (error: any) {
-            // FIX: Explicitly type the caught error to 'any' to resolve the 'unknown' type error when passing it to console.error.
+            // FIX: Explicitly type the caught error as 'any' to resolve the 'unknown' type error when passing it to console.error.
             console.error("Failed to delete mod:", error);
         }
     }, [state.installedMods]);
