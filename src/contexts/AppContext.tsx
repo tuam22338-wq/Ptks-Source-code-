@@ -198,7 +198,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             const allSlots = await db.getAllSaveSlots();
             dispatch({ type: 'SET_SAVE_SLOTS', payload: allSlots });
         }
-    }, []);
+    }, [dispatch]);
 
     const handleVerifyAndRepairSlot = useCallback(async (slotId: number) => {
         alert('Tính năng này sẽ được triển khai trong tương lai để kiểm tra và sửa lỗi file save.');
@@ -237,20 +237,18 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             alert(`Lỗi tạo thế giới: ${message}`);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
         }
-    }, [state.installedMods, state.activeWorldId]);
+    }, [state.installedMods, state.activeWorldId, dispatch]);
 
     const handleQuickCreateAndStartGame = useCallback(async (description: string, characterName: string, slotId: number) => {
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đấng Sáng Thế đang kiến tạo vũ trụ...' } });
         try {
             const { mod, characterData, openingNarrative, familyNpcs, dynamicNpcs, relationships } = await generateCompleteWorldFromText(description, characterName, 'fast');
 
-// @google-genai-fix: Added missing properties to 'gameStartData' to satisfy the 'GameStartData' type, preventing a TypeScript error.
             const gameStartData: GameStartData = {
                 ...DEFAULT_SETTINGS,
-                // Properties from WorldCreationData
                 setting: mod.modInfo.description || `Một thế giới được tạo bởi AI dựa trên: ${description}`,
-                mainGoal: '', // Quick create is a sandbox experience
-                importedMod: null, // The mod itself is passed as an activeMod, not imported via this prop
+                mainGoal: '', 
+                importedMod: null, 
                 fanficMode: false,
                 hardcoreMode: false,
                 character: {
@@ -261,8 +259,6 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 theme: DEFAULT_SETTINGS.theme,
                 realmTemplateId: mod.content.namedRealmSystems?.[0]?.id || 'custom',
                 dlcs: [],
-                
-                // Existing/Overwritten properties
                 identity: characterData.identity,
                 npcDensity: 'medium', difficulty: 'medium', initialBonuses: characterData.initialBonuses, initialItems: characterData.initialItems,
                 spiritualRoot: characterData.spiritualRoot, danhVong: { value: 0, status: 'Vô danh tiểu tốt' }, initialCurrency: characterData.initialCurrency,
@@ -290,22 +286,22 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId } });
 
         } catch(e) {
-            // FIX: Argument of type 'unknown' is not assignable to parameter of type 'string'. This was fixed by correctly handling the 'unknown' type from the catch block before creating a string message for the alert.
+            // FIX: Safely get error message from unknown type.
             const message = e instanceof Error ? e.message : String(e);
             console.error("Quick create failed:", e);
             alert(`Tạo nhanh thất bại: ${message}`);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }
-    }, []);
+    }, [dispatch]);
 
     const quitGame = useCallback(() => {
         dispatch({ type: 'QUIT_GAME' });
-    }, []);
+    }, [dispatch]);
 
     const handleSetActiveWorldId = useCallback(async (worldId: string) => {
         await db.setActiveWorldId(worldId);
         dispatch({ type: 'SET_ACTIVE_WORLD_ID', payload: worldId });
-    }, []);
+    }, [dispatch]);
 
     const handleInstallMod = useCallback(async (modData: FullMod): Promise<boolean> => {
         try {
@@ -318,13 +314,13 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             console.error("Failed to install mod:", error);
             return false;
         }
-    }, []);
+    }, [dispatch]);
 
     const handleToggleMod = useCallback(async (modId: string) => {
         const updatedMods = state.installedMods.map(mod => mod.modInfo.id === modId ? { ...mod, isEnabled: !mod.isEnabled } : mod);
         await db.saveModLibrary(updatedMods);
         dispatch({ type: 'SET_INSTALLED_MODS', payload: updatedMods });
-    }, [state.installedMods]);
+    }, [state.installedMods, dispatch]);
 
     const handleDeleteModFromLibrary = useCallback(async (modId: string) => {
         if (!window.confirm("Bạn có chắc muốn xóa vĩnh viễn mod này khỏi thư viện?")) return;
@@ -332,11 +328,10 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             await db.deleteModFromLibrary(modId);
             await db.deleteModContent(modId);
             dispatch({ type: 'REMOVE_INSTALLED_MOD', payload: modId });
-// FIX: Explicitly type the caught error as 'any' to resolve the 'unknown' type error when passing it to console.error.
         } catch (error: any) {
             console.error("Failed to delete mod:", error);
         }
-    }, [state.installedMods]);
+    }, [dispatch]);
     
     const handleEditWorld = useCallback(async (worldId: string) => {
         alert(`Chỉnh sửa thế giới '${worldId}' chưa được hỗ trợ.`);

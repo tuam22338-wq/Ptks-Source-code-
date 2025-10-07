@@ -3,7 +3,7 @@ import type { GameSettings } from '../../../types';
 import { FaDownload, FaUpload, FaExclamationTriangle, FaVial, FaTrophy, FaShieldAlt } from 'react-icons/fa';
 import * as db from '../../../services/dbService';
 import { AI_SYNC_MODES } from '../../../constants';
-import HeuristicFixerModal from '../HeuristicFixerModal'; // Import the new modal
+import HeuristicFixerModal from '../HeuristicFixerModal';
 
 interface SettingsSectionProps {
     title: string;
