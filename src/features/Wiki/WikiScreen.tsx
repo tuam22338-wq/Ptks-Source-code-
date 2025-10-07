@@ -1,10 +1,10 @@
 import React, { useState, useMemo, memo } from 'react';
-import { FaArrowLeft, FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaGears, FaSitemap, FaBars } from 'react-icons/fa';
+import { FaArrowLeft, FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaGears, FaSitemap, FaBars, FaBookOpen, FaClock } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
-import type { GameState, NPC, Location, InventoryItem, MajorEvent } from '../../types';
+import type { GameState, NPC, Location, InventoryItem, MajorEvent, WorldTurnEntry } from '../../types';
 import StoryGraphPanel from '../GamePlay/components/Sidebar/panels/StoryGraphPanel';
 
-type Category = 'npcs' | 'locations' | 'factions' | 'items' | 'events' | 'graph';
+type Category = 'npcs' | 'locations' | 'factions' | 'items' | 'events' | 'history' | 'graph';
 
 const CATEGORIES: { id: Category; label: string; icon: React.ElementType }[] = [
     { id: 'npcs', label: 'Nhân Vật', icon: FaUserFriends },
@@ -12,6 +12,7 @@ const CATEGORIES: { id: Category; label: string; icon: React.ElementType }[] = [
     { id: 'factions', label: 'Phe Phái', icon: FaFlag },
     { id: 'items', label: 'Vật Phẩm', icon: FaBoxOpen },
     { id: 'events', label: 'Sự Kiện', icon: FaScroll },
+    { id: 'history', label: 'Lịch Sử', icon: FaBookOpen },
     { id: 'graph', label: 'Quan Hệ', icon: FaSitemap },
 ];
 
@@ -49,25 +50,42 @@ const WikiScreen: React.FC = () => {
                 })
             );
 
+        const worldLog = gameState.worldTurnLog || [];
+        const filteredLog = lowerSearch ? worldLog.filter(entry => 
+            entry.npcName.toLowerCase().includes(lowerSearch) || 
+            entry.narrative.toLowerCase().includes(lowerSearch)
+        ) : worldLog;
+
         return {
             npcs: filter(gameState.activeNpcs, ['identity.name', 'status', 'identity.origin']),
             locations: filter(gameState.discoveredLocations, ['name', 'description']),
             factions: filter(gameState.playerCharacter.reputation, ['factionName']).map(r => ({ name: r.factionName, description: `Danh vọng: ${r.status} (${r.value})` })),
             items: filter(allItems, ['name', 'description']),
             events: filter(gameState.majorEvents, ['title', 'summary']),
+            history: [...filteredLog].reverse(), // Newest first
         };
     }, [searchTerm, gameState, allItems]);
 
     const renderItemList = () => {
         const data = (filteredData as any)[activeCategory];
         if (!data || data.length === 0) return <p className="text-center text-[var(--text-muted-color)] mt-8">Không có dữ liệu.</p>;
+        
+        const getItemTitle = (item: any) => {
+            if (activeCategory === 'history') return item.npcName;
+            return item.name || item.identity?.name || item.title || item.factionName;
+        }
+
+        const getItemDescription = (item: any) => {
+            if (activeCategory === 'history') return `Năm ${item.gameDate.year}, ${item.gameDate.season}: ${item.narrative}`;
+            return item.description || item.summary || item.status;
+        }
 
         return (
             <div className="space-y-2">
                 {data.map((item: any, index: number) => (
                     <button key={item.id || item.name || index} onClick={() => setSelectedItem(item)} className={`w-full text-left p-3 rounded-lg transition-colors hover:bg-[var(--shadow-light)] ${selectedItem?.id === item.id || selectedItem?.name === item.name ? 'bg-[var(--shadow-light)]' : ''}`}>
-                        <h4 className="font-bold text-[var(--text-color)]">{item.name || item.identity?.name || item.title || item.factionName}</h4>
-                        <p className="text-xs text-[var(--text-muted-color)] truncate">{item.description || item.summary || item.status}</p>
+                        <h4 className="font-bold text-[var(--text-color)]">{getItemTitle(item)}</h4>
+                        <p className="text-xs text-[var(--text-muted-color)] truncate">{getItemDescription(item)}</p>
                     </button>
                 ))}
             </div>
@@ -124,6 +142,19 @@ const WikiScreen: React.FC = () => {
                         <p><strong className="text-[var(--text-color)]">Năm:</strong> {event.year}</p>
                         <p><strong className="text-[var(--text-color)]">Tóm tắt:</strong> {event.summary}</p>
                         <p><strong className="text-[var(--text-color)]">Hệ quả:</strong> {event.consequences}</p>
+                    </div>
+                );
+                break;
+            case 'history':
+                const entry = selectedItem as WorldTurnEntry;
+                title = entry.npcName;
+                content = (
+                    <div className="space-y-4">
+                        <p className="text-sm flex items-center gap-2" style={{color: 'var(--text-muted-color)'}}>
+                            <FaClock />
+                            Năm {entry.gameDate.year}, {entry.gameDate.season}, ngày {entry.gameDate.day}
+                        </p>
+                        <p className="text-lg italic leading-relaxed">"{entry.narrative}"</p>
                     </div>
                 );
                 break;

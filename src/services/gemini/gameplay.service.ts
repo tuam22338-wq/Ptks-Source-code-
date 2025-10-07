@@ -1,7 +1,3 @@
-
-
-
-
 import { Type, FunctionDeclaration } from "@google/genai";
 import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC, Location, Faction, MajorEvent } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -124,7 +120,7 @@ export async function* generateActionResponseStream(
         storyModeInstruction = `19. **LUẬT CHẾ ĐỘ SANDBOX (TUYỆT ĐỐI):** Bạn là một người MÔ PHỎNG THẾ GIỚI, không phải người kể chuyện. **TUYỆT ĐỐI KHÔNG** được tự ý tạo ra nhiệm vụ, mục tiêu, hay sự kiện để "hướng" người chơi. Chỉ phản ứng một cách thụ động và logic với hành động của người chơi. Hãy để người chơi tự khám phá và tạo ra câu chuyện của riêng họ. Nếu người chơi không làm gì, hãy mô tả thế giới xung quanh vẫn đang vận hành một cách tự nhiên.`;
     }
 
-    const wikiUpdateInstruction = `20. **LUẬT BÁCH KHOA TOÀN THƯ TỰ ĐỘNG (QUAN TRỌNG):** Để thế giới sống động, bạn phải giúp người chơi xây dựng Bách Khoa Toàn Thư của họ. Nếu trong đoạn tường thuật, bạn **LẦN ĐẦU TIÊN** giới thiệu hoặc mô tả một thực thể mới, bạn **BẮT BUỘC** phải ghi lại thông tin đó vào các trường tương ứng trong \`mechanicalIntent\`:
+    const wikiUpdateInstruction = `20. **LUẬT BÁCH KHOA TOÀN THƯ TỰ ĐỘNG (QUAN TRỌNG):** Trước khi thêm bất kỳ mục mới nào, bạn BẮT BUỘC phải kiểm tra bối cảnh đã cung cấp trong \`BỐI CẢNH GAME TOÀN CỤC\` để đảm bảo thực thể đó chưa tồn tại. Ví dụ, hãy kiểm tra tên trong danh sách \`discoveredLocations\`, \`majorEvents\`, và \`reputation\`. Đừng thêm các mục trùng lặp. Nếu trong đoạn tường thuật, bạn **LẦN ĐẦU TIÊN** giới thiệu hoặc mô tả một thực thể mới, bạn **BẮT BUỘC** phải ghi lại thông tin đó vào các trường tương ứng trong \`mechanicalIntent\`:
     - **Địa điểm mới:** Nếu bạn mô tả một địa danh mới (thành phố, khu rừng, hang động...), hãy thêm một đối tượng vào \`newLocationsDiscovered\`.
     - **Phe phái mới:** Nếu bạn giới thiệu một tổ chức, giáo phái, hoặc gia tộc mới, hãy thêm một đối tượng vào \`newFactionsIntroduced\`.
     - **Sự kiện lịch sử mới:** Nếu bạn tiết lộ một sự kiện quan trọng trong quá khứ, hãy thêm một đối tượng vào \`newMajorEventsRevealed\`.`;
@@ -143,6 +139,24 @@ export async function* generateActionResponseStream(
     const validStatIds = [...attributeSystem.definitions.map(def => def.id), 'spiritualQi'];
     const validStatNames = attributeSystem.definitions.map(def => def.name);
     
+    // Dynamically build the schema for NPC attributes to avoid schema validation errors.
+    const npcAttributeProperties: Record<string, any> = {};
+    const attributeDefsForNpc = attributeSystem.definitions.filter(
+        def => def.type === 'PRIMARY' || def.type === 'VITAL'
+    );
+
+    for (const def of attributeDefsForNpc) {
+        npcAttributeProperties[def.id] = {
+            type: Type.OBJECT,
+            description: def.name,
+            properties: {
+                value: { type: Type.NUMBER },
+                ...(def.type === 'VITAL' && { maxValue: { type: Type.NUMBER } })
+            },
+            required: ['value']
+        };
+    }
+
     const newNpcSchema = {
         type: Type.OBJECT,
         description: "Đối tượng NPC hoàn chỉnh.",
@@ -170,7 +184,8 @@ export async function* generateActionResponseStream(
             },
             attributes: {
                 type: Type.OBJECT,
-                description: `Các chỉ số cơ bản của NPC, là một đối tượng có key là ID thuộc tính và value là { value: number, maxValue?: number }. Chỉ điền các chỉ số PRIMARY và VITALS. Các ID thuộc tính hợp lệ: ${attributeSystem.definitions.map(d => d.id).join(', ')}`,
+                description: `Các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS.`,
+                properties: npcAttributeProperties
             }
         },
         required: ['identity', 'status', 'cultivation', 'attributes']

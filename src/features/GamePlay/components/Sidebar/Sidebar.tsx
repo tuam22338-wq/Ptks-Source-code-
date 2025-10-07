@@ -10,10 +10,9 @@ import QuestPanel from './panels/QuestPanel';
 import AiMemoryPanel from './panels/AiMemoryPanel';
 import AiRulesPanel from './panels/AiRulesPanel';
 import LiveEditorPanel from './panels/LiveEditorPanel';
-import HistoryPanel from './panels/HistoryPanel';
 import WikiPanel from './panels/WikiPanel';
 
-type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'wiki' | 'liveEditor' | 'history';
+type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'wiki' | 'liveEditor';
 
 interface SidebarPanel {
     id: PanelId;
@@ -26,7 +25,6 @@ const BASE_PANELS: SidebarPanel[] = [
     { id: 'status', label: 'Trạng Thái', icon: FaUser, component: StatusPanel },
     { id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, component: MapView },
     { id: 'quests', label: 'Nhiệm Vụ', icon: FaBook, component: QuestPanel },
-    { id: 'history', label: 'Lịch Sử', icon: FaBookOpen, component: HistoryPanel },
     { id: 'wiki', label: 'Bách Khoa', icon: FaQuestionCircle, component: WikiPanel },
 ];
 
@@ -55,7 +53,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings 
         status: { gameState: gameState },
         map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
-        history: { worldTurnLog: gameState.worldTurnLog || [] },
         wiki: { gameState },
         liveEditor: { gameState: gameState },
     };

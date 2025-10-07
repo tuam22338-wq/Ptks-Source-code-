@@ -331,11 +331,11 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             await db.deleteModFromLibrary(modId);
             await db.deleteModContent(modId);
             dispatch({ type: 'REMOVE_INSTALLED_MOD', payload: modId });
-        } catch (error) {
-            // FIX: Explicitly type the caught error to 'any' to resolve the linting error about 'unknown' type.
+        } catch (error: any) {
+            // FIX: Explicitly type the caught error to 'any' to resolve the 'unknown' type error when passing it to console.error.
             console.error("Failed to delete mod:", error);
         }
-    }, []);
+    }, [state.installedMods]);
     
     const handleEditWorld = useCallback(async (worldId: string) => {
         alert(`Chỉnh sửa thế giới '${worldId}' chưa được hỗ trợ.`);

@@ -1,9 +1,9 @@
 import React, { memo, useState, useMemo, useEffect } from 'react';
-import type { GameState, NPC, Location, Faction, InventoryItem, MajorEvent, RagSource } from '../../../../../types';
+import type { GameState, NPC, Location, Faction, InventoryItem, MajorEvent, RagSource, WorldTurnEntry } from '../../../../../types';
 import { useAppContext } from '../../../../../contexts/AppContext';
 import { createAiHooksInstruction } from '../../../../../utils/modManager';
 import { getAllSources } from '../../../../../services/ragService';
-import { FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaSitemap } from 'react-icons/fa';
+import { FaSearch, FaUserFriends, FaMapMarkedAlt, FaFlag, FaBoxOpen, FaScroll, FaSitemap, FaBookOpen, FaClock } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
 import StoryGraphPanel from './StoryGraphPanel'; // Import the new graph panel
 
@@ -11,7 +11,7 @@ interface WikiPanelProps {
     gameState: GameState;
 }
 
-type Category = 'npcs' | 'locations' | 'factions' | 'items' | 'events' | 'rules' | 'graph';
+type Category = 'npcs' | 'locations' | 'factions' | 'items' | 'events' | 'history' | 'rules' | 'graph';
 
 const CATEGORIES: { id: Category; label: string; icon: React.ElementType }[] = [
     { id: 'npcs', label: 'Nhân Vật', icon: FaUserFriends },
@@ -19,6 +19,7 @@ const CATEGORIES: { id: Category; label: string; icon: React.ElementType }[] = [
     { id: 'factions', label: 'Phe Phái', icon: FaFlag },
     { id: 'items', label: 'Vật Phẩm', icon: FaBoxOpen },
     { id: 'events', label: 'Sự Kiện', icon: FaScroll },
+    { id: 'history', label: 'Lịch Sử', icon: FaBookOpen },
     { id: 'rules', label: 'Quy Luật', icon: GiGears },
     { id: 'graph', label: 'Đồ Thị', icon: FaSitemap },
 ];
@@ -129,6 +130,27 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ gameState }) => {
                         <p className="text-xs text-[var(--text-muted-color)]">{event.summary}</p>
                     </div>
                 ));
+            case 'history':
+                const worldTurnLog = gameState.worldTurnLog || [];
+                const reversedLog = [...worldTurnLog].reverse();
+                return reversedLog.length > 0 ? reversedLog.map((entry) => (
+                    <div key={entry.id} className="neumorphic-inset-box p-3">
+                        <div className="flex justify-between items-baseline text-xs mb-2 pb-2 border-b" style={{borderColor: 'var(--shadow-light)'}}>
+                            <p className="font-semibold" style={{color: 'var(--primary-accent-color)'}}>
+                                {entry.npcName}
+                            </p>
+                            <p className="flex items-center gap-1" style={{color: 'var(--text-muted-color)'}}>
+                                <FaClock />
+                                Năm {entry.gameDate.year}, {entry.gameDate.season}, ngày {entry.gameDate.day}
+                            </p>
+                        </div>
+                        <p className="text-sm italic" style={{color: 'var(--text-color)'}}>"{entry.narrative}"</p>
+                    </div>
+                )) : (
+                    <div className="text-center p-8" style={{color: 'var(--text-muted-color)'}}>
+                        <p>Thế giới vẫn còn tĩnh lặng. Chưa có sự kiện nào được ghi lại.</p>
+                    </div>
+                );
             case 'rules':
                 const modHooks = createAiHooksInstruction(gameState.activeMods);
                 const playerHooks = gameState.playerCharacter.playerAiHooks;
@@ -189,7 +211,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ gameState }) => {
                 ))}
             </div>
             
-            <div className={`mt-2 flex-grow min-h-0 ${activeCategory !== 'graph' ? 'overflow-y-auto pr-2 space-y-3' : ''}`}>
+            <div className={`mt-2 flex-grow min-h-0 ${activeCategory !== 'graph' && activeCategory !== 'history' ? 'overflow-y-auto pr-2 space-y-3' : ''} ${activeCategory === 'history' ? 'overflow-y-auto pr-2 space-y-4' : ''}`}>
                  {renderContent()}
             </div>
         </div>
