@@ -1,5 +1,3 @@
-
-
 import React, { memo } from 'react';
 import type { GameState } from '../../../../../types';
 import { createModContextSummary } from '../../../../../utils/modManager';
@@ -34,7 +32,8 @@ const AiMemoryPanel: React.FC<AiMemoryPanelProps> = ({ gameState }) => {
             </InfoBlock>
             
             <InfoBlock title="Trạng Thái Hiện Tại (Bối Cảnh Ngắn Hạn)">
-                {`- Nhân vật: ${playerCharacter.identity.name}, Cảnh giới: ${gameState.realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId)?.name || 'Không rõ'}\n- Vị trí: ${gameState.discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)?.name}\n- Nhiệm vụ: \n${questSummary}`}
+                {/* @google-genai-fix: Changed 'cultivation.currentRealmId' to 'progression.currentTierId' and 'realmSystem' to 'progressionSystem' */}
+                {`- Nhân vật: ${playerCharacter.identity.name}, Cảnh giới: ${gameState.progressionSystem.find(r => r.id === playerCharacter.progression.currentTierId)?.name || 'Không rõ'}\n- Vị trí: ${gameState.discoveredLocations.find(l => l.id === playerCharacter.currentLocationId)?.name}\n- Nhiệm vụ: \n${questSummary}`}
             </InfoBlock>
         </div>
     );

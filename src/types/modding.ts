@@ -44,7 +44,6 @@ export interface ModTalent {
     tags: string[];
 }
 
-// @google-genai-fix: Rename 'ProgressionSubTier' to 'SubTier' for backward compatibility.
 export interface ProgressionSubTier {
     id: string;
     name: string;
@@ -54,7 +53,6 @@ export interface ProgressionSubTier {
     description?: string;
 }
 
-// @google-genai-fix: Rename 'ProgressionTierConfig' to 'RealmConfig' for backward compatibility.
 export interface ProgressionTierConfig {
     id: string;
     name: string;
@@ -65,7 +63,6 @@ export interface ProgressionTierConfig {
     bonuses?: StatBonus[];
 }
 
-// @google-genai-fix: Rename 'NamedProgressionSystem' to 'NamedRealmSystem' for backward compatibility.
 export interface NamedProgressionSystem {
     id: string;
     name: string;
@@ -325,7 +322,7 @@ export interface ModContent {
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];
     recipes?: Omit<AlchemyRecipe, 'id'>[];
-    progressionTiers?: ProgressionTierConfig[]; // DEPRECATED for new mods, used for single-system mods
+    progressionTiers?: ProgressionTierConfig[];
     namedProgressionSystems?: NamedProgressionSystem[];
     talentSystemConfig?: TalentSystemConfig;
     talentRanks?: Omit<ModTalentRank, 'id'>[];

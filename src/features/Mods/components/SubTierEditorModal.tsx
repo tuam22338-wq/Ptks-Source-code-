@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash } from 'react-icons/fa';
+// @google-genai-fix: Rename 'ProgressionSubTier' to its original name 'ProgressionSubTier' for clarity and consistency.
 import type { ProgressionSubTier, StatBonus, AttributeDefinition } from '../../../types';
 
 interface SubTierEditorModalProps {

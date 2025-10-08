@@ -23,7 +23,6 @@ export const generateCorrectedGameState = async (
                     attributes: { type: Type.OBJECT },
                     inventory: { type: Type.OBJECT },
                     currencies: { type: Type.OBJECT },
-                    // @google-genai-fix: Changed 'cultivation' to 'progression' to match the updated type.
                     progression: { type: Type.OBJECT },
                 }
             },

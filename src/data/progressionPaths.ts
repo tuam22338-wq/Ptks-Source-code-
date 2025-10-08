@@ -1,4 +1,3 @@
-// @google-genai-fix: Rename 'CultivationPath' to 'ProgressionPath' to match updated types.
 import type { ProgressionPath } from '../types';
 
 export const PROGRESSION_PATHS: ProgressionPath[] = [

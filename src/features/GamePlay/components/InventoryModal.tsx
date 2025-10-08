@@ -28,6 +28,14 @@ const ITEM_FILTERS: { id: ItemFilter; label: string; }[] = [
     { id: 'Cổ Vật', label: 'Cổ Vật' },
 ];
 
+const ItemIcon: React.FC<{ item: InventoryItem; className?: string }> = ({ item, className }) => {
+    if (item.iconName && UI_ICONS[item.iconName]) {
+        const Icon = UI_ICONS[item.iconName];
+        return <Icon className={className || 'text-2xl'} />;
+    }
+    return <span className={className || 'text-2xl'} role="img" aria-label={item.name}>{item.icon || '📜'}</span>;
+};
+
 const EquipmentSlotComponent: React.FC<{
     slot: EquipmentSlot;
     item: InventoryItem | null;
@@ -53,7 +61,7 @@ const EquipmentSlotComponent: React.FC<{
                 `}
             >
                 {item ? (
-                    <span className="text-2xl" role="img" aria-label={item.name}>{item.icon}</span>
+                    <ItemIcon item={item} className="text-2xl" />
                 ) : (
                     <Icon className="text-3xl text-gray-700" />
                 )}
@@ -278,7 +286,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                         ${selectedItems.has(item.id) ? 'border-[var(--secondary-accent-color)]' : 'border-[var(--shadow-light)] hover:border-[var(--primary-accent-color)]/70'}`}
                                 >
                                     {selectedItems.has(item.id) ? <FaCheckSquare className="absolute top-1 left-1 text-[var(--secondary-accent-color)]" /> : <FaSquare className="absolute top-1 left-1 text-transparent group-hover:text-gray-500" />}
-                                    <span className="text-4xl select-none" role="img" aria-label={item.name}>{item.icon || '📜'}</span>
+                                    <div className="flex items-center justify-center w-full h-full">
+                                        <ItemIcon item={item} className="text-4xl" />
+                                    </div>
                                     {Number(item.quantity) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-[var(--bg-color)]/80 px-1 rounded-sm">{item.quantity}</span>}
                                     <div className={`absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-[var(--bg-color)] ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>
                                 </button>

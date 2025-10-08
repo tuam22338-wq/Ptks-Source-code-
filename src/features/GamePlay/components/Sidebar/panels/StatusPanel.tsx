@@ -34,35 +34,48 @@ const ProgressBar: React.FC<{ current: number; max: number; colorClass: string }
 };
 
 const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
-    const { playerCharacter, realmSystem, attributeSystem, realmSystemInfo } = gameState;
+    // @google-genai-fix: Changed 'realmSystem' to 'progressionSystem'.
+    const { playerCharacter, progressionSystem, attributeSystem, progressionSystemInfo } = gameState;
     
-    const currentRealm = useMemo(() => realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId), [playerCharacter, realmSystem]);
-    const currentStage = useMemo(() => currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId), [playerCharacter, currentRealm]);
+    // @google-genai-fix: Changed 'cultivation' to 'progression' and 'realmSystem' to 'progressionSystem'.
+    const currentRealm = useMemo(() => progressionSystem.find(r => r.id === playerCharacter.progression.currentTierId), [playerCharacter, progressionSystem]);
+    // @google-genai-fix: Changed 'cultivation' to 'progression' and 'stages' to 'subTiers'.
+    const currentStage = useMemo(() => currentRealm?.subTiers.find(s => s.id === playerCharacter.progression.currentSubTierId), [playerCharacter, currentRealm]);
     
     const qiToNextStage = useMemo(() => {
         if (!currentRealm || !currentStage) return Infinity;
-        const currentStageIndex = currentRealm.stages.findIndex(s => s.id === currentStage.id);
-        if (currentStageIndex === -1 || currentStageIndex >= currentRealm.stages.length - 1) {
+        // @google-genai-fix: Changed 'stages' to 'subTiers'.
+        const currentStageIndex = currentRealm.subTiers.findIndex(s => s.id === currentStage.id);
+        // @google-genai-fix: Changed 'stages' to 'subTiers'.
+        if (currentStageIndex === -1 || currentStageIndex >= currentRealm.subTiers.length - 1) {
             // Check next realm
-            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
-            if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
-                const nextRealm = realmSystem[currentRealmIndex + 1];
-                if (nextRealm && nextRealm.stages.length > 0) {
-                    return nextRealm.stages[0].qiRequired;
+            // @google-genai-fix: Changed 'realmSystem' to 'progressionSystem'.
+            const currentRealmIndex = progressionSystem.findIndex(r => r.id === currentRealm.id);
+            // @google-genai-fix: Changed 'realmSystem' to 'progressionSystem'.
+            if (currentRealmIndex !== -1 && currentRealmIndex < progressionSystem.length - 1) {
+                // @google-genai-fix: Changed 'realmSystem' to 'progressionSystem'.
+                const nextRealm = progressionSystem[currentRealmIndex + 1];
+                // @google-genai-fix: Changed 'stages' to 'subTiers'.
+                if (nextRealm && nextRealm.subTiers.length > 0) {
+                    // @google-genai-fix: Changed 'stages' to 'subTiers' and 'qiRequired' to 'resourceRequired'.
+                    return nextRealm.subTiers[0].resourceRequired;
                 }
             }
             return Infinity;
         }
-        return currentRealm.stages[currentStageIndex + 1].qiRequired;
-    }, [currentRealm, currentStage, realmSystem]);
+        // @google-genai-fix: Changed 'stages' to 'subTiers' and 'qiRequired' to 'resourceRequired'.
+        return currentRealm.subTiers[currentStageIndex + 1].resourceRequired;
+    }, [currentRealm, currentStage, progressionSystem]);
     
     const getAttributeValue = (id: string) => playerCharacter.attributes[id] || { value: 0 };
     
-    const isProgressionSystem = realmSystem && (realmSystem.length > 1 || (realmSystem.length === 1 && realmSystem[0].stages.length > 1));
+    // @google-genai-fix: Changed 'realmSystem' to 'progressionSystem' and 'stages' to 'subTiers'.
+    const isProgressionSystem = progressionSystem && (progressionSystem.length > 1 || (progressionSystem.length === 1 && progressionSystem[0].subTiers.length > 1));
     
     const renderAttributeGroup = (group: (typeof attributeSystem.groups)[0]) => {
         // Hide the entire "Cultivation Info" group if the realm system is disabled.
-        if (group.id === 'cultivation' && (!realmSystem || realmSystem.length === 0)) {
+        // @google-genai-fix: Changed 'realmSystem' to 'progressionSystem'.
+        if (group.id === 'cultivation' && (!progressionSystem || progressionSystem.length === 0)) {
             return null;
         }
 
@@ -165,16 +178,19 @@ const StatusPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
             {/* Cultivation Progress (if realm system exists and is a progression system) */}
             {isProgressionSystem && (
                 <div className="neumorphic-inset-box p-3">
-                    <h4 className="font-bold font-title" style={{color: 'var(--primary-accent-color)'}}>{realmSystemInfo.name}</h4>
+                    <h4 className="font-bold font-title" style={{color: 'var(--primary-accent-color)'}}>{progressionSystemInfo.name}</h4>
                     <p className="text-lg font-semibold text-cyan-300">{currentRealm?.name} - {currentStage?.name}</p>
                     <div className="mt-2">
                         <div className="flex justify-between text-xs mb-1" style={{color: 'var(--text-muted-color)'}}>
-                            <span>{realmSystemInfo.resourceName}</span>
-                            <span>{playerCharacter.cultivation.spiritualQi.toLocaleString()} / {(isFinite(qiToNextStage) ? qiToNextStage.toLocaleString() : 'MAX')} {realmSystemInfo.resourceUnit}</span>
+                            <span>{progressionSystemInfo.resourceName}</span>
+                            {/* @google-genai-fix: Changed 'cultivation.spiritualQi' to 'progression.progressionResource'. */}
+                            <span>{playerCharacter.progression.progressionResource.toLocaleString()} / {(isFinite(qiToNextStage) ? qiToNextStage.toLocaleString() : 'MAX')} {progressionSystemInfo.resourceUnit}</span>
                         </div>
                         <ProgressBar 
-                            current={playerCharacter.cultivation.spiritualQi} 
-                            max={isFinite(qiToNextStage) ? qiToNextStage : playerCharacter.cultivation.spiritualQi} 
+                            // @google-genai-fix: Changed 'cultivation.spiritualQi' to 'progression.progressionResource'.
+                            current={playerCharacter.progression.progressionResource} 
+                            // @google-genai-fix: Changed 'cultivation.spiritualQi' to 'progression.progressionResource'.
+                            max={isFinite(qiToNextStage) ? qiToNextStage : playerCharacter.progression.progressionResource} 
                             colorClass="bg-gradient-to-r from-cyan-400 to-blue-500"
                         />
                     </div>

@@ -1,10 +1,8 @@
 import type { Element, StatBonus, InnateTalentRank, Gender } from './core';
 
 // --- New PowerSource System Types ---
-// FIX: Renamed PowerSourceQuality to SpiritualRootQuality
 export type SpiritualRootQuality = 'Phàm Căn' | 'Linh Căn' | 'Địa Căn' | 'Thiên Căn' | 'Thánh Căn';
 
-// FIX: Renamed PowerSource to SpiritualRoot
 export interface SpiritualRoot {
   elements: { type: Element; purity: number }[]; // Purity from 1-100
   quality: SpiritualRootQuality;

@@ -229,7 +229,7 @@ const AppContent: React.FC = () => {
     const showHeader = isPotentiallyPanelScreen && !isLoading && !isMigratingData;
 
     return (
-        <div className="relative w-full h-full flex flex-col">
+        <div className="relative w-full h-screen flex flex-col">
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
             <InkSplatterOverlay />

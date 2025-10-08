@@ -100,9 +100,9 @@ export function getCustomEntityNames(activeMods: FullMod[]): { items: string[], 
     for (const mod of activeMods) {
         if (!mod.content) continue;
         mod.content.items?.forEach(i => entities.items.push(i.name));
-        mod.content.locations?.forEach(l => entities.locations.push(l.name));
+        (mod.content.locations || []).forEach(l => entities.locations.push(l.name));
         mod.content.sects?.forEach(s => entities.sects.push(s.name));
-        mod.content.npcs?.forEach(n => entities.npcs.push(n.name));
+        (mod.content.npcs || []).forEach(n => entities.npcs.push(n.name));
         if (mod.content.worldData) {
             for (const world of mod.content.worldData) {
                 world.initialLocations?.forEach(l => entities.locations.push(l.name));

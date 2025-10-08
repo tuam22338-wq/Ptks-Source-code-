@@ -1,11 +1,19 @@
 import React from 'react';
 import type { InventoryItem, StatBonus, ItemEffect } from '../types';
-import { ITEM_QUALITY_STYLES } from '../constants';
+import { ITEM_QUALITY_STYLES, UI_ICONS } from '../constants';
 
 interface ItemTooltipProps {
     item: InventoryItem;
     compareItem?: InventoryItem | null;
 }
+
+const ItemIcon: React.FC<{ item: InventoryItem; className?: string }> = ({ item, className }) => {
+    if (item.iconName && UI_ICONS[item.iconName]) {
+        const Icon = UI_ICONS[item.iconName];
+        return <Icon className={className || 'text-2xl'} />;
+    }
+    return <span className={className || 'text-2xl'} role="img" aria-label={item.name}>{item.icon || '📜'}</span>;
+};
 
 const Section: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className }) => (
     <div className={`mt-2 pt-2 border-t border-[var(--shadow-light)]/50 ${className}`}>
@@ -55,8 +63,13 @@ const ItemTooltip: React.FC<ItemTooltipProps> = ({ item, compareItem }) => {
 
     return (
         <div className="animate-fade-in text-left" style={{animationDuration: '200ms'}}>
-            <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[item.quality].color}`}>{item.name}</h4>
-            <p className="text-xs text-[var(--text-muted-color)] italic">{item.description}</p>
+            <div className="flex items-center gap-3">
+                <ItemIcon item={item} className="text-3xl" />
+                <div>
+                    <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[item.quality].color}`}>{item.name}</h4>
+                    <p className="text-xs text-[var(--text-muted-color)] italic">{item.description}</p>
+                </div>
+            </div>
             
             {(item.isIdentified === false) ? (
                 <Section title="Chưa Giám Định">

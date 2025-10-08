@@ -20,8 +20,7 @@ export interface GameplaySettings {
     validationServiceCap: ValidationServiceCap;
     narrateSystemChanges: boolean;
     worldInterruptionFrequency: WorldInterruptionFrequency;
-    // @FIX: Added missing property to satisfy usage in gameStateManager.ts.
-    enableRealmSystem: boolean;
+    enableRealmSystem: boolean; // Note: Legacy, should be deprecated in favor of named systems.
     enableStorySystem: boolean;
 }
 
@@ -36,7 +35,6 @@ export type GameSpeed = 'very_slow' | 'slow' | 'normal' | 'fast' | 'very_fast';
 export type SafetyLevel = 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' | 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
 export type NpcDensity = 'low' | 'medium' | 'high';
 export type NarrativeStyle = 'classic_wuxia' | 'dark_fantasy' | 'poetic' | 'concise' | 'er_gen_style' | 'fenghuo_style' | 'cyberpunk' | 'noir_detective' | 'epic_fantasy' | 'lovecraftian_horror' | 'comedic' | 'slice_of_life' | 'visual_novel' | 'dialogue_focused';
-// FIX: Add 'theme-ink-wash-bamboo' to the Theme type to resolve type errors across the application.
 export type Theme = 'theme-bamboo-forest' | 'theme-sunrise-peak' | 'theme-bich-du-cung' | 'theme-ngoc-hu-cung' | 'theme-huyet-sat-ma-dien' | 'theme-thuy-mac-hoa' | 'theme-dao-ton-premium' | 'theme-cyber-cultivation-city' | 'theme-thon-phe-tinh-ha' | 'theme-ink-wash-bamboo' | 'theme-custom' | 'theme-luu-ly-ngoc-tinh';
 export type AiSyncMode = 'classic' | 'intent_driven';
 export type TtsProvider = 'browser' | 'elevenlabs';
@@ -80,7 +78,6 @@ export interface HeuristicFixReport {
     solution: string;
 }
 
-// FIX: Extend GameplaySettings to resolve type error in AppContext.
 export interface GameSettings extends GameplaySettings {
     layoutMode: LayoutMode;
     gameSpeed: GameSpeed;

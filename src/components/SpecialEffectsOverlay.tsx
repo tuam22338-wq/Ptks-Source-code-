@@ -13,7 +13,7 @@ const SpecialEffectsOverlay: React.FC = () => {
     const [activeEffect, setActiveEffect] = useState<null | 'breakthrough' | 'rareItem'>(null);
     const [rareItemData, setRareItemData] = useState<{ name: string; icon: string; quality: ItemQuality } | null>(null);
 
-    const prevRealmId = useRef<string | undefined>(gameState?.playerCharacter.cultivation.currentRealmId);
+    const prevTierId = useRef<string | undefined>(gameState?.playerCharacter.progression.currentTierId);
     const prevInventory = useRef<Map<string, number>>(new Map());
     const isInitialMount = useRef(true);
 
@@ -21,12 +21,12 @@ const SpecialEffectsOverlay: React.FC = () => {
         if (!gameState) return;
 
         const { playerCharacter } = gameState;
-        const currentRealmId = playerCharacter.cultivation.currentRealmId;
+        const currentTierId = playerCharacter.progression.currentTierId;
         const currentItems = playerCharacter.inventory.items;
 
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            prevRealmId.current = currentRealmId;
+            prevTierId.current = currentTierId;
             const initialMap = new Map<string, number>();
             currentItems.forEach(item => {
                 initialMap.set(item.name, (initialMap.get(item.name) || 0) + item.quantity);
@@ -36,10 +36,12 @@ const SpecialEffectsOverlay: React.FC = () => {
         }
 
         // Check for breakthrough
-        if (currentRealmId && prevRealmId.current && currentRealmId !== prevRealmId.current) {
+        if (currentTierId && prevTierId.current && currentTierId !== prevTierId.current) {
             setActiveEffect('breakthrough');
             const timer = setTimeout(() => setActiveEffect(null), 4000);
-            return () => clearTimeout(timer); // Return here to prevent ref update
+            // Update ref immediately after triggering effect
+            prevTierId.current = currentTierId;
+            return () => clearTimeout(timer);
         }
         
         // Check for new rare items
@@ -56,16 +58,18 @@ const SpecialEffectsOverlay: React.FC = () => {
                     setRareItemData({ name: newItem.name, icon: newItem.icon || '💎', quality: newItem.quality });
                     setActiveEffect('rareItem');
                     const timer = setTimeout(() => setActiveEffect(null), 5000);
-                    return () => clearTimeout(timer); // Return here to prevent ref update
+                    // Update inventory ref immediately after triggering effect
+                    prevInventory.current = currentInventoryMap;
+                    return () => clearTimeout(timer);
                 }
             }
         }
         
-        // Update refs only if no effect was triggered in this run.
-        prevRealmId.current = currentRealmId;
+        // Update refs if no effect was triggered
+        prevTierId.current = currentTierId;
         prevInventory.current = currentInventoryMap;
 
-    }, [gameState?.playerCharacter.cultivation.currentRealmId, gameState?.playerCharacter.inventory.items, gameState]);
+    }, [gameState?.playerCharacter.progression.currentTierId, gameState?.playerCharacter.inventory.items, gameState]);
 
 
     if (!activeEffect || state.settings.enablePerformanceMode) return null;

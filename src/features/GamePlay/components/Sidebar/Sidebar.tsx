@@ -12,7 +12,7 @@ import AiRulesPanel from './panels/AiRulesPanel';
 import LiveEditorPanel from './panels/LiveEditorPanel';
 import WikiPanel from './panels/WikiPanel';
 
-type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'wiki' | 'liveEditor';
+type PanelId = 'status' | 'quests' | 'memory' | 'rules' | 'wiki' | 'liveEditor';
 
 interface SidebarPanel {
     id: PanelId;
@@ -23,7 +23,6 @@ interface SidebarPanel {
 
 const BASE_PANELS: SidebarPanel[] = [
     { id: 'status', label: 'Trạng Thái', icon: FaUser, component: StatusPanel },
-    { id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, component: MapView },
     { id: 'quests', label: 'Nhiệm Vụ', icon: FaBook, component: QuestPanel },
     { id: 'wiki', label: 'Bách Khoa', icon: FaQuestionCircle, component: WikiPanel },
 ];
@@ -51,7 +50,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings 
     
     const panelProps = {
         status: { gameState: gameState },
-        map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
         wiki: { gameState },
         liveEditor: { gameState: gameState },

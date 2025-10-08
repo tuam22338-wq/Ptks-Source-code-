@@ -1,5 +1,4 @@
 import React, { useState, useCallback, createContext, useContext, FC, PropsWithChildren } from 'react';
-// @google-genai-fix: Renamed 'CultivationPath' to 'ProgressionPath' to match updated types.
 import type { GameEvent, ProgressionPath, InnerDemonTrial } from '../types';
 
 interface Notification {

@@ -5,9 +5,7 @@ import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
 export const analyzeItemWithAI = async (item: InventoryItem, gameState: GameState): Promise<Partial<InventoryItem>> => {
-    // @google-genai-fix: Access 'progressionSystem' instead of 'realmSystem'.
     const { playerCharacter, progressionSystem } = gameState;
-    // @google-genai-fix: Access 'progression.currentTierId' instead of 'cultivation.currentRealmId'.
     const currentRealm = progressionSystem.find(r => r.id === playerCharacter.progression.currentTierId);
 
     const itemEffectSchema = {

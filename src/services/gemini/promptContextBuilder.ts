@@ -80,13 +80,15 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
       }).join('\n')
     : 'Không có ai đáng chú ý ở đây.';
   
-    const currentTier = progressionSystem.find(r => r.id === playerCharacter.progression.currentTierId);
+    const isProgressionSystemActive = progressionSystem && (progressionSystem.length > 1 || (progressionSystem.length === 1 && progressionSystem[0].id !== 'pham_nhan'));
+    
+    const currentTier = isProgressionSystemActive ? progressionSystem.find(r => r.id === playerCharacter.progression.currentTierId) : null;
     const currentSubTier = currentTier?.subTiers.find(s => s.id === playerCharacter.progression.currentSubTierId);
 
     let resourceToNextSubTier = Infinity;
     let nextProgressionInfo: string | null = null; 
 
-    if (currentTier && currentSubTier) {
+    if (isProgressionSystemActive && currentTier && currentSubTier) {
         const currentSubTierIndex = currentTier.subTiers.findIndex(s => s.id === currentSubTier.id);
         if (currentSubTierIndex !== -1 && currentSubTierIndex < currentTier.subTiers.length - 1) {
             const nextSubTier = currentTier.subTiers[currentSubTierIndex + 1];
@@ -105,7 +107,7 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
         }
     }
 
-    const isBreakthroughPossible = playerCharacter.progression.progressionResource >= resourceToNextSubTier && resourceToNextSubTier !== Infinity;
+    const isBreakthroughPossible = isProgressionSystemActive && playerCharacter.progression.progressionResource >= resourceToNextSubTier && resourceToNextSubTier !== Infinity;
 
   let dialogueContext = '';
   if (dialogueWithNpcId) {
@@ -169,9 +171,11 @@ ${playerRulesContext}
 **Thời gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen}). Thời tiết: ${gameDate.weather}.
 **Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Trạng thái:** ${playerCharacter.healthStatus}. ${activeEffectsSummary}
+${isProgressionSystemActive ? `
 - **${progressionSystemInfo.name}:** ${currentTier?.name} - ${currentSubTier?.name || ''} (${playerCharacter.progression.progressionResource.toLocaleString()} / ${(resourceToNextSubTier !== Infinity ? resourceToNextSubTier.toLocaleString() : 'MAX')} ${progressionSystemInfo.resourceUnit})
 ${nextProgressionInfo ? `- ${nextProgressionInfo}` : ''}
 ${isBreakthroughPossible ? `- **[TRẠNG THÁI QUAN TRỌNG]: ĐÃ ĐỦ ĐIỀU KIỆN ĐỂ ĐỘT PHÁ!**` : ''}
+` : ''}
 - **Thuộc tính:**${attributeSummary}
 - **Danh Vọng:** ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value}).
 - **Tiền tệ:** ${currencySummary || 'Không có'}.

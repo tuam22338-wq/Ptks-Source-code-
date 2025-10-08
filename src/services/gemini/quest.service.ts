@@ -17,7 +17,7 @@ const questObjectiveSchema = {
 const questRewardSchema = {
     type: Type.OBJECT,
     properties: {
-        spiritualQi: { type: Type.NUMBER, description: "Lượng linh khí hoặc điểm kinh nghiệm thưởng." },
+        progressionResource: { type: Type.NUMBER, description: "Lượng linh khí hoặc điểm kinh nghiệm thưởng." },
         danhVong: { type: Type.NUMBER, description: "Lượng danh vọng thưởng." },
         items: {
             type: Type.ARRAY,
@@ -60,7 +60,7 @@ export const generateMainQuestFromEvent = async (event: MajorEvent, gameState: G
 
     **Bối cảnh người chơi:**
     - **Tên:** ${gameState.playerCharacter.identity.name}
-    - **Cảnh giới:** ${gameState.playerCharacter.cultivation.currentRealmId}
+    - **Cảnh giới:** ${gameState.playerCharacter.progression.currentTierId}
     - **Vị trí hiện tại:** ${gameState.playerCharacter.currentLocationId}
 
     **Nhiệm vụ:**
@@ -145,7 +145,7 @@ export const generateSystemQuest = async (gameState: GameState): Promise<Partial
 
     **Thông tin Ký Chủ:**
     - **Tên:** ${playerCharacter.identity.name}
-    - **Cảnh giới:** ${playerCharacter.cultivation.currentRealmId}
+    - **Cảnh giới:** ${playerCharacter.progression.currentTierId}
     - **Vị trí:** ${playerCharacter.currentLocationId}
     - **Nhiệm vụ đang làm:** ${playerCharacter.activeQuests.map(q => q.title).join(', ') || 'Không có'}
 

@@ -1,4 +1,3 @@
-// FIX: Add ElementType import and export here to be used globally.
 import type { ElementType } from 'react';
 export type { ElementType };
 
@@ -53,7 +52,6 @@ export type TimeOfDay = 'Sáng Sớm' | 'Buổi Sáng' | 'Buổi Trưa' | 'Buổ
 export type Weather = 'SUNNY' | 'CLOUDY' | 'RAIN' | 'STORM' | 'SNOW';
 export type AbilityEffectType = 'DAMAGE' | 'HEAL' | 'BUFF' | 'DEBUFF' | 'APPLY_EFFECT';
 
-// FIX: Define SkillCheck, EventChoice, and EventOutcome here to be used across modules without conflict.
 export interface SkillCheck {
   attribute: string;
   difficulty: number;
@@ -72,7 +70,6 @@ export interface EventOutcome {
     details: Record<string, any>;
 }
 
-// FIX: Moved CultivationTechnique from gameplay.ts to here to resolve circular dependency.
 export interface CultivationTechnique {
     id: string;
     name: string;

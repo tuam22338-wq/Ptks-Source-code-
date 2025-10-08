@@ -65,7 +65,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
     layoutMode: 'auto',
     gameSpeed: 'normal',
     fontFamily: "'Noto Serif', serif",
-    // The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the assignment error here.
     theme: 'theme-ink-wash-bamboo',
     customThemeColors: {
         '--bg-color': '#2A3F3A',
@@ -82,7 +81,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
     dynamicBackground: 'mystic_violet',
     zoomLevel: 55,
     textColor: '#e0e0e0',
-    // @google-genai-fix: Added missing GameplaySettings properties to the DEFAULT_SETTINGS object to satisfy the GameSettings type.
     narrativeStyle: 'visual_novel',
     aiResponseWordCount: 1500,
     aiCreativityLevel: 'balanced',
@@ -101,7 +99,6 @@ export const DEFAULT_SETTINGS: GameSettings = {
     validationServiceCap: 'strict',
     narrateSystemChanges: true,
     worldInterruptionFrequency: 'occasional',
-    // @FIX: Added missing property to satisfy type.
     enableRealmSystem: true,
     enableStorySystem: true,
     mainTaskModel: 'gemini-2.5-flash',
@@ -121,7 +118,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     memorySynthesisModel: 'gemini-2.5-flash',
     narrativeHarmonizerModel: 'gemini-2.5-flash',
     novelistModel: 'gemini-2.5-flash',
-    heuristicFixerModel: 'gemini-2.5-flash', // Add default model
+    heuristicFixerModel: 'gemini-2.5-flash',
     novelistWordCount: 3000,
     novelistNarrativeStyle: 'classic_wuxia',
     novelistTemperature: 1.0,
@@ -157,7 +154,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     modelApiKeyAssignments: {},
     enableDeveloperConsole: false,
     enableTestingMode: false,
-    enableHeuristicFixerAI: true, // Add default value
+    enableHeuristicFixerAI: true,
     backgroundMusicUrl: 'https://files.catbox.moe/f86nal.mp3',
     backgroundMusicName: 'Nhạc Nền Mặc Định',
     backgroundMusicVolume: 0.5,

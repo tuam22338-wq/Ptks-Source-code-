@@ -1,7 +1,4 @@
-// FIX: import CultivationTechnique from types
-import type { NPC, PlayerCharacter, CultivationTechnique, Element } from '../types';
-// FIX: Import attribute definitions to look up attribute data.
-import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
+import type { NPC, PlayerCharacter, CultivationTechnique, Element, GameState } from '../types';
 
 const ELEMENTAL_CHART: Record<Element, { strongAgainst: Element[], weakAgainst: Element[] }> = {
     'Kim': { strongAgainst: ['Mộc'], weakAgainst: ['Hỏa'] },
@@ -15,18 +12,15 @@ const ELEMENTAL_CHART: Record<Element, { strongAgainst: Element[], weakAgainst: 
     'Hỗn Độn': { strongAgainst: ['Kim', 'Mộc', 'Thủy', 'Hỏa', 'Thổ'], weakAgainst: [] },
 };
 
-// FIX: Rewrote getFinalAttributeValue to work with the new CharacterAttributes record.
-// @google-genai-fix: Rewrote getFinalAttributeValue to correctly look up attribute IDs and calculate final values.
-const getFinalAttributeValue = (character: PlayerCharacter | NPC, name: string): number => {
-    const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === name);
-    if (!attrDef) return 10;
-    const attributeId = attrDef.id;
-
+const getFinalAttributeValue = (character: PlayerCharacter | NPC, attributeId: string, gameState: GameState): number => {
     const baseValue = character.attributes[attributeId]?.value || 10;
     
+    const attrDef = gameState.attributeSystem.definitions.find(def => def.id === attributeId);
+    if (!attrDef) return baseValue;
+
     const bonus = (character.activeEffects || [])
         .flatMap(e => e.bonuses)
-        .filter(b => b.attribute === name)
+        .filter(b => b.attribute === attrDef.name) // Bonuses are often by name
         .reduce((sum, b) => sum + b.value, 0);
 
     return baseValue + bonus;
@@ -36,13 +30,14 @@ export const calculateDamage = (
     attacker: PlayerCharacter | NPC,
     target: PlayerCharacter | NPC,
     isMagic: boolean,
+    gameState: GameState,
     techniqueElement?: Element
 ): { damage: number; narrative: string } => {
     const attackerElement = techniqueElement || attacker.element || 'Vô';
     const targetElement = target.element || 'Vô';
 
-    const attackStat = isMagic ? getFinalAttributeValue(attacker, 'Linh Lực Sát Thương') : getFinalAttributeValue(attacker, 'Lực Lượng');
-    const defenseStat = isMagic ? getFinalAttributeValue(target, 'Nguyên Thần Kháng') : getFinalAttributeValue(target, 'Căn Cốt');
+    const attackStat = isMagic ? getFinalAttributeValue(attacker, 'linh_luc_sat_thuong', gameState) : getFinalAttributeValue(attacker, 'luc_luong', gameState);
+    const defenseStat = isMagic ? getFinalAttributeValue(target, 'nguyen_than_khang', gameState) : getFinalAttributeValue(target, 'can_cot', gameState);
 
     let baseDamage = Math.max(1, attackStat - (defenseStat / 2));
     let narrative = '';

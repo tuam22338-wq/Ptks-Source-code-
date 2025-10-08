@@ -5,7 +5,6 @@ import type {
     Location, GameEvent, MajorEvent, ForeshadowedEvent, ResourceNode
 } from './core';
 import type { SpiritualRoot, CharacterIdentity, InnateTalent } from './character';
-// @google-genai-fix: Import ProgressionTierConfig and NamedProgressionSystem types.
 import type { FullMod, ProgressionTierConfig, ModAttributeSystem, ModEvent, NamedProgressionSystem, ModLocation, ModNpc } from './modding';
 import type { SystemInfo, NpcDensity, GameplaySettings } from './settings';
 import type { MechanicalIntent } from './ai';
@@ -115,6 +114,7 @@ export interface InventoryItem {
     type: ItemType;
     quality: ItemQuality;
     icon?: string;
+    iconName?: string; // New: Key for UI_ICONS component
     weight: number;
     value?: number;
     slot?: EquipmentSlot;
@@ -214,7 +214,6 @@ export interface DanhVong {
     status: string;
 }
 
-// @google-genai-fix: Rename 'CultivationPath' to 'ProgressionPath' to match the refactored system.
 export interface ProgressionPath {
   id: string;
   name: string;
@@ -381,6 +380,11 @@ export interface PlayerSectMember extends NPC {
   contribution: number;
 }
 
+export interface SectRank {
+    name: string;
+    contributionRequired: number;
+}
+
 export interface PlayerSect {
   id: string;
   name: string;
@@ -413,9 +417,6 @@ export interface WorldCreationData extends GameplaySettings {
         bio: string;
     };
     attributeSystem?: ModAttributeSystem;
-    // @google-genai-fix: Rename 'enableProgressionSystem' to 'enableRealmSystem' for backward compatibility.
-    enableRealmSystem: boolean;
-    // @google-genai-fix: Rename 'progressionTemplateId' to 'realmTemplateId' for backward compatibility.
     progressionTemplateId: string;
     namedProgressionSystem: NamedProgressionSystem | null;
     generationMode: GenerationMode;

@@ -1,5 +1,5 @@
 import React, { useState, memo, useMemo, useRef, useEffect } from 'react';
-import type { StoryEntry, NPC, GameState, MechanicalIntent, ActiveQuest } from '../../../types';
+import type { StoryEntry, NPC, GameState, MechanicalIntent, ActiveQuest, InventoryItem } from '../../../types';
 import { FaVolumeUp, FaTimes, FaArrowUp, FaArrowDown, FaBook, FaInfoCircle } from 'react-icons/fa';
 import { UI_ICONS, ITEM_QUALITY_STYLES, CURRENCY_DEFINITIONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
@@ -252,6 +252,16 @@ const InteractiveText: React.FC<{
     );
 };
 
+// --- ItemIcon Component ---
+const ItemIcon: React.FC<{ item: Partial<InventoryItem> }> = ({ item }) => {
+    if (item.iconName && UI_ICONS[item.iconName]) {
+        const Icon = UI_ICONS[item.iconName];
+        return <Icon className="text-xl" />;
+    }
+    return <span className="text-xl">{item.icon || '🎁'}</span>;
+};
+
+
 // --- EffectsRenderer Component ---
 const EffectsRenderer: React.FC<{ effects: MechanicalIntent; gameState: GameState }> = ({ effects, gameState }) => {
     const hasVisibleEffect =
@@ -277,7 +287,7 @@ const EffectsRenderer: React.FC<{ effects: MechanicalIntent; gameState: GameStat
                 {effects.itemsGained?.map((item, i) => (
                     <div key={`gain-${i}`} className="flex items-center gap-2 text-sm">
                         <span className="text-green-400 font-bold">+ {item.quantity}</span>
-                        <span className="text-xl">{item.icon}</span>
+                        <ItemIcon item={item} />
                         <span className={`${ITEM_QUALITY_STYLES[item.quality]?.color || 'text-gray-300'} font-semibold`}>{item.name}</span>
                     </div>
                 ))}

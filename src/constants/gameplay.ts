@@ -38,8 +38,7 @@ export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
     { id: 'dashboard', label: 'Trạng Thái', description: 'Mở bảng trạng thái nhân vật', iconName: 'FaUser', actionText: 'mở bảng trạng thái' },
 ];
 
-// @google-genai-fix: Changed type from Record<string, ...> to Record<ProgressionTierConfig['id'], ...> for better type safety.
-export const PROGRESSION_TIER_RANK_CAPS: Record<ProgressionTierConfig['id'], { maxRank: AbilityRank, maxQuality: ItemQuality }> = {
+export const PROGRESSION_TIER_RANK_CAPS: Record<string, { maxRank: AbilityRank, maxQuality: ItemQuality }> = {
     'pham_nhan': { maxRank: 'Phàm Giai', maxQuality: 'Phàm Phẩm' },
     'luyen_khi': { maxRank: 'Tiểu Giai', maxQuality: 'Linh Phẩm' },
     'truc_co': { maxRank: 'Trung Giai', maxQuality: 'Pháp Phẩm' },
@@ -51,4 +50,10 @@ export const PROGRESSION_TIER_RANK_CAPS: Record<ProgressionTierConfig['id'], { m
     'dai_thua': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
     'do_kiep': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
     'nhan_tien': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'thien_tien': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'kim_tien': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'thai_at': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'dai_la': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'chuan_thanh': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
+    'thanh_nhan': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
 };

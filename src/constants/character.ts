@@ -1,4 +1,3 @@
-// FIX: import SpiritualRootQuality from the correct file
 import type { InnateTalentRank, StatBonus, CharacterStatus, SpiritualRootQuality, Element } from '../types';
 
 export const SPIRITUAL_ROOT_CONFIG: Record<Element, { name: string, iconName: string, description: string, baseBonuses: StatBonus[] }> = {

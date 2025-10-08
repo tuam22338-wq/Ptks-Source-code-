@@ -246,4 +246,5 @@ const ProgressionSystemEditorModal: React.FC<ProgressionSystemEditorModalProps> 
     );
 };
 
+// @google-genai-fix: Added a default export to resolve module import errors.
 export default ProgressionSystemEditorModal;

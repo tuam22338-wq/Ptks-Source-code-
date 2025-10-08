@@ -2,7 +2,6 @@ import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, 
 import { generateRelationshipUpdate, executeNpcAction } from './gemini/npc.service';
 import { generateNpcActionPlan } from './gemini/planning.service';
 import { generateDynamicWorldEventFromAI } from './gemini/faction.service';
-// @google-genai-fix: Rename 'REALM_SYSTEM' to 'PROGRESSION_SYSTEM' to match the refactored constants.
 import { PROGRESSION_SYSTEM, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 import * as db from './dbService';
 
@@ -33,7 +32,6 @@ export const simulateWorldTurn = async (
     gameState: GameState
 ): Promise<{ newState: GameState; rumors: Rumor[] }> => {
     let currentTurnState = JSON.parse(JSON.stringify(gameState)); // Deep copy to avoid mutation issues
-    // @google-genai-fix: Access 'progressionSystem' instead of the obsolete 'realmSystem'.
     let { activeNpcs, progressionSystem } = currentTurnState;
     const newRumors: Rumor[] = [];
 
@@ -121,7 +119,6 @@ export const simulateWorldTurn = async (
 
 
     // --- Pillar 4: Faction Ambition Simulation ---
-    // FIX: Access worldEventFrequency from gameState's gameplaySettings, not global settings.
     const eventFrequency = gameState.gameplaySettings.worldEventFrequency || 'occasional';
     const eventChanceMap = {
         'rare': 0.10,
