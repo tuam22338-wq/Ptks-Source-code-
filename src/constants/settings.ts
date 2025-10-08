@@ -83,7 +83,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     zoomLevel: 55,
     textColor: '#e0e0e0',
     // @google-genai-fix: Added missing GameplaySettings properties to the DEFAULT_SETTINGS object to satisfy the GameSettings type.
-    narrativeStyle: 'classic_wuxia',
+    narrativeStyle: 'visual_novel',
     aiResponseWordCount: 1500,
     aiCreativityLevel: 'balanced',
     narrativePacing: 'medium',

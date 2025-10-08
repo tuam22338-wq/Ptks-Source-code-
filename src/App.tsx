@@ -9,7 +9,7 @@ import InfoScreen from './features/Info/InfoScreen';
 import DeveloperConsole from './components/DeveloperConsole';
 import SpecialEffectsOverlay from './components/SpecialEffectsOverlay';
 import { AppProvider, useAppContext } from './contexts/AppContext';
-import { GameProvider } from './contexts/GameContext'; // ** MỚI: Import GameProvider **
+import { GameProvider } from './contexts/GameContext';
 import NovelistScreen from './features/Novelist/NovelistScreen';
 import LoadGameScreen from './features/MainMenu/LoadGameScreen';
 
@@ -93,7 +93,6 @@ const InkSplatterOverlay: React.FC = () => {
 
 
 const WeatherOverlay: React.FC = () => {
-    // ** MỚI: Truy cập gameState từ useAppContext vì nó vẫn là một phần của AppState **
     const { state } = useAppContext();
     const weather = state.gameState?.gameDate?.weather;
 
@@ -198,7 +197,6 @@ const AppContent: React.FC = () => {
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
             }
-            // ** MỚI: Bao bọc GamePlayScreen bằng GameProvider **
             return (
                 <GameProvider initialGameState={gameState}>
                     <LazyGamePlayScreen />

@@ -1,15 +1,11 @@
 import Dexie, { type Table } from 'dexie';
-// FIX: Removed unused import of renamed constant
 import type { 
     GameState, 
     GameSettings, 
-    ModInfo, 
     FullMod, 
     SaveSlot, 
-    CharacterAttributes, 
     NPC, 
-    Sect, 
-    Location,
+    Sect,
     MemoryFragment,
     GraphEdge,
     RagSource,
@@ -51,7 +47,7 @@ export class MyDatabase extends Dexie {
 
   constructor() {
     super('TamThienTheGioiDB');
-    // FIX: Upgraded database version to 7 to reflect schema generalization.
+    // @google-genai-fix: Cast `this` to `Dexie` to resolve TypeScript error where meta-methods like `version` are not found on the subclass type.
     (this as Dexie).version(7).stores({
       saveSlots: 'id',
       settings: 'key',
@@ -67,7 +63,7 @@ export class MyDatabase extends Dexie {
       novels: '++id, title, lastModified',
       heuristicFixLogs: '++id, timestamp', // Schema cho bảng logs
     });
-    // This will upgrade from version 6 to 7.
+    // @google-genai-fix: Cast `this` to `Dexie` to resolve TypeScript error for the `on` method.
     (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });
@@ -209,7 +205,6 @@ export const saveModToLibrary = async (mod: ModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: ModInLibrary[]): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
@@ -270,7 +265,6 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
 export const exportAllData = async (): Promise<Record<string, any>> => {
   const data: Record<string, any> = {};
   const allTables = db.getTables();
-  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
   await (db as Dexie).transaction('r', allTables, async () => {
     for (const table of allTables) {
       data[table.name] = await table.toArray();
@@ -302,7 +296,6 @@ export const importAllData = async (data: Record<string, any>): Promise<void> =>
   }
 
   const allTables = db.getTables();
-  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
   await (db as Dexie).transaction('rw', allTables, async () => {
     // Clear all tables first for a clean import
     await Promise.all(allTables.map(table => table.clear()));
@@ -337,7 +330,6 @@ export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<numb
 };
 
 export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
     await (db as Dexie).transaction('rw', db.memoryFragments, db.graphEdges, async () => {
         await db.memoryFragments.where('slotId').equals(slotId).delete();
         await db.graphEdges.where('slotId').equals(slotId).delete();
@@ -376,7 +368,6 @@ export const getRelevantMemories = async (
   // Deduplicate and sort
   const uniqueFragments = Array.from(new Map(allFragments.map(f => [f.id, f])).values());
   
-  // FIX: Explicitly type sort function parameters to resolve 'unknown' type error.
   uniqueFragments.sort((a: MemoryFragment, b: MemoryFragment) => {
       if (a.gameDate.year !== b.gameDate.year) return b.gameDate.year - a.gameDate.year;
       const seasonOrder = ['Xuân', 'Hạ', 'Thu', 'Đông'];

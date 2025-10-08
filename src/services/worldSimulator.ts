@@ -2,7 +2,8 @@ import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, 
 import { generateRelationshipUpdate, executeNpcAction } from './gemini/npc.service';
 import { generateNpcActionPlan } from './gemini/planning.service';
 import { generateDynamicWorldEventFromAI } from './gemini/faction.service';
-import { REALM_SYSTEM, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
+// @google-genai-fix: Rename 'REALM_SYSTEM' to 'PROGRESSION_SYSTEM' to match the refactored constants.
+import { PROGRESSION_SYSTEM, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../constants';
 import * as db from './dbService';
 
 const SIMULATED_NPCS_PER_TURN = 2; // Limit API calls
@@ -32,7 +33,8 @@ export const simulateWorldTurn = async (
     gameState: GameState
 ): Promise<{ newState: GameState; rumors: Rumor[] }> => {
     let currentTurnState = JSON.parse(JSON.stringify(gameState)); // Deep copy to avoid mutation issues
-    let { activeNpcs, realmSystem } = currentTurnState;
+    // @google-genai-fix: Access 'progressionSystem' instead of the obsolete 'realmSystem'.
+    let { activeNpcs, progressionSystem } = currentTurnState;
     const newRumors: Rumor[] = [];
 
     // --- Pillar 2: NPC Goal & Planning Simulation ---

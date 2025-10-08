@@ -53,7 +53,6 @@ const DraggableIcon: React.FC<{ onClick: () => void }> = ({ onClick }) => {
         document.body.style.cursor = 'grabbing';
     };
 
-    // FIX: Import 'useCallback' from React to resolve 'Cannot find name' error.
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!dragInfo.current.isDragging) return;
         e.preventDefault();
@@ -63,7 +62,6 @@ const DraggableIcon: React.FC<{ onClick: () => void }> = ({ onClick }) => {
         });
     }, []);
 
-    // FIX: Import 'useCallback' from React to resolve 'Cannot find name' error.
     const handleMouseUp = useCallback((e: MouseEvent) => {
         if (!dragInfo.current.isDragging) return;
 

@@ -1,4 +1,5 @@
 
+
 import type Dexie from 'dexie';
 import type { RagSource, RagEmbedding } from '../types';
 import * as db from './dbService';
@@ -52,6 +53,7 @@ export const addPlayerJournalSource = async (file: File): Promise<void> => {
 };
 export const deleteSource = async (sourceId: string): Promise<void> => {
     // FIX: Access tables via the exported 'db' instance from the 'db' module namespace.
+    // @google-genai-fix: Cast `db.db` to Dexie to ensure transaction method is found.
     await (db.db as Dexie).transaction('rw', db.db.ragSources, db.db.ragEmbeddings, async () => {
         await db.db.ragSources.delete(sourceId);
         await db.db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
@@ -80,6 +82,7 @@ export const indexSource = async (sourceId: string): Promise<void> => {
         }));
         // Clear old embeddings and add new ones
         // FIX: Access tables via the exported 'db' instance from the 'db' module namespace.
+        // @google-genai-fix: Cast `db.db` to Dexie to ensure transaction method is found.
         await (db.db as Dexie).transaction('rw', db.db.ragEmbeddings, async () => {
             await db.db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
             await db.db.ragEmbeddings.bulkAdd(embeddingObjects as RagEmbedding[]);

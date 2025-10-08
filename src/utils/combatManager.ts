@@ -16,6 +16,7 @@ const ELEMENTAL_CHART: Record<Element, { strongAgainst: Element[], weakAgainst: 
 };
 
 // FIX: Rewrote getFinalAttributeValue to work with the new CharacterAttributes record.
+// @google-genai-fix: Rewrote getFinalAttributeValue to correctly look up attribute IDs and calculate final values.
 const getFinalAttributeValue = (character: PlayerCharacter | NPC, name: string): number => {
     const attrDef = DEFAULT_ATTRIBUTE_DEFINITIONS.find(def => def.name === name);
     if (!attrDef) return 10;

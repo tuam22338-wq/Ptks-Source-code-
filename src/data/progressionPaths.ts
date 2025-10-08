@@ -1,13 +1,12 @@
-// FIX: Rename CultivationPath to CultivationPath
-import type { CultivationPath } from '../types';
+// @google-genai-fix: Rename 'CultivationPath' to 'ProgressionPath' to match updated types.
+import type { ProgressionPath } from '../types';
 
-export const CULTIVATION_PATHS: CultivationPath[] = [
+export const PROGRESSION_PATHS: ProgressionPath[] = [
     {
         id: 'path_sword_immortal',
         name: 'Kiếm Tiên Chi Lộ',
         description: 'Tập trung vào việc tu luyện kiếm pháp, lấy công làm thủ, một kiếm phá vạn pháp.',
-        // FIX: 'requiredTierId' does not exist on type 'CultivationPath'. Changed to 'requiredRealmId'.
-        requiredRealmId: 'truc_co', // Offered when entering Foundation Establishment
+        requiredTierId: 'truc_co', // Offered when entering Foundation Establishment
         bonuses: [
             { attribute: 'Lực Lượng', value: 10 },
             { attribute: 'Linh Lực Sát Thương', value: 15 },
@@ -17,8 +16,7 @@ export const CULTIVATION_PATHS: CultivationPath[] = [
         id: 'path_alchemy_master',
         name: 'Đan Đạo Tông Sư',
         description: 'Chuyên tâm vào việc luyện đan, cứu người giúp đời hoặc luyện chế độc dược hại người.',
-        // FIX: 'requiredTierId' does not exist on type 'CultivationPath'. Changed to 'requiredRealmId'.
-        requiredRealmId: 'truc_co',
+        requiredTierId: 'truc_co',
         bonuses: [
             { attribute: 'Ngự Khí Thuật', value: 20 },
             { attribute: 'Nguyên Thần', value: 10 },

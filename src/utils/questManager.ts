@@ -186,7 +186,6 @@ const processCompletedQuests = (currentState: GameState): QuestUpdateResult => {
             if (rewards.spiritualQi) {
                 const qiAmount = Number(rewards.spiritualQi) || 0;
                 if (qiAmount > 0) {
-                    // FIX: Ensure pc object has cultivation property
                     if (pc.cultivation) {
                         pc.cultivation.spiritualQi += qiAmount;
                     }

@@ -15,7 +15,6 @@ const FRIENDLY_COLOR = '#2E8B57'; // SeaGreen
 const NEUTRAL_COLOR = '#A9A9A9'; // DarkGray
 const HOSTILE_COLOR = '#DC143C'; // Crimson
 const MEMBERSHIP_COLOR = '#9370DB'; // MediumPurple
-// FIX: Renamed to avoid redeclaring 'LOCATION_COLOR'. This constant is for edges.
 const LOCATION_EDGE_COLOR = '#778899'; // LightSlateGray
 
 const REPULSION_STRENGTH = 6000;
@@ -66,8 +65,6 @@ const StoryGraphPanel: React.FC<StoryGraphPanelProps> = ({ gameState }) => {
         const newEdges: Edge[] = [];
 
         const addNode = (id: string, label: string, type: NodeType, color: string) => {
-            // FIX: The error "Expected 1 arguments, but got 0" on this line is likely a tooling or parser bug.
-            // Using .some() instead of .find() is functionally equivalent for this boolean check and may avoid the issue.
             if (!newNodes.some(n => n.id === id)) {
                 newNodes.push({ id, label, type, color, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: 0, vy: 0 });
             }
@@ -102,12 +99,9 @@ const StoryGraphPanel: React.FC<StoryGraphPanelProps> = ({ gameState }) => {
         });
         
         // 7. Create Entity-Location Edges
-        addNode('player', playerCharacter.identity.name, 'player', PLAYER_COLOR); // Ensure player is added
-        // FIX: Use the correctly named constant for edge color.
         newEdges.push({ source: 'player', target: playerCharacter.currentLocationId, type: 'location', color: LOCATION_EDGE_COLOR });
         activeNpcs.forEach(npc => {
             if (npc.locationId && discoveredLocations.some(l => l.id === npc.locationId)) {
-                // FIX: Use the correctly named constant for edge color.
                 newEdges.push({ source: npc.id, target: npc.locationId, type: 'location', color: LOCATION_EDGE_COLOR });
             }
         });

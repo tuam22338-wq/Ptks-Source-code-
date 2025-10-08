@@ -8,6 +8,7 @@ import { useGameUIContext } from '../../../contexts/GameUIContext';
 import { calculateDerivedStats } from '../../../utils/statCalculator';
 // FIX: Import useGameContext to access game-specific actions.
 import { useGameContext } from '../../../contexts/GameContext';
+import ItemTooltip from '../../../components/ItemTooltip';
 
 interface InventoryModalProps {
     isOpen: boolean;
@@ -18,10 +19,13 @@ const ITEM_FILTERS: { id: ItemFilter; label: string; }[] = [
     { id: 'all', label: 'Tất Cả' },
     { id: 'Vũ Khí', label: 'Vũ Khí' },
     { id: 'Phòng Cụ', label: 'Phòng Cụ' },
+    { id: 'Trang Sức', label: 'Trang Sức' },
     { id: 'Đan Dược', label: 'Đan Dược' },
     { id: 'Pháp Bảo', label: 'Pháp Bảo' },
     { id: 'Nguyên Liệu', label: 'Nguyên Liệu' },
     { id: 'Tạp Vật', label: 'Tạp Vật' },
+    { id: 'Sách Kỹ Năng', label: 'Sách Kỹ Năng' },
+    { id: 'Cổ Vật', label: 'Cổ Vật' },
 ];
 
 const EquipmentSlotComponent: React.FC<{
@@ -55,39 +59,6 @@ const EquipmentSlotComponent: React.FC<{
                 )}
                  {item && <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-[var(--bg-color)] ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>}
             </button>
-        </div>
-    );
-};
-
-const ItemComparison: React.FC<{ item: InventoryItem; equipped: InventoryItem | null }> = ({ item, equipped }) => {
-    const itemBonuses = new Map((item.bonuses || []).map(b => [b.attribute, b.value]));
-    const equippedBonuses = new Map((equipped?.bonuses || []).map(b => [b.attribute, b.value]));
-    const allAttributes = new Set([...itemBonuses.keys(), ...equippedBonuses.keys()]);
-
-    if (allAttributes.size === 0) return null;
-
-    return (
-        <div className="mt-2 pt-2 border-t border-[var(--shadow-light)]/50">
-            {Array.from(allAttributes).map(attr => {
-                const itemValue = Number(itemBonuses.get(attr)) || 0;
-                const equippedValue = Number(equippedBonuses.get(attr)) || 0;
-                const diff = itemValue - equippedValue;
-                let diffColor = 'text-[var(--text-muted-color)]';
-                if (diff > 0) diffColor = 'text-[var(--success-color)]';
-                if (diff < 0) diffColor = 'text-[var(--error-color)]';
-
-                return (
-                    <div key={attr} className="flex justify-between items-center text-xs">
-                        <span style={{color: 'var(--text-color)'}}>{attr}</span>
-                        <div className="flex items-center gap-2">
-                            <span className="font-mono w-8 text-right">{itemValue}</span>
-                            <span className={`font-mono font-bold w-10 text-center ${diffColor}`}>
-                                ({diff > 0 ? '+' : ''}{diff})
-                            </span>
-                        </div>
-                    </div>
-                );
-            })}
         </div>
     );
 };
@@ -142,7 +113,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     }, [createAndDispatchAction]);
 
     const handleUse = useCallback((itemToUse: InventoryItem) => {
-        const actionText = itemToUse.type === 'Đan Phương' ? `Học ${itemToUse.name}` : `Sử dụng ${itemToUse.name}`;
+        const actionText = itemToUse.type === 'Đan Phương' || itemToUse.type === 'Sách Kỹ Năng' ? `Học ${itemToUse.name}` : `Sử dụng ${itemToUse.name}`;
         createAndDispatchAction(actionText);
     }, [createAndDispatchAction]);
 
@@ -251,31 +222,18 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                         </div>
                          <div className="flex-grow p-3 rounded-lg border border-[var(--shadow-light)] min-h-[14rem] flex flex-col justify-between">
                             {selectedItem ? (
-                                <div className="animate-fade-in" style={{animationDuration: '200ms'}}>
-                                    <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[selectedItem.quality].color}`}>{selectedItem.name}</h4>
-                                    <p className="text-xs text-[var(--text-muted-color)] italic truncate">{selectedItem.description}</p>
-                                    
-                                    {selectedItem.isIdentified === false ? (
-                                        <div className="mt-2 pt-2 border-t border-[var(--shadow-light)]/50">
-                                            <p className="text-sm text-center text-yellow-300/80 italic">Vật phẩm này ẩn chứa sức mạnh chưa biết. Cần được giám định.</p>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            {selectedItem.vitalEffects && selectedItem.vitalEffects.length > 0 && <div className="mt-1 text-xs text-yellow-300">{selectedItem.vitalEffects.map(b => `${b.vital === 'hunger' ? 'No bụng' : 'Nước uống'} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
-                                            {selectedItem.slot && !selectedItem.isEquipped && <ItemComparison item={selectedItem} equipped={equippedItemForComparison} />}
-                                        </>
-                                    )}
-                                </div>
+                                <ItemTooltip item={selectedItem} compareItem={equippedItemForComparison} />
                             ) : (
                                 <div className="h-full flex items-center justify-center text-[var(--text-muted-color)]">Di chuột qua vật phẩm để xem chi tiết.</div>
                             )}
-                            <div className="flex justify-end items-center gap-2 mt-2">
-                                {selectedItem && (selectedItem.type === 'Vũ Khí' || selectedItem.type === 'Phòng Cụ' || selectedItem.type === 'Pháp Bảo') && selectedItem.isIdentified === false && (
+                            <div className="flex justify-end items-center gap-2 mt-2 pt-2 border-t border-[var(--shadow-light)]/30">
+                                {selectedItem && selectedItem.isIdentified === false && (
                                     <button onClick={() => handleIdentify(selectedItem)} className="btn btn-primary !bg-purple-700/80 !text-sm !px-4 !py-1">Giám Định</button>
                                 )}
                                 {selectedItem && selectedItem.isEquipped && selectedItem.slot && <button onClick={() => handleUnequip(selectedItem.slot!)} className="btn btn-neumorphic !text-sm !px-4 !py-1">Tháo Ra</button>}
                                 {selectedItem && selectedItem.slot && !selectedItem.isEquipped && selectedItem.isIdentified !== false && <button onClick={() => handleEquip(selectedItem)} className="btn btn-primary !bg-green-700/80 !text-sm !px-4 !py-1">Trang Bị</button>}
-                                {selectedItem && (selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương' || selectedItem.type === 'Linh Dược') && <button onClick={() => handleUse(selectedItem)} className="btn btn-primary !bg-blue-700/80 !text-sm !px-4 !py-1">{selectedItem.type === 'Đan Phương' ? 'Học' : 'Sử Dụng'}</button>}
+                                {/* @google-genai-fix: Changed 'item.type' to 'selectedItem.type' to use the correct variable. */}
+                                {selectedItem && (selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương' || selectedItem.type === 'Linh Dược' || selectedItem.type === 'Sách Kỹ Năng') && <button onClick={() => handleUse(selectedItem)} className="btn btn-primary !bg-blue-700/80 !text-sm !px-4 !py-1">{selectedItem.type === 'Đan Phương' || selectedItem.type === 'Sách Kỹ Năng' ? 'Học' : 'Sử Dụng'}</button>}
                                 {selectedItem && <button onClick={() => handleDrop(selectedItem, 1)} className="btn btn-primary !bg-red-800/80 !text-sm !px-4 !py-1">Vứt Bỏ</button>}
                             </div>
                         </div>

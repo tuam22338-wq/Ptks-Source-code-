@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-// FIX: Import `FaUpload` icon to resolve usage error.
 import { FaArrowLeft, FaFileUpload, FaBrain, FaToggleOn, FaToggleOff, FaSave, FaPlus, FaTrash, FaEdit, FaBolt, FaChevronDown, FaChevronUp, FaDownload, FaUpload } from 'react-icons/fa';
 import { useAppContext } from '../../contexts/AppContext';
 import { CURRENT_GAME_VERSION, ATTRIBUTE_TEMPLATES, UI_ICONS, NARRATIVE_STYLES, DEATH_PENALTY_LEVELS, WORLD_INTERRUPTION_LEVELS } from '../../constants';
 import { REALM_TEMPLATES } from '../../data/realmTemplates';
 import { STORY_TEMPLATES } from '../../data/storyTemplates';
-import type { SaveSlot, FullMod, WorldCreationData, ModAttributeSystem, AttributeDefinition, AttributeGroupDefinition, NamedRealmSystem, GenerationMode, NarrativeStyle, DeathPenalty, WorldInterruptionFrequency, DataGenerationMode, ModNpc, ModLocation, Faction } from '../../types';
+// @google-genai-fix: Correctly import 'NamedProgressionSystem' instead of the obsolete 'NamedRealmSystem'.
+import type { SaveSlot, FullMod, WorldCreationData, ModAttributeSystem, AttributeDefinition, AttributeGroupDefinition, NamedProgressionSystem, GenerationMode, NarrativeStyle, DeathPenalty, WorldInterruptionFrequency, DataGenerationMode, ModNpc, ModLocation, Faction } from '../../types';
 import LoadingScreen from '../../components/LoadingScreen';
 import AttributeEditorModal from '../../features/Mods/components/AttributeEditorModal';
 import RealmEditorModal from '../../features/Mods/components/RealmEditorModal';
@@ -180,8 +180,10 @@ const SaveSlotScreen: React.FC = () => {
     attributeSystem: ATTRIBUTE_TEMPLATES.find(t => t.id === 'xianxia_default')!.system,
     enableRealmSystem: true,
     enableStorySystem: true,
-    realmTemplateId: 'xianxia_default',
-    namedRealmSystem: REALM_TEMPLATES.find(t => t.id === 'xianxia_default')!.system,
+    // @google-genai-fix: Rename 'realmTemplateId' to 'progressionTemplateId' to match the updated type definition.
+    progressionTemplateId: 'xianxia_default',
+    // @google-genai-fix: Rename 'namedRealmSystem' to 'namedProgressionSystem' to match the updated type definition.
+    namedProgressionSystem: REALM_TEMPLATES.find(t => t.id === 'xianxia_default')!.system,
     generationMode: 'deep',
     // Data Generation Modes
     npcGenerationMode: 'AI',
@@ -317,8 +319,10 @@ const SaveSlotScreen: React.FC = () => {
             theme: mod.modInfo.name || p.theme,
             setting: mod.modInfo.description || mod.content.worldData?.[0]?.description || p.setting,
             attributeSystem: mod.content.attributeSystem || p.attributeSystem,
-            namedRealmSystem: mod.content.namedRealmSystems?.[0] || p.namedRealmSystem,
-            enableRealmSystem: !!(mod.content.namedRealmSystems && mod.content.namedRealmSystems.length > 0),
+            // @google-genai-fix: Access 'namedProgressionSystems' instead of the obsolete 'namedRealmSystems'.
+            namedProgressionSystem: mod.content.namedProgressionSystems?.[0] || p.namedProgressionSystem,
+            // @google-genai-fix: Access 'namedProgressionSystems' instead of the obsolete 'namedRealmSystems' to check for existence.
+            enableRealmSystem: !!(mod.content.namedProgressionSystems && mod.content.namedProgressionSystems.length > 0),
             character: p.character,
         }));
 
@@ -446,8 +450,10 @@ const SaveSlotScreen: React.FC = () => {
         if (templateId === 'custom') {
             setFormData(prev => ({
                 ...prev,
-                realmTemplateId: 'custom',
-                namedRealmSystem: {
+                // @google-genai-fix: Rename 'realmTemplateId' to 'progressionTemplateId'.
+                progressionTemplateId: 'custom',
+                // @google-genai-fix: Rename 'namedRealmSystem' to 'namedProgressionSystem'.
+                namedProgressionSystem: {
                     id: `custom_system_${Date.now()}`,
                     name: 'Hệ Thống Tùy Chỉnh',
                     description: 'Một hệ thống cảnh giới do người dùng tạo.',
@@ -460,14 +466,17 @@ const SaveSlotScreen: React.FC = () => {
             const template = REALM_TEMPLATES.find(t => t.id === templateId);
             setFormData(prev => ({
                 ...prev,
-                realmTemplateId: templateId,
-                namedRealmSystem: template ? JSON.parse(JSON.stringify(template.system)) : null
+                // @google-genai-fix: Rename 'realmTemplateId' to 'progressionTemplateId'.
+                progressionTemplateId: templateId,
+                // @google-genai-fix: Rename 'namedRealmSystem' to 'namedProgressionSystem'.
+                namedProgressionSystem: template ? JSON.parse(JSON.stringify(template.system)) : null
             }));
         }
     };
     
-    const handleSaveRealmSystem = (systems: NamedRealmSystem[]) => {
-        setFormData(p => ({ ...p, namedRealmSystem: systems[0] || null }));
+    const handleSaveRealmSystem = (systems: NamedProgressionSystem[]) => {
+        // @google-genai-fix: Rename 'namedRealmSystem' to 'namedProgressionSystem'.
+        setFormData(p => ({ ...p, namedProgressionSystem: systems[0] || null }));
     };
 
     const handleQuickGenerate = (description: string, characterName: string) => {
@@ -575,7 +584,6 @@ const SaveSlotScreen: React.FC = () => {
             const mod = fixModStructure(rawMod);
 
             // Populate form with generated mod data
-            // @ts-ignore
             setFormData(p => ({
                 ...p,
                 importedMod: mod,
@@ -583,10 +591,11 @@ const SaveSlotScreen: React.FC = () => {
                 theme: mod.modInfo.name || p.theme,
                 setting: mod.modInfo.description || mod.content.worldData?.[0]?.description || p.setting,
                 attributeSystem: mod.content.attributeSystem || p.attributeSystem,
-                namedRealmSystem: mod.content.namedRealmSystems?.[0] || p.namedRealmSystem,
-                enableRealmSystem: !!(mod.content.namedRealmSystems && mod.content.namedRealmSystems.length > 0),
+                // @google-genai-fix: Access 'namedProgressionSystems' instead of the obsolete 'namedRealmSystems'.
+                namedProgressionSystem: mod.content.namedProgressionSystems?.[0] || p.namedProgressionSystem,
+                // @google-genai-fix: Access 'namedProgressionSystems' to check for existence.
+                enableRealmSystem: !!(mod.content.namedProgressionSystems && mod.content.namedProgressionSystems.length > 0),
                 // custom data from mod
-                // FIX: Ensure generated NPCs and Locations have valid IDs to satisfy the more strict ModNpc[] and ModLocation[] types.
                 customNpcs: (mod.content.worldData?.[0]?.initialNpcs || []).map((npc, i) => ({ ...npc, id: npc.id || `gen_npc_${i}`})),
                 customLocations: (mod.content.worldData?.[0]?.initialLocations || []).map(loc => ({ ...loc, id: loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '') })),
                 customFactions: mod.content.worldData?.[0]?.factions || [],
@@ -626,7 +635,7 @@ const SaveSlotScreen: React.FC = () => {
                 isOpen={isRealmEditorOpen}
                 onClose={() => setRealmEditorOpen(false)}
                 onSave={handleSaveRealmSystem}
-                initialSystems={formData.namedRealmSystem ? [formData.namedRealmSystem] : []}
+                initialSystems={formData.namedProgressionSystem ? [formData.namedProgressionSystem] : []}
                 attributeSystem={formData.attributeSystem}
             />
         )}
@@ -789,7 +798,7 @@ const SaveSlotScreen: React.FC = () => {
                  {formData.enableRealmSystem && (
                      <Field label="Chọn Mẫu Cảnh Giới" description="Bắt đầu với một hệ thống có sẵn hoặc tự tạo.">
                         <div className="flex items-center gap-2">
-                           <select value={formData.realmTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="input-neumorphic flex-grow">
+                           <select value={formData.progressionTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="input-neumorphic flex-grow">
                                 {REALM_TEMPLATES.map(template => (
                                     <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
                                 ))}
@@ -874,7 +883,7 @@ const SaveSlotScreen: React.FC = () => {
                                     <span className="text-sm font-semibold">{npc.name}</span>
                                     <div className="flex gap-2">
                                         <button onClick={() => { setEditingNpc(npc); setNpcModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
-                                        <button onClick={() => handleDeleteNpc(npc.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                        <button onClick={() => handleDeleteNpc(npc.id!)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
                                     </div>
                                 </div>
                             ))}

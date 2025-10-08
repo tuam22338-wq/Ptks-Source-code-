@@ -1,5 +1,5 @@
-import { Type, FunctionDeclaration } from "@google/genai";
-import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC, Location, Faction, MajorEvent } from '../../types';
+import { Type } from "@google/genai";
+import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC, Location, Faction, MajorEvent, ItemType, ItemQuality } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
 import * as db from '../dbService';
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
@@ -177,6 +177,15 @@ export async function* generateActionResponseStream(
         },
         required: ['identity', 'status', 'cultivation', 'attributes']
     };
+    
+    const itemEffectSchema = {
+        type: Type.OBJECT,
+        properties: {
+            type: { type: Type.STRING, enum: ['APPLY_STATUS', 'DEAL_DAMAGE', 'HEAL', 'MODIFY_STAT'] },
+            description: { type: Type.STRING },
+        },
+        required: ['type', 'description']
+    };
 
     const masterSchema = {
       type: Type.OBJECT,
@@ -189,26 +198,51 @@ export async function* generateActionResponseStream(
           properties: {
             statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, change: { type: Type.NUMBER, description: "Thay đổi giá trị hiện tại của chỉ số." }, changeMax: { type: Type.NUMBER, description: "Thay đổi giá trị TỐI ĐA của chỉ số (chỉ dành cho Sinh Mệnh, Linh Lực, Độ No, Độ Khát...)." } }, required: ['attribute'] } },
             currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
-            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
+            itemsGained: { 
+                type: Type.ARRAY, 
+                items: { 
+                    type: Type.OBJECT, 
+                    properties: { 
+                        name: { type: Type.STRING }, 
+                        quantity: { type: Type.NUMBER }, 
+                        description: { type: Type.STRING }, 
+                        lore: { type: Type.STRING, description: "Một đoạn cốt truyện ngắn, bí ẩn về vật phẩm (nếu có)."},
+                        type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu', 'Trang Sức', 'Sách Kỹ Năng', 'Cổ Vật'] as ItemType[] }, 
+                        quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] as ItemQuality[] }, 
+                        icon: { type: Type.STRING }, 
+                        weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, 
+                        bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}},
+                        itemStats: { type: Type.OBJECT, properties: { damage: { type: Type.NUMBER }, defense: { type: Type.NUMBER }}},
+                        passiveEffects: { type: Type.ARRAY, items: itemEffectSchema },
+                        conditionalEffects: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    trigger: { type: Type.STRING, enum: ['ON_HIT_DEALT', 'ON_HIT_TAKEN', 'ON_KILL', 'ON_CRIT_DEALT', 'ON_DODGE'] },
+                                    chance: { type: Type.NUMBER },
+                                    effect: itemEffectSchema
+                                },
+                                required: ['trigger', 'chance', 'effect']
+                            }
+                        },
+                        curseDescription: { type: Type.STRING, description: "Mô tả về lời nguyền (nếu có)."},
+                        curseEffect: itemEffectSchema,
+                    }, 
+                    required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } 
+                },
             itemsLost: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
             itemIdentified: {
                 type: Type.OBJECT,
                 description: "Kết quả của việc giám định vật phẩm thành công.",
                 properties: {
                     itemId: { type: Type.STRING, description: "ID của vật phẩm đã được giám định." },
-                    newBonuses: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                attribute: { type: Type.STRING },
-                                value: { type: Type.NUMBER }
-                            },
-                            required: ['attribute', 'value']
-                        }
-                    }
+                    newBonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: { type: Type.NUMBER } }, required: ['attribute', 'value']}},
+                    passiveEffects: { type: Type.ARRAY, items: itemEffectSchema },
+                    conditionalEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { trigger: { type: Type.STRING }, chance: { type: Type.NUMBER }, effect: itemEffectSchema }}},
+                    curseEffect: itemEffectSchema
                 },
-                required: ['itemId', 'newBonuses']
+                required: ['itemId']
             },
             newTechniques: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] } }, required: ['name', 'description', 'type', 'rank'] } },
             newQuests: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, source: { type: Type.STRING }, objectives: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] }, description: { type: Type.STRING }, target: { type: Type.STRING }, required: { type: Type.NUMBER } }, required: ['type', 'description', 'target', 'required'] } } }, required: ['title', 'description', 'source', 'objectives'] } },
@@ -251,7 +285,7 @@ Bạn PHẢI thực hiện các bước sau trong suy nghĩ của mình và ghi 
 2.  **VIẾT TIẾP, KHÔNG LẶP LẠI (CỰC KỲ QUAN TRỌNG):** Nhiệm vụ của bạn là **VIẾT TIẾP** câu chuyện, tạo ra diễn biến **HOÀN TOÀN MỚI** dựa trên hành động của người chơi.
     - **TUYỆT ĐỐI KHÔNG** lặp lại, diễn giải lại, hoặc tóm tắt lại bất kỳ nội dung nào đã có trong "Nhật Ký Gần Đây" hoặc "Tóm Tắt Cốt Truyện".
     - **TUYỆT ĐỐI KHÔNG** lặp lại các câu văn, đoạn văn, hoặc ý tưởng trong chính phản hồi bạn đang tạo ra. Mỗi câu phải mang một thông tin hoặc diễn biến mới.
-3.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`.
+3.  **SÁNG TẠO CÓ CHỦ ĐÍCH:** Hãy tự do sáng tạo các tình huống, vật phẩm, nhiệm vụ mới... nhưng luôn ghi lại chúng một cách có cấu trúc trong \`mechanicalIntent\`. Khi tạo vật phẩm (\`itemsGained\`), hãy sáng tạo ra các hiệu ứng độc đáo (passive, conditional, curses) để làm cho chúng thú vị, không chỉ là các chỉ số cộng trừ đơn thuần, đặc biệt với các vật phẩm phẩm chất cao.
 4.  **HÀNH ĐỘNG CÓ GIÁ:** Nhiều hành động sẽ tiêu tốn tiền tệ hoặc vật phẩm. Hãy phản ánh điều này trong cả \`narrative\` và \`mechanicalIntent\` (sử dụng \`currencyChanges\` và \`itemsLost\`). Nếu người chơi không đủ, hãy để NPC từ chối một cách hợp lý.
 5.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng dấu xuống dòng (\`\\n\`) để tách các đoạn văn, tạo sự dễ đọc.
 ${narrateSystemChangesInstruction}
@@ -370,10 +404,8 @@ export const summarizeStory = async (storyLog: StoryEntry[], playerCharacter: Ga
     return response.text.trim();
 };
 
-export const askAiAssistant = async (query: string, gameState: GameState): Promise<string> => {
-    // FIX: Fetch settings from the database as it's not passed into this function.
-    const settings = await db.getSettings();
-    const context = createFullGameStateContext(gameState, settings!, undefined, undefined, true);
+export const askAiAssistant = async (query: string, gameState: GameState, settings: GameSettings): Promise<string> => {
+    const context = createFullGameStateContext(gameState, settings, undefined, undefined, true);
     
     const prompt = `Bạn là "Thiên Cơ Lão Nhân", một trợ lý AI toàn tri trong game. Người chơi đang hỏi bạn một câu hỏi.
     Dựa vào Bách Khoa Toàn Thư (thông tin đã biết) trong bối cảnh game, hãy trả lời câu hỏi của người chơi một cách ngắn gọn, súc tích và chính xác.

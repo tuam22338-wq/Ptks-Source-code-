@@ -1,10 +1,11 @@
 import React from 'react';
-import type { CultivationPath } from '../../types';
+// @google-genai-fix: Renamed 'CultivationPath' to 'ProgressionPath' to match updated types.
+import type { ProgressionPath } from '../../types';
 
 interface ProgressionPathModalProps {
     isOpen: boolean;
-    paths: CultivationPath[];
-    onSelectPath: (path: CultivationPath) => void;
+    paths: ProgressionPath[];
+    onSelectPath: (path: ProgressionPath) => void;
 }
 
 const CultivationPathModal: React.FC<ProgressionPathModalProps> = ({ isOpen, paths, onSelectPath }) => {

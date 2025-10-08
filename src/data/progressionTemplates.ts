@@ -4,8 +4,7 @@ import type { NamedProgressionSystem } from "../types";
  * Kho lưu trữ các mẫu hệ thống cảnh giới/cấp bậc được thiết kế sẵn.
  * Mỗi hệ thống cung cấp một con đường phát triển sức mạnh độc đáo cho một thể loại thế giới.
  */
-// @google-genai-fix: Rename 'NamedRealmSystem' to 'NamedProgressionSystem' to match updated types.
-export const REALM_TEMPLATES: { id: string; name: string; description: string; system: NamedProgressionSystem }[] = [
+export const PROGRESSION_TEMPLATES: { id: string; name: string; description: string; system: NamedProgressionSystem }[] = [
     // --- MẪU TU TIÊN & VÕ HIỆP ---
     {
         id: 'xianxia_default',
@@ -17,7 +16,6 @@ export const REALM_TEMPLATES: { id: string; name: string; description: string; s
             description: 'Con đường tu luyện để trường sinh bất tử, từ một凡人 yếu đuối đến tồn tại tối cao.',
             resourceName: 'Linh Khí',
             resourceUnit: 'điểm',
-            // @google-genai-fix: Rename 'realms' to 'tiers' to match the 'NamedProgressionSystem' type.
             tiers: [
                 { id: 'luyen_khi', name: 'Luyện Khí Kỳ', description: 'Bước đầu tiên trên con đường tu tiên, dẫn khí vào cơ thể, tẩy kinh phạt tủy. Mỗi tầng sẽ gia tăng một chút sức mạnh và thể chất.', subTiers: Array.from({ length: 9 }, (_, i) => ({ id: `lk_${i + 1}`, name: `Tầng ${i + 1}`, resourceRequired: 100 * Math.pow(2.5, i), bonuses: [] })) },
                 { id: 'truc_co', name: 'Trúc Cơ Kỳ', description: 'Xây dựng nền tảng (Đạo Cơ) cho con đường tu luyện. Linh lực chuyển hóa thành chân nguyên, sức mạnh tăng vọt, tuổi thọ đạt 200 năm.', hasTribulation: true, tribulationDescription: 'Thiên Kiếp đầu tiên, sấm sét sẽ gột rửa phàm thể, xây dựng đạo cơ.', subTiers: [{ id: 'tc_so_ky', name: 'Sơ Kỳ', resourceRequired: 150000, bonuses: [] }, { id: 'tc_trung_ky', name: 'Trung Kỳ', resourceRequired: 400000, bonuses: [] }, { id: 'tc_hau_ky', name: 'Hậu Kỳ', resourceRequired: 800000, bonuses: [] }] },

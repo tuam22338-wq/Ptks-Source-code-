@@ -48,9 +48,18 @@ export const processPlayerAction = async (
             const item = stateAfterSim.playerCharacter.inventory.items.find(i => i.name === itemName && !i.isIdentified);
             if (item) {
                 try {
-                    const newBonuses = await analyzeItemWithAI(item, stateAfterSim);
-                    if (newBonuses.length > 0) {
-                        const itemIdentifiedIntent = { itemIdentified: { itemId: item.id, newBonuses } };
+                    // @google-genai-fix: Renamed `newBonuses` to `analysisResult` and checked `analysisResult.bonuses` property.
+                    const analysisResult = await analyzeItemWithAI(item, stateAfterSim);
+                    if (analysisResult.bonuses && analysisResult.bonuses.length > 0) {
+                        const itemIdentifiedIntent = {
+                            itemIdentified: {
+                                itemId: item.id,
+                                newBonuses: analysisResult.bonuses,
+                                passiveEffects: analysisResult.passiveEffects,
+                                conditionalEffects: analysisResult.conditionalEffects,
+                                curseEffect: analysisResult.curseEffect
+                            }
+                        };
                         arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã giám định thành công vật phẩm '${item.name}'. Hãy tường thuật lại quá trình này (ví dụ: người chơi nhỏ máu, truyền linh lực, v.v. và thấy các dòng chữ/hào quang hiện ra) và BẮT BUỘC phải bao gồm 'mechanicalIntent' sau trong phản hồi JSON của bạn: ${JSON.stringify(itemIdentifiedIntent)}`;
                     } else {
                         arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã cố gắng giám định vật phẩm '${item.name}' nhưng thất bại, không phát hiện được gì đặc biệt. Hãy tường thuật lại sự thất bại này.`;

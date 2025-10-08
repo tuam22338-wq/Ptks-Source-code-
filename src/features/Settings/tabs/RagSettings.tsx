@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { memo } from 'react';
 import type { GameSettings } from '../../../types';
 import { FaSearchPlus } from 'react-icons/fa';
@@ -61,6 +63,7 @@ const RagSettings: React.FC<RagSettingsProps> = ({ settings, handleSettingChange
             </SettingsRow>
             <SettingsRow label="Quản lý Nguồn Tri Thức" description="Quản lý các nguồn tri thức cho AI hiện đã được chuyển đến màn hình 'Huấn Luyện AI' ở menu chính.">
                  {/* FIX: Add a child element to satisfy the required 'children' prop. */}
+                 {/* @google-genai-fix: Added empty div to satisfy 'children' prop requirement. */}
                  <div/>
             </SettingsRow>
         </SettingsSection>

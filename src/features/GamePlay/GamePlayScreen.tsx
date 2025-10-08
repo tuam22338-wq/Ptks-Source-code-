@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo, useCallback, useEffect } from 'react';
-import type { GameState, StoryEntry, NPC, InnerDemonTrial, EventChoice } from '../../types';
+import type { StoryEntry, NPC, InnerDemonTrial, EventChoice } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -8,42 +8,18 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
 import EventPanel from './EventPanel';
 import CombatScreen from './components/CombatScreen';
-import CultivationPathModal from './CultivationPathModal';
+import ProgressionPathModal from './ProgressionPathModal';
 import ShopModal from './components/ShopModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
-import { generateInnerDemonTrial, askAiAssistant } from '../../services/geminiService';
-import { CULTIVATION_PATHS } from '../../constants';
+import { PROGRESSION_PATHS } from '../../constants';
 import { InventoryModal } from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
-import { useGameContext } from '../../contexts/GameContext'; // ** MỚI: Import useGameContext **
+import { useGameContext } from '../../contexts/GameContext'; 
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import Sidebar from './components/Sidebar/Sidebar';
 
-interface CustomStoryPlayerProps {
-    onUpdateGameState: (updater: (gs: GameState) => GameState) => void;
-}
-
-const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ onUpdateGameState }) => {
-    // ** MỚI: Lấy gameState từ GameContext **
-    const { gameState } = useGameContext();
-    const { activeStory, activeMods } = gameState;
-
-    // ... (logic còn lại của CustomStoryPlayer không thay đổi nhiều, chỉ cần đảm bảo nó gọi onUpdateGameState)
-    
-    // Ví dụ về cách logic cập nhật được điều chỉnh
-    const handleChoice = (choice: any) => { // StoryChoice
-        // applyOutcomes(choice.outcomes || []);
-        onUpdateGameState(gs => ({ ...gs, activeStory: { ...gs.activeStory!, currentNodeId: choice.nextNodeId } }));
-    };
-
-    if (!activeStory) return null;
-    
-    return <div className="flex-shrink-0 p-4 bg-black/40 backdrop-blur-sm border-t border-gray-700/50 flex flex-col items-center justify-center min-h-[150px]">...</div>;
-};
-
 const GamePlayScreenContent: React.FC = memo(() => {
-    // ** MỚI: Tách biệt các hooks từ hai contexts khác nhau **
     const { state: appState, quitGame, speak } = useAppContext();
     const { gameState, isAiResponding, aiLoadingMessage, handlePlayerAction, handleUpdatePlayerCharacter, handleSaveGame } = useGameContext();
     const { settings } = appState;
@@ -94,50 +70,22 @@ const GamePlayScreenContent: React.FC = memo(() => {
         const secs = (seconds % 60).toString().padStart(2, '0');
         return `${mins}:${secs}`;
     };
-
-    const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
-        handleUpdatePlayerCharacter(pc => {
-            const newId = (pc.activeQuests.length > 0 ? pc.activeQuests[pc.activeQuests.length - 1].id.length : 0) + 1;
-            // This logic is flawed, but we're keeping it simple for refactoring.
-            // A better approach would be to dispatch an action.
-            return pc; 
-        });
-        // ** MỚI: Cần một cơ chế mới để thêm story log vì handleUpdatePlayerCharacter không còn làm điều đó **
-        // Tạm thời để trống, logic chính đã được chuyển vào reducer
-    }, [handleUpdatePlayerCharacter]);
     
     const handleEventChoice = useCallback((choice: EventChoice) => {
         setActiveEvent(null);
         handlePlayerAction(choice.text, 'act', 0, showNotification);
     }, [setActiveEvent, handlePlayerAction, showNotification]);
 
-    const handleAskAssistant = useCallback(async (query: string) => {
-        // ... (logic ask assistant không thay đổi nhiều, nhưng cần gọi đến reducer)
-    }, [gameState, isAiResponding, addStoryEntry]);
-
     const handleInputSubmit = useCallback(async (text: string) => {
         if (text.trim().toLowerCase() === 'mở túi đồ') {
             openInventoryModal();
             return;
         }
-        if (activeActionTab === 'ask') await handleAskAssistant(text);
-        else await handlePlayerAction(text, activeActionTab, 1, showNotification);
-    }, [activeActionTab, handleAskAssistant, handlePlayerAction, openInventoryModal, showNotification]);
+        await handlePlayerAction(text, activeActionTab, 1, showNotification);
+    }, [activeActionTab, handlePlayerAction, openInventoryModal, showNotification]);
 
     const handleContextualAction = useCallback((actionId: string, actionLabel: string) => {
         handlePlayerAction(actionLabel, 'act', 1, showNotification);
-    }, [handlePlayerAction, showNotification]);
-
-    // ... (Các handlers khác như handleTravel, handleBreakthrough, etc. không thay đổi, vì chúng đều gọi handlePlayerAction)
-    const handleTravel = useCallback(async (destinationId: string) => {
-        const destination = gameState.discoveredLocations.find(l => l.id === destinationId);
-        if (!destination) return;
-        await handlePlayerAction(`Ta quyết định đi đến ${destination.name}.`, 'act', 1, showNotification);
-    }, [gameState, handlePlayerAction, showNotification]);
-
-    const handleBreakthrough = useCallback(async () => {
-        // Logic vẫn tương tự, nhưng sẽ gọi handlePlayerAction
-        handlePlayerAction("Ta bắt đầu vận công, nỗ lực đột phá cảnh giới tiếp theo.", 'act', 1, showNotification);
     }, [handlePlayerAction, showNotification]);
 
     const handleInnerDemonChoice = useCallback((choice: { text: string; isCorrect: boolean; }) => {
@@ -146,7 +94,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
             showNotification("Đạo tâm kiên định, đột phá thành công!");
             handlePlayerAction("Ta đã chiến thắng tâm ma, chính thức đột phá!", 'act', 0, showNotification); 
             handleUpdatePlayerCharacter(pc => {
-                const pathsToShow = CULTIVATION_PATHS.filter(p => p.requiredRealmId === pc.cultivation.currentRealmId);
+                const pathsToShow = PROGRESSION_PATHS.filter(p => p.requiredTierId === pc.progression.currentTierId);
                 if (pathsToShow.length > 0) openCultivationPathModal(pathsToShow);
                 return pc;
             });
@@ -155,11 +103,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
             handlePlayerAction("Ta không thể chống lại tâm ma, đột phá đã thất bại và ta bị thương nặng.", 'act', 0, showNotification);
         }
     }, [closeInnerDemonTrial, showNotification, handlePlayerAction, handleUpdatePlayerCharacter, openCultivationPathModal]);
-
-    const handleNpcDialogue = useCallback(async (npc: NPC) => {
-        await handlePlayerAction(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act', 1, showNotification);
-    }, [handlePlayerAction, showNotification]);
-
 
     const { playerCharacter, combatState, activeStory, discoveredLocations, worldState } = gameState;
     const currentLocation = useMemo(() => {
@@ -176,7 +119,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
     return (
         <div className="flex-grow w-full flex flex-col">
             <NotificationArea notifications={notifications} onDismiss={dismissNotification} />
-            <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
+            <ProgressionPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} gameState={gameState} settings={settings} />
             <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} />
             <InventoryModal isOpen={isInventoryOpen} />
@@ -217,7 +160,6 @@ const GamePlayScreenContent: React.FC = memo(() => {
                         <>
                             {combatState && <CombatScreen />}
                             {activeEvent && <EventPanel event={activeEvent} onChoice={handleEventChoice} playerAttributes={gameState.playerCharacter.attributes} />}
-                            {activeStory && <CustomStoryPlayer onUpdateGameState={(updater) => handleUpdatePlayerCharacter(updater(gameState.playerCharacter))} />}
                         </>
                     ) : (
                         <ActionBar 

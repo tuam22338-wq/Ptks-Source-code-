@@ -17,8 +17,7 @@ export function createModContextSummary(activeMods: FullMod[]): string {
         
         const modName = mod.modInfo.name;
 
-        // FIX: use realmConfigs
-        if (mod.content.worldData || mod.content.realmConfigs || mod.content.sects) {
+        if (mod.content.worldData || mod.content.namedProgressionSystems || mod.content.sects) {
             let worldSummary = `Bối cảnh từ mod '[${modName}]' đang được áp dụng:\n`;
 
             if (mod.content.worldData && mod.content.worldData.length > 0) {
@@ -31,11 +30,11 @@ export function createModContextSummary(activeMods: FullMod[]): string {
                 }
             }
 
-            // FIX: use realmConfigs
-            if (mod.content.realmConfigs && mod.content.realmConfigs.length > 0) {
-                const systemName = mod.content.realmConfigs[0].name || "Tùy chỉnh";
-                const realms = mod.content.realmConfigs.map(r => r.name).join(' -> ');
-                worldSummary += `- Hệ thống tu luyện: '[${systemName}]' với các cảnh giới: ${realms}.\n`;
+            if (mod.content.namedProgressionSystems && mod.content.namedProgressionSystems.length > 0) {
+                const system = mod.content.namedProgressionSystems[0];
+                const systemName = system.name || "Tùy chỉnh";
+                const tiers = system.tiers.map(r => r.name).join(' -> ');
+                worldSummary += `- Hệ thống tiến trình: '[${systemName}]' với các cấp bậc: ${tiers}.\n`;
             }
             
             const customSects = mod.content.sects?.map(s => s.name).join(', ');
@@ -101,7 +100,6 @@ export function getCustomEntityNames(activeMods: FullMod[]): { items: string[], 
     for (const mod of activeMods) {
         if (!mod.content) continue;
         mod.content.items?.forEach(i => entities.items.push(i.name));
-        // FIX: use realmConfigs
         mod.content.locations?.forEach(l => entities.locations.push(l.name));
         mod.content.sects?.forEach(s => entities.sects.push(s.name));
         mod.content.npcs?.forEach(n => entities.npcs.push(n.name));

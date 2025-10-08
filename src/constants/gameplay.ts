@@ -1,9 +1,9 @@
-import type { FactionReputationStatus, DifficultyLevel, NpcDensity, QuickActionButtonConfig, AbilityRank, ItemQuality } from '../types';
+import type { FactionReputationStatus, DifficultyLevel, NpcDensity, QuickActionButtonConfig, AbilityRank, ItemQuality, ProgressionTierConfig } from '../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../data/attributes';
 
 export const SYSTEM_SHOP_ITEMS = [
     { id: 'sys_item_stat_boost', name: 'Dịch Cân Tẩy Tủy Dịch', description: 'Một liều thuốc từ thế giới khác, giúp cải thiện toàn bộ thuộc tính cơ bản vĩnh viễn.', cost: 250, effect: { type: 'CHANGE_STAT', details: { attribute: 'all_base', change: 1 } } },
-    { id: 'sys_item_qi_boost', name: 'Linh Khí Kết Tinh', description: 'Một khối tinh thể chứa đựng linh khí thuần khiết, giúp tăng mạnh tu vi hiện tại.', cost: 100, effect: { type: 'CHANGE_STAT', details: { attribute: 'spiritualQi', change: 5000 } } },
+    { id: 'sys_item_qi_boost', name: 'Linh Khí Kết Tinh', description: 'Một khối tinh thể chứa đựng linh khí thuần khiết, giúp tăng mạnh tu vi hiện tại.', cost: 100, effect: { type: 'CHANGE_STAT', details: { attribute: 'progressionResource', change: 5000 } } },
     { id: 'sys_item_gacha_ticket', name: 'Vé Gacha Vận Mệnh', description: 'Một chiếc vé bí ẩn, có thể rút ra một vật phẩm hoặc kỳ ngộ ngẫu nhiên.', cost: 50, effect: { type: 'START_EVENT', details: { eventId: 'system_gacha' } } },
 ];
 
@@ -30,8 +30,7 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
 ];
 
 export const ALL_ATTRIBUTES = DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name);
-// FIX: Changed spiritualQi to spiritualQi to match new type
-export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'spiritualQi'];
+export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'progressionResource'];
 
 export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
     { id: 'inventory', label: 'Túi Đồ', description: 'Mở túi đồ của bạn', iconName: 'GiSwapBag', actionText: 'mở túi đồ' },
@@ -39,8 +38,8 @@ export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
     { id: 'dashboard', label: 'Trạng Thái', description: 'Mở bảng trạng thái nhân vật', iconName: 'FaUser', actionText: 'mở bảng trạng thái' },
 ];
 
-// FIX: Renamed TIER_RANK_CAPS to REALM_RANK_CAPS
-export const REALM_RANK_CAPS: Record<string, { maxRank: AbilityRank, maxQuality: ItemQuality }> = {
+// @google-genai-fix: Changed type from Record<string, ...> to Record<ProgressionTierConfig['id'], ...> for better type safety.
+export const PROGRESSION_TIER_RANK_CAPS: Record<ProgressionTierConfig['id'], { maxRank: AbilityRank, maxQuality: ItemQuality }> = {
     'pham_nhan': { maxRank: 'Phàm Giai', maxQuality: 'Phàm Phẩm' },
     'luyen_khi': { maxRank: 'Tiểu Giai', maxQuality: 'Linh Phẩm' },
     'truc_co': { maxRank: 'Trung Giai', maxQuality: 'Pháp Phẩm' },

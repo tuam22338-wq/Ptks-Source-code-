@@ -1,9 +1,6 @@
 import { Type } from "@google/genai";
-import type { ElementType } from 'react';
-import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode, WorldTurnEntry } from '../../types';
-// FIX: Removed unused import.
-import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
-import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
+import type { GameState, NPC, Relationship, WorldTurnEntry } from '../../types';
+import { generateWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
 interface NpcActionOutcome {
@@ -39,7 +36,6 @@ export const executeNpcAction = async (npc: NPC, action: string, gameState: Game
 
     const availableLocations = gameState.discoveredLocations.map(l => `* ${l.name} (ID: ${l.id})`).join('\n');
 
-    // FIX: Updated prompt to match the response schema exactly, telling the AI to populate nested objects like `outcome.newStatus` and `outcome.locationChange`. This prevents schema validation errors and aligns the instructions with the expected JSON structure.
     const prompt = `Bạn là AI mô phỏng hành động của NPC trong game.
     NPC "${npc.identity.name}" đang cố gắng thực hiện mục tiêu "${npc.goals[0] || 'không rõ'}" và đang thực hiện bước kế hoạch sau: "${action}".
 
@@ -128,7 +124,6 @@ export const generateRelationshipUpdate = async (
 
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
-    // @google-genai-fix: Corrected model name from 'gemini-2.5-flash' to 'gemini-2.5-flash' to match supported models.
     const response = await generateWithRetry({
         model: settings?.npcSimulationModel || 'gemini-2.5-flash',
         contents: prompt,

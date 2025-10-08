@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash } from 'react-icons/fa';
-import type { SubTier, StatBonus, AttributeDefinition } from '../../../types';
+import type { ProgressionSubTier, StatBonus, AttributeDefinition } from '../../../types';
 
 interface SubTierEditorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (subTier: SubTier) => void;
-    subTier: SubTier | null;
+    onSave: (subTier: ProgressionSubTier) => void;
+    subTier: ProgressionSubTier | null;
     attributeDefinitions: AttributeDefinition[];
     resourceName: string;
     resourceUnit: string;
 }
 
 const SubTierEditorModal: React.FC<SubTierEditorModalProps> = ({ isOpen, onClose, onSave, subTier, attributeDefinitions, resourceName, resourceUnit }) => {
-    const [formData, setFormData] = useState<SubTier>({ id: '', name: '', qiRequired: 0, bonuses: [], breakthroughRequirements: '' });
+    const [formData, setFormData] = useState<ProgressionSubTier>({ id: '', name: '', resourceRequired: 0, bonuses: [], breakthroughRequirements: '' });
     const [newBonus, setNewBonus] = useState<{ attribute: string; value: number }>({ attribute: '', value: 0 });
 
     useEffect(() => {
         if (isOpen) {
-            const isInfinite = subTier?.qiRequired === null || subTier?.qiRequired === Infinity;
-            const initialQi = isInfinite ? Infinity : (subTier?.qiRequired || 0);
+            const isInfinite = subTier?.resourceRequired === null || subTier?.resourceRequired === Infinity;
+            const initialResource = isInfinite ? Infinity : (subTier?.resourceRequired || 0);
 
-            setFormData(subTier ? { ...subTier, qiRequired: initialQi } : { id: `stage_${Date.now()}`, name: '', qiRequired: 0, bonuses: [], breakthroughRequirements: '' });
+            setFormData(subTier ? { ...subTier, resourceRequired: initialResource } : { id: `stage_${Date.now()}`, name: '', resourceRequired: 0, bonuses: [], breakthroughRequirements: '' });
             
             if (attributeDefinitions.length > 0) {
                 const defaultAttr = attributeDefinitions[0]?.name || '';
@@ -32,11 +32,11 @@ const SubTierEditorModal: React.FC<SubTierEditorModalProps> = ({ isOpen, onClose
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        if (name === 'qiRequired') {
+        if (name === 'resourceRequired') {
             if (value.trim().toLowerCase() === 'infinity' || value.trim().toLowerCase() === 'vô hạn') {
-                setFormData(prev => ({ ...prev, qiRequired: Infinity }));
+                setFormData(prev => ({ ...prev, resourceRequired: Infinity }));
             } else {
-                setFormData(prev => ({ ...prev, qiRequired: parseInt(value, 10) || 0 }));
+                setFormData(prev => ({ ...prev, resourceRequired: parseInt(value, 10) || 0 }));
             }
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -80,9 +80,9 @@ const SubTierEditorModal: React.FC<SubTierEditorModalProps> = ({ isOpen, onClose
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{color: 'var(--text-muted-color)'}}>{resourceName} Yêu Cầu ({resourceUnit})</label>
                         <input
-                            name="qiRequired"
+                            name="resourceRequired"
                             type="text"
-                            value={!isFinite(formData.qiRequired) ? 'Infinity' : formData.qiRequired}
+                            value={!isFinite(formData.resourceRequired) ? 'Infinity' : formData.resourceRequired}
                             onChange={handleChange}
                             className="input-neumorphic w-full"
                             placeholder="Nhập số, hoặc 'Infinity'"

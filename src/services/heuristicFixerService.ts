@@ -20,8 +20,9 @@ const detectInconsistencies = (gameState: GameState): string[] => {
         if (hp && hp.maxValue !== undefined && hp.value > hp.maxValue) {
             problems.push(`Player HP (${hp.value}) is greater than max HP (${hp.maxValue}).`);
         }
-        if (playerCharacter.cultivation && playerCharacter.cultivation.spiritualQi < 0) {
-            problems.push(`Player spiritualQi is negative (${playerCharacter.cultivation.spiritualQi}).`);
+        // @google-genai-fix: Check 'progression.progressionResource' instead of the obsolete 'cultivation.spiritualQi'.
+        if (playerCharacter.progression && playerCharacter.progression.progressionResource < 0) {
+            problems.push(`Player progressionResource is negative (${playerCharacter.progression.progressionResource}).`);
         }
         for (const currency in playerCharacter.currencies) {
             const amount = playerCharacter.currencies[currency as keyof typeof playerCharacter.currencies];
@@ -41,8 +42,9 @@ const detectInconsistencies = (gameState: GameState): string[] => {
         if (npcHp && npcHp.value < 0) {
             problems.push(`NPC ${npc.identity.name} HP is negative (${npcHp.value}). It should be >= 0.`);
         }
-        if (npc.cultivation && npc.cultivation.spiritualQi < 0) {
-            problems.push(`NPC ${npc.identity.name} spiritualQi is negative (${npc.cultivation.spiritualQi}).`);
+        // @google-genai-fix: Check 'progression.progressionResource' for NPCs.
+        if (npc.progression && npc.progression.progressionResource < 0) {
+            problems.push(`NPC ${npc.identity.name} progressionResource is negative (${npc.progression.progressionResource}).`);
         }
     });
 
