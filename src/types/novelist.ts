@@ -1,9 +1,23 @@
+import type { AIModel, NarrativeStyle } from './settings';
+
 export interface NovelContentEntry {
     id: string;
     type: 'prompt' | 'ai_generation';
     content: string;
     timestamp: string;
 }
+
+export interface NovelAiSettings {
+    model?: AIModel;
+    narrativeStyle?: NarrativeStyle;
+    wordCount?: number;
+    temperature?: number;
+    topK?: number;
+    topP?: number;
+    enableThinking?: boolean;
+    thinkingBudget?: number;
+}
+
 
 export interface Novel {
     id: number; // Primary key in Dexie
@@ -15,8 +29,5 @@ export interface Novel {
     lorebook: string;
     fanficMode: boolean;
     // Optional settings per novel
-    aiSettings?: {
-        temperature?: number;
-        narrativeStyle?: string;
-    }
+    aiSettings?: NovelAiSettings;
 }

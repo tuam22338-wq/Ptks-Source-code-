@@ -3,10 +3,11 @@ import { FaArrowLeft, FaPlus, FaDownload, FaUserCircle, FaPaperPlane, FaTrash, F
 import { GiSparkles } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import { db } from '../../services/dbService';
-import type { Novel, NovelContentEntry, GameSettings } from '../../types';
+import type { Novel, NovelContentEntry, GameSettings, NarrativeStyle, AIModel, NovelAiSettings } from '../../types';
 import { generateNovelChapter, extractLoreFromText } from '../../services/gemini/novel.service';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import NovelistSettings from '../Settings/tabs/NovelistSettings';
+import { AI_MODELS, NARRATIVE_STYLES } from '../../constants';
+
 
 // Simple Markdown-like parser
 const parseContent = (text: string) => {
@@ -26,31 +27,6 @@ const parseContent = (text: string) => {
     html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
     html = html.replace(/\n/g, '<br />');
     return { __html: html };
-};
-
-const SettingsModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    settings: GameSettings;
-    handleSettingChange: (key: keyof GameSettings, value: any) => void;
-}> = ({ isOpen, onClose, settings, handleSettingChange }) => {
-    if (!isOpen) return null;
-
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content max-w-2xl h-[80vh]">
-                 <div className="p-4 border-b border-[var(--shadow-light)] flex justify-between items-center">
-                    <h3 className="text-xl font-bold font-title text-[var(--primary-accent-color)]">Cài Đặt Tiểu Thuyết Gia AI</h3>
-                    <button onClick={onClose} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)] rounded-full">
-                        <FaTimes/>
-                    </button>
-                </div>
-                <div className="modal-body">
-                    <NovelistSettings settings={settings} handleSettingChange={handleSettingChange} />
-                </div>
-            </div>
-        </div>
-    );
 };
 
 const NewNovelModal: React.FC<{
@@ -90,9 +66,132 @@ const NewNovelModal: React.FC<{
     );
 };
 
+const RightSidebar: React.FC<{
+    activeNovel: Novel;
+    onUpdate: (updatedNovel: Novel) => void;
+    onDownload: () => void;
+    globalSettings: GameSettings;
+}> = ({ activeNovel, onUpdate, onDownload, globalSettings }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploadedText, setUploadedText] = useState<string | null>(null);
+    const [isExtracting, setIsExtracting] = useState(false);
+
+    const handleFieldChange = (field: keyof Novel, value: any) => {
+        onUpdate({ ...activeNovel, [field]: value });
+    };
+
+    const handleSettingChange = (field: keyof NovelAiSettings, value: any) => {
+        const updatedSettings: NovelAiSettings = {
+            ...(activeNovel.aiSettings || {}),
+            [field]: value,
+        };
+        onUpdate({ ...activeNovel, aiSettings: updatedSettings });
+    };
+    
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !file.name.endsWith('.txt')) {
+            alert('Vui lòng chọn một file .txt');
+            return;
+        }
+        setIsExtracting(true);
+        const text = await file.text();
+        setUploadedText(text);
+        setIsExtracting(false);
+        alert('Đã tải tệp lên. Sẵn sàng để trích xuất vào Lorebook.');
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    const handleExtractToLorebook = async () => {
+        if (!uploadedText) return;
+        setIsExtracting(true);
+        try {
+            const extractedLore = await extractLoreFromText(uploadedText, globalSettings);
+            handleFieldChange('lorebook', activeNovel.lorebook ? `${activeNovel.lorebook}\n\n---\n\n${extractedLore}` : extractedLore);
+            setUploadedText(null);
+        } catch (error) {
+            alert('Lỗi khi trích xuất Lorebook.');
+            console.error(error);
+        } finally {
+            setIsExtracting(false);
+        }
+    };
+    
+    const effectiveSettings = {
+        model: activeNovel.aiSettings?.model || globalSettings.novelistModel,
+        narrativeStyle: activeNovel.aiSettings?.narrativeStyle || globalSettings.novelistNarrativeStyle,
+        wordCount: activeNovel.aiSettings?.wordCount ?? globalSettings.novelistWordCount,
+        temperature: activeNovel.aiSettings?.temperature ?? globalSettings.novelistTemperature,
+        topK: activeNovel.aiSettings?.topK ?? globalSettings.novelistTopK,
+        topP: activeNovel.aiSettings?.topP ?? globalSettings.novelistTopP,
+        enableThinking: activeNovel.aiSettings?.enableThinking ?? globalSettings.novelistEnableThinking,
+        thinkingBudget: activeNovel.aiSettings?.thinkingBudget ?? globalSettings.novelistThinkingBudget,
+    };
+    const novelistModels = AI_MODELS.filter(m => m.value === 'gemini-2.5-flash' || m.value === 'gemini-2.5-pro');
+
+    return (
+        <div className="p-3 flex-grow flex flex-col min-h-0 space-y-3">
+            <h3 className="text-lg font-bold font-title text-[var(--primary-accent-color)] flex items-center gap-2"><FaBook /> Lõi Trí Nhớ & Bảng Điều Khiển</h3>
+            
+            {/* Synopsis */}
+            <div>
+                <label className="text-sm font-semibold text-[var(--text-color)]">Tóm tắt (Synopsis)</label>
+                <textarea value={activeNovel.synopsis} onChange={e => handleFieldChange('synopsis', e.target.value)} rows={4} className="input-neumorphic w-full text-sm mt-1" placeholder="Định hướng chính của câu chuyện..."/>
+            </div>
+
+            {/* Lorebook */}
+            <div className="flex-grow flex flex-col min-h-0">
+                <label className="text-sm font-semibold text-[var(--text-color)]">Sổ tay (Lorebook)</label>
+                <textarea value={activeNovel.lorebook} onChange={e => handleFieldChange('lorebook', e.target.value)} className="input-neumorphic w-full text-sm mt-1 flex-grow resize-y" placeholder="Quy tắc, nhân vật, địa điểm..."/>
+                <div className="flex gap-2 mt-2">
+                    <input type="file" accept=".txt" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                    <button onClick={() => fileInputRef.current?.click()} disabled={isExtracting} className="btn btn-neumorphic !text-xs flex-1"><FaFileUpload /> Tải lên .txt</button>
+                    <button onClick={handleExtractToLorebook} disabled={!uploadedText || isExtracting} className="btn btn-primary !text-xs flex-1">
+                        {isExtracting ? <LoadingSpinner size="sm" /> : <><FaSync /> Trích xuất</>}
+                    </button>
+                </div>
+            </div>
+
+            {/* Controls */}
+            <div className="space-y-2">
+                <label className="flex items-center justify-between cursor-pointer">
+                    <span className="text-sm font-semibold text-[var(--text-color)]">Chế độ Đồng nhân (Fanfic)</span>
+                    <input type="checkbox" checked={activeNovel.fanficMode} onChange={e => handleFieldChange('fanficMode', e.target.checked)} className="w-5 h-5 text-amber-500 rounded focus:ring-amber-600"/>
+                </label>
+                <button onClick={onDownload} className="btn btn-neumorphic w-full !text-sm"><FaDownload /> Tải Toàn Bộ Tiểu Thuyết</button>
+            </div>
+
+             {/* AI Settings */}
+            <div className="p-3 bg-black/20 rounded-lg border border-gray-700/60 space-y-3">
+                <h4 className="font-bold text-center text-amber-300">Cài Đặt AI (Riêng)</h4>
+                <div>
+                     <label className="text-xs text-gray-400">Model Sáng Tác</label>
+                     <select value={effectiveSettings.model} onChange={e => handleSettingChange('model', e.target.value as AIModel)} className="input-neumorphic w-full !py-1 text-sm">
+                        {novelistModels.map(model => (
+                            <option key={model.value} value={model.value} disabled={model.value.includes('pro') && !globalSettings.isPremium}>
+                                {model.label} {model.value.includes('pro') ? '👑' : ''}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                 <div>
+                     <label className="text-xs text-gray-400">Văn Phong Tường Thuật</label>
+                     <select value={effectiveSettings.narrativeStyle} onChange={e => handleSettingChange('narrativeStyle', e.target.value as NarrativeStyle)} className="input-neumorphic w-full !py-1 text-sm">
+                        {NARRATIVE_STYLES.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs text-gray-400">Độ dài Chương (~{effectiveSettings.wordCount} từ)</label>
+                    <input type="range" min="100" max="7000" step="100" value={effectiveSettings.wordCount} onChange={e => handleSettingChange('wordCount', parseInt(e.target.value))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer mt-1" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const NovelistScreen: React.FC = () => {
-    const { state, handleNavigate, handleSettingChange } = useAppContext();
+    const { state, handleNavigate } = useAppContext();
     const [activeNovel, setActiveNovel] = useState<Novel | null>(null);
     const [novels, setNovels] = useState<Novel[]>([]);
     const [userInput, setUserInput] = useState('');
@@ -100,14 +199,12 @@ const NovelistScreen: React.FC = () => {
     const [isNewNovelModalOpen, setNewNovelModalOpen] = useState(false);
     const [isLeftSidebarOpen, setLeftSidebarOpen] = useState(true);
     const [isRightSidebarOpen, setRightSidebarOpen] = useState(true);
-    const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
-    const [uploadedText, setUploadedText] = useState<string | null>(null);
-    const [isExtracting, setIsExtracting] = useState(false);
 
     const contentEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
     const loadNovels = useCallback(async () => {
         const allNovels = await db.novels.orderBy('lastModified').reverse().toArray();
@@ -126,7 +223,7 @@ const NovelistScreen: React.FC = () => {
                 contentEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }
         }
-    }, [activeNovel?.content?.length, isGenerating, activeNovel?.content?.[activeNovel.content.length-1]?.content.length]);
+    }, [activeNovel?.content, isGenerating]);
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -158,12 +255,21 @@ const NovelistScreen: React.FC = () => {
         setNewNovelModalOpen(false);
     };
 
-    const handleUpdateNovel = useCallback(async (updatedNovel: Novel | null) => {
-        if (!updatedNovel) return;
-        const novelWithTimestamp = { ...updatedNovel, lastModified: new Date().toISOString() };
-        setActiveNovel(novelWithTimestamp);
-        await db.novels.put(novelWithTimestamp);
-    }, []);
+    const handleDebouncedUpdate = (updatedNovel: Novel) => {
+        setActiveNovel(updatedNovel); // Update UI instantly
+    
+        if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+        }
+    
+        updateTimeoutRef.current = setTimeout(async () => {
+            const novelToSave = { ...updatedNovel, lastModified: new Date().toISOString() };
+            await db.novels.put(novelToSave);
+            // Update the list to show the new "last modified" time
+            const allNovels = await db.novels.orderBy('lastModified').reverse().toArray();
+            setNovels(allNovels);
+        }, 1500); // 1.5-second debounce
+    };
 
     const handleSubmitPrompt = async () => {
         if (!userInput.trim() || isGenerating || !activeNovel) return;
@@ -171,13 +277,26 @@ const NovelistScreen: React.FC = () => {
         const userEntry: NovelContentEntry = { id: `prompt-${Date.now()}`, type: 'prompt', content: userInput, timestamp: new Date().toISOString() };
         const aiPlaceholder: NovelContentEntry = { id: `ai-${Date.now()}`, type: 'ai_generation', content: '', timestamp: new Date().toISOString() };
 
-        const newContent = [...(activeNovel.content || []), userEntry, aiPlaceholder];
-        await handleUpdateNovel({ ...activeNovel, content: newContent });
+        let updatedNovel = { ...activeNovel, content: [...(activeNovel.content || []), userEntry, aiPlaceholder] };
+        setActiveNovel(updatedNovel);
+        await db.novels.put({ ...updatedNovel, lastModified: new Date().toISOString() });
         setUserInput('');
         setIsGenerating(true);
 
         try {
-            const stream = generateNovelChapter(userInput, activeNovel.content, activeNovel.synopsis, activeNovel.lorebook, activeNovel.fanficMode, state.settings);
+            const finalSettings: GameSettings = {
+                ...state.settings,
+                novelistModel: activeNovel.aiSettings?.model || state.settings.novelistModel,
+                novelistNarrativeStyle: activeNovel.aiSettings?.narrativeStyle || state.settings.novelistNarrativeStyle,
+                novelistWordCount: activeNovel.aiSettings?.wordCount ?? state.settings.novelistWordCount,
+                novelistTemperature: activeNovel.aiSettings?.temperature ?? state.settings.novelistTemperature,
+                novelistTopK: activeNovel.aiSettings?.topK ?? state.settings.novelistTopK,
+                novelistTopP: activeNovel.aiSettings?.topP ?? state.settings.novelistTopP,
+                novelistEnableThinking: activeNovel.aiSettings?.enableThinking ?? state.settings.novelistEnableThinking,
+                novelistThinkingBudget: activeNovel.aiSettings?.thinkingBudget ?? state.settings.novelistThinkingBudget,
+            };
+
+            const stream = generateNovelChapter(userInput, updatedNovel.content, updatedNovel.synopsis, updatedNovel.lorebook, updatedNovel.fanficMode, finalSettings);
 
             let fullResponse = '';
             for await (const chunk of stream) {
@@ -187,22 +306,23 @@ const NovelistScreen: React.FC = () => {
                     const updatedContent = [...prev.content];
                     const aiEntryIndex = updatedContent.findIndex(e => e.id === aiPlaceholder.id);
                     if (aiEntryIndex !== -1) {
-                        updatedContent[aiEntryIndex] = { ...updatedContent[aiEntryIndex], content: fullResponse };
+                        updatedContent[aiEntryIndex].content = fullResponse;
                     }
                     return { ...prev, content: updatedContent };
                 });
             }
             
-            const finalNovel = { ...activeNovel, content: activeNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: fullResponse} : e) };
-            await handleUpdateNovel(finalNovel);
+            const finalNovelState = { ...updatedNovel, content: updatedNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: fullResponse} : e) };
+            await db.novels.put({ ...finalNovelState, lastModified: new Date().toISOString() });
 
         } catch (error: any) {
             console.error("Lỗi khi tạo chương mới:", error);
             const errorContent = `[Lỗi hệ thống: ${error.message}]`;
-            const finalNovel = { ...activeNovel, content: activeNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: errorContent} : e) };
-            await handleUpdateNovel(finalNovel);
+            const finalNovelState = { ...updatedNovel, content: updatedNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: errorContent} : e) };
+            await db.novels.put({ ...finalNovelState, lastModified: new Date().toISOString() });
         } finally {
             setIsGenerating(false);
+            await loadNovels();
         }
     };
 
@@ -221,51 +341,17 @@ const NovelistScreen: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${activeNovel.title.replace(/ /g, '_')}.txt`;
+        link.download = `${activeNovel.title.replace(/\s+/g, '_')}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     };
 
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || !file.name.endsWith('.txt')) {
-            alert('Vui lòng chọn một file .txt');
-            return;
-        }
-        setIsExtracting(true); // Show loading state
-        const text = await file.text();
-        setUploadedText(text);
-        setIsExtracting(false); // Hide loading state
-        alert('Đã tải tệp lên. Sẵn sàng để trích xuất vào Lorebook.');
-        if (fileInputRef.current) fileInputRef.current.value = "";
-    };
-
-    const handleExtractToLorebook = async () => {
-        if (!uploadedText || !activeNovel) return;
-        setIsExtracting(true);
-        try {
-            const extractedLore = await extractLoreFromText(uploadedText, state.settings);
-            const updatedNovel = {
-                ...activeNovel,
-                lorebook: activeNovel.lorebook ? `${activeNovel.lorebook}\n\n---\n\n${extractedLore}` : extractedLore
-            };
-            await handleUpdateNovel(updatedNovel);
-            setUploadedText(null);
-        } catch (error) {
-            alert('Lỗi khi trích xuất Lorebook.');
-            console.error(error);
-        } finally {
-            setIsExtracting(false);
-        }
-    };
-
 
     return (
         <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             <NewNovelModal isOpen={isNewNovelModalOpen} onClose={() => setNewNovelModalOpen(false)} onCreate={handleCreateNovel} />
-            <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setSettingsModalOpen(false)} settings={state.settings} handleSettingChange={handleSettingChange} />
 
             <div className="flex-shrink-0 flex justify-between items-center p-3 border-b border-[var(--shadow-light)]">
                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)]" title="Quay Lại Menu">
@@ -284,8 +370,11 @@ const NovelistScreen: React.FC = () => {
                     <div className="flex-grow overflow-y-auto">
                         {novels.map(novel => (
                             <button key={novel.id} onClick={() => handleSelectNovel(novel)} className={`w-full text-left p-3 text-sm flex justify-between items-start transition-colors group ${activeNovel?.id === novel.id ? 'bg-[var(--primary-accent-color)]/10 text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`}>
-                                <span className="font-semibold truncate">{novel.title}</span>
-                                <button onClick={(e) => { e.stopPropagation(); handleDeleteNovel(novel.id); }} className="p-1 text-[var(--text-muted-color)] hover:text-red-400 opacity-0 group-hover:opacity-100"><FaTrash /></button>
+                                <div>
+                                    <span className="font-semibold truncate block">{novel.title}</span>
+                                    <span className="text-xs text-gray-500">{new Date(novel.lastModified).toLocaleString('vi-VN')}</span>
+                                </div>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteNovel(novel.id); }} className="p-1 text-[var(--text-muted-color)] hover:text-red-400 opacity-0 group-hover:opacity-100 flex-shrink-0"><FaTrash /></button>
                             </button>
                         ))}
                     </div>
@@ -296,26 +385,32 @@ const NovelistScreen: React.FC = () => {
                     {activeNovel ? (
                         <>
                             <div className="flex-shrink-0 p-3 border-b border-[var(--shadow-light)] flex justify-between items-center">
-                                <h3 className="text-xl font-bold text-[var(--text-color)]">{activeNovel.title}</h3>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={handleDownload} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)]" title="Tải xuống"><FaDownload /></button>
-                                    <button onClick={() => setSettingsModalOpen(true)} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)]" title="Cài đặt"><FaCog /></button>
-                                    <button onClick={() => setRightSidebarOpen(!isRightSidebarOpen)} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)]" title="Lorebook"><FaBook /></button>
-                                </div>
+                                <h3 className="text-xl font-bold text-[var(--text-color)] truncate">{activeNovel.title}</h3>
+                                <button onClick={() => setRightSidebarOpen(!isRightSidebarOpen)} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)] md:hidden" title="Lõi Trí Nhớ"><FaBook /></button>
                             </div>
                             <div ref={chatContainerRef} className="flex-grow overflow-y-auto p-4 md:p-6 min-h-0">
                                 <div className="max-w-4xl mx-auto space-y-6">
                                     {activeNovel.content.map(entry => (
                                         <div key={entry.id}>
                                             {entry.type === 'prompt' ? (
-                                                <div className="flex gap-4 justify-end"><div className="player-bubble flex items-center gap-2"><FaUserCircle className="text-2xl text-[var(--text-muted-color)] flex-shrink-0"/><p className="text-[var(--text-color)]">{entry.content}</p></div></div>
+                                                <div className="flex gap-4 justify-end ml-10">
+                                                    <div className="p-3 rounded-lg max-w-xl bg-blue-900/40">
+                                                        <p className="text-[var(--text-color)] whitespace-pre-wrap">{entry.content}</p>
+                                                    </div>
+                                                    <FaUserCircle className="text-3xl text-[var(--text-muted-color)] flex-shrink-0"/>
+                                                </div>
                                             ) : (
-                                                <div className="flex gap-4"><div className="npc-bubble w-full"><div className="prose prose-invert max-w-none prose-p:text-[var(--text-color)] prose-strong:text-[var(--primary-accent-color)]" dangerouslySetInnerHTML={parseContent(entry.content)} /></div></div>
+                                                <div className="flex gap-4 mr-10">
+                                                    <GiSparkles className="text-3xl text-[var(--primary-accent-color)] flex-shrink-0"/>
+                                                    <div className="p-3 rounded-lg max-w-xl bg-black/20">
+                                                        <div className="prose prose-invert max-w-none prose-p:text-[var(--text-color)] prose-strong:text-[var(--primary-accent-color)]" dangerouslySetInnerHTML={parseContent(entry.content)} />
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     ))}
                                     {isGenerating && activeNovel.content.length > 0 && activeNovel.content[activeNovel.content.length - 1].type === 'ai_generation' && (
-                                        <div className="flex justify-start ml-4"><LoadingSpinner size="sm"/></div>
+                                        <div className="flex justify-start ml-12"><LoadingSpinner size="sm"/></div>
                                     )}
                                     <div ref={contentEndRef}/>
                                 </div>
@@ -337,28 +432,12 @@ const NovelistScreen: React.FC = () => {
                 {/* Right Sidebar - Lorebook */}
                 {activeNovel && (
                     <div className={`fixed md:relative top-0 right-0 h-full z-20 md:z-auto bg-[var(--bg-color)] w-72 md:w-80 flex-shrink-0 border-l border-[var(--shadow-light)] flex flex-col transition-transform duration-300 ${isRightSidebarOpen ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0`}>
-                        <div className="p-3 border-b border-[var(--shadow-light)]">
-                            <h3 className="text-lg font-bold font-title text-[var(--primary-accent-color)] flex items-center gap-2"><FaBook /> Lorebook</h3>
-                        </div>
-                        <div className="p-3 flex-grow flex flex-col min-h-0">
-                            <textarea
-                                value={activeNovel.lorebook}
-                                onChange={e => handleUpdateNovel({ ...activeNovel, lorebook: e.target.value })}
-                                placeholder="Lưu trữ thông tin quan trọng về nhân vật, địa điểm, cốt truyện... AI sẽ luôn tham khảo thông tin này."
-                                className="input-neumorphic w-full flex-grow resize-y"
-                            />
-                        </div>
-                        <div className="p-3 border-t border-[var(--shadow-light)] space-y-3">
-                            <label className="flex items-center justify-between cursor-pointer">
-                                <span className="text-sm font-semibold">Chế độ Đồng Nhân</span>
-                                <input type="checkbox" checked={activeNovel.fanficMode} onChange={e => handleUpdateNovel({...activeNovel, fanficMode: e.target.checked})} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2"/>
-                            </label>
-                            <input type="file" accept=".txt" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-                            <button onClick={() => fileInputRef.current?.click()} disabled={isExtracting} className="btn btn-neumorphic w-full !text-sm"><FaFileUpload /> Tải lên .txt</button>
-                            <button onClick={handleExtractToLorebook} disabled={!uploadedText || isExtracting} className="btn btn-primary w-full !text-sm">
-                                {isExtracting ? <LoadingSpinner size="sm" /> : <><FaSync /> Trích xuất vào Lorebook</>}
-                            </button>
-                        </div>
+                        <RightSidebar 
+                            activeNovel={activeNovel} 
+                            onUpdate={handleDebouncedUpdate}
+                            onDownload={handleDownload}
+                            globalSettings={state.settings}
+                        />
                     </div>
                 )}
             </div>

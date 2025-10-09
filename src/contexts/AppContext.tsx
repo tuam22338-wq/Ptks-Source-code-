@@ -8,7 +8,7 @@ import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
 import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service';
 import { generateCharacterFromPrompts, generateInitialWorldDetails } from '../services/gemini/character.service';
-import { generateCompleteWorldFromText } from '../services/gemini/modding.service';
+import { generateCompleteWorldFromText, generateWorldFromPrompts } from '../services/gemini/modding.service';
 
 export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining' | 'scripts' | 'createScript';
 
@@ -324,32 +324,55 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
     const handleCreateAndStartGame = useCallback(async (worldCreationData: WorldCreationData, slotId: number) => {
         dispatch({ type: 'SET_CURRENT_SLOT_ID', payload: slotId });
-        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang kiến tạo nhân vật...' } });
-        
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang chuẩn bị...' } });
+    
         try {
-            let activeMods: FullMod[] = [];
-            let worldIdToUse = state.activeWorldId;
-
-            if (worldCreationData.importedMod) {
-                activeMods.push(worldCreationData.importedMod);
-                 if (worldCreationData.importedMod.content?.worldData?.[0]?.id) {
-                    worldIdToUse = worldCreationData.importedMod.content.worldData[0].id;
-                }
-            } else {
-                 const modLibrary = await db.getModLibrary();
-                const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
-                activeMods = (await Promise.all(
-                    enabledModsInfo.map(modInfo => db.getModContent(modInfo.modInfo.id))
-                )).filter((mod): mod is FullMod => mod !== undefined);
+            let primaryWorldMod = worldCreationData.importedMod;
+            const modLibrary = await db.getModLibrary();
+            const enabledModsInfo = modLibrary.filter(m => m.isEnabled);
+            const enabledMods = (await Promise.all(
+                enabledModsInfo.map(modInfo => db.getModContent(modInfo.modInfo.id))
+            )).filter((mod): mod is FullMod => mod !== undefined);
+    
+            if (!primaryWorldMod) {
+                primaryWorldMod = enabledMods.find(m => m.content.worldData && m.content.worldData.length > 0) || null;
             }
-
+    
+            if (!primaryWorldMod) {
+                dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang kiến tạo thế giới từ ý tưởng...' } });
+                const promptsForGen = {
+                    modInfo: {
+                        id: (worldCreationData.theme || 'custom_world').toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, ''),
+                        name: worldCreationData.theme || 'Thế Giới Tùy Chỉnh',
+                        tags: [worldCreationData.genre],
+                        author: worldCreationData.character.name,
+                    },
+                    prompts: {
+                        setting: worldCreationData.setting,
+                        mainGoal: worldCreationData.mainGoal,
+                        openingStory: worldCreationData.openingStory,
+                    },
+                    attributeSystem: worldCreationData.attributeSystem,
+                    namedRealmSystems: worldCreationData.enableRealmSystem && worldCreationData.namedRealmSystem ? [worldCreationData.namedRealmSystem] : undefined,
+                    factions: worldCreationData.factionGenerationMode === 'CUSTOM' ? worldCreationData.customFactions : undefined,
+                    locations: worldCreationData.locationGenerationMode === 'CUSTOM' ? worldCreationData.customLocations : undefined,
+                    npcs: worldCreationData.npcGenerationMode === 'CUSTOM' ? worldCreationData.customNpcs : undefined,
+                };
+                primaryWorldMod = await generateWorldFromPrompts(promptsForGen);
+            }
+    
+            const otherActiveMods = enabledMods.filter(m => m.modInfo.id !== primaryWorldMod!.modInfo.id);
+            const activeMods: FullMod[] = [primaryWorldMod, ...otherActiveMods];
+    
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang kiến tạo nhân vật...' } });
+    
             let gender = worldCreationData.character.gender;
             if (gender === 'AI') {
                 gender = Math.random() < 0.5 ? 'Nam' : 'Nữ';
             }
             
             const attributeSystemToUse = worldCreationData.attributeSystem || activeMods.find(m => m.content.attributeSystem)?.content.attributeSystem || { definitions: DEFAULT_ATTRIBUTE_DEFINITIONS, groups: DEFAULT_ATTRIBUTE_GROUPS };
-
+    
             const { identity, spiritualRoot, initialBonuses, initialItems, initialCurrency } = await generateCharacterFromPrompts({
                 draftIdentity: {
                     name: worldCreationData.character.name,
@@ -361,7 +384,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 raceInput: `${worldCreationData.genre}, ${worldCreationData.theme}`,
                 backgroundInput: worldCreationData.setting,
             }, attributeSystemToUse);
-
+    
             const gameStartData: GameStartData = {
                 ...worldCreationData,
                 identity,
@@ -378,50 +401,36 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
             
             const setLoading = (msg: string) => dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: msg } });
             
-            // Step 1: Create the base game state. It will have `isHydrated: false`.
-            const newGameState = await createNewGameState(gameStartData, activeMods, worldIdToUse, setLoading);
+            const newGameState = await createNewGameState(gameStartData, activeMods, setLoading);
             
-            // Step 2: Directly call the hydration AI service and manually hydrate.
-            setLoading('Đang tạo dựng thế giới, chúng sinh và viết nên chương mở đầu...');
+            setLoading('Đang tạo dựng chúng sinh và viết nên chương mở đầu...');
             const generationMode = newGameState.creationData?.generationMode || 'deep';
-            const { npcs, relationships, openingNarrative } = await generateInitialWorldDetails(
-                newGameState,
-                generationMode
-            );
-
-            // Step 3: Populate the new game state with the generated data.
+            const { npcs, relationships, openingNarrative } = await generateInitialWorldDetails(newGameState, generationMode);
+    
             if (newGameState.storyLog.length > 0) {
                 newGameState.storyLog[0] = { ...newGameState.storyLog[0], content: openingNarrative };
             } else {
                 newGameState.storyLog.push({ id: 1, type: 'narrative' as const, content: openingNarrative });
             }
-
+    
             newGameState.playerCharacter.relationships.push(...relationships);
-
-            const familyNpcs = npcs.filter(n => n.id.startsWith('family-npc-'));
-            newGameState.activeNpcs.push(...familyNpcs);
-
-            if (newGameState.creationData?.npcGenerationMode === 'AI') {
-                const dynamicNpcs = npcs.filter(n => n.id.startsWith('dynamic-npc-'));
-                newGameState.activeNpcs.push(...dynamicNpcs);
-            }
+            newGameState.activeNpcs.push(...npcs);
             
-            // Step 4: Finalize the state.
             newGameState.isHydrated = true;
             delete newGameState.creationData;
             setLoading('Hoàn tất sáng thế!');
-
+    
             await db.saveGameState(slotId, newGameState);
             await loadSaveSlots();
-
+    
             const finalGameState = await migrateGameState(newGameState);
             dispatch({ type: 'LOAD_GAME', payload: { gameState: finalGameState, slotId: slotId } });
-
+    
         } catch (error: any) {
             console.error("Failed during custom world creation:", error);
             throw new Error(String(error));
         }
-    }, [state.activeWorldId, loadSaveSlots]);
+    }, [loadSaveSlots, state.settings]);
 
     const handleQuickCreateAndStartGame = useCallback(async (description: string, characterName: string, slotId: number) => {
         dispatch({ type: 'SET_CURRENT_SLOT_ID', payload: slotId });
@@ -462,7 +471,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                 difficulty: 'medium',
                 npcDensity: 'medium',
                 danhVong: { value: 0, status: 'Vô Danh Tiểu Tốt' },
-            }, [mod], mod.content.worldData?.[0].id || 'khoi_nguyen_gioi', setLoading);
+            }, [mod], setLoading);
             
             newGameState.storyLog = [{ id: 1, type: 'narrative' as const, content: openingNarrative }];
             newGameState.playerCharacter.relationships.push(...relationships);
@@ -478,10 +487,10 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // @FIX: The caught 'error' of type 'unknown' cannot be passed to the `Error` constructor directly. Casting it to a string resolves the type mismatch.
+            // FIX: The caught 'error' of type 'unknown' cannot be passed to the Error constructor directly. Casting it to a string resolves the type mismatch.
             throw new Error(String(error));
         }
-    }, [state.activeWorldId, loadSaveSlots, state.settings]);
+    }, [loadSaveSlots, state.settings]);
 
 
     const handleSetActiveWorldId = async (worldId: string) => {

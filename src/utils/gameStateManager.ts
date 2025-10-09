@@ -298,7 +298,6 @@ const convertModNpcToNpc = (modNpc: Omit<ModNpc, 'id'> & { id?: string }, realmS
 export const createNewGameState = async (
     gameStartData: GameStartData,
     activeMods: FullMod[],
-    activeWorldId: string,
     setLoadingMessage: (message: string) => void
 ): Promise<GameState> => {
     const { 
@@ -310,21 +309,16 @@ export const createNewGameState = async (
 
     // --- DYNAMIC WORLD LOADING ---
     let modWorldData: ModWorldData | undefined;
+    let activeWorldId: string;
     
     const worldMod = activeMods.find(m => m.content.worldData && m.content.worldData.length > 0);
     if (worldMod) {
         modWorldData = worldMod.content.worldData[0];
         activeWorldId = modWorldData.id;
     } else {
-        modWorldData = DEFAULT_WORLDS_DATA.find(w => w.id === activeWorldId);
+        throw new Error("Không thể tạo thế giới mới. Cần phải có một mod thế giới (World Mod) đang hoạt động hoặc được tạo ra.");
     }
     
-    if (!modWorldData) {
-        modWorldData = DEFAULT_WORLDS_DATA[0];
-        activeWorldId = modWorldData.id;
-        console.warn(`Không tìm thấy thế giới cho ID "${activeWorldId}", đang tải thế giới mặc định "${modWorldData.id}".`);
-    }
-
     console.log(`Đang tải dữ liệu thế giới từ: ${modWorldData.name}`);
 
     // --- OVERRIDE WORLD DATA BASED ON USER CHOICE ---

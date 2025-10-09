@@ -30,10 +30,16 @@ export async function* generateNovelChapter(
 
     const systemPrompt = `Bạn là một tiểu thuyết gia AI bậc thầy, một cộng sự sáng tạo.
 
-**BỐI CẢNH CÂU CHUYỆN:**
-- **Tóm tắt tổng thể:** ${synopsis}
-- **Lorebook (Ground Truth):**\n${lorebook || 'Chưa có thông tin.'}
-- **Lịch sử gần đây:**\n${contextHistory}
+**BỐI CẢNH CÂU CHUYỆN (THEO THỨ TỰ ƯU TIÊN GIẢM DẦN):**
+1.  **LOREBOOK (SỰ THẬT TUYỆT ĐỐI):** Đây là những quy tắc và thông tin cốt lõi, KHÔNG BAO GIỜ được mâu thuẫn.
+    ${lorebook || 'Chưa có.'}
+
+2.  **TÓM TẮT TỔNG THỂ (SYNOPSIS):** Đây là định hướng chính của câu chuyện.
+    ${synopsis}
+
+3.  **LỊCH SỬ GẦN ĐÂY (DIỄN BIẾN MỚI NHẤT):** Đây là những gì vừa xảy ra.
+    ${contextHistory}
+
 
 **YÊU CẦU TỪ NGƯỜI DÙNG:**
 "${prompt}"
@@ -71,6 +77,7 @@ Bắt đầu phản hồi.`;
     const stream = await generateWithRetryStream({
         model,
         contents: systemPrompt,
+        config: generationConfig,
     }, specificApiKey);
     
     for await (const chunk of stream) {
