@@ -7,8 +7,6 @@ import { addEntryToMemory, retrieveMemoryContext } from './memoryService';
 import { validateMechanicalChanges } from './validationService';
 import { applyMechanicalChanges } from './stateUpdateService';
 import { runHeuristicFixer } from './heuristicFixerService';
-import { orchestrateRagQuery } from './ragOrchestrator';
-import { analyzeItemWithAI } from './gemini/item.service';
 
 export const processPlayerAction = async (
     gameState: GameState,
@@ -20,7 +18,7 @@ export const processPlayerAction = async (
     abortSignal: AbortController['signal'],
     currentSlotId: number,
     onStreamUpdate: (content: string) => void
-): Promise<{ finalState: GameState, narrativeEntryPayload: Omit<StoryEntry, 'id'> }> => {
+): Promise<GameState> => {
     
     // --- GIAI ĐOẠN 0: CHUẨN BỊ, MÔ PHỎNG THẾ GIỚI & KÝ ỨC ---
     const { newState: stateAfterTime, newDay, notifications: timeNotifications } = advanceGameTime(gameState, apCost);
@@ -38,54 +36,17 @@ export const processPlayerAction = async (
         }
     }
 
-    let arbiterHint: string | undefined = undefined;
-
-    // --- ITEM IDENTIFICATION PRE-PROCESSING ---
-    if (type === 'act' && text.toLowerCase().includes('giám định')) {
-        const itemNameMatch = text.match(/giám định (.*)/i);
-        const itemName = itemNameMatch ? itemNameMatch[1].trim() : null;
-
-        if (itemName) {
-            const item = stateAfterSim.playerCharacter.inventory.items.find(i => i.name === itemName && !i.isIdentified);
-            if (item) {
-                try {
-                    // @google-genai-fix: Renamed `newBonuses` to `analysisResult` and checked `analysisResult.bonuses` property.
-                    const analysisResult = await analyzeItemWithAI(item, stateAfterSim);
-                    if (analysisResult.bonuses && analysisResult.bonuses.length > 0) {
-                        const itemIdentifiedIntent = {
-                            itemIdentified: {
-                                itemId: item.id,
-                                newBonuses: analysisResult.bonuses,
-                                passiveEffects: analysisResult.passiveEffects,
-                                conditionalEffects: analysisResult.conditionalEffects,
-                                curseEffect: analysisResult.curseEffect
-                            }
-                        };
-                        arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã giám định thành công vật phẩm '${item.name}'. Hãy tường thuật lại quá trình này (ví dụ: người chơi nhỏ máu, truyền linh lực, v.v. và thấy các dòng chữ/hào quang hiện ra) và BẮT BUỘC phải bao gồm 'mechanicalIntent' sau trong phản hồi JSON của bạn: ${JSON.stringify(itemIdentifiedIntent)}`;
-                    } else {
-                        arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã cố gắng giám định vật phẩm '${item.name}' nhưng thất bại, không phát hiện được gì đặc biệt. Hãy tường thuật lại sự thất bại này.`;
-                    }
-                } catch (e: any) {
-                    console.error("Item identification AI call failed:", e);
-                    arbiterHint = `[GỢI Ý TỪ HỆ THỐNG]: Người chơi đã cố gắng giám định vật phẩm '${item.name}' nhưng thất bại do thiên cơ hỗn loạn. Hãy tường thuật lại sự thất bại này.`;
-                }
-            }
-        }
-    }
-
-    // Combine both memory systems
     const rawMemoryContext = await retrieveMemoryContext(text, stateAfterSim, currentSlotId);
-    const ragContext = await orchestrateRagQuery(text, type, stateAfterSim);
-    const fullMemoryContext = [rawMemoryContext, ragContext].filter(Boolean).join('\n\n');
 
     // --- GIAI ĐOẠN 1: GỌI AI HỢP NHẤT ---
+    // The decideAction call has been removed. The main narrative AI now handles intent detection.
+    
     const stream = generateActionResponseStream(
         stateAfterSim, 
         text, 
         type, 
-        fullMemoryContext, 
-        settings,
-        arbiterHint
+        rawMemoryContext, 
+        settings
     );
 
     let fullResponseJsonString = '';
@@ -120,7 +81,7 @@ export const processPlayerAction = async (
     let aiPayload: AIResponsePayload;
     try {
         aiPayload = JSON.parse(fullResponseJsonString);
-    } catch (e: any) {
+    } catch (e) {
         console.error("Lỗi phân tích JSON từ AI:", e, "\nNội dung JSON:", fullResponseJsonString);
         throw new Error("AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.");
     }
@@ -131,6 +92,18 @@ export const processPlayerAction = async (
     let finalState = applyMechanicalChanges(stateAfterSim, validatedIntent, showNotification);
     
     const finalNarrative = aiPayload.narrative;
+
+    // Rebuild story log with final, non-pending entries
+    finalState.storyLog = finalState.storyLog.filter(entry => !entry.isPending && !(entry.type === 'narrative' && entry.content === ''));
+    
+    const lastId = finalState.storyLog.length > 0 ? finalState.storyLog[finalState.storyLog.length - 1].id : 0;
+    const playerActionEntry: StoryEntry = { id: lastId + 1, type: type === 'say' ? 'player-dialogue' : 'player-action', content: text };
+    const narrativeEntryWithId: StoryEntry = { id: lastId + 2, type: 'narrative', content: finalNarrative, effects: validatedIntent };
+    finalState.storyLog.push(playerActionEntry, narrativeEntryWithId);
+
+    // Add new memory fragments for the events that just transpired
+    await addEntryToMemory(playerActionEntry, finalState, currentSlotId);
+    await addEntryToMemory(narrativeEntryWithId, finalState, currentSlotId);
     
     // --- GIAI ĐOẠN 3: XỬ LÝ HẬU KỲ & DỌN DẸP ---
     const finalQuestCheck = questManager.processQuestUpdates(finalState);
@@ -142,21 +115,11 @@ export const processPlayerAction = async (
             const fixResult = await runHeuristicFixer(finalStateForReturn, currentSlotId);
             finalStateForReturn = fixResult.newState;
             fixResult.notifications.forEach(showNotification);
-        } catch (error: any) {
+        } catch (error) {
             console.error("[Heuristic Fixer] Failed to run AI validation:", error);
             showNotification("[Hệ Thống] Thiên Đạo Trật Tự Giám gặp lỗi.");
         }
     }
     
-    const narrativeEntryPayload: Omit<StoryEntry, 'id'> = {
-        type: 'narrative',
-        content: finalNarrative,
-        effects: validatedIntent,
-    };
-
-    // Note: Memory saving should be triggered after the state is fully resolved in the context.
-    // The previous implementation here was flawed as it operated on stale state.
-    // This logic should be moved to AppContext after PLAYER_ACTION_RESOLVED is processed.
-
-    return { finalState: finalStateForReturn, narrativeEntryPayload };
+    return finalStateForReturn;
 };

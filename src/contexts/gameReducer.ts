@@ -2,6 +2,7 @@ import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary, 
 import type { View } from './AppContext';
 import { sanitizeGameState } from '../utils/gameStateSanitizer';
 
+// Define the shape of our global state
 export interface AppState {
     view: View;
     isLoading: boolean;
@@ -18,11 +19,13 @@ export interface AppState {
     installedMods: ModInLibrary[];
     modBeingEdited: FullMod | null;
     pdfTextForGenesis: string | null;
+    // State for Novelist AI feature
     novels: Novel[];
     activeNovelId: number | null;
     settingsSavingStatus: 'idle' | 'saving' | 'saved';
 }
 
+// Define action types
 export type Action =
   | { type: 'NAVIGATE'; payload: View }
   | { type: 'SET_LOADING'; payload: { isLoading: boolean; message?: string } }
@@ -33,7 +36,6 @@ export type Action =
   | { type: 'SET_STORAGE_USAGE'; payload: { usageString: string; percentage: number } }
   | { type: 'SET_ACTIVE_WORLD_ID'; payload: string }
   | { type: 'LOAD_GAME'; payload: { gameState: GameState; slotId: number } }
-  | { type: 'START_CHARACTER_CREATION'; payload: number }
   | { type: 'QUIT_GAME' }
   | { type: 'UPDATE_GAME_STATE'; payload: GameState | null | ((prevState: GameState | null) => GameState | null) }
   | { type: 'LOAD_BACKGROUND_START'; payload: { themeId: string } }
@@ -43,15 +45,22 @@ export type Action =
   | { type: 'SET_INSTALLED_MODS'; payload: ModInLibrary[] }
   | { type: 'ADD_INSTALLED_MOD'; payload: ModInLibrary }
   | { type: 'UPDATE_INSTALLED_MODS'; payload: ModInLibrary[] }
-  | { type: 'REMOVE_INSTALLED_MOD'; payload: string }
+  | { type: 'REMOVE_INSTALLED_MOD'; payload: string } // payload is modId
   | { type: 'SET_MOD_FOR_EDITING'; payload: FullMod | null }
+  | { type: 'PLAYER_ACTION_PENDING'; payload: { text: string; type: 'say' | 'act' } }
+  | { type: 'STREAMING_NARRATIVE_UPDATE'; payload: string }
+  | { type: 'PLAYER_ACTION_RESOLVED'; payload: GameState }
   | { type: 'SET_PDF_TEXT_FOR_GENESIS'; payload: string | null }
+  // Actions for Novelist AI
   | { type: 'SET_NOVELS'; payload: Novel[] }
   | { type: 'SET_ACTIVE_NOVEL_ID'; payload: number | null }
   | { type: 'UPDATE_NOVEL'; payload: Novel }
+  // FIX: Add action to set current slot ID
   | { type: 'SET_CURRENT_SLOT_ID'; payload: number | null }
   | { type: 'SET_SETTINGS_SAVING_STATUS'; payload: 'idle' | 'saving' | 'saved' };
 
+
+// The reducer function
 export const gameReducer = (state: AppState, action: Action): AppState => {
     switch (action.type) {
         case 'NAVIGATE':
@@ -86,9 +95,6 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
         case 'SET_ACTIVE_WORLD_ID':
             return { ...state, activeWorldId: action.payload };
         
-        case 'START_CHARACTER_CREATION':
-            return { ...state, currentSlotId: action.payload, view: 'saveSlots' };
-
         case 'LOAD_GAME':
             const loadedGameState = sanitizeGameState(action.payload.gameState);
             return { 
@@ -107,7 +113,11 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
                 ? (action.payload as (prevState: GameState | null) => GameState | null)(state.gameState)
                 : action.payload;
              
-             if (newGameState) newGameState = sanitizeGameState(newGameState);
+             if (!state.gameState && !newGameState) return state;
+
+             if (newGameState) {
+                 newGameState = sanitizeGameState(newGameState);
+             }
 
              return { ...state, gameState: newGameState };
         
@@ -145,6 +155,50 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
 
         case 'SET_MOD_FOR_EDITING':
             return { ...state, modBeingEdited: action.payload };
+
+        case 'PLAYER_ACTION_PENDING':
+            if (!state.gameState) return state;
+            const lastId = state.gameState.storyLog.length > 0 ? state.gameState.storyLog[state.gameState.storyLog.length - 1].id : 0;
+            const playerActionEntry: StoryEntry = {
+                id: lastId + 1,
+                type: action.payload.type === 'say' ? 'player-dialogue' : 'player-action',
+                content: action.payload.text,
+                isPending: true,
+            };
+            const aiNarrativePlaceholder: StoryEntry = {
+                id: lastId + 2,
+                type: 'narrative',
+                content: '', // Start empty for streaming
+            };
+            return {
+                ...state,
+                gameState: {
+                    ...state.gameState,
+                    storyLog: [...state.gameState.storyLog, playerActionEntry, aiNarrativePlaceholder],
+                },
+            };
+
+        case 'STREAMING_NARRATIVE_UPDATE':
+            if (!state.gameState) return state;
+            const newStoryLog = [...state.gameState.storyLog];
+            const lastEntry = newStoryLog[newStoryLog.length - 1];
+            if (lastEntry) {
+                // Update the placeholder with streamed content
+                lastEntry.content = action.payload;
+            }
+            return {
+                ...state,
+                gameState: {
+                    ...state.gameState,
+                    storyLog: newStoryLog,
+                },
+            };
+        
+        case 'PLAYER_ACTION_RESOLVED':
+            return {
+                ...state,
+                gameState: action.payload,
+            };
         
         case 'SET_PDF_TEXT_FOR_GENESIS':
             return { ...state, pdfTextForGenesis: action.payload };

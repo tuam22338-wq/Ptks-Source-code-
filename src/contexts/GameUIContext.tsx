@@ -1,5 +1,6 @@
 import React, { useState, useCallback, createContext, useContext, FC, PropsWithChildren } from 'react';
-import type { GameEvent, ProgressionPath, InnerDemonTrial } from '../types';
+// FIX: Changed CultivationPath import
+import type { GameEvent, CultivationPath, InnerDemonTrial } from '../types';
 
 interface Notification {
     id: number;
@@ -9,23 +10,22 @@ interface Notification {
 interface GameUIContextState {
     notifications: Notification[];
     activeEvent: GameEvent | null;
-    availablePaths: ProgressionPath[];
-    activeShopId: string | null;
+    availablePaths: CultivationPath[];
     isInventoryOpen: boolean;
-    isStallModalOpen: boolean;
     activeInnerDemonTrial: InnerDemonTrial | null;
+    // @FIX: Add state to manage the active shop modal.
+    activeShopId: string | null;
 }
 
 interface GameUIContextActions {
     showNotification: (message: string) => void;
     dismissNotification: (id: number) => void;
-    openShopModal: (shopId: string) => void;
-    closeShopModal: () => void;
     openInventoryModal: () => void;
     closeInventoryModal: () => void;
-    openStallModal: () => void;
-    closeStallModal: () => void;
-    openCultivationPathModal: (paths: ProgressionPath[]) => void;
+    // @FIX: Add actions to open and close the shop modal.
+    openShopModal: (shopId: string) => void;
+    closeShopModal: () => void;
+    openCultivationPathModal: (paths: CultivationPath[]) => void;
     closeCultivationPathModal: () => void;
     openInnerDemonTrial: (trial: InnerDemonTrial) => void;
     closeInnerDemonTrial: () => void;
@@ -39,11 +39,11 @@ const GameUIContext = createContext<GameUIContextType | undefined>(undefined);
 export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
-    const [availablePaths, setAvailablePaths] = useState<ProgressionPath[]>([]);
-    const [activeShopId, setActiveShopId] = useState<string | null>(null);
+    const [availablePaths, setAvailablePaths] = useState<CultivationPath[]>([]);
     const [isInventoryOpen, setIsInventoryOpen] = useState(false);
-    const [isStallModalOpen, setIsStallModalOpen] = useState(false);
     const [activeInnerDemonTrial, setActiveInnerDemonTrial] = useState<InnerDemonTrial | null>(null);
+    // @FIX: Implement state and handlers for the shop modal.
+    const [activeShopId, setActiveShopId] = useState<string | null>(null);
 
     const showNotification = useCallback((message: string) => {
         const id = Date.now() + Math.random();
@@ -56,17 +56,15 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const dismissNotification = useCallback((id: number) => {
         setNotifications(prev => prev.filter(n => n.id !== id));
     }, []);
-
-    const openShopModal = useCallback((shopId: string) => setActiveShopId(shopId), []);
-    const closeShopModal = useCallback(() => setActiveShopId(null), []);
     
     const openInventoryModal = useCallback(() => setIsInventoryOpen(true), []);
     const closeInventoryModal = useCallback(() => setIsInventoryOpen(false), []);
-    
-    const openStallModal = useCallback(() => setIsStallModalOpen(true), []);
-    const closeStallModal = useCallback(() => setIsStallModalOpen(false), []);
 
-    const openCultivationPathModal = useCallback((paths: ProgressionPath[]) => setAvailablePaths(paths), []);
+    // @FIX: Implement shop modal handlers.
+    const openShopModal = useCallback((shopId: string) => setActiveShopId(shopId), []);
+    const closeShopModal = useCallback(() => setActiveShopId(null), []);
+
+    const openCultivationPathModal = useCallback((paths: CultivationPath[]) => setAvailablePaths(paths), []);
     const closeCultivationPathModal = useCallback(() => setAvailablePaths([]), []);
 
     const openInnerDemonTrial = useCallback((trial: InnerDemonTrial) => setActiveInnerDemonTrial(trial), []);
@@ -76,18 +74,15 @@ export const GameUIProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         notifications,
         activeEvent,
         availablePaths,
-        activeShopId,
         isInventoryOpen,
-        isStallModalOpen,
         activeInnerDemonTrial,
+        activeShopId,
         showNotification,
         dismissNotification,
-        openShopModal,
-        closeShopModal,
         openInventoryModal,
         closeInventoryModal,
-        openStallModal,
-        closeStallModal,
+        openShopModal,
+        closeShopModal,
         openCultivationPathModal,
         closeCultivationPathModal,
         openInnerDemonTrial,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import type { ItemQuality } from '../types';
+import type { ItemQuality, InventoryItem } from '../types';
 import { ITEM_QUALITY_STYLES } from '../constants';
 import { GiStarsStack } from 'react-icons/gi';
 
@@ -13,7 +13,8 @@ const SpecialEffectsOverlay: React.FC = () => {
     const [activeEffect, setActiveEffect] = useState<null | 'breakthrough' | 'rareItem'>(null);
     const [rareItemData, setRareItemData] = useState<{ name: string; icon: string; quality: ItemQuality } | null>(null);
 
-    const prevTierId = useRef<string | undefined>(gameState?.playerCharacter.progression.currentTierId);
+    // FIX: Access cultivation property
+    const prevRealmId = useRef<string | undefined>(gameState?.playerCharacter.cultivation.currentRealmId);
     const prevInventory = useRef<Map<string, number>>(new Map());
     const isInitialMount = useRef(true);
 
@@ -21,12 +22,13 @@ const SpecialEffectsOverlay: React.FC = () => {
         if (!gameState) return;
 
         const { playerCharacter } = gameState;
-        const currentTierId = playerCharacter.progression.currentTierId;
+        // FIX: Access cultivation property
+        const currentRealmId = playerCharacter.cultivation.currentRealmId;
         const currentItems = playerCharacter.inventory.items;
 
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            prevTierId.current = currentTierId;
+            prevRealmId.current = currentRealmId;
             const initialMap = new Map<string, number>();
             currentItems.forEach(item => {
                 initialMap.set(item.name, (initialMap.get(item.name) || 0) + item.quantity);
@@ -36,12 +38,10 @@ const SpecialEffectsOverlay: React.FC = () => {
         }
 
         // Check for breakthrough
-        if (currentTierId && prevTierId.current && currentTierId !== prevTierId.current) {
+        if (currentRealmId && prevRealmId.current && currentRealmId !== prevRealmId.current) {
             setActiveEffect('breakthrough');
             const timer = setTimeout(() => setActiveEffect(null), 4000);
-            // Update ref immediately after triggering effect
-            prevTierId.current = currentTierId;
-            return () => clearTimeout(timer);
+            return () => clearTimeout(timer); // Return here to prevent ref update
         }
         
         // Check for new rare items
@@ -58,18 +58,17 @@ const SpecialEffectsOverlay: React.FC = () => {
                     setRareItemData({ name: newItem.name, icon: newItem.icon || '💎', quality: newItem.quality });
                     setActiveEffect('rareItem');
                     const timer = setTimeout(() => setActiveEffect(null), 5000);
-                    // Update inventory ref immediately after triggering effect
-                    prevInventory.current = currentInventoryMap;
-                    return () => clearTimeout(timer);
+                    return () => clearTimeout(timer); // Return here to prevent ref update
                 }
             }
         }
         
-        // Update refs if no effect was triggered
-        prevTierId.current = currentTierId;
+        // Update refs only if no effect was triggered in this run.
+        prevRealmId.current = currentRealmId;
         prevInventory.current = currentInventoryMap;
 
-    }, [gameState?.playerCharacter.progression.currentTierId, gameState?.playerCharacter.inventory.items, gameState]);
+    // FIX: Access cultivation property in dependency array
+    }, [gameState?.playerCharacter.cultivation.currentRealmId, gameState?.playerCharacter.inventory.items, gameState]);
 
 
     if (!activeEffect || state.settings.enablePerformanceMode) return null;

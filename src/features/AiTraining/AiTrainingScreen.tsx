@@ -1,14 +1,13 @@
-import React, { memo, useRef, useState, useEffect, useCallback } from 'react';
-import type { GameSettings, FullMod, GenerationMode, NovelContentEntry, RagSource } from '../../types';
-import { summarizeLargeTextForWorldGen, generateWorldFromText, chatWithGameMaster, fixModStructure } from '../../services/gemini/modding.service';
+import React, { memo, useRef, useState, useEffect } from 'react';
+import type { GameSettings, FullMod, GenerationMode, NovelContentEntry } from '../../types';
+import { summarizeLargeTextForWorldGen, generateWorldFromText, chatWithGameMaster } from '../../services/gemini/modding.service';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { FaFileUpload, FaDownload, FaBrain, FaArrowLeft, FaComments, FaDatabase, FaCog, FaTimes, FaPaperPlane, FaUserCircle, FaLightbulb, FaCopy, FaCheckCircle, FaTrash, FaSync, FaExclamationCircle } from 'react-icons/fa';
+import { FaFileUpload, FaDownload, FaBrain, FaArrowLeft, FaComments, FaDatabase, FaCog, FaTimes, FaPaperPlane, FaUserCircle, FaLightbulb, FaCopy, FaCheckCircle } from 'react-icons/fa';
 import { GiSparkles } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import { PROMPT_TEMPLATES, PromptTemplate } from '../../data/promptTemplates';
-import * as ragService from '../../services/ragService';
 
-type ActiveTab = 'data' | 'gm' | 'prompts' | 'rag';
+type ActiveTab = 'data' | 'gm' | 'prompts';
 
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="mb-10">
@@ -43,6 +42,32 @@ const extractTextFromPdf = async (file: File): Promise<string> => {
     }
     return textContent;
 };
+
+const fixModStructure = (mod: any): FullMod => {
+    if (mod && mod.modInfo && mod.content) {
+        return mod as FullMod; // Already valid
+    }
+    console.warn("AI returned an incomplete mod structure. Attempting to fix.", mod);
+    // Attempt to fix a common mistake where 'content' is at the top level
+    if (mod && mod.worldData) {
+        return {
+            modInfo: mod.modInfo || { // Use modInfo if it exists, otherwise create one
+                id: `generated_world_${Date.now()}`,
+                name: mod.worldData[0]?.name || "Generated World (Fixed)",
+                description: mod.worldData[0]?.description || "World generated from text, structure was fixed.",
+                version: "1.0.0",
+                tags: mod.worldData[0]?.tags || [],
+            },
+            content: {
+                ...mod,
+                // Remove modInfo from content if it was there
+                ...(mod.modInfo && { modInfo: undefined })
+            }
+        };
+    }
+    throw new Error("AI đã trả về một cấu trúc mod không hợp lệ và không thể tự động sửa chữa. JSON phải có thuộc tính `modInfo` và `content` ở cấp cao nhất.");
+};
+
 
 const WorldDataTrainingPanel: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -156,132 +181,6 @@ const WorldDataTrainingPanel: React.FC = () => {
         </>
     );
 }
-
-// --- RAG Training Tab ---
-const RagTrainingPanel: React.FC = () => {
-    const [sources, setSources] = useState<RagSource[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const loadSources = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const loadedSources = await ragService.getAllSources();
-            setSources(loadedSources);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadSources();
-    }, [loadSources]);
-
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setError(null);
-            try {
-                await ragService.addPlayerJournalSource(file);
-                await loadSources();
-            } catch (err: any) {
-                setError(`Lỗi khi thêm nguồn: ${err.message}`);
-            }
-        }
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
-    
-    const handleReIndex = async (sourceId: string) => {
-        setError(null);
-        setSources(prev => prev.map(s => s.id === sourceId ? { ...s, status: 'INDEXING' } : s));
-        try {
-            await ragService.indexSource(sourceId);
-        } catch (err: any) {
-             setError(`Lỗi khi lập chỉ mục '${sourceId}': ${err.message}`);
-        } finally {
-            await loadSources();
-        }
-    };
-
-    const handleDelete = async (sourceId: string) => {
-        if(window.confirm(`Bạn có chắc muốn xóa nguồn tri thức "${sourceId}" không? Hành động này không thể hoàn tác.`)) {
-             setError(null);
-            try {
-                await ragService.deleteSource(sourceId);
-                await loadSources();
-            } catch (err: any) {
-                setError(`Lỗi khi xóa nguồn '${sourceId}': ${err.message}`);
-            }
-        }
-    };
-
-    return (
-        <div className="p-4">
-            <SettingsSection title="Quản lý Nguồn Tri Thức RAG">
-                <SettingsRow label="Thêm 'Tâm Kinh Ký'" description="Tải lên các ghi chép, lore của riêng bạn dưới dạng file .txt. AI có thể học và tích hợp chúng vào câu chuyện trong game.">
-                    <input type="file" accept=".txt" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                    <button onClick={() => fileInputRef.current?.click()} className="btn btn-primary w-full max-w-sm flex items-center justify-center gap-3 py-3">
-                        <FaFileUpload /> Tải lên Tâm Kinh Ký (.txt)
-                    </button>
-                </SettingsRow>
-                <SettingsRow label="Các Nguồn Hiện Có" description="Quản lý và lập chỉ mục các nguồn tri thức. Lập chỉ mục lại nếu bạn muốn AI học lại từ đầu (ví dụ sau khi cập nhật mod).">
-                    <div className="w-full">
-                        {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30 mb-4">{error}</p>}
-                        <div className="space-y-3">
-                            {isLoading ? (
-                                <div className="flex justify-center p-8"><LoadingSpinner message="Đang tải nguồn..." /></div>
-                            ) : sources.map(source => (
-                                <div key={source.id} className="neumorphic-inset-box p-3 flex justify-between items-center">
-                                    <div>
-                                        <h4 className="font-bold text-[var(--text-color)]">{source.name}</h4>
-                                        <p className="text-xs text-[var(--text-muted-color)]">Loại: {source.type} | ID: {source.id}</p>
-                                        <div className="flex items-center gap-2 mt-1 text-sm">
-                                            {source.status === 'INDEXED' && <FaCheckCircle className="text-green-500" />}
-                                            {source.status === 'INDEXING' && <FaSync className="text-blue-400 animate-spin" />}
-                                            {source.status === 'UNINDEXED' && <FaExclamationCircle className="text-yellow-500" />}
-                                            {source.status === 'ERROR' && <FaExclamationCircle className="text-red-500" />}
-                                            <span className={`
-                                                ${source.status === 'INDEXED' ? 'text-green-400' : ''}
-                                                ${source.status === 'INDEXING' ? 'text-blue-300' : ''}
-                                                ${source.status === 'UNINDEXED' ? 'text-yellow-400' : ''}
-                                                ${source.status === 'ERROR' ? 'text-red-400' : ''}
-                                            `}>{source.status}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                         <button 
-                                            onClick={() => handleReIndex(source.id)}
-                                            disabled={source.status === 'INDEXING'}
-                                            className="btn btn-neumorphic !text-xs !px-3 !py-1 flex items-center gap-2 disabled:opacity-50"
-                                            title="Lập chỉ mục lại"
-                                        >
-                                            <FaSync />
-                                        </button>
-                                        {source.type === 'PLAYER_JOURNAL' && (
-                                            <button 
-                                                onClick={() => handleDelete(source.id)}
-                                                className="btn !p-0 h-8 w-8 !rounded-lg"
-                                                style={{backgroundColor: 'var(--error-color)', color: 'white'}}
-                                                title="Xóa Nguồn"
-                                            >
-                                                <FaTrash />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </SettingsRow>
-            </SettingsSection>
-        </div>
-    );
-};
 
 
 // --- Game Master Chat Tab ---
@@ -399,8 +298,11 @@ const GameMasterChatPanel: React.FC<{
                 throw new Error("Không có nội dung phản hồi từ AI để phân tích.");
             }
 
-            setWorldGenMessage('AI đang kiến tạo thế giới từ hội thoại...');
-            const rawMod = await generateWorldFromText(combinedText, 'deep');
+            setWorldGenMessage('AI đang tóm tắt nội dung (bước 1/2)...');
+            const summarizedText = await summarizeLargeTextForWorldGen(combinedText);
+
+            setWorldGenMessage('AI đang kiến tạo thế giới từ tóm tắt (bước 2/2)...');
+            const rawMod = await generateWorldFromText(summarizedText, 'deep');
             const mod = fixModStructure(rawMod);
             setGeneratedMod(mod);
 
@@ -566,18 +468,15 @@ const AiTrainingScreen: React.FC = () => {
                 <div className="w-9 h-9"></div> {/* Spacer */}
             </div>
             
-            <div className="flex-shrink-0 grid grid-cols-2 lg:grid-cols-4 items-center gap-2 p-1 rounded-t-lg border-b" style={{boxShadow: 'var(--shadow-pressed)', borderColor: 'var(--shadow-light)'}}>
-                <button onClick={() => setActiveTab('gm')} className={`w-full flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'gm' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'gm' ? 'var(--text-muted-color)' : undefined}}>
+            <div className="flex-shrink-0 flex items-center gap-2 p-1 rounded-t-lg border-b" style={{boxShadow: 'var(--shadow-pressed)', borderColor: 'var(--shadow-light)'}}>
+                <button onClick={() => setActiveTab('gm')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'gm' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'gm' ? 'var(--text-muted-color)' : undefined}}>
                     <FaComments /> Game Master AI
                 </button>
-                 <button onClick={() => setActiveTab('prompts')} className={`w-full flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'prompts' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'prompts' ? 'var(--text-muted-color)' : undefined}}>
+                 <button onClick={() => setActiveTab('prompts')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'prompts' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'prompts' ? 'var(--text-muted-color)' : undefined}}>
                     <FaLightbulb /> Kỹ Thuật Prompt
                 </button>
-                <button onClick={() => setActiveTab('data')} className={`w-full flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'data' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'data' ? 'var(--text-muted-color)' : undefined}}>
-                    <FaDatabase /> Sáng Thế từ Văn Bản
-                </button>
-                 <button onClick={() => setActiveTab('rag')} className={`w-full flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'rag' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'rag' ? 'var(--text-muted-color)' : undefined}}>
-                    <GiSparkles /> Huấn Luyện RAG
+                <button onClick={() => setActiveTab('data')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'data' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'data' ? 'var(--text-muted-color)' : undefined}}>
+                    <FaDatabase /> Huấn Luyện Dữ Liệu
                 </button>
             </div>
 
@@ -595,7 +494,6 @@ const AiTrainingScreen: React.FC = () => {
                 {activeTab === 'prompts' && (
                     <PromptEngineeringPanel setActiveTab={setActiveTab} setUserInputForGM={setUserInputForGM} />
                 )}
-                 {activeTab === 'rag' && <RagTrainingPanel />}
             </div>
             
             <div className="flex-shrink-0 mt-6 pt-4 border-t border-[var(--shadow-light)] flex justify-end items-center" style={{ minHeight: '52px' }}>

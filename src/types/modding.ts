@@ -1,17 +1,20 @@
 import type {
     Faction, Gender, Element, StatBonus, ItemType, ItemQuality, EquipmentSlot, InnateTalentRank, AbilityRank,
     AbilityEffectType, 
+    // FIX: Import SkillCheck, EventChoice, and EventOutcome from core types
     SkillCheck,
     AttributeDefinition,
     AttributeGroupDefinition,
     EventChoice,
     EventOutcome,
+    // FIX: Import CultivationTechnique from core to resolve error.
     CultivationTechnique,
     MajorEvent,
     GameEvent,
     Location
 } from './core';
 import type { CharacterIdentity } from './character';
+// FIX: Correct imports to resolve circular dependencies and missing types.
 import type { NPC } from './gameplay';
 
 export interface ModTagDefinition {
@@ -44,32 +47,34 @@ export interface ModTalent {
     tags: string[];
 }
 
-export interface ProgressionSubTier {
+export interface SubTier {
     id: string;
     name: string;
-    resourceRequired: number;
+    qiRequired: number;
     breakthroughRequirements?: string; // Descriptive text for AI, e.g., "Cần hấp thụ một 'Hồn Hoàn' vạn năm."
     bonuses: StatBonus[];
     description?: string;
 }
 
-export interface ProgressionTierConfig {
+// FIX: Renamed TierConfig to RealmConfig for consistency
+export interface RealmConfig {
     id: string;
     name: string;
-    subTiers: ProgressionSubTier[];
+    stages: SubTier[];
     hasTribulation?: boolean;
     tribulationDescription?: string;
     description?: string;
     bonuses?: StatBonus[];
 }
 
-export interface NamedProgressionSystem {
+// FIX: Renamed NamedProgressionSystem to NamedRealmSystem
+export interface NamedRealmSystem {
     id: string;
     name: string;
     description: string;
     resourceName: string; // Vd: 'Linh Khí', 'Hồn Lực', 'Điểm Kinh Nghiệm'
     resourceUnit: string; // Vd: 'điểm', 'năm', 'vòng'
-    tiers: ProgressionTierConfig[];
+    realms: RealmConfig[]; // field name 'realms' is kept for backward compatibility with schema
 }
 
 export interface TalentSystemConfig {
@@ -133,6 +138,7 @@ export interface ModForeshadowedEvent {
 
 
 export interface ModWorldData {
+    // FIX: Add missing 'id' property required by ModWorldData type.
     id: string;
     name: string;
     description: string;
@@ -225,6 +231,7 @@ export interface EventTrigger {
     details: Record<string, any>;
 }
 
+// FIX: This type is now defined locally as it's a core part of modding events.
 export type ModEvent = Omit<GameEvent, 'id' | 'choices'> & {
     id: string;
     name: string;
@@ -322,8 +329,10 @@ export interface ModContent {
     npcs?: Omit<ModNpc, 'id'>[];
     events?: Omit<ModEvent, 'id'>[];
     recipes?: Omit<AlchemyRecipe, 'id'>[];
-    progressionTiers?: ProgressionTierConfig[];
-    namedProgressionSystems?: NamedProgressionSystem[];
+    // FIX: Renamed tierConfigs to realmConfigs
+    realmConfigs?: RealmConfig[]; // DEPRECATED for new mods, used for single-system mods
+    // FIX: Renamed namedProgressionSystems to namedRealmSystems
+    namedRealmSystems?: NamedRealmSystem[];
     talentSystemConfig?: TalentSystemConfig;
     talentRanks?: Omit<ModTalentRank, 'id'>[];
     declarations?: ModDeclaration;

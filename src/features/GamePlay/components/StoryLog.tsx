@@ -1,6 +1,6 @@
 import React, { useState, memo, useMemo, useRef, useEffect } from 'react';
-import type { StoryEntry, NPC, GameState, MechanicalIntent, ActiveQuest, InventoryItem } from '../../../types';
-import { FaVolumeUp, FaTimes, FaArrowUp, FaArrowDown, FaBook, FaInfoCircle } from 'react-icons/fa';
+import type { StoryEntry, NPC, GameState, MechanicalIntent, ActiveQuest, Location } from '../../../types';
+import { FaVolumeUp, FaTimes, FaArrowUp, FaArrowDown, FaBook, FaMapPin, FaUser } from 'react-icons/fa';
 import { UI_ICONS, ITEM_QUALITY_STYLES, CURRENCY_DEFINITIONS } from '../../../constants';
 import { useAppContext } from '../../../contexts/AppContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
@@ -127,64 +127,64 @@ const NpcTooltip: React.FC<{ npc: NPC; gameState: GameState; onClose: () => void
     );
 };
 
-
-// --- NEW NpcPopover Component ---
-const NpcPopover: React.FC<{
-    npc: NPC;
-    targetRect: DOMRect;
-    onClose: () => void;
-    onShowDetails: () => void;
+// --- NEW QuickInfoTooltip Component ---
+const QuickInfoTooltip: React.FC<{
+    type: 'npc' | 'location';
+    data: any;
+    x: number;
+    y: number;
     gameState: GameState;
-}> = ({ npc, targetRect, onClose, onShowDetails, gameState }) => {
-    const popoverRef = useRef<HTMLDivElement>(null);
-    const [position, setPosition] = useState({ top: 0, left: 0 });
+}> = ({ type, data, x, y, gameState }) => {
+    const tooltipRef = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState({ top: y + 15, left: x });
 
     useEffect(() => {
-        if (popoverRef.current) {
-            const popoverRect = popoverRef.current.getBoundingClientRect();
-            let top = targetRect.top - popoverRect.height - 8; // Position above the text
-            let left = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
-
-            // Adjust if out of viewport
-            if (top < 0) top = targetRect.bottom + 8;
-            if (left < 0) left = 0;
-            if (left + popoverRect.width > window.innerWidth) {
-                left = window.innerWidth - popoverRect.width;
+        if (tooltipRef.current) {
+            const rect = tooltipRef.current.getBoundingClientRect();
+            let newLeft = x;
+            if (x + rect.width > window.innerWidth) {
+                newLeft = x - rect.width;
             }
-
-            setPosition({ top, left });
+            setPosition({ top: y + 15, left: newLeft });
         }
-    }, [targetRect]);
-    
-    const realm = gameState.realmSystem.find(r => r.id === npc.cultivation.currentRealmId);
-    const stage = realm?.stages.find(s => s.id === npc.cultivation.currentStageId);
+    }, [x, y]);
+
+    let content;
+    if (type === 'npc' && data) {
+        const npc = data as NPC;
+        const realm = gameState.realmSystem.find(r => r.id === npc.cultivation.currentRealmId);
+        const stage = realm?.stages.find(s => s.id === npc.cultivation.currentStageId);
+        content = (
+            <>
+                <h5 className="font-bold font-title text-amber-300 flex items-center gap-2"><FaUser /> {npc.identity.name}</h5>
+                <p className="text-xs text-gray-400">{npc.status}</p>
+                {realm && stage && <p className="text-sm text-cyan-300">{realm.name} - {stage.name}</p>}
+            </>
+        );
+    } else if (type === 'location' && data) {
+        const location = data as Location;
+        content = (
+            <>
+                <h5 className="font-bold font-title text-sky-300 flex items-center gap-2"><FaMapPin /> {location.name}</h5>
+                <p className="text-xs text-gray-400">{location.type}</p>
+                <p className="text-sm text-gray-300 italic truncate">{location.description}</p>
+            </>
+        );
+    }
 
     return (
-        <div className="fixed inset-0 z-40" onClick={onClose}>
-            <div
-                ref={popoverRef}
-                className="fixed p-3 rounded-lg shadow-xl text-white w-64 animate-fade-in"
-                style={{ 
-                    top: position.top, 
-                    left: position.left,
-                    backgroundColor: 'var(--bg-color)',
-                    boxShadow: 'var(--shadow-raised)',
-                    border: '1px solid var(--shadow-light)',
-                    animationDuration: '150ms'
-                }}
-                onClick={e => e.stopPropagation()}
-            >
-                <h5 className="font-bold font-title text-amber-300">{npc.identity.name}</h5>
-                <p className="text-xs italic text-gray-400 my-1">"{npc.status}"</p>
-                {realm && stage && <p className="text-sm font-semibold text-cyan-400">{realm.name} - {stage.name}</p>}
-                <button 
-                    onClick={onShowDetails} 
-                    className="w-full mt-2 text-sm text-center py-1 rounded transition-colors"
-                    style={{ backgroundColor: 'rgba(var(--primary-accent-color-rgb), 0.2)', color: 'var(--primary-accent-color)'}}
-                >
-                    Xem Chi Tiết
-                </button>
-            </div>
+        <div
+            ref={tooltipRef}
+            className="fixed z-[100] w-64 p-3 rounded-lg shadow-2xl pointer-events-none animate-fade-in"
+            style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+                backgroundColor: 'var(--bg-color)',
+                border: '1px solid var(--shadow-light)',
+                animationDuration: '150ms'
+            }}
+        >
+            {content}
         </div>
     );
 };
@@ -193,47 +193,48 @@ const NpcPopover: React.FC<{
 // --- InteractiveText Component ---
 const InteractiveText: React.FC<{
     text: string;
-    npcs: NPC[];
     gameState: GameState;
-}> = ({ text, npcs, gameState }) => {
-    const [tooltipData, setTooltipData] = useState<{ npc: NPC } | null>(null);
-    const [popoverData, setPopoverData] = useState<{ npc: NPC; targetRect: DOMRect } | null>(null);
-
-    const handleNpcClick = (npc: NPC, event: React.MouseEvent) => {
-        event.stopPropagation();
-        const rect = (event.target as HTMLElement).getBoundingClientRect();
-        setPopoverData({ npc, targetRect: rect });
-    };
-
-    const handleShowDetails = () => {
-        if (popoverData) {
-            setTooltipData({ npc: popoverData.npc });
-            setPopoverData(null);
-        }
-    };
-
-    const closePopover = () => setPopoverData(null);
-
+    onNpcClick: (npc: NPC, event: React.MouseEvent) => void;
+    onEntityHover: (type: 'npc' | 'location', data: any, event: React.MouseEvent) => void;
+    onEntityLeave: () => void;
+}> = ({ text, gameState, onNpcClick, onEntityHover, onEntityLeave }) => {
     const content = useMemo(() => {
-        if (!text || npcs.length === 0) return text;
+        if (!text || (!gameState.activeNpcs && !gameState.discoveredLocations)) return text;
 
-        const allNames = npcs.map(npc => npc.identity.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean);
+        const allNpcNames = (gameState.activeNpcs || []).map(npc => npc.identity.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean);
+        const allLocationNames = (gameState.discoveredLocations || []).map(loc => loc.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean);
+        
+        const allNames = [...new Set([...allNpcNames, ...allLocationNames])];
         if (allNames.length === 0) return text;
         
-        // Sort by length descending to match longer names first (e.g., "Lý Mạc Sầu" before "Lý")
         allNames.sort((a, b) => b.length - a.length);
         
         const regex = new RegExp(`\\b(${allNames.join('|')})\\b`, 'g');
         const parts = text.split(regex);
 
         return parts.map((part, i) => {
-            const npc = npcs.find(n => n.identity.name === part);
+            const npc = (gameState.activeNpcs || []).find(n => n.identity.name === part);
             if (npc) {
                 return (
                     <span
-                        key={i}
+                        key={`npc-${i}`}
                         className="font-bold text-yellow-400 cursor-pointer hover:underline"
-                        onClick={(e) => handleNpcClick(npc, e)}
+                        onClick={(e) => onNpcClick(npc, e)}
+                        onMouseEnter={(e) => onEntityHover('npc', npc, e)}
+                        onMouseLeave={onEntityLeave}
+                    >
+                        {part}
+                    </span>
+                );
+            }
+            const location = (gameState.discoveredLocations || []).find(l => l.name === part);
+            if (location) {
+                return (
+                     <span
+                        key={`loc-${i}`}
+                        className="font-bold text-cyan-400 cursor-pointer hover:underline"
+                        onMouseEnter={(e) => onEntityHover('location', location, e)}
+                        onMouseLeave={onEntityLeave}
                     >
                         {part}
                     </span>
@@ -241,24 +242,9 @@ const InteractiveText: React.FC<{
             }
             return part;
         });
-    }, [text, npcs]);
+    }, [text, gameState.activeNpcs, gameState.discoveredLocations, onNpcClick, onEntityHover, onEntityLeave]);
 
-    return (
-        <>
-            {tooltipData && <NpcTooltip npc={tooltipData.npc} gameState={gameState} onClose={() => setTooltipData(null)} />}
-            {popoverData && <NpcPopover npc={popoverData.npc} targetRect={popoverData.targetRect} onClose={closePopover} onShowDetails={handleShowDetails} gameState={gameState} />}
-            {content}
-        </>
-    );
-};
-
-// --- ItemIcon Component ---
-const ItemIcon: React.FC<{ item: Partial<InventoryItem> }> = ({ item }) => {
-    if (item.iconName && UI_ICONS[item.iconName]) {
-        const Icon = UI_ICONS[item.iconName];
-        return <Icon className="text-xl" />;
-    }
-    return <span className="text-xl">{item.icon || '🎁'}</span>;
+    return <>{content}</>;
 };
 
 
@@ -287,7 +273,7 @@ const EffectsRenderer: React.FC<{ effects: MechanicalIntent; gameState: GameStat
                 {effects.itemsGained?.map((item, i) => (
                     <div key={`gain-${i}`} className="flex items-center gap-2 text-sm">
                         <span className="text-green-400 font-bold">+ {item.quantity}</span>
-                        <ItemIcon item={item} />
+                        <span className="text-xl">{item.icon}</span>
                         <span className={`${ITEM_QUALITY_STYLES[item.quality]?.color || 'text-gray-300'} font-semibold`}>{item.name}</span>
                     </div>
                 ))}
@@ -336,47 +322,73 @@ const StoryLog: React.FC<{
     gameState: GameState;
     onSpeak: (text: string) => void;
 }> = ({ pageEntries, gameState, onSpeak }) => {
+    const [modalNpc, setModalNpc] = useState<NPC | null>(null);
+    const [tooltip, setTooltip] = useState<{ type: 'npc' | 'location'; data: any; x: number; y: number } | null>(null);
+
     const handleSpeak = (content: string) => {
         const cleanText = content.replace(/\[.*?\]/g, '').replace(/<[^>]+>/g, '');
         onSpeak(cleanText);
     };
+    
+    const handleNpcClick = (npc: NPC, event: React.MouseEvent) => {
+        event.stopPropagation();
+        setTooltip(null); // Hide tooltip when modal opens
+        setModalNpc(npc);
+    };
+
+    const handleEntityHover = (type: 'npc' | 'location', data: any, event: React.MouseEvent) => {
+        setTooltip({ type, data, x: event.clientX, y: event.clientY });
+    };
+
+    const handleEntityLeave = () => {
+        setTooltip(null);
+    };
+
+    const renderContent = (entry: StoryEntry) => (
+        <InteractiveText
+            text={entry.content}
+            gameState={gameState}
+            onNpcClick={handleNpcClick}
+            onEntityHover={handleEntityHover}
+            onEntityLeave={handleEntityLeave}
+        />
+    );
+
+    const renderEntry = (entry: StoryEntry, children: React.ReactNode) => (
+        <>
+            {children}
+            {entry.effects && <EffectsRenderer effects={entry.effects} gameState={gameState} />}
+        </>
+    );
 
     return (
-        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
+        <div className="flex-grow p-4 sm:p-6 overflow-y-auto space-y-4">
+            {modalNpc && <NpcTooltip npc={modalNpc} gameState={gameState} onClose={() => setModalNpc(null)} />}
+            {tooltip && <QuickInfoTooltip type={tooltip.type} data={tooltip.data} x={tooltip.x} y={tooltip.y} gameState={gameState} />}
+
             {pageEntries.map((entry) => {
                 const animationStyle = { animationDuration: '600ms' };
                 const isSpeakable = ['narrative', 'dialogue', 'action-result', 'system-notification', 'player-dialogue', 'combat'].includes(entry.type);
-
-                const renderContent = () => (
-                    <InteractiveText text={entry.content} npcs={gameState.activeNpcs} gameState={gameState} />
-                );
-
-                const renderEntry = (children: React.ReactNode) => (
-                    <>
-                        {children}
-                        {entry.effects && <EffectsRenderer effects={entry.effects} gameState={gameState} />}
-                    </>
-                );
 
                 switch (entry.type) {
                     case 'narrative':
                         return (
                             <div key={entry.id} className="group relative animate-fade-in my-4" style={animationStyle}>
-                                {renderEntry(
-                                    <p className="font-bold text-lg text-justify leading-relaxed whitespace-pre-wrap">{renderContent()}</p>
+                                {renderEntry(entry,
+                                    <p className="font-bold text-lg text-justify leading-relaxed whitespace-pre-wrap">{renderContent(entry)}</p>
                                 )}
                                 {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -left-10 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
                         );
                     
                     case 'system':
-                        return <p key={entry.id} style={animationStyle} className="text-center text-xs text-[var(--text-muted-color)]/70 tracking-widest my-4 uppercase animate-fade-in">{renderContent()}</p>;
+                        return <p key={entry.id} style={animationStyle} className="text-center text-xs text-[var(--text-muted-color)]/70 tracking-widest my-4 uppercase animate-fade-in">{renderContent(entry)}</p>;
                     
                     case 'system-notification':
                         return (
                              <div key={entry.id} className="group relative my-4 p-3 border-l-4 border-[var(--secondary-accent-color)] rounded-r-lg animate-fade-in" style={{...animationStyle, boxShadow: 'var(--shadow-pressed)'}}>
-                                {renderEntry(
-                                    <p className="font-mono text-[var(--secondary-accent-color)] whitespace-pre-wrap">{renderContent()}</p>
+                                {renderEntry(entry,
+                                    <p className="font-mono text-[var(--secondary-accent-color)] whitespace-pre-wrap">{renderContent(entry)}</p>
                                 )}
                                 {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}
                             </div>
@@ -389,7 +401,7 @@ const StoryLog: React.FC<{
                             <div key={entry.id} style={animationStyle} className={`group relative flex justify-end ml-10 sm:ml-20 animate-fade-in transition-opacity ${pendingClass}`}>
                                 <div className="player-bubble flex items-center gap-2">
                                     <p className={`text-lg leading-relaxed ${entry.type === 'player-action' ? 'text-lime-300 italic' : 'text-cyan-200'}`}>
-                                        {renderContent()}
+                                        {renderContent(entry)}
                                     </p>
                                     {entry.isPending && <div className="w-4 h-4 border-2 border-dashed rounded-full animate-spin border-gray-400"></div>}
                                 </div>
@@ -413,8 +425,8 @@ const StoryLog: React.FC<{
                         return (
                             <div key={entry.id} style={animationStyle} className="group relative flex justify-start mr-10 sm:mr-20 animate-fade-in">
                                 <div className="npc-bubble">
-                                    {renderEntry(
-                                        <p className="text-amber-200 text-lg leading-relaxed font-bold whitespace-pre-wrap">{renderContent()}</p>
+                                    {renderEntry(entry,
+                                        <p className="text-amber-200 text-lg leading-relaxed font-bold whitespace-pre-wrap">{renderContent(entry)}</p>
                                     )}
                                 </div>
                                 {isSpeakable && <button onClick={() => handleSpeak(entry.content)} className="absolute -right-8 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"><FaVolumeUp /></button>}

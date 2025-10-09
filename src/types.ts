@@ -1,3 +1,2 @@
-// This file now acts as a single point of export for all type definitions.
-// It helps simplify import paths in other parts of the application.
+// FIX: Make this file a module by re-exporting from the intended barrel file.
 export * from './types/index';

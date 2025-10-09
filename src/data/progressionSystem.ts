@@ -1,29 +1,31 @@
-import type { ProgressionTierConfig } from '../types';
+// FIX: Renamed TierConfig to RealmConfig for consistency
+import type { RealmConfig } from '../types';
 
-export const PROGRESSION_SYSTEM: ProgressionTierConfig[] = [
+// FIX: Renamed DEFAULT_PROGRESSION_SYSTEM to REALM_SYSTEM
+export const REALM_SYSTEM: RealmConfig[] = [
     { 
         id: 'pham_nhan', name: 'Phàm Nhân', 
         description: 'Điểm khởi đầu của vạn vật, thân thể yếu đuối, chưa có linh lực, tuổi thọ hữu hạn.',
         bonuses: [],
-        subTiers: [
-            { id: 'pn_1', name: '', resourceRequired: 0, bonuses: [], description: 'Sinh mệnh bình thường, không có khả năng đặc biệt.' },
+        stages: [
+            { id: 'pn_1', name: '', qiRequired: 0, bonuses: [], description: 'Sinh mệnh bình thường, không có khả năng đặc biệt.' },
         ]
     },
     { 
         id: 'luyen_khi', name: 'Luyện Khí Kỳ',
         description: 'Bước đầu tiên trên con đường tu tiên, dẫn khí vào cơ thể, tẩy kinh phạt tủy. Mỗi tầng sẽ gia tăng một chút sức mạnh và thể chất.',
         bonuses: [],
-        subTiers: [
-            { id: 'lk_1', name: 'Tầng 1', resourceRequired: 100, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Sơ bộ cảm nhận được linh khí.' },
-            { id: 'lk_2', name: 'Tầng 2', resourceRequired: 300, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Có thể dẫn khí đi khắp châu thân.' },
-            { id: 'lk_3', name: 'Tầng 3', resourceRequired: 600, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 10 }], description: 'Linh lực trong cơ thể dần ổn định.' },
-            { id: 'lk_4', name: 'Tầng 4', resourceRequired: 1200, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 10 }], description: 'Sử dụng được một vài pháp thuật đơn giản.' },
-            { id: 'lk_5', name: 'Tầng 5', resourceRequired: 2500, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 15 }], description: 'Linh lực trở nên dồi dào hơn.' },
-            { id: 'lk_6', name: 'Tầng 6', resourceRequired: 5000, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 15 }], description: 'Điều khiển linh lực dần thành thục.' },
-            { id: 'lk_7', name: 'Tầng 7', resourceRequired: 10000, bonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Linh Lực', value: 20 }], description: 'Linh lực bắt đầu ngưng tụ, có thể điều khiển pháp khí cấp thấp.' },
-            { id: 'lk_8', name: 'Tầng 8', resourceRequired: 25000, bonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Linh Lực', value: 20 }], description: 'Uy lực pháp thuật tăng mạnh.' },
-            { id: 'lk_9', name: 'Tầng 9', resourceRequired: 50000, bonuses: [{ attribute: 'Sinh Mệnh', value: 25 }, { attribute: 'Linh Lực', value: 25 }], description: 'Đạt tới đỉnh cao Luyện Khí, chuẩn bị Trúc Cơ.' },
-            { id: 'lk_vien_man', name: 'Viên Mãn', resourceRequired: 80000, bonuses: [{ attribute: 'Tuổi Thọ', value: 20 }, { attribute: 'Nguyên Thần', value: 5 }, { attribute: 'Thần Thức', value: 5 }], description: 'Linh lực cô đọng đến cực hạn, có thể thử Trúc Cơ.' },
+        stages: [
+            { id: 'lk_1', name: 'Tầng 1', qiRequired: 100, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Sơ bộ cảm nhận được linh khí.' },
+            { id: 'lk_2', name: 'Tầng 2', qiRequired: 300, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 5 }], description: 'Có thể dẫn khí đi khắp châu thân.' },
+            { id: 'lk_3', name: 'Tầng 3', qiRequired: 600, bonuses: [{ attribute: 'Sinh Mệnh', value: 10 }, { attribute: 'Linh Lực', value: 10 }], description: 'Linh lực trong cơ thể dần ổn định.' },
+            { id: 'lk_4', name: 'Tầng 4', qiRequired: 1200, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 10 }], description: 'Sử dụng được một vài pháp thuật đơn giản.' },
+            { id: 'lk_5', name: 'Tầng 5', qiRequired: 2500, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 15 }], description: 'Linh lực trở nên dồi dào hơn.' },
+            { id: 'lk_6', name: 'Tầng 6', qiRequired: 5000, bonuses: [{ attribute: 'Sinh Mệnh', value: 15 }, { attribute: 'Linh Lực', value: 15 }], description: 'Điều khiển linh lực dần thành thục.' },
+            { id: 'lk_7', name: 'Tầng 7', qiRequired: 10000, bonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Linh Lực', value: 20 }], description: 'Linh lực bắt đầu ngưng tụ, có thể điều khiển pháp khí cấp thấp.' },
+            { id: 'lk_8', name: 'Tầng 8', qiRequired: 25000, bonuses: [{ attribute: 'Sinh Mệnh', value: 20 }, { attribute: 'Linh Lực', value: 20 }], description: 'Uy lực pháp thuật tăng mạnh.' },
+            { id: 'lk_9', name: 'Tầng 9', qiRequired: 50000, bonuses: [{ attribute: 'Sinh Mệnh', value: 25 }, { attribute: 'Linh Lực', value: 25 }], description: 'Đạt tới đỉnh cao Luyện Khí, chuẩn bị Trúc Cơ.' },
+            { id: 'lk_vien_man', name: 'Viên Mãn', qiRequired: 80000, bonuses: [{ attribute: 'Tuổi Thọ', value: 20 }, { attribute: 'Nguyên Thần', value: 5 }, { attribute: 'Thần Thức', value: 5 }], description: 'Linh lực cô đọng đến cực hạn, có thể thử Trúc Cơ.' },
         ]
     },
     { 
@@ -32,22 +34,22 @@ export const PROGRESSION_SYSTEM: ProgressionTierConfig[] = [
         hasTribulation: true,
         tribulationDescription: 'Đây là Thiên Kiếp đầu tiên trên con đường tu tiên, sấm sét sẽ gột rửa phàm thể, xây dựng đạo cơ. Vượt qua thì thoát thai hoán cốt, thất bại thì thân tử đạo tiêu.',
         bonuses: [],
-        subTiers: [
-            { id: 'tc_so_ky', name: 'Sơ Kỳ', resourceRequired: 150000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ hình thành, thần thức có thể xuất ra ngoài dò xét.' },
-            { id: 'tc_trung_ky', name: 'Trung Kỳ', resourceRequired: 400000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ vững chắc, có thể bắt đầu ngự vật phi hành.' },
-            { id: 'tc_hau_ky', name: 'Hậu Kỳ', resourceRequired: 800000, bonuses: [{ attribute: 'Căn Cốt', value: 15 }, { attribute: 'Nguyên Thần', value: 10 }], description: 'Chân nguyên hùng hậu, uy lực pháp thuật tăng mạnh.' },
-            { id: 'tc_vien_man', name: 'Viên Mãn', resourceRequired: 1200000, bonuses: [{ attribute: 'Tuổi Thọ', value: 50 }, { attribute: 'Căn Cốt', value: 5 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ viên mãn, chuẩn bị ngưng tụ Kim Đan.' },
+        stages: [
+            { id: 'tc_so_ky', name: 'Sơ Kỳ', qiRequired: 150000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ hình thành, thần thức có thể xuất ra ngoài dò xét.' },
+            { id: 'tc_trung_ky', name: 'Trung Kỳ', qiRequired: 400000, bonuses: [{ attribute: 'Căn Cốt', value: 10 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ vững chắc, có thể bắt đầu ngự vật phi hành.' },
+            { id: 'tc_hau_ky', name: 'Hậu Kỳ', qiRequired: 800000, bonuses: [{ attribute: 'Căn Cốt', value: 15 }, { attribute: 'Nguyên Thần', value: 10 }], description: 'Chân nguyên hùng hậu, uy lực pháp thuật tăng mạnh.' },
+            { id: 'tc_vien_man', name: 'Viên Mãn', qiRequired: 1200000, bonuses: [{ attribute: 'Tuổi Thọ', value: 50 }, { attribute: 'Căn Cốt', value: 5 }, { attribute: 'Nguyên Thần', value: 5 }], description: 'Đạo cơ viên mãn, chuẩn bị ngưng tụ Kim Đan.' },
         ]
     },
     {
         id: 'ket_dan', name: 'Kết Đan Kỳ',
         description: 'Ngưng tụ toàn bộ chân nguyên trong cơ thể thành một viên Kim Đan. Tu sĩ chính thức bước vào hàng ngũ cao thủ, tuổi thọ tăng lên 500 năm.',
         bonuses: [],
-        subTiers: [
-            { id: 'kd_so_ky', name: 'Sơ Kỳ', resourceRequired: 2500000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan sơ thành, có thể sử dụng Đan hỏa.'},
-            { id: 'kd_trung_ky', name: 'Trung Kỳ', resourceRequired: 6000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan ổn định, uy lực pháp thuật tăng mạnh.'},
-            { id: 'kd_hau_ky', name: 'Hậu Kỳ', resourceRequired: 15000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 25 }, { attribute: 'Bền Bỉ', value: 20 }], description: 'Kim đan cường đại, có thể bắt đầu thai nghén Nguyên Anh.'},
-            { id: 'kd_vien_man', name: 'Viên Mãn', resourceRequired: 30000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 150 }, { attribute: 'Linh Lực Sát Thương', value: 10 }, { attribute: 'Bền Bỉ', value: 10 }], description: 'Kim đan đại thành, chuẩn bị cho việc phá đan thành anh.'},
+        stages: [
+            { id: 'kd_so_ky', name: 'Sơ Kỳ', qiRequired: 2500000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan sơ thành, có thể sử dụng Đan hỏa.'},
+            { id: 'kd_trung_ky', name: 'Trung Kỳ', qiRequired: 6000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 20 }, { attribute: 'Bền Bỉ', value: 15 }], description: 'Kim đan ổn định, uy lực pháp thuật tăng mạnh.'},
+            { id: 'kd_hau_ky', name: 'Hậu Kỳ', qiRequired: 15000000, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 25 }, { attribute: 'Bền Bỉ', value: 20 }], description: 'Kim đan cường đại, có thể bắt đầu thai nghén Nguyên Anh.'},
+            { id: 'kd_vien_man', name: 'Viên Mãn', qiRequired: 30000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 150 }, { attribute: 'Linh Lực Sát Thương', value: 10 }, { attribute: 'Bền Bỉ', value: 10 }], description: 'Kim đan đại thành, chuẩn bị cho việc phá đan thành anh.'},
         ]
     },
     {
@@ -56,55 +58,55 @@ export const PROGRESSION_SYSTEM: ProgressionTierConfig[] = [
         hasTribulation: true,
         tribulationDescription: 'Phá đan thành anh là nghịch thiên chi举, sẽ phải đối mặt với Tâm Ma Kiếp. Vô số ảo ảnh, dục vọng từ sâu trong tâm thức sẽ trỗi dậy, chỉ có đạo tâm kiên định mới có thể vượt qua.',
         bonuses: [],
-        subTiers: [
-            { id: 'na_so_ky', name: 'Sơ Kỳ', resourceRequired: 80000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh được sinh ra, có thể đoạt xá trùng sinh.' },
-            { id: 'na_trung_ky', name: 'Trung Kỳ', resourceRequired: 200000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh lớn mạnh, có thể thi triển các thần thông mạnh mẽ.'},
-            { id: 'na_hau_ky', name: 'Hậu Kỳ', resourceRequired: 500000000, bonuses: [{ attribute: 'Nguyên Thần', value: 60 }, { attribute: 'Ngộ Tính', value: 30 }], description: 'Nguyên Anh và nhục thân bắt đầu hợp nhất.'},
-            { id: 'na_vien_man', name: 'Viên Mãn', resourceRequired: 900000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 300 }, { attribute: 'Nguyên Thần', value: 20 }, { attribute: 'Ngộ Tính', value: 10 }], description: 'Nguyên Anh vững chắc, chuẩn bị cho Hóa Thần.'},
+        stages: [
+            { id: 'na_so_ky', name: 'Sơ Kỳ', qiRequired: 80000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh được sinh ra, có thể đoạt xá trùng sinh.' },
+            { id: 'na_trung_ky', name: 'Trung Kỳ', qiRequired: 200000000, bonuses: [{ attribute: 'Nguyên Thần', value: 50 }, { attribute: 'Ngộ Tính', value: 20 }], description: 'Nguyên Anh lớn mạnh, có thể thi triển các thần thông mạnh mẽ.'},
+            { id: 'na_hau_ky', name: 'Hậu Kỳ', qiRequired: 500000000, bonuses: [{ attribute: 'Nguyên Thần', value: 60 }, { attribute: 'Ngộ Tính', value: 30 }], description: 'Nguyên Anh và nhục thân bắt đầu hợp nhất.'},
+            { id: 'na_vien_man', name: 'Viên Mãn', qiRequired: 900000000, bonuses: [{ attribute: 'Tuổi Thọ', value: 300 }, { attribute: 'Nguyên Thần', value: 20 }, { attribute: 'Ngộ Tính', value: 10 }], description: 'Nguyên Anh vững chắc, chuẩn bị cho Hóa Thần.'},
         ]
     },
     {
         id: 'hoa_than', name: 'Hóa Thần Kỳ',
         description: 'Nguyên Anh và nhục thân hoàn toàn dung hợp, lĩnh ngộ được một phần pháp tắc của thiên địa. Tu sĩ có thể di chuyển trong hư không, tuổi thọ trên 2000 năm.',
         bonuses: [],
-        subTiers: [
-            { id: 'ht_so_ky', name: 'Sơ Kỳ', resourceRequired: 2E9, bonuses: [{ attribute: 'Thân Pháp', value: 50 }, { attribute: 'Lực Lượng', value: 50 }], description: 'Sơ bộ nắm giữ pháp tắc không gian, có thể thuấn di.'},
-            { id: 'ht_trung_ky', name: 'Trung Kỳ', resourceRequired: 6E9, bonuses: [{ attribute: 'Thân Pháp', value: 60 }, { attribute: 'Lực Lượng', value: 60 }], description: 'Lĩnh ngộ sâu hơn về pháp tắc, có thể tạo ra lĩnh vực của riêng mình.' },
-            { id: 'ht_hau_ky', name: 'Hậu Kỳ', resourceRequired: 1.5E10, bonuses: [{ attribute: 'Thân Pháp', value: 70 }, { attribute: 'Lực Lượng', value: 70 }], description: 'Hoàn toàn nắm giữ một loại pháp tắc, chuẩn bị Luyện Hư.'},
-            { id: 'ht_vien_man', name: 'Viên Mãn', resourceRequired: 3E10, bonuses: [{ attribute: 'Tuổi Thọ', value: 1000 }, { attribute: 'Thân Pháp', value: 20 }, { attribute: 'Lực Lượng', value: 20 }], description: 'Lĩnh vực viên mãn, có thể phi thăng.'},
+        stages: [
+            { id: 'ht_so_ky', name: 'Sơ Kỳ', qiRequired: 2E9, bonuses: [{ attribute: 'Thân Pháp', value: 50 }, { attribute: 'Lực Lượng', value: 50 }], description: 'Sơ bộ nắm giữ pháp tắc không gian, có thể thuấn di.'},
+            { id: 'ht_trung_ky', name: 'Trung Kỳ', qiRequired: 6E9, bonuses: [{ attribute: 'Thân Pháp', value: 60 }, { attribute: 'Lực Lượng', value: 60 }], description: 'Lĩnh ngộ sâu hơn về pháp tắc, có thể tạo ra lĩnh vực của riêng mình.' },
+            { id: 'ht_hau_ky', name: 'Hậu Kỳ', qiRequired: 1.5E10, bonuses: [{ attribute: 'Thân Pháp', value: 70 }, { attribute: 'Lực Lượng', value: 70 }], description: 'Hoàn toàn nắm giữ một loại pháp tắc, chuẩn bị Luyện Hư.'},
+            { id: 'ht_vien_man', name: 'Viên Mãn', qiRequired: 3E10, bonuses: [{ attribute: 'Tuổi Thọ', value: 1000 }, { attribute: 'Thân Pháp', value: 20 }, { attribute: 'Lực Lượng', value: 20 }], description: 'Lĩnh vực viên mãn, có thể phi thăng.'},
         ]
     },
     { 
         id: 'luyen_hu', name: 'Luyện Hư Kỳ',
         description: 'Dung hợp bản thân với hư không, lĩnh ngộ pháp tắc không gian ở tầng sâu hơn. Thần du thái hư, tuổi thọ tăng lên 5000 năm.',
         bonuses: [],
-        subTiers: [
-            { id: 'lh_so_ky', name: 'Sơ Kỳ', resourceRequired: 1E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Nguyên thần có thể dung nhập vào hư không, cảm nhận pháp tắc.' },
-            { id: 'lh_trung_ky', name: 'Trung Kỳ', resourceRequired: 3E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Thao túng không gian sơ bộ, có thể xé rách không gian để di chuyển.' },
-            { id: 'lh_hau_ky', name: 'Hậu Kỳ', resourceRequired: 6E11, bonuses: [{ attribute: 'Thần Thức', value: 120 }, { attribute: 'Thân Pháp', value: 100 }], description: 'Hư không pháp tắc dần đại thành.' },
-            { id: 'lh_vien_man', name: 'Viên Mãn', resourceRequired: 9E11, bonuses: [{ attribute: 'Tuổi Thọ', value: 3000 }, { attribute: 'Thần Thức', value: 50 }], description: 'Hoàn toàn nắm giữ hư không, chuẩn bị Hợp Thể.' },
+        stages: [
+            { id: 'lh_so_ky', name: 'Sơ Kỳ', qiRequired: 1E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Nguyên thần có thể dung nhập vào hư không, cảm nhận pháp tắc.' },
+            { id: 'lh_trung_ky', name: 'Trung Kỳ', qiRequired: 3E11, bonuses: [{ attribute: 'Thần Thức', value: 100 }, { attribute: 'Thân Pháp', value: 80 }], description: 'Thao túng không gian sơ bộ, có thể xé rách không gian để di chuyển.' },
+            { id: 'lh_hau_ky', name: 'Hậu Kỳ', qiRequired: 6E11, bonuses: [{ attribute: 'Thần Thức', value: 120 }, { attribute: 'Thân Pháp', value: 100 }], description: 'Hư không pháp tắc dần đại thành.' },
+            { id: 'lh_vien_man', name: 'Viên Mãn', qiRequired: 9E11, bonuses: [{ attribute: 'Tuổi Thọ', value: 3000 }, { attribute: 'Thần Thức', value: 50 }], description: 'Hoàn toàn nắm giữ hư không, chuẩn bị Hợp Thể.' },
         ]
     },
     { 
         id: 'hop_the', name: 'Hợp Thể Kỳ',
         description: 'Nhục thân và pháp tắc dung hợp, trở thành một thể thống nhất. Mỗi hành động đều mang theo uy lực của đại đạo, tuổi thọ đạt 1 vạn năm.',
         bonuses: [],
-        subTiers: [
-            { id: 'hthe_so_ky', name: 'Sơ Kỳ', resourceRequired: 2E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Nhục thân bắt đầu dung hợp pháp tắc, trở nên cực kỳ cứng rắn.' },
-            { id: 'hthe_trung_ky', name: 'Trung Kỳ', resourceRequired: 4E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Pháp tùy thân động, uy lực vô song.' },
-            { id: 'hthe_hau_ky', name: 'Hậu Kỳ', resourceRequired: 7E12, bonuses: [{ attribute: 'Căn Cốt', value: 250 }, { attribute: 'Lực Lượng', value: 250 }], description: 'Dung hợp gần như hoàn hảo.' },
-            { id: 'hthe_vien_man', name: 'Viên Mãn', resourceRequired: 1E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 5000 }, { attribute: 'Bền Bỉ', value: 100 }], description: 'Chuẩn bị bước vào Đại Thừa, tìm kiếm con đường của riêng mình.' },
+        stages: [
+            { id: 'hthe_so_ky', name: 'Sơ Kỳ', qiRequired: 2E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Nhục thân bắt đầu dung hợp pháp tắc, trở nên cực kỳ cứng rắn.' },
+            { id: 'hthe_trung_ky', name: 'Trung Kỳ', qiRequired: 4E12, bonuses: [{ attribute: 'Căn Cốt', value: 200 }, { attribute: 'Lực Lượng', value: 200 }], description: 'Pháp tùy thân động, uy lực vô song.' },
+            { id: 'hthe_hau_ky', name: 'Hậu Kỳ', qiRequired: 7E12, bonuses: [{ attribute: 'Căn Cốt', value: 250 }, { attribute: 'Lực Lượng', value: 250 }], description: 'Dung hợp gần như hoàn hảo.' },
+            { id: 'hthe_vien_man', name: 'Viên Mãn', qiRequired: 1E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 5000 }, { attribute: 'Bền Bỉ', value: 100 }], description: 'Chuẩn bị bước vào Đại Thừa, tìm kiếm con đường của riêng mình.' },
         ]
     },
     { 
         id: 'dai_thua', name: 'Đại Thừa Kỳ',
         description: 'Đã ở đỉnh cao của phàm nhân tu tiên, lĩnh ngộ viên mãn pháp tắc, chuẩn bị nghênh đón thiên kiếp phi thăng. Tuổi thọ đạt 5 vạn năm.',
         bonuses: [],
-        subTiers: [
-            { id: 'dt_so_ky', name: 'Sơ Kỳ', resourceRequired: 2E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Lĩnh ngộ đại đạo, pháp lực thông thiên.' },
-            { id: 'dt_trung_ky', name: 'Trung Kỳ', resourceRequired: 4E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Sức mạnh đạt đến giới hạn của thế giới này.' },
-            { id: 'dt_hau_ky', name: 'Hậu Kỳ', resourceRequired: 6E13, bonuses: [{ attribute: 'Ngộ Tính', value: 250 }, { attribute: 'Đạo Tâm', value: 200 }], description: 'Cảm nhận được thiên kiếp sắp tới.' },
-            { id: 'dt_vien_man', name: 'Viên Mãn', resourceRequired: 8E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 40000 }, { attribute: 'Cơ Duyên', value: 50 }], description: 'Đạo tâm viên mãn, sẵn sàng đối mặt thiên kiếp.' },
+        stages: [
+            { id: 'dt_so_ky', name: 'Sơ Kỳ', qiRequired: 2E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Lĩnh ngộ đại đạo, pháp lực thông thiên.' },
+            { id: 'dt_trung_ky', name: 'Trung Kỳ', qiRequired: 4E13, bonuses: [{ attribute: 'Ngộ Tính', value: 200 }, { attribute: 'Đạo Tâm', value: 150 }], description: 'Sức mạnh đạt đến giới hạn của thế giới này.' },
+            { id: 'dt_hau_ky', name: 'Hậu Kỳ', qiRequired: 6E13, bonuses: [{ attribute: 'Ngộ Tính', value: 250 }, { attribute: 'Đạo Tâm', value: 200 }], description: 'Cảm nhận được thiên kiếp sắp tới.' },
+            { id: 'dt_vien_man', name: 'Viên Mãn', qiRequired: 8E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 40000 }, { attribute: 'Cơ Duyên', value: 50 }], description: 'Đạo tâm viên mãn, sẵn sàng đối mặt thiên kiếp.' },
         ]
     },
     { 
@@ -113,84 +115,84 @@ export const PROGRESSION_SYSTEM: ProgressionTierConfig[] = [
         hasTribulation: true,
         tribulationDescription: 'Cửu Cửu Trọng Kiếp, thiên lôi sẽ hủy diệt tất cả những ai dám nghịch thiên. Vượt qua 81 đạo lôi kiếp, gột rửa phàm trần, mới có thể鑄就仙體.',
         bonuses: [],
-        subTiers: [
-            { id: 'dk_1', name: 'Chuẩn Bị', resourceRequired: 9E13, bonuses: [{ attribute: 'Sinh Mệnh', value: 5000 }, { attribute: 'Bền Bỉ', value: 300 }], description: 'Tích lũy sức mạnh, chuẩn bị đối mặt với thiên kiếp.' },
-            { id: 'dk_2', name: 'Ứng Kiếp', resourceRequired: 9.5E13, bonuses: [{ attribute: 'Nguyên Thần Kháng', value: 300 }, { attribute: 'Căn Cốt', value: 300 }], description: 'Thiên kiếp giáng xuống, dùng toàn lực chống đỡ.' },
-            { id: 'dk_3', name: 'Viên Mãn', resourceRequired: 9.9E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 50000 }], description: 'Vượt qua thiên kiếp, thân thể lột xác, chuẩn bị phi thăng Tiên Giới.' },
+        stages: [
+            { id: 'dk_1', name: 'Chuẩn Bị', qiRequired: 9E13, bonuses: [{ attribute: 'Sinh Mệnh', value: 5000 }, { attribute: 'Bền Bỉ', value: 300 }], description: 'Tích lũy sức mạnh, chuẩn bị đối mặt với thiên kiếp.' },
+            { id: 'dk_2', name: 'Ứng Kiếp', qiRequired: 9.5E13, bonuses: [{ attribute: 'Nguyên Thần Kháng', value: 300 }, { attribute: 'Căn Cốt', value: 300 }], description: 'Thiên kiếp giáng xuống, dùng toàn lực chống đỡ.' },
+            { id: 'dk_3', name: 'Viên Mãn', qiRequired: 9.9E13, bonuses: [{ attribute: 'Tuổi Thọ', value: 50000 }], description: 'Vượt qua thiên kiếp, thân thể lột xác, chuẩn bị phi thăng Tiên Giới.' },
         ]
     },
     {
         id: 'nhan_tien', name: 'Nhân Tiên',
         description: 'Thoát khỏi vòng luân hồi, thân thể hóa thành tiên躯, không còn bị sinh lão bệnh tử trói buộc. Tuổi thọ vĩnh cửu.',
         bonuses: [],
-        subTiers: [
-            { id: 'nt_so_ky', name: 'Sơ Kỳ', resourceRequired: 1e14, bonuses: [{ attribute: 'Căn Cốt', value: 200 }], description: 'Tiên lực sơ thành, miễn cưỡng du hành trong hư không.' },
-            { id: 'nt_trung_ky', name: 'Trung Kỳ', resourceRequired: 3e14, bonuses: [{ attribute: 'Nguyên Thần', value: 200 }], description: 'Tiên thể dần ổn định.' },
-            { id: 'nt_hau_ky', name: 'Hậu Kỳ', resourceRequired: 7e14, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 200 }], description: 'Tiên thể vững chắc.' },
-            { id: 'nt_vien_man', name: 'Viên Mãn', resourceRequired: 1.2e15, bonuses: [{ attribute: 'Bền Bỉ', value: 200 }], description: 'Thần thông bắt đầu hiển lộ.' },
+        stages: [
+            { id: 'nt_so_ky', name: 'Sơ Kỳ', qiRequired: 1e14, bonuses: [{ attribute: 'Căn Cốt', value: 200 }], description: 'Tiên lực sơ thành, miễn cưỡng du hành trong hư không.' },
+            { id: 'nt_trung_ky', name: 'Trung Kỳ', qiRequired: 3e14, bonuses: [{ attribute: 'Nguyên Thần', value: 200 }], description: 'Tiên thể dần ổn định.' },
+            { id: 'nt_hau_ky', name: 'Hậu Kỳ', qiRequired: 7e14, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 200 }], description: 'Tiên thể vững chắc.' },
+            { id: 'nt_vien_man', name: 'Viên Mãn', qiRequired: 1.2e15, bonuses: [{ attribute: 'Bền Bỉ', value: 200 }], description: 'Thần thông bắt đầu hiển lộ.' },
         ]
     },
     {
         id: 'thien_tien', name: 'Thiên Tiên',
         description: 'Tiên nhân của trời cao, hấp thụ thiên địa linh khí, tự do đi lại giữa các tầng trời. Pháp lực cao thâm.',
         bonuses: [],
-        subTiers: [
-            { id: 'tt_so_ky', name: 'Sơ Kỳ', resourceRequired: 5e16, bonuses: [{ attribute: 'Thân Pháp', value: 300 }], description: 'Ngự không phi hành, tốc độ như điện.' },
-            { id: 'tt_trung_ky', name: 'Trung Kỳ', resourceRequired: 1.5e17, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 300 }], description: 'Lĩnh ngộ pháp tắc không gian.' },
-            { id: 'tt_hau_ky', name: 'Hậu Kỳ', resourceRequired: 4e17, bonuses: [{ attribute: 'Nguyên Thần', value: 300 }], description: 'Thần thông biến hóa.' },
-            { id: 'tt_vien_man', name: 'Viên Mãn', resourceRequired: 8e17, bonuses: [{ attribute: 'Ngộ Tính', value: 100 }], description: 'Pháp lực viên mãn, chuẩn bị ngưng tụ Kim Tiên chi thân.' },
+        stages: [
+            { id: 'tt_so_ky', name: 'Sơ Kỳ', qiRequired: 5e16, bonuses: [{ attribute: 'Thân Pháp', value: 300 }], description: 'Ngự không phi hành, tốc độ như điện.' },
+            { id: 'tt_trung_ky', name: 'Trung Kỳ', qiRequired: 1.5e17, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 300 }], description: 'Lĩnh ngộ pháp tắc không gian.' },
+            { id: 'tt_hau_ky', name: 'Hậu Kỳ', qiRequired: 4e17, bonuses: [{ attribute: 'Nguyên Thần', value: 300 }], description: 'Thần thông biến hóa.' },
+            { id: 'tt_vien_man', name: 'Viên Mãn', qiRequired: 8e17, bonuses: [{ attribute: 'Ngộ Tính', value: 100 }], description: 'Pháp lực viên mãn, chuẩn bị ngưng tụ Kim Tiên chi thân.' },
         ]
     },
     {
         id: 'kim_tien', name: 'Kim Tiên',
         description: 'Thân thể bất hoại, vạn kiếp không mài, là cảnh giới của phần lớn cao thủ trong tam giáo. Có tư cách khai tông lập phái.',
         bonuses: [],
-        subTiers: [
-            { id: 'kt_so_ky', name: 'Sơ Kỳ', resourceRequired: 2e18, bonuses: [{ attribute: 'Căn Cốt', value: 500 }], description: 'Kim thân sơ thành, miễn nhiễm với phần lớn pháp thuật cấp thấp.' },
-            { id: 'kt_trung_ky', name: 'Trung Kỳ', resourceRequired: 6e18, bonuses: [{ attribute: 'Bền Bỉ', value: 500 }], description: 'Kim thân cường đại, khó bị tổn thương.' },
-            { id: 'kt_hau_ky', name: 'Hậu Kỳ', resourceRequired: 1.5e19, bonuses: [{ attribute: 'Lực Lượng', value: 500 }], description: 'Sức mạnh của Kim thân đạt tới đỉnh điểm.' },
-            { id: 'kt_vien_man', name: 'Viên Mãn', resourceRequired: 3e19, bonuses: [{ attribute: 'Đạo Tâm', value: 100 }], description: 'Kim thân viên mãn, là trụ cột của các đại giáo.' },
+        stages: [
+            { id: 'kt_so_ky', name: 'Sơ Kỳ', qiRequired: 2e18, bonuses: [{ attribute: 'Căn Cốt', value: 500 }], description: 'Kim thân sơ thành, miễn nhiễm với phần lớn pháp thuật cấp thấp.' },
+            { id: 'kt_trung_ky', name: 'Trung Kỳ', qiRequired: 6e18, bonuses: [{ attribute: 'Bền Bỉ', value: 500 }], description: 'Kim thân cường đại, khó bị tổn thương.' },
+            { id: 'kt_hau_ky', name: 'Hậu Kỳ', qiRequired: 1.5e19, bonuses: [{ attribute: 'Lực Lượng', value: 500 }], description: 'Sức mạnh của Kim thân đạt tới đỉnh điểm.' },
+            { id: 'kt_vien_man', name: 'Viên Mãn', qiRequired: 3e19, bonuses: [{ attribute: 'Đạo Tâm', value: 100 }], description: 'Kim thân viên mãn, là trụ cột của các đại giáo.' },
         ]
     },
     {
         id: 'thai_at', name: 'Thái Ất Kim Tiên',
         description: 'Trên đỉnh đầu ngưng tụ tam hoa, trong lồng ngực kết thành ngũ khí. Pháp lực vô biên, là những tồn tại đỉnh cao trong Tiên Giới.',
         bonuses: [],
-        subTiers: [
-            { id: 'ta_so_ky', name: 'Sơ Kỳ', resourceRequired: 1e20, bonuses: [{ attribute: 'Nguyên Thần', value: 400 }], description: 'Bắt đầu ngưng tụ Tam hoa.' },
-            { id: 'ta_trung_ky', name: 'Trung Kỳ', resourceRequired: 5e20, bonuses: [{ attribute: 'Ngộ Tính', value: 250 }], description: 'Tam hoa Tụ đỉnh, vạn pháp bất xâm.' },
-            { id: 'ta_hau_ky', name: 'Hậu Kỳ', resourceRequired: 1e21, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 400 }], description: 'Bắt đầu ngưng tụ Ngũ khí.' },
-            { id: 'ta_vien_man', name: 'Viên Mãn', resourceRequired: 2e21, bonuses: [{ attribute: 'Bền Bỉ', value: 400 }], description: 'Ngũ khí Triều nguyên, pháp lực vô biên.' },
+        stages: [
+            { id: 'ta_so_ky', name: 'Sơ Kỳ', qiRequired: 1e20, bonuses: [{ attribute: 'Nguyên Thần', value: 400 }], description: 'Bắt đầu ngưng tụ Tam hoa.' },
+            { id: 'ta_trung_ky', name: 'Trung Kỳ', qiRequired: 5e20, bonuses: [{ attribute: 'Ngộ Tính', value: 250 }], description: 'Tam hoa Tụ đỉnh, vạn pháp bất xâm.' },
+            { id: 'ta_hau_ky', name: 'Hậu Kỳ', qiRequired: 1e21, bonuses: [{ attribute: 'Linh Lực Sát Thương', value: 400 }], description: 'Bắt đầu ngưng tụ Ngũ khí.' },
+            { id: 'ta_vien_man', name: 'Viên Mãn', qiRequired: 2e21, bonuses: [{ attribute: 'Bền Bỉ', value: 400 }], description: 'Ngũ khí Triều nguyên, pháp lực vô biên.' },
         ]
     },
     {
         id: 'dai_la', name: 'Đại La Kim Tiên',
         description: 'Nhảy ra khỏi tam giới, không còn trong ngũ hành. Đại La có nghĩa là tất cả không gian và thời gian, vĩnh hằng tự tại.',
         bonuses: [],
-        subTiers: [
-            { id: 'dl_so_ky', name: 'Sơ Kỳ', resourceRequired: 1e22, bonuses: [{ attribute: 'Cơ Duyên', value: 200 }], description: 'Thoát khỏi xiềng xích của số mệnh.' },
-            { id: 'dl_trung_ky', name: 'Trung Kỳ', resourceRequired: 5e22, bonuses: [{ attribute: 'Đạo Tâm', value: 200 }], description: 'Không bị nhân quả trói buộc.' },
-            { id: 'dl_hau_ky', name: 'Hậu Kỳ', resourceRequired: 1e23, bonuses: [{ attribute: 'Nhân Quả', value: -100 }], description: 'Ngao du trong dòng sông thời gian.' },
-            { id: 'dl_vien_man', name: 'Viên Mãn', resourceRequired: 2e23, bonuses: [{ attribute: 'Tuổi Thọ', value: 99999 }], description: 'Bất tử bất diệt.' },
+        stages: [
+            { id: 'dl_so_ky', name: 'Sơ Kỳ', qiRequired: 1e22, bonuses: [{ attribute: 'Cơ Duyên', value: 200 }], description: 'Thoát khỏi xiềng xích của số mệnh.' },
+            { id: 'dl_trung_ky', name: 'Trung Kỳ', qiRequired: 5e22, bonuses: [{ attribute: 'Đạo Tâm', value: 200 }], description: 'Không bị nhân quả trói buộc.' },
+            { id: 'dl_hau_ky', name: 'Hậu Kỳ', qiRequired: 1e23, bonuses: [{ attribute: 'Nhân Quả', value: -100 }], description: 'Ngao du trong dòng sông thời gian.' },
+            { id: 'dl_vien_man', name: 'Viên Mãn', qiRequired: 2e23, bonuses: [{ attribute: 'Tuổi Thọ', value: 99999 }], description: 'Bất tử bất diệt.' },
         ]
     },
     {
         id: 'chuan_thanh', name: 'Chuẩn Thánh',
         description: 'Chém tam thi, đã bước một chân vào cảnh giới Thánh Nhân. Là những tồn tại kinh khủng nhất dưới Thánh Nhân.',
         bonuses: [],
-        subTiers: [
-            { id: 'ct_so_ky', name: 'Trảm Nhất Thi', resourceRequired: 1e25, bonuses: [{ attribute: 'Lực Lượng', value: 2000 }], description: 'Chém bỏ một trong ba xác (thiện, ác, chấp niệm), sức mạnh tăng vọt.' },
-            { id: 'ct_trung_ky', name: 'Trảm Nhị Thi', resourceRequired: 5e25, bonuses: [{ attribute: 'Nguyên Thần', value: 2000 }], description: 'Chém bỏ hai xác, đã có thể được gọi là Á Thánh.' },
-            { id: 'ct_hau_ky', name: 'Trảm Tam Thi', resourceRequired: 1e26, bonuses: [{ attribute: 'Đạo Tâm', value: 1000 }], description: 'Chém cả ba xác, chỉ còn một bước nữa là chứng đạo thành Thánh.' },
-            { id: 'ct_vien_man', name: 'Viên Mãn', resourceRequired: 2e26, bonuses: [{ attribute: 'Ngộ Tính', value: 1000 }], description: 'Chỉ còn chờ cơ duyên để chứng đạo.' },
+        stages: [
+            { id: 'ct_so_ky', name: 'Trảm Nhất Thi', qiRequired: 1e25, bonuses: [{ attribute: 'Lực Lượng', value: 2000 }], description: 'Chém bỏ một trong ba xác (thiện, ác, chấp niệm), sức mạnh tăng vọt.' },
+            { id: 'ct_trung_ky', name: 'Trảm Nhị Thi', qiRequired: 5e25, bonuses: [{ attribute: 'Nguyên Thần', value: 2000 }], description: 'Chém bỏ hai xác, đã có thể được gọi là Á Thánh.' },
+            { id: 'ct_hau_ky', name: 'Trảm Tam Thi', qiRequired: 1e26, bonuses: [{ attribute: 'Đạo Tâm', value: 1000 }], description: 'Chém cả ba xác, chỉ còn một bước nữa là chứng đạo thành Thánh.' },
+            { id: 'ct_vien_man', name: 'Viên Mãn', qiRequired: 2e26, bonuses: [{ attribute: 'Ngộ Tính', value: 1000 }], description: 'Chỉ còn chờ cơ duyên để chứng đạo.' },
         ]
     },
     {
         id: 'thanh_nhan', name: 'Thánh Nhân',
         description: 'Thiên đạo Thánh Nhân, vạn kiếp bất diệt, nguyên thần ký thác vào thiên đạo. Dưới thiên đạo đều là con kiến.',
         bonuses: [],
-        subTiers: [
-            { id: 'tn_1', name: 'Thánh Nhân', resourceRequired: Infinity, bonuses: [], description: 'Ngôn xuất pháp tùy, một lời nói có thể thay đổi thiên đạo.' },
+        stages: [
+            { id: 'tn_1', name: 'Thánh Nhân', qiRequired: Infinity, bonuses: [], description: 'Ngôn xuất pháp tùy, một lời nói có thể thay đổi thiên đạo.' },
         ]
     }
 ];

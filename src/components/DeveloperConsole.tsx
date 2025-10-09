@@ -20,7 +20,7 @@ const formatLogMessage = (args: any[]): React.ReactNode => {
         if (typeof arg === 'object' && arg !== null) {
             try {
                 return <pre key={index} className="whitespace-pre-wrap">{JSON.stringify(arg, null, 2)}</pre>;
-            } catch (e: any) {
+            } catch (e) {
                 return <span key={index}>[Unserializable Object]</span>;
             }
         }
@@ -53,6 +53,7 @@ const DraggableIcon: React.FC<{ onClick: () => void }> = ({ onClick }) => {
         document.body.style.cursor = 'grabbing';
     };
 
+    // FIX: Import 'useCallback' from React to resolve 'Cannot find name' error.
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (!dragInfo.current.isDragging) return;
         e.preventDefault();
@@ -62,6 +63,7 @@ const DraggableIcon: React.FC<{ onClick: () => void }> = ({ onClick }) => {
         });
     }, []);
 
+    // FIX: Import 'useCallback' from React to resolve 'Cannot find name' error.
     const handleMouseUp = useCallback((e: MouseEvent) => {
         if (!dragInfo.current.isDragging) return;
 

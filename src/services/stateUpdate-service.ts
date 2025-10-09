@@ -169,13 +169,13 @@ export const applyMechanicalChanges = (
     });
 
     if (intent.realmChange && intent.stageChange) {
-        // @google-genai-fix: Access 'progressionSystem' instead of the obsolete 'realmSystem'.
-        const newRealm = currentState.progressionSystem.find(r => r.id === intent.realmChange);
-        const newStage = newRealm?.subTiers.find(s => s.id === intent.stageChange);
+        // FIX: Access realmSystem from GameState
+        const newRealm = currentState.realmSystem.find(r => r.id === intent.realmChange);
+        const newStage = newRealm?.stages.find(s => s.id === intent.stageChange);
         if (newRealm && newStage) {
-            // @google-genai-fix: Access 'progression' property instead of the obsolete 'cultivation'.
-            pc.progression.currentTierId = intent.realmChange;
-            pc.progression.currentSubTierId = intent.stageChange;
+            // FIX: Access cultivation property
+            pc.cultivation.currentRealmId = intent.realmChange;
+            pc.cultivation.currentStageId = intent.stageChange;
             showNotification(`Đột phá thành công! Cảnh giới mới: ${newRealm.name} - ${newStage.name}`);
             (newStage.bonuses || []).forEach(bonus => {
                 const attrDef = currentState.attributeSystem.definitions.find(def => def.name === bonus.attribute);
@@ -216,8 +216,8 @@ export const applyMechanicalChanges = (
             attr.value = Math.max(0, Number(attr.value));
             
         } else if (attrId === 'spiritualQi' && changes.change) {
-             // @google-genai-fix: Access 'progression.progressionResource' instead of the obsolete 'cultivation.spiritualQi'.
-             pc.progression.progressionResource = Math.max(0, Number(pc.progression.progressionResource) + changes.change);
+             // FIX: Access cultivation property
+             pc.cultivation.spiritualQi = Math.max(0, Number(pc.cultivation.spiritualQi) + changes.change);
              if (changes.change !== 0) showNotification(`Linh Khí: ${changes.change > 0 ? '+' : ''}${changes.change.toLocaleString()}`);
         }
     });

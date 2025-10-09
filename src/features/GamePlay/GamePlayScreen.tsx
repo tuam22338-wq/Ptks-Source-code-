@@ -1,5 +1,5 @@
-import React, { useState, useMemo, memo, useCallback, useEffect } from 'react';
-import type { StoryEntry, NPC, InnerDemonTrial, EventChoice } from '../../types';
+import React, { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react';
+import type { GameState, StoryEntry, NPC, CultivationTechnique, InnerDemonTrial, RealmConfig, ActiveStoryState, StoryNode, StoryChoice, ActiveEffect, ActiveQuest, PlayerVitals, PlayerCharacter, EventChoice, GameSettings } from '../../types';
 import StoryLog from './components/StoryLog';
 import ActionBar from './components/ActionBar';
 import TopBar from './components/TopBar';
@@ -8,61 +8,123 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import NotificationArea from '../../components/NotificationArea';
 import EventPanel from './EventPanel';
 import CombatScreen from './components/CombatScreen';
-import ProgressionPathModal from './ProgressionPathModal';
-import ShopModal from './components/ShopModal';
+import CultivationPathModal from './CultivationPathModal';
 import InnerDemonTrialModal from './components/InnerDemonTrialModal';
-import { PROGRESSION_PATHS } from '../../constants';
+import { generateInnerDemonTrial, askAiAssistant } from '../../services/geminiService';
+import { CULTIVATION_PATHS } from '../../constants';
 import { InventoryModal } from './components/InventoryModal';
 import { useAppContext } from '../../contexts/AppContext';
-import { useGameContext } from '../../contexts/GameContext'; 
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import Sidebar from './components/Sidebar/Sidebar';
 
+interface CustomStoryPlayerProps {
+    gameState: GameState;
+    onUpdateGameState: (updater: (gs: GameState | null) => GameState | null) => void;
+}
+
+const CustomStoryPlayer: React.FC<CustomStoryPlayerProps> = ({ gameState, onUpdateGameState }) => {
+    const { activeStory, activeMods } = gameState;
+    const [animationState, setAnimationState] = useState<'idle' | 'rolling' | 'result'>('idle');
+    const [rollResult, setRollResult] = useState<{ roll: number; modifier: number; total: number; dc: number; success: boolean } | null>(null);
+
+    const { storySystem, currentNode } = useMemo(() => {
+        if (!activeStory) return { storySystem: null, currentNode: null };
+        for (const mod of activeMods) {
+            const system = mod.content.storySystems?.find(s => s.name === activeStory.systemId);
+            if (system) {
+                const node = system.nodes[activeStory.currentNodeId];
+                if (node) return { storySystem: system, currentNode: { ...node, id: activeStory.currentNodeId } };
+            }
+        }
+        return { storySystem: null, currentNode: null };
+    }, [activeStory, activeMods]);
+
+    if (!activeStory || !storySystem || !currentNode) {
+        if (activeStory) {
+            onUpdateGameState(gs => gs ? { ...gs, activeStory: null } : null);
+        }
+        return <div className="flex-shrink-0 p-4 bg-black/40 text-red-400 text-center">Lỗi: Không tìm thấy dữ liệu cốt truyện.</div>;
+    }
+    
+    // Simplified outcome application logic for story player
+    const applyOutcomes = (outcomes: any[]) => {
+      // In a full implementation, this would dispatch actions or call handlers.
+    };
+
+    const handleChoice = (choice: StoryChoice) => {
+        applyOutcomes(choice.outcomes || []);
+        onUpdateGameState(gs => gs ? { ...gs, activeStory: { ...gs.activeStory!, currentNodeId: choice.nextNodeId } } : gs);
+    };
+    // Other handlers would similarly call onUpdateGameState
+    
+    // Render logic remains similar but doesn't call setGameState directly
+    return <div className="flex-shrink-0 p-4 bg-black/40 backdrop-blur-sm border-t border-gray-700/50 flex flex-col items-center justify-center min-h-[150px]">...</div>;
+};
+
 const GamePlayScreenContent: React.FC = memo(() => {
-    const { state: appState, quitGame, speak } = useAppContext();
-    const { gameState, isAiResponding, aiLoadingMessage, handlePlayerAction, handleUpdatePlayerCharacter, handleSaveGame } = useGameContext();
-    const { settings } = appState;
+    const { state, handleSaveGame, quitGame, speak, cancelSpeech, handlePlayerAction, handleUpdatePlayerCharacter, dispatch } = useAppContext();
+    const { gameState, settings } = state;
     const { 
-        notifications, dismissNotification, availablePaths, openCultivationPathModal, closeCultivationPathModal, 
-        showNotification, activeShopId, isInventoryOpen, openInventoryModal, activeEvent, setActiveEvent,
+        notifications, dismissNotification, availablePaths,
+        openCultivationPathModal, closeCultivationPathModal, showNotification,
+        isInventoryOpen, openInventoryModal,
+        activeEvent, setActiveEvent,
         activeInnerDemonTrial, openInnerDemonTrial, closeInnerDemonTrial
     } = useGameUIContext();
     
     const [activeActionTab, setActiveActionTab] = useState<'act' | 'say' | 'ask'>('act');
+    const isAiResponding = state.isLoading && state.view === 'gamePlay';
     const [responseTimer, setResponseTimer] = useState(0);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Default to open
 
+
+    // --- PAGINATION LOGIC ---
     const [currentPage, setCurrentPage] = useState(0);
 
     const storyPages = useMemo(() => {
-        if (!gameState.storyLog) return [];
+        if (!gameState?.storyLog) return [];
         const pages: StoryEntry[][] = [];
         let currentPage: StoryEntry[] = [];
+
         for (const entry of gameState.storyLog) {
             if (entry.type === 'player-action' || entry.type === 'player-dialogue') {
-                if (currentPage.length > 0) pages.push(currentPage);
+                if (currentPage.length > 0) {
+                    pages.push(currentPage);
+                }
                 currentPage = [entry];
             } else {
-                if (currentPage.length === 0 && pages.length === 0) currentPage.push(entry);
-                else currentPage.push(entry);
+                if (currentPage.length === 0 && pages.length === 0) {
+                     // Handle initial narrative before any player action
+                     currentPage.push(entry);
+                } else {
+                    currentPage.push(entry);
+                }
             }
         }
-        if (currentPage.length > 0) pages.push(currentPage);
+        if (currentPage.length > 0) {
+            pages.push(currentPage);
+        }
         return pages;
-    }, [gameState.storyLog]);
+    }, [gameState?.storyLog]);
     
     useEffect(() => {
+        // Auto-navigate to the last page when new content is added
         setCurrentPage(storyPages.length > 0 ? storyPages.length - 1 : 0);
     }, [storyPages.length]);
+    // --- END PAGINATION LOGIC ---
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (isAiResponding) {
             setResponseTimer(0);
-            interval = setInterval(() => setResponseTimer(t => t + 1), 1000);
+            interval = setInterval(() => {
+                setResponseTimer(t => t + 1);
+            }, 1000);
         }
-        return () => { if (interval) clearInterval(interval); };
+        return () => {
+            if (interval) clearInterval(interval);
+        };
     }, [isAiResponding]);
 
     const formatTime = (seconds: number) => {
@@ -70,42 +132,122 @@ const GamePlayScreenContent: React.FC = memo(() => {
         const secs = (seconds % 60).toString().padStart(2, '0');
         return `${mins}:${secs}`;
     };
+
+    const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
+        dispatch({
+            type: 'UPDATE_GAME_STATE',
+            payload: (prev => {
+                if (!prev) return null;
+                const newId = (prev.storyLog[prev.storyLog.length - 1]?.id || 0) + 1;
+                const newEntry = { ...newEntryData, id: newId };
+                return { ...prev, storyLog: [...prev.storyLog, newEntry] };
+            })
+        });
+    }, [dispatch]);
     
     const handleEventChoice = useCallback((choice: EventChoice) => {
         setActiveEvent(null);
         handlePlayerAction(choice.text, 'act', 0, showNotification);
     }, [setActiveEvent, handlePlayerAction, showNotification]);
 
+    const handleAskAssistant = useCallback(async (query: string) => {
+        if (!gameState || isAiResponding) return;
+        
+        addStoryEntry({ type: 'player-dialogue', content: `[Hỏi Thiên Cơ]: ${query}` });
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Thiên Cơ đang tra cứu...' }});
+
+        try {
+            const answer = await askAiAssistant(query, gameState);
+            addStoryEntry({ type: 'system-notification', content: `[Thiên Cơ]: ${answer}` });
+        } catch (error: any) {
+            addStoryEntry({ type: 'system', content: `[Lỗi Thiên Cơ]: ${error.message}` });
+        } finally {
+            dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
+        }
+    }, [gameState, isAiResponding, addStoryEntry, dispatch]);
+
     const handleInputSubmit = useCallback(async (text: string) => {
         if (text.trim().toLowerCase() === 'mở túi đồ') {
             openInventoryModal();
             return;
         }
-        await handlePlayerAction(text, activeActionTab, 1, showNotification);
-    }, [activeActionTab, handlePlayerAction, openInventoryModal, showNotification]);
+
+        if (activeActionTab === 'ask') {
+            await handleAskAssistant(text);
+        } else {
+            await handlePlayerAction(text, activeActionTab, 1, showNotification);
+        }
+    }, [activeActionTab, handleAskAssistant, handlePlayerAction, openInventoryModal, showNotification]);
 
     const handleContextualAction = useCallback((actionId: string, actionLabel: string) => {
         handlePlayerAction(actionLabel, 'act', 1, showNotification);
     }, [handlePlayerAction, showNotification]);
 
+    const handleTravel = useCallback(async (destinationId: string) => {
+        if (!gameState || isAiResponding) return;
+        const destination = gameState.discoveredLocations.find(l => l.id === destinationId);
+        if (!destination) return;
+        await handlePlayerAction(`Ta quyết định đi đến ${destination.name}.`, 'act', 1, showNotification);
+    }, [gameState, isAiResponding, handlePlayerAction, showNotification]);
+
+    const handleBreakthrough = useCallback(async () => {
+        if (!gameState) return;
+        
+        addStoryEntry({ type: 'system', content: `Bắt đầu đột phá...` });
+        
+        const { playerCharacter, realmSystem } = gameState;
+        const currentRealmData = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+        const isLastStage = currentRealmData ? playerCharacter.cultivation.currentStageId === currentRealmData.stages[currentRealmData.stages.length - 1].id : false;
+        
+        // If it's a major realm breakthrough and it has a defined tribulation, trigger the modal
+        if (currentRealmData?.hasTribulation && isLastStage) {
+             const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealmData.id);
+             const nextRealmData = realmSystem[currentRealmIndex + 1];
+             if(nextRealmData) {
+                try {
+                    const trial = await generateInnerDemonTrial(gameState, nextRealmData, nextRealmData.stages[0].name);
+                    openInnerDemonTrial(trial);
+                } catch(error) {
+                    showNotification("Đột phá thất bại! Thiên cơ hỗn loạn.");
+                    addStoryEntry({ type: 'system', content: 'Thiên cơ hỗn loạn, không thể dẫn động tâm ma kiếp.' });
+                }
+                return; // Stop here, the modal will handle the next action
+             }
+        }
+        
+        // For all other cases (minor stages or realms without tribulations), let the AI narrate it.
+        handlePlayerAction("Ta bắt đầu vận công, nỗ lực đột phá cảnh giới tiếp theo.", 'act', 1, showNotification);
+
+    }, [gameState, addStoryEntry, showNotification, openInnerDemonTrial, handlePlayerAction]);
+
     const handleInnerDemonChoice = useCallback((choice: { text: string; isCorrect: boolean; }) => {
         closeInnerDemonTrial();
+        addStoryEntry({ type: 'player-dialogue', content: choice.text });
         if (choice.isCorrect) {
             showNotification("Đạo tâm kiên định, đột phá thành công!");
+            // The actual state change will be handled by the narrative parser
             handlePlayerAction("Ta đã chiến thắng tâm ma, chính thức đột phá!", 'act', 0, showNotification); 
             handleUpdatePlayerCharacter(pc => {
-                const pathsToShow = PROGRESSION_PATHS.filter(p => p.requiredTierId === pc.progression.currentTierId);
+                const pathsToShow = CULTIVATION_PATHS.filter(p => p.requiredRealmId === pc.cultivation.currentRealmId);
                 if (pathsToShow.length > 0) openCultivationPathModal(pathsToShow);
                 return pc;
             });
         } else {
             showNotification("Đột phá thất bại, tâm ma quấy nhiễu!");
+            addStoryEntry({ type: 'system', content: 'Bạn đã thất bại trong việc chống lại tâm ma.' });
             handlePlayerAction("Ta không thể chống lại tâm ma, đột phá đã thất bại và ta bị thương nặng.", 'act', 0, showNotification);
         }
-    }, [closeInnerDemonTrial, showNotification, handlePlayerAction, handleUpdatePlayerCharacter, openCultivationPathModal]);
+    }, [closeInnerDemonTrial, addStoryEntry, showNotification, handleUpdatePlayerCharacter, openCultivationPathModal, handlePlayerAction]);
+
+    const handleNpcDialogue = useCallback(async (npc: NPC) => {
+        await handlePlayerAction(`Chủ động bắt chuyện với ${npc.identity.name}.`, 'act', 1, showNotification);
+    }, [handlePlayerAction, showNotification]);
+    
+    if (!gameState) return <LoadingScreen message="Đang khởi tạo thế giới..." />;
 
     const { playerCharacter, combatState, activeStory, discoveredLocations, worldState } = gameState;
     const currentLocation = useMemo(() => {
+        if (!discoveredLocations || discoveredLocations.length === 0) return null;
         return discoveredLocations.find(l => l.id === playerCharacter.currentLocationId) || discoveredLocations[0];
     }, [discoveredLocations, playerCharacter.currentLocationId]);
     
@@ -119,9 +261,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
     return (
         <div className="flex-grow w-full flex flex-col">
             <NotificationArea notifications={notifications} onDismiss={dismissNotification} />
-            <ProgressionPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
+            <CultivationPathModal isOpen={availablePaths.length > 0} paths={availablePaths} onSelectPath={() => { closeCultivationPathModal(); }} />
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} gameState={gameState} settings={settings} />
-            <ShopModal isOpen={!!activeShopId} shopId={activeShopId || ''} />
             <InventoryModal isOpen={isInventoryOpen} />
             <InnerDemonTrialModal isOpen={!!activeInnerDemonTrial} trial={activeInnerDemonTrial} onChoice={handleInnerDemonChoice} />
             
@@ -136,7 +277,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
              />
             
             <div className={`flex-grow w-full flex min-h-0 relative`}>
-                <div className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:mr-96' : ''}`}>
+                <main className={`flex-grow w-full flex flex-col bg-transparent min-h-0 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'md:mr-96' : ''}`}>
                     <StoryLog 
                         pageEntries={storyPages[currentPage] || []} 
                         gameState={gameState}
@@ -147,7 +288,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                         <button onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0 || isAiResponding} className="btn btn-neumorphic !p-3 disabled:opacity-50"><FaArrowLeft /></button>
                          {isAiResponding && isOnLastPage ? (
                             <div className="flex items-center justify-center gap-2">
-                                <LoadingSpinner size="sm" message={aiLoadingMessage} />
+                                <LoadingSpinner size="sm" message={state.loadingMessage} />
                                 <span className="font-mono text-[var(--primary-accent-color)]">{formatTime(responseTimer)}</span>
                             </div>
                         ) : (
@@ -160,6 +301,7 @@ const GamePlayScreenContent: React.FC = memo(() => {
                         <>
                             {combatState && <CombatScreen />}
                             {activeEvent && <EventPanel event={activeEvent} onChoice={handleEventChoice} playerAttributes={gameState.playerCharacter.attributes} />}
+                            {activeStory && <CustomStoryPlayer gameState={gameState} onUpdateGameState={(updater) => dispatch({type: 'UPDATE_GAME_STATE', payload: updater})} />}
                         </>
                     ) : (
                         <ActionBar 
@@ -173,7 +315,8 @@ const GamePlayScreenContent: React.FC = memo(() => {
                             onToggleSidebar={() => setIsSidebarOpen(v => !v)}
                         />
                     )}
-                </div>
+                </main>
+
             </div>
         </div>
     );

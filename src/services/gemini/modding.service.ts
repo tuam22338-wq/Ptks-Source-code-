@@ -1,3 +1,6 @@
+
+
+
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
@@ -12,7 +15,7 @@ export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
         }
         const data: CommunityMod[] = await response.json();
         return data;
-    } catch (error: any) {
+    } catch (error) {
         console.error("Failed to fetch community mods:", error);
         return [{
             modInfo: {
@@ -189,7 +192,7 @@ const attributeSystemSchema = {
                     id: { type: Type.STRING, description: "ID duy nhất, không dấu, không khoảng trắng, vd: 'suc_ben_may_moc'." },
                     name: { type: Type.STRING, description: "Tên hiển thị, vd: 'Sức Bền Máy Móc'." },
                     description: { type: Type.STRING },
-                    iconName: { type: Type.STRING, description: `Tên icon từ danh sách có sẵn. PHẢI là một trong các giá trị sau: ${availableIconNames.join(', ')}` },
+                    iconName: { type: Type.STRING, enum: availableIconNames, description: "Tên icon từ danh sách có sẵn." },
                     type: { type: Type.STRING, enum: ['PRIMARY', 'SECONDARY', 'VITAL', 'INFORMATIONAL'], description: "Loại thuộc tính." },
                     baseValue: { type: Type.NUMBER, description: "Giá trị khởi điểm cho PRIMARY và VITAL." },
                     formula: { type: Type.STRING, description: "Công thức tính cho SECONDARY, vd: '(suc_manh * 2)'." },
@@ -327,31 +330,6 @@ const worldSchema = {
         }
     },
     required: ['modInfo', 'content']
-};
-
-export const fixModStructure = (mod: any): FullMod => {
-    if (mod && mod.modInfo && mod.content) {
-        return mod as FullMod; // Already valid
-    }
-    console.warn("AI returned an incomplete mod structure. Attempting to fix.", mod);
-    // Attempt to fix a common mistake where 'content' is at the top level
-    if (mod && mod.worldData) {
-        return {
-            modInfo: mod.modInfo || { // Use modInfo if it exists, otherwise create one
-                id: `generated_world_${Date.now()}`,
-                name: mod.worldData[0]?.name || "Generated World (Fixed)",
-                description: mod.worldData[0]?.description || "World generated from text, structure was fixed.",
-                version: "1.0.0",
-                tags: mod.worldData[0]?.tags || [],
-            },
-            content: {
-                ...mod,
-                // Remove modInfo from content if it was there
-                ...(mod.modInfo && { modInfo: undefined })
-            }
-        };
-    }
-    throw new Error("AI đã trả về một cấu trúc mod không hợp lệ và không thể tự động sửa chữa. JSON phải có thuộc tính `modInfo` và `content` ở cấp cao nhất.");
 };
 
 const MAX_CHUNK_CHARS = 1000000;
@@ -544,7 +522,7 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
             });
         }
         return json as FullMod;
-    } catch (e: any) {
+    } catch (e) {
         console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");
@@ -707,7 +685,7 @@ export const generateCompleteWorldFromText = async (
             relationships,
         };
 
-    } catch (e: any) {
+    } catch (e) {
         console.error("Failed to parse AI response for complete world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ cho việc tạo nhanh.");
@@ -864,7 +842,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         // Ensure worldData structure exists
         if (!finalMod.content.worldData || finalMod.content.worldData.length === 0) {
             finalMod.content.worldData = [{
-// @google-genai-fix: Added missing 'id' property required by ModWorldData type.
+// FIX: Added missing 'id' property required by ModWorldData type.
                 id: finalMod.modInfo.id,
                 name: finalMod.modInfo.name,
                 description: generatedJson.content?.worldData?.[0]?.description || finalMod.modInfo.description || '',
@@ -917,7 +895,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
             }
         }
         return finalMod;
-    } catch (e: any) {
+    } catch (e) {
         console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");

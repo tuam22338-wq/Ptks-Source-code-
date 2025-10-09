@@ -8,11 +8,12 @@ import StatusPanel from './panels/StatusPanel';
 import MapView from './panels/MapView';
 import QuestPanel from './panels/QuestPanel';
 import AiMemoryPanel from './panels/AiMemoryPanel';
+import GuidePanel from './panels/GuidePanel';
 import AiRulesPanel from './panels/AiRulesPanel';
 import LiveEditorPanel from './panels/LiveEditorPanel';
-import WikiPanel from './panels/WikiPanel';
+import HistoryPanel from './panels/HistoryPanel';
 
-type PanelId = 'status' | 'quests' | 'memory' | 'rules' | 'wiki' | 'liveEditor';
+type PanelId = 'status' | 'map' | 'quests' | 'memory' | 'rules' | 'guide' | 'liveEditor' | 'history';
 
 interface SidebarPanel {
     id: PanelId;
@@ -23,8 +24,12 @@ interface SidebarPanel {
 
 const BASE_PANELS: SidebarPanel[] = [
     { id: 'status', label: 'Trạng Thái', icon: FaUser, component: StatusPanel },
+    { id: 'map', label: 'Bản Đồ', icon: FaMapMarkedAlt, component: MapView },
     { id: 'quests', label: 'Nhiệm Vụ', icon: FaBook, component: QuestPanel },
-    { id: 'wiki', label: 'Bách Khoa', icon: FaQuestionCircle, component: WikiPanel },
+    { id: 'history', label: 'Lịch Sử', icon: FaBookOpen, component: HistoryPanel },
+    { id: 'memory', label: 'Ký Ức AI', icon: FaBrain, component: AiMemoryPanel },
+    { id: 'rules', label: 'Quy Luật', icon: GiGears, component: AiRulesPanel },
+    { id: 'guide', label: 'Hướng Dẫn', icon: FaQuestionCircle, component: GuidePanel },
 ];
 
 
@@ -50,8 +55,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, gameState, settings 
     
     const panelProps = {
         status: { gameState: gameState },
+        map: { discoveredLocations: gameState.discoveredLocations, currentLocationId: gameState.playerCharacter.currentLocationId },
         quests: { activeQuests: gameState.playerCharacter.activeQuests, completedQuestIds: gameState.playerCharacter.completedQuestIds },
-        wiki: { gameState },
+        history: { worldTurnLog: gameState.worldTurnLog || [] },
+        memory: { gameState },
+        rules: { gameState: gameState },
+        guide: {},
         liveEditor: { gameState: gameState },
     };
 

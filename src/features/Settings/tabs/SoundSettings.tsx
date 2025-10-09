@@ -83,7 +83,7 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({ settings, handleSettingCh
                     if (response.status === 401) {
                         errorMsg += ' Vui lòng kiểm tra lại API Key.';
                     }
-                } catch (e: any) {
+                } catch (e) {
                     // Ignore if response body isn't json
                 }
                 throw new Error(errorMsg);

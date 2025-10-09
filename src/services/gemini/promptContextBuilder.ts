@@ -2,8 +2,9 @@ import type { GameState, GameSettings } from '../../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS, NARRATIVE_STYLES, PERSONALITY_TRAITS } from '../../constants';
 import { createModContextSummary } from '../../utils/modManager';
 
+// FIX: Add 'settings' parameter to the function signature, remove incorrect access from gameState, and add missing return statement.
 export const createFullGameStateContext = (gameState: GameState, settings: GameSettings, instantMemoryReport?: string, thoughtBubble?: string, forAssistant: boolean = false): string => {
-  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, progressionSystem, progressionSystemInfo, dialogueWithNpcId, dialogueHistory } = gameState;
+  const { playerCharacter, gameDate, discoveredLocations, activeNpcs, worldState, storySummary, storyLog, activeMods, majorEvents, encounteredNpcIds, combatState, attributeSystem, realmSystem, realmSystemInfo, dialogueWithNpcId, dialogueHistory } = gameState;
   const playerAiHooks = gameState.playerCharacter.playerAiHooks;
   let playerRulesContext = '';
   if (playerAiHooks) {
@@ -71,43 +72,39 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
   
   const npcsHereWithMindState = npcsHere.length > 0
     ? npcsHere.map(n => {
-        const relationship = playerCharacter.relationships.find(r => r.npcId === n.id);
-        const relationshipText = relationship ? ` (Quan hệ: ${relationship.type} - ${relationship.status})` : '';
         const emotions = `[Tâm trạng: Tin tưởng(${n.emotions.trust}), Sợ hãi(${n.emotions.fear}), Tức giận(${n.emotions.anger})]`;
         const memories = n.memory.shortTerm.length > 0 ? ` [Ký ức gần đây: ${n.memory.shortTerm.join('; ')}]` : '';
         const willpower = ` [Động lực: ${n.motivation}, Mục tiêu: ${n.goals.join(', ')}]`;
-        return `- ${n.identity.name} (${n.identity.gender}, ${n.identity.age} tuổi, ${n.status})${relationshipText}. ${emotions}${memories}${willpower}`;
+        return `- ${n.identity.name} (${n.status}). ${emotions}${memories}${willpower}`;
       }).join('\n')
     : 'Không có ai đáng chú ý ở đây.';
   
-    const isProgressionSystemActive = progressionSystem && (progressionSystem.length > 1 || (progressionSystem.length === 1 && progressionSystem[0].id !== 'pham_nhan'));
-    
-    const currentTier = isProgressionSystemActive ? progressionSystem.find(r => r.id === playerCharacter.progression.currentTierId) : null;
-    const currentSubTier = currentTier?.subTiers.find(s => s.id === playerCharacter.progression.currentSubTierId);
+    const currentRealm = realmSystem.find(r => r.id === playerCharacter.cultivation.currentRealmId);
+    const currentStage = currentRealm?.stages.find(s => s.id === playerCharacter.cultivation.currentStageId);
 
-    let resourceToNextSubTier = Infinity;
-    let nextProgressionInfo: string | null = null; 
+    let qiToNextStage = Infinity;
+    let nextRealmInfo: string | null = null; 
 
-    if (isProgressionSystemActive && currentTier && currentSubTier) {
-        const currentSubTierIndex = currentTier.subTiers.findIndex(s => s.id === currentSubTier.id);
-        if (currentSubTierIndex !== -1 && currentSubTierIndex < currentTier.subTiers.length - 1) {
-            const nextSubTier = currentTier.subTiers[currentSubTierIndex + 1];
-            resourceToNextSubTier = nextSubTier.resourceRequired;
-            nextProgressionInfo = `Mục tiêu tiếp theo: ${currentTier.name} - ${nextSubTier.name} (ID cấp bậc: ${currentTier.id}, ID cấp phụ: ${nextSubTier.id}).`;
+    if (currentRealm && currentStage) {
+        const currentStageIndex = currentRealm.stages.findIndex(s => s.id === currentStage.id);
+        if (currentStageIndex !== -1 && currentStageIndex < currentRealm.stages.length - 1) {
+            const nextStage = currentRealm.stages[currentStageIndex + 1];
+            qiToNextStage = nextStage.qiRequired;
+            nextRealmInfo = `Mục tiêu tiếp theo: ${currentRealm.name} - ${nextStage.name} (ID cảnh giới: ${currentRealm.id}, ID tiểu cảnh giới: ${nextStage.id}).`;
         } else {
-            const currentTierIndex = progressionSystem.findIndex(r => r.id === currentTier.id);
-            if (currentTierIndex !== -1 && currentTierIndex < progressionSystem.length - 1) {
-                const nextTier = progressionSystem[currentTierIndex + 1];
-                if (nextTier && nextTier.subTiers.length > 0) {
-                    const nextSubTier = nextTier.subTiers[0];
-                    resourceToNextSubTier = nextSubTier.resourceRequired;
-                    nextProgressionInfo = `Mục tiêu tiếp theo (ĐỘT PHÁ CẤP BẬC LỚN): ${nextTier.name} - ${nextSubTier.name} (ID cấp bậc: ${nextTier.id}, ID cấp phụ: ${nextSubTier.id}).`;
+            const currentRealmIndex = realmSystem.findIndex(r => r.id === currentRealm.id);
+            if (currentRealmIndex !== -1 && currentRealmIndex < realmSystem.length - 1) {
+                const nextRealm = realmSystem[currentRealmIndex + 1];
+                if (nextRealm && nextRealm.stages.length > 0) {
+                    const nextStage = nextRealm.stages[0];
+                    qiToNextStage = nextStage.qiRequired;
+                    nextRealmInfo = `Mục tiêu tiếp theo (ĐỘT PHÁ ĐẠI CẢNH GIỚI): ${nextRealm.name} - ${nextStage.name} (ID cảnh giới: ${nextRealm.id}, ID tiểu cảnh giới: ${nextStage.id}).`;
                 }
             }
         }
     }
 
-    const isBreakthroughPossible = isProgressionSystemActive && playerCharacter.progression.progressionResource >= resourceToNextSubTier && resourceToNextSubTier !== Infinity;
+    const isBreakthroughPossible = playerCharacter.cultivation.spiritualQi >= qiToNextStage && qiToNextStage !== Infinity;
 
   let dialogueContext = '';
   if (dialogueWithNpcId) {
@@ -133,8 +130,8 @@ ${(dialogueHistory || []).map(h => `  - ${h.speaker === 'player' ? playerCharact
 ` : '';
 
   const memoryContext = instantMemoryReport ? `
-### BỐI CẢNH BỔ SUNG (Ký Ức & Tri Thức) ###
-${instantMemoryReport}
+### KÝ ỨC LIÊN QUAN (TỪ TRÍ NHỚ DÀI HẠN) ###
+- ${instantMemoryReport}
 ` : '';
 
   const thoughtContext = thoughtBubble ? `
@@ -163,6 +160,7 @@ ${instantMemoryReport}
 - **Phe phái:** ${playerCharacter.reputation.map(r => r.factionName).join(', ')}.
 ` : '';
 
+  // FIX: Added return statement
   return `
 ### BỐI CẢNH GAME TOÀN CỤC ###
 ${modContext}
@@ -171,11 +169,9 @@ ${playerRulesContext}
 **Thời gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen}). Thời tiết: ${gameDate.weather}.
 **Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Trạng thái:** ${playerCharacter.healthStatus}. ${activeEffectsSummary}
-${isProgressionSystemActive ? `
-- **${progressionSystemInfo.name}:** ${currentTier?.name} - ${currentSubTier?.name || ''} (${playerCharacter.progression.progressionResource.toLocaleString()} / ${(resourceToNextSubTier !== Infinity ? resourceToNextSubTier.toLocaleString() : 'MAX')} ${progressionSystemInfo.resourceUnit})
-${nextProgressionInfo ? `- ${nextProgressionInfo}` : ''}
+- **Cảnh giới:** ${currentRealm?.name} - ${currentStage?.name || ''} (${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${(qiToNextStage !== Infinity ? qiToNextStage.toLocaleString() : 'MAX')} ${realmSystemInfo.resourceName})
+${nextRealmInfo ? `- ${nextRealmInfo}` : ''}
 ${isBreakthroughPossible ? `- **[TRẠNG THÁI QUAN TRỌNG]: ĐÃ ĐỦ ĐIỀU KIỆN ĐỂ ĐỘT PHÁ!**` : ''}
-` : ''}
 - **Thuộc tính:**${attributeSummary}
 - **Danh Vọng:** ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value}).
 - **Tiền tệ:** ${currencySummary || 'Không có'}.
@@ -186,7 +182,7 @@ ${questSummary}
 
 **Bối Cảnh Hiện Tại:**
 - **Vị trí:** ${currentLocation?.name}. (${currentLocation?.description}).
-- **Nồng độ ${progressionSystemInfo.resourceName}:** ${currentLocation?.qiConcentration}/100.
+- **Nồng độ ${realmSystemInfo.resourceName}:** ${currentLocation?.qiConcentration}/100.
 - **NPC xung quanh:**
 ${npcsHereWithMindState}
 ${combatContext}

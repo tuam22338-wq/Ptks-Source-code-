@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 import type { GameState, MajorEvent, NPC, ActiveQuest, PlayerNpcRelationship } from '../../types';
 import { generateWithRetry } from './gemini.core';
@@ -17,7 +18,7 @@ const questObjectiveSchema = {
 const questRewardSchema = {
     type: Type.OBJECT,
     properties: {
-        progressionResource: { type: Type.NUMBER, description: "Lượng linh khí hoặc điểm kinh nghiệm thưởng." },
+        spiritualQi: { type: Type.NUMBER, description: "Lượng linh khí thưởng." },
         danhVong: { type: Type.NUMBER, description: "Lượng danh vọng thưởng." },
         items: {
             type: Type.ARRAY,
@@ -29,11 +30,8 @@ const questRewardSchema = {
         },
         currencies: {
             type: Type.OBJECT,
-            description: "Các loại tiền tệ thưởng. Ví dụ: { 'Bạc': 100, 'Linh thạch hạ phẩm': 5 }",
             properties: {
-                "Bạc": { type: Type.NUMBER },
-                "Linh thạch hạ phẩm": { type: Type.NUMBER },
-                "Điểm Nguồn": { type: Type.NUMBER }
+                "Điểm Nguồn": { type: Type.NUMBER, description: "Lượng Điểm Nguồn thưởng." }
             }
         }
     }
@@ -60,7 +58,7 @@ export const generateMainQuestFromEvent = async (event: MajorEvent, gameState: G
 
     **Bối cảnh người chơi:**
     - **Tên:** ${gameState.playerCharacter.identity.name}
-    - **Cảnh giới:** ${gameState.playerCharacter.progression.currentTierId}
+    - **Cảnh giới:** ${gameState.playerCharacter.cultivation.currentRealmId}
     - **Vị trí hiện tại:** ${gameState.playerCharacter.currentLocationId}
 
     **Nhiệm vụ:**
@@ -88,7 +86,7 @@ export const generateMainQuestFromEvent = async (event: MajorEvent, gameState: G
 
     try {
         return JSON.parse(response.text);
-    } catch (e: any) {
+    } catch (e) {
         console.error(`Lỗi phân tích JSON khi tạo nhiệm vụ chính cho sự kiện "${event.title}":`, response.text, e);
         return {}; // Return empty object to prevent crash
     }
@@ -133,7 +131,7 @@ export const generateSideQuestFromNpc = async (npc: NPC, relationship: PlayerNpc
 
     try {
         return JSON.parse(response.text);
-    } catch (e: any) {
+    } catch (e) {
         console.error(`Lỗi phân tích JSON khi tạo nhiệm vụ phụ từ NPC "${npc.identity.name}":`, response.text, e);
         return {};
     }
@@ -145,7 +143,7 @@ export const generateSystemQuest = async (gameState: GameState): Promise<Partial
 
     **Thông tin Ký Chủ:**
     - **Tên:** ${playerCharacter.identity.name}
-    - **Cảnh giới:** ${playerCharacter.progression.currentTierId}
+    - **Cảnh giới:** ${playerCharacter.cultivation.currentRealmId}
     - **Vị trí:** ${playerCharacter.currentLocationId}
     - **Nhiệm vụ đang làm:** ${playerCharacter.activeQuests.map(q => q.title).join(', ') || 'Không có'}
 
@@ -174,7 +172,7 @@ export const generateSystemQuest = async (gameState: GameState): Promise<Partial
 
     try {
         return JSON.parse(response.text);
-    } catch (e: any) {
+    } catch (e) {
         console.error("Lỗi phân tích JSON khi tạo nhiệm vụ hệ thống:", response.text, e);
         return {};
     }

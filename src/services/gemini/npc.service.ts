@@ -1,6 +1,11 @@
+
+
 import { Type } from "@google/genai";
-import type { GameState, NPC, Relationship, WorldTurnEntry } from '../../types';
-import { generateWithRetry } from './gemini.core';
+import type { ElementType } from 'react';
+import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, Relationship, NpcDensity, CharacterAttributes, GenerationMode, WorldTurnEntry } from '../../types';
+// FIX: Removed unused import.
+import { TALENT_RANK_NAMES, ALL_ATTRIBUTES, NARRATIVE_STYLES, SPIRITUAL_ROOT_CONFIG, REALM_SYSTEM, NPC_DENSITY_LEVELS, DEFAULT_ATTRIBUTE_DEFINITIONS } from "../../constants";
+import { generateWithRetry, generateImagesWithRetry } from './gemini.core';
 import * as db from '../dbService';
 
 interface NpcActionOutcome {
@@ -36,6 +41,7 @@ export const executeNpcAction = async (npc: NPC, action: string, gameState: Game
 
     const availableLocations = gameState.discoveredLocations.map(l => `* ${l.name} (ID: ${l.id})`).join('\n');
 
+    // FIX: Updated prompt to match the response schema exactly, telling the AI to populate nested objects like `outcome.newStatus` and `outcome.locationChange`. This prevents schema validation errors and aligns the instructions with the expected JSON structure.
     const prompt = `Bạn là AI mô phỏng hành động của NPC trong game.
     NPC "${npc.identity.name}" đang cố gắng thực hiện mục tiêu "${npc.goals[0] || 'không rõ'}" và đang thực hiện bước kế hoạch sau: "${action}".
 
@@ -70,7 +76,7 @@ export const executeNpcAction = async (npc: NPC, action: string, gameState: Game
         const result = JSON.parse(response.text);
         return result as NpcActionOutcome;
 
-    } catch (error: any) {
+    } catch (error) {
         console.error(`Failed to execute action for NPC ${npc.identity.name}:`, error);
         return null;
     }
@@ -116,7 +122,7 @@ export const generateRelationshipUpdate = async (
     - Danh tiếng của người chơi: ${gameState.playerCharacter.danhVong.status}
 
     **Nhiệm vụ:**
-    1.  **Phân tích Đa Chiều:** Dựa trên tính cách, mục tiêu của hai NPC và bối cảnh thế giới, hãy suy nghĩ xem mối quan hệ của họ sẽ phát triển như thế nào. Hãy cân nhắc cả những yếu tố bên ngoài có thể tác động đến họ (ví dụ: áp lực từ phe phái, sự kiện thế giới, danh tiếng của người chơi). Ví dụ: hai người cùng phe có thể trở nên thân thiết hơn sau một chiến thắng, hai kẻ đối địch có thể mâu thuẫn sâu sắc hơn, hoặc một sự kiện lớn có thể buộc họ phải tạm thời hợp tác.
+    1.  **Phân tích:** Dựa trên tính cách, mục tiêu của hai NPC và bối cảnh thế giới, hãy suy nghĩ xem mối quan hệ của họ sẽ phát triển như thế nào. Ví dụ: hai người cùng phe có thể trở nên thân thiết hơn sau một chiến thắng, hai kẻ đối địch có thể mâu thuẫn sâu sắc hơn.
     2.  **Cập nhật mô tả:** Viết lại mô tả cho mối quan hệ của họ để phản ánh sự phát triển này. Kể cả khi không có thay đổi lớn, hãy làm mới câu chữ một chút.
     3.  **Tạo tin đồn (Tùy chọn):** Nếu tương tác của họ đủ đáng chú ý, hãy tạo ra một câu tin đồn mà người chơi có thể nghe được. Ví dụ: "Nghe nói hai vị trưởng lão của hai phe lại tranh cãi kịch liệt về tài nguyên khoáng mạch."
 
@@ -124,6 +130,7 @@ export const generateRelationshipUpdate = async (
 
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.npcSimulationModel;
+    // @google-genai-fix: Corrected model name from 'gemini-2.flash' to 'gemini-2.5-flash' to match supported models.
     const response = await generateWithRetry({
         model: settings?.npcSimulationModel || 'gemini-2.5-flash',
         contents: prompt,

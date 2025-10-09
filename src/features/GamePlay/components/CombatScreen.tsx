@@ -7,7 +7,6 @@ import { FaTimes } from 'react-icons/fa';
 import { PHAP_BAO_RANKS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../../../constants';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 import { useAppContext } from '../../../contexts/AppContext';
-import { useGameContext } from '../../../contexts/GameContext'; // ** MỚI: Import useGameContext **
 
 const getBaseAttributeValue = (character: PlayerCharacter | NPC, attributeId: string): number => {
     return character.attributes[attributeId]?.value || 0;
@@ -20,7 +19,7 @@ const getFinalAttributeValue = (character: PlayerCharacter | NPC, attributeId: s
 
     const bonus = (character.activeEffects || [])
         .flatMap(e => e.bonuses)
-        .filter(b => b.attribute === attrDef.name)
+        .filter(b => b.attribute === attrDef.name) // bonuses use names
         .reduce((sum, b) => sum + b.value, 0);
     return baseValue + bonus;
 };
@@ -76,45 +75,54 @@ const TechniqueSelectionModal: React.FC<{
 
 
 const CombatScreen: React.FC = () => {
-    const { dispatch } = useAppContext(); // Vẫn dùng AppContext cho các action toàn cục nếu cần
-    const { gameState, handleUpdatePlayerCharacter } = useGameContext(); // ** MỚI: Dùng GameContext **
+    const { state, dispatch } = useAppContext();
+    const { gameState } = state;
     const { showNotification } = useGameUIContext();
     
+    // --- HOOKS ---
+    // All hooks are moved to the top of the component to follow the Rules of Hooks.
     const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
     const [isProcessingTurn, setIsProcessingTurn] = useState(false);
     const [showTechniqueModal, setShowTechniqueModal] = useState(false);
     
-    const combatState = gameState.combatState;
+    const combatState = gameState?.combatState;
 
     const addStoryEntry = useCallback((newEntryData: Omit<StoryEntry, 'id'>) => {
-        handleUpdatePlayerCharacter(pc => {
-            // Logic này có thể cần được cải thiện để không phụ thuộc vào PC update
-            return pc;
+        dispatch({
+            type: 'UPDATE_GAME_STATE',
+            payload: (prev) => {
+                if (!prev) return null;
+                const newId = (prev.storyLog[prev.storyLog.length - 1]?.id || 0) + 1;
+                const newEntry = { ...newEntryData, id: newId };
+                return { ...prev, storyLog: [...prev.storyLog, newEntry] };
+            }
         });
-    }, [handleUpdatePlayerCharacter]);
+    }, [dispatch]);
 
     const allPlayerTechniques = useMemo(() => {
+        if (!gameState) return [];
         return gameState.playerCharacter.techniques || [];
     }, [gameState]);
 
     const currentActorId = combatState?.turnOrder[combatState.currentTurnIndex];
     const isPlayerTurn = currentActorId === 'player';
 
-    const advanceTurn = useCallback((gs: GameState): GameState => {
-        if (!gs.combatState) return gs;
-        const { combatState } = gs;
+    const advanceTurn = useCallback((currentState: GameState): GameState => {
+        if (!currentState.combatState) return currentState;
+        const { combatState } = currentState;
         const newTurnOrder = combatState.turnOrder.filter(id => id === 'player' || combatState.enemies.some(e => e.id === id && getBaseAttributeValue(e, 'sinh_menh') > 0));
-        if (newTurnOrder.length === 0) return { ...gs, combatState: null };
-        
+        if (newTurnOrder.length === 0) {
+             return { ...currentState, combatState: null };
+        }
         const newIndex = (combatState.currentTurnIndex + 1) % newTurnOrder.length;
-        const newCooldowns = { ...gs.playerCharacter.techniqueCooldowns };
-        Object.keys(newCooldowns).forEach(key => { newCooldowns[key] = Math.max(0, newCooldowns[key] - 1); });
-
-        return { 
-            ...gs, 
-            playerCharacter: { ...gs.playerCharacter, techniqueCooldowns: newCooldowns },
-            combatState: { ...combatState, turnOrder: newTurnOrder, currentTurnIndex: newIndex } 
-        };
+        const nextActorId = newTurnOrder[newIndex];
+        let { playerCharacter } = currentState;
+        if (nextActorId === 'player') {
+            const newCooldowns = { ...playerCharacter.techniqueCooldowns };
+            Object.keys(newCooldowns).forEach(key => { newCooldowns[key] = Math.max(0, newCooldowns[key] - 1); });
+            playerCharacter = { ...playerCharacter, techniqueCooldowns: newCooldowns };
+        }
+        return { ...currentState, playerCharacter, combatState: { ...combatState, turnOrder: newTurnOrder, currentTurnIndex: newIndex, } };
     }, []);
     
     useEffect(() => {
@@ -125,7 +133,7 @@ const CombatScreen: React.FC = () => {
     
     useEffect(() => {
         const processEnemyTurn = async () => {
-            if (!isPlayerTurn && combatState && !isProcessingTurn) {
+            if (!isPlayerTurn && combatState && !isProcessingTurn && gameState) {
                 setIsProcessingTurn(true);
                 await new Promise(res => setTimeout(res, 1000));
                 const enemy = combatState.enemies.find(e => e.id === currentActorId);
@@ -135,45 +143,174 @@ const CombatScreen: React.FC = () => {
                     addStoryEntry({ type: 'combat', content: action.narrative });
                     
                     let damage = 0;
-                    if (action.action === 'BASIC_ATTACK') damage = combatManager.calculateDamage(enemy, gameState.playerCharacter, false).damage;
-                    else if (action.action === 'USE_TECHNIQUE' && action.techniqueId) {
+                    if (action.action === 'BASIC_ATTACK') {
+                        damage = combatManager.calculateDamage(enemy, gameState.playerCharacter, false).damage;
+                    } else if (action.action === 'USE_TECHNIQUE' && action.techniqueId) {
                         const tech = enemy.techniques.find(t => t.id === action.techniqueId);
-                        if (tech) damage = combatManager.calculateDamage(enemy, gameState.playerCharacter, true, tech.element).damage;
+                        if (tech) {
+                           damage = combatManager.calculateDamage(enemy, gameState.playerCharacter, true, tech.element).damage;
+                        }
                     }
 
-                    handleUpdatePlayerCharacter(pc => {
-                        let newPlayer = { ...pc };
+                    dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
+                        if (!gs) return null;
+                        let newPlayer = { ...gs.playerCharacter };
                         const sinhMenhAttr = newPlayer.attributes['sinh_menh'];
                         if (sinhMenhAttr) {
-                            newPlayer.attributes = { ...newPlayer.attributes, 'sinh_menh': { ...sinhMenhAttr, value: Math.max(0, sinhMenhAttr.value - damage) }};
+                            const newSinhMenh = Math.max(0, sinhMenhAttr.value - damage);
+                            const newAttributes: CharacterAttributes = { ...newPlayer.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
+                            newPlayer = { ...newPlayer, attributes: newAttributes };
                         }
-                        
-                        // Check for player defeat immediately
+                        const nextState = advanceTurn({ ...gs, playerCharacter: newPlayer });
                         if (getBaseAttributeValue(newPlayer, 'sinh_menh') <= 0) {
                             addStoryEntry({ type: 'combat', content: 'Bạn đã bị đánh bại!' });
                             showNotification("Thất bại!");
-                            // Dispatch a state update to end combat
-                            // This is complex, a dedicated reducer action would be better.
+                            return { ...nextState, combatState: null };
                         }
-                        return newPlayer;
-                    });
-                    // Advance turn (needs to be done via reducer now)
+                        return nextState;
+                    }});
                 }
                 setIsProcessingTurn(false);
             }
         };
-        // processEnemyTurn(); // Logic needs refactoring to work with reducer
-    }, [currentActorId, isPlayerTurn, combatState, gameState, addStoryEntry, isProcessingTurn, showNotification, advanceTurn, handleUpdatePlayerCharacter]);
+        processEnemyTurn();
+    }, [currentActorId, isPlayerTurn, combatState, gameState, dispatch, addStoryEntry, isProcessingTurn, showNotification, advanceTurn]);
 
-    if (!combatState) return null;
 
-    // ... (logic handleBasicAttack và handleUseTechnique cần được cập nhật để gọi handleUpdatePlayerCharacter hoặc dispatch action)
+    // --- EARLY RETURN ---
+    // Moved after all hooks to comply with Rules of Hooks
+    if (!gameState || !combatState) {
+        return null;
+    }
+
+
+    const handleBasicAttack = async () => {
+        if (!isPlayerTurn || !selectedTargetId || isProcessingTurn || !gameState) return;
+        setIsProcessingTurn(true);
+        const target = combatState?.enemies.find(e => e.id === selectedTargetId);
+        if (!target) {
+            setIsProcessingTurn(false);
+            return;
+        }
+        
+        const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, false);
+        addStoryEntry({ type: 'combat', content: `Bạn dùng đòn đánh thường lên ${target.identity.name}. ${narrative}` });
+
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
+            if (!gs || !gs.combatState) return null;
+            let newEnemies = gs.combatState.enemies.map(e => {
+                if (e.id === selectedTargetId) {
+                    const sinhMenhAttr = e.attributes['sinh_menh'];
+                    const newSinhMenh = Math.max(0, sinhMenhAttr.value - damage);
+                    const newAttributes: CharacterAttributes = { ...e.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
+                    return { ...e, attributes: newAttributes };
+                }
+                return e;
+            });
+            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'sinh_menh') <= 0);
+            if(defeatedEnemy) {
+                addStoryEntry({ type: 'combat', content: `${defeatedEnemy.identity.name} đã bị đánh bại!` });
+                newEnemies = newEnemies.filter(e => e.id !== defeatedEnemy.id);
+            }
+            const postActionState = advanceTurn({ ...gs, combatState: { ...gs.combatState, enemies: newEnemies }});
+            if (newEnemies.length === 0) {
+                showNotification("Chiến thắng!");
+                return { ...postActionState, combatState: null };
+            }
+            return postActionState;
+        }});
+        setIsProcessingTurn(false);
+    };
+    
+    const handleUseTechnique = async (technique: CultivationTechnique) => {
+        if (!isPlayerTurn || !selectedTargetId || isProcessingTurn || !gameState) return;
+        setIsProcessingTurn(true);
+        setShowTechniqueModal(false);
+        const target = combatState?.enemies.find(e => e.id === selectedTargetId);
+        if (!target) {
+            setIsProcessingTurn(false);
+            return;
+        }
+        
+        const { damage, narrative } = combatManager.calculateDamage(gameState.playerCharacter, target, true, technique.element);
+        addStoryEntry({ type: 'combat', content: `Bạn thi triển [${technique.name}] lên ${target.identity.name}. ${narrative}` });
+
+        dispatch({ type: 'UPDATE_GAME_STATE', payload: gs => {
+            if (!gs || !gs.combatState) return null;
+            let newEnemies = gs.combatState.enemies.map(e => {
+                if (e.id === selectedTargetId) {
+                    const sinhMenhAttr = e.attributes['sinh_menh'];
+                    const newSinhMenh = Math.max(0, sinhMenhAttr.value - damage);
+                    const newAttributes: CharacterAttributes = { ...e.attributes, 'sinh_menh': { ...sinhMenhAttr, value: newSinhMenh }};
+                    return { ...e, attributes: newAttributes };
+                }
+                return e;
+            });
+            let newPlayer = { ...gs.playerCharacter };
+            const linhLucAttr = newPlayer.attributes['linh_luc'];
+            if (linhLucAttr) {
+                const newLinhLuc = Math.max(0, linhLucAttr.value - technique.cost.value);
+                const newAttributes: CharacterAttributes = { ...newPlayer.attributes, 'linh_luc': { ...linhLucAttr, value: newLinhLuc }};
+                newPlayer = { ...newPlayer, attributes: newAttributes };
+            }
+            const newCooldowns = { ...newPlayer.techniqueCooldowns, [technique.id]: technique.cooldown };
+            newPlayer = { ...newPlayer, techniqueCooldowns: newCooldowns };
+            
+            const defeatedEnemy = newEnemies.find(e => e.id === selectedTargetId && getBaseAttributeValue(e, 'sinh_menh') <= 0);
+            if(defeatedEnemy) {
+                addStoryEntry({ type: 'combat', content: `${defeatedEnemy.identity.name} đã bị đánh bại!` });
+                newEnemies = newEnemies.filter(e => e.id !== defeatedEnemy.id);
+            }
+            const postActionState = advanceTurn({ ...gs, playerCharacter: newPlayer, combatState: { ...gs.combatState, enemies: newEnemies } });
+            if (newEnemies.length === 0) {
+                showNotification("Chiến thắng!");
+                return { ...postActionState, combatState: null };
+            }
+            return postActionState;
+        }});
+        setIsProcessingTurn(false);
+    };
 
     const playerSinhMenh = gameState.playerCharacter.attributes['sinh_menh'];
     
     return (
         <div className="flex-shrink-0 p-4 bg-red-900/20 backdrop-blur-sm border-t-2 border-red-500/50 relative">
-            {/* ... (JSX không thay đổi nhiều) ... */}
+            {showTechniqueModal && (
+                <TechniqueSelectionModal
+                    techniques={allPlayerTechniques}
+                    player={gameState.playerCharacter}
+                    onSelect={handleUseTechnique}
+                    onClose={() => setShowTechniqueModal(false)}
+                />
+            )}
+            <div className="flex justify-between items-start mb-4">
+                <div className="w-1/3 text-center p-2 bg-black/20 rounded-lg">
+                    <p className="font-semibold" style={{color: 'var(--text-color)'}}>{gameState.playerCharacter.identity.name}</p>
+                     {playerSinhMenh && playerSinhMenh.maxValue !== undefined && <HealthBar current={getFinalAttributeValue(gameState.playerCharacter, 'sinh_menh')} max={playerSinhMenh.maxValue} />}
+                    {isPlayerTurn && !isProcessingTurn && <p className="text-xs text-[var(--primary-accent-color)] animate-pulse">Lượt của bạn</p>}
+                </div>
+                 <div className="w-2/3 grid grid-cols-2 gap-2 pl-4">
+                    {combatState.enemies.map(enemy => {
+                         const enemySinhMenh = enemy.attributes['sinh_menh'];
+                         const isCurrentTurn = currentActorId === enemy.id;
+                         return (
+                            <div key={enemy.id} onClick={() => setSelectedTargetId(enemy.id)}
+                                className={`p-2 bg-black/20 rounded-lg cursor-pointer transition-all duration-200 ${selectedTargetId === enemy.id ? 'border-2 border-amber-400' : 'border-2 border-transparent'}`}>
+                                <p className="font-semibold text-sm truncate" style={{color: 'var(--text-color)'}}>{enemy.identity.name}</p>
+                                {enemySinhMenh && enemySinhMenh.maxValue !== undefined && <HealthBar current={getFinalAttributeValue(enemy, 'sinh_menh')} max={enemySinhMenh.maxValue} />}
+                                {isCurrentTurn && <p className="text-xs" style={{color: 'var(--error-color)'}}>Lượt của địch</p>}
+                            </div>
+                         )
+                    })}
+                </div>
+            </div>
+            {isProcessingTurn && <div className="text-center"><LoadingSpinner message="Đang xử lý..." size="sm"/></div>}
+            <div className="grid grid-cols-2 gap-2">
+                <button onClick={handleBasicAttack} disabled={!isPlayerTurn || isProcessingTurn || !selectedTargetId} className="p-3 bg-red-700 text-white font-bold rounded-lg hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed">Tấn Công</button>
+                <button onClick={() => setShowTechniqueModal(true)} disabled={!isPlayerTurn || isProcessingTurn || !selectedTargetId} className="p-3 bg-blue-700 text-white font-bold rounded-lg hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed">Công Pháp</button>
+                <button disabled={!isPlayerTurn || isProcessingTurn} className="p-3 bg-green-700 text-white font-bold rounded-lg hover:bg-green-600 disabled:bg-gray-600">Vật Phẩm</button>
+                <button disabled={!isPlayerTurn || isProcessingTurn} className="p-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-500 disabled:bg-gray-500">Bỏ Chạy</button>
+            </div>
         </div>
     );
 };

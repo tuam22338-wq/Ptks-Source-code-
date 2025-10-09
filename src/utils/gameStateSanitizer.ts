@@ -53,8 +53,9 @@ const sanitizePlayerCharacter = (pc: PlayerCharacter): PlayerCharacter => {
             pc.currencies[key as keyof typeof pc.currencies] = Number(pc.currencies[key as keyof typeof pc.currencies]) || 0;
         }
     }
-    if (pc.progression) {
-        pc.progression.progressionResource = Number(pc.progression.progressionResource) || 0;
+    // FIX: Sanitize cultivation properties
+    if (pc.cultivation) {
+        pc.cultivation.spiritualQi = Number(pc.cultivation.spiritualQi) || 0;
     }
 
     return pc;
@@ -84,8 +85,9 @@ const sanitizeNpc = (npc: NPC): NPC => {
             npc.currencies[key as keyof typeof npc.currencies] = Number(npc.currencies[key as keyof typeof npc.currencies]) || 0;
         }
     }
-     if (npc.progression) {
-        npc.progression.progressionResource = Number(npc.progression.progressionResource) || 0;
+    // FIX: Sanitize cultivation properties
+     if (npc.cultivation) {
+        npc.cultivation.spiritualQi = Number(npc.cultivation.spiritualQi) || 0;
     }
 
     return npc;

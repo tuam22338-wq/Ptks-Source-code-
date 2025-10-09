@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import type { GameState, PlayerAiHooks } from '../../../../../types';
-// FIX: Import useGameContext to get access to game-specific update functions.
-import { useGameContext } from '../../../../../contexts/GameContext';
+import { useAppContext } from '../../../../../contexts/AppContext';
 import { FaDownload, FaUpload } from 'react-icons/fa';
 
 const Field: React.FC<{ label: string; description: string; children: React.ReactNode }> = ({ label, description, children }) => (
@@ -13,8 +12,7 @@ const Field: React.FC<{ label: string; description: string; children: React.Reac
 );
 
 const AiRulesPanel: React.FC<{ gameState: GameState }> = ({ gameState }) => {
-    // FIX: handleUpdatePlayerCharacter has been moved to GameContext.
-    const { handleUpdatePlayerCharacter } = useGameContext();
+    const { handleUpdatePlayerCharacter } = useAppContext();
     const [localHooks, setLocalHooks] = useState<PlayerAiHooks>(
         gameState.playerCharacter.playerAiHooks || {
             on_world_build: '',

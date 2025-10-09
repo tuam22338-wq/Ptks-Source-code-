@@ -9,8 +9,7 @@ import InfoScreen from './features/Info/InfoScreen';
 import DeveloperConsole from './components/DeveloperConsole';
 import SpecialEffectsOverlay from './components/SpecialEffectsOverlay';
 import { AppProvider, useAppContext } from './contexts/AppContext';
-import { GameProvider } from './contexts/GameContext';
-import NovelistScreen from './features/Novelist/NovelistScreen';
+import NovelistScreen from './features/Novelist/NovelistScreen'; // Import a tela mới
 import LoadGameScreen from './features/MainMenu/LoadGameScreen';
 
 // --- Lazy Loaded Components ---
@@ -23,7 +22,6 @@ const LazyNovelistScreen = lazy(() => import('./features/Novelist/NovelistScreen
 const LazyAiTrainingScreen = lazy(() => import('./features/AiTraining/AiTrainingScreen'));
 const LazyScriptsScreen = lazy(() => import('./features/Scripts/ScriptsScreen'));
 const LazyCreateScriptScreen = lazy(() => import('./features/Scripts/CreateScriptScreen'));
-const LazyWikiScreen = lazy(() => import('./features/Wiki/WikiScreen'));
 
 
 const BackgroundOverlay: React.FC = () => {
@@ -70,6 +68,7 @@ const InkSplatterOverlay: React.FC = () => {
     const { state } = useAppContext();
     const theme = state.settings.theme;
 
+    // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the comparison error here.
     if (state.settings.enablePerformanceMode || theme !== 'theme-ink-wash-bamboo') {
         return null;
     }
@@ -82,8 +81,8 @@ const InkSplatterOverlay: React.FC = () => {
                     top: `${Math.random() * 100}%`,
                     width: `${size}px`,
                     height: `${size}px`,
-                    animationDuration: `${Math.random() * 5 + 5}s`,
-                    animationDelay: `${Math.random() * 10}s`,
+                    animationDuration: `${Math.random() * 5 + 5}s`, // 5 to 10 seconds
+                    animationDelay: `${Math.random() * 10}s`, // 0 to 10 seconds
                 };
                 return <div className="ink-splatter" key={i} style={style}></div>;
             })}
@@ -96,6 +95,7 @@ const WeatherOverlay: React.FC = () => {
     const { state } = useAppContext();
     const weather = state.gameState?.gameDate?.weather;
 
+    // HOOKS MUST BE CALLED BEFORE EARLY RETURNS
     const weatherEffect = useMemo(() => {
         switch (weather) {
             case 'RAIN':
@@ -168,6 +168,7 @@ const AppContent: React.FC = () => {
         if (isMigratingData) {
           return <LoadingScreen message={migrationMessage} />;
         }
+        // Only show fullscreen loader if it's NOT a gameplay AI response
         if (isLoading && view !== 'gamePlay') {
           return <LoadingScreen message={loadingMessage} />;
         }
@@ -183,7 +184,7 @@ const AppContent: React.FC = () => {
             return <LazySettingsPanel />;
           case 'info':
             return <LazyInfoScreen />;
-          case 'novelist':
+          case 'novelist': // Thêm case mới
             return <LazyNovelistScreen />;
           case 'aiTraining':
             return <LazyAiTrainingScreen />;
@@ -191,45 +192,28 @@ const AppContent: React.FC = () => {
             return <LazyScriptsScreen />;
           case 'createScript':
             return <LazyCreateScriptScreen />;
-          case 'wikiScreen':
-            return <LazyWikiScreen />;
           case 'gamePlay':
             if (!gameState) {
                 return <LoadingScreen message="Đang tải dữ liệu..." />;
             }
-            return (
-                <GameProvider initialGameState={gameState}>
-                    <LazyGamePlayScreen />
-                </GameProvider>
-            );
+            return <LazyGamePlayScreen />;
           default:
             return <MainMenu />;
         }
     };
     
-    // --- DYNAMIC LAYOUT LOGIC ---
-    const forceFullScreenViews = ['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts', 'createScript', 'wikiScreen'];
-    const isPotentiallyPanelScreen = !forceFullScreenViews.includes(view);
-
-    let mainClasses = 'w-full flex-1 flex flex-col min-h-0';
-    if (isPotentiallyPanelScreen) {
-        switch (settings.layoutMode) {
-            case 'desktop':
-                mainClasses += ' max-w-7xl mx-auto panel-container';
-                break;
-            case 'mobile':
-                mainClasses += ' px-4 sm:px-6';
-                break;
-            case 'auto':
-                mainClasses += ' panel-container-auto md:max-w-7xl md:mx-auto';
-                break;
-        }
-    }
+    const excludedFullScreenViews = ['mainMenu', 'gamePlay', 'novelist', 'aiTraining', 'scripts', 'createScript'];
+    const showHeader = !excludedFullScreenViews.includes(view) && !isLoading && !isMigratingData;
+    const isPanelScreen = !excludedFullScreenViews.includes(view);
     
-    const showHeader = isPotentiallyPanelScreen && !isLoading && !isMigratingData;
+    const containerClasses = isPanelScreen 
+        ? 'w-full max-w-7xl mx-auto flex-grow flex flex-col min-h-0'
+        : 'w-full flex-grow flex flex-col';
+    
+    const panelClasses = 'panel-container';
 
     return (
-        <div className="relative w-full h-screen flex flex-col">
+        <div className="relative w-full h-full flex flex-col items-center">
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
             <InkSplatterOverlay />
@@ -237,12 +221,12 @@ const AppContent: React.FC = () => {
             {gameState && <SpecialEffectsOverlay />}
 
             {showHeader && (
-              <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-shrink-0">
+              <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex-shrink-0">
                 <Header />
               </div>
             )}
       
-            <main className={mainClasses}>
+            <main className={`${containerClasses} ${isPanelScreen ? panelClasses : ''}`}>
                 <Suspense fallback={<LoadingScreen message="Đang tải..." />}>
                     {renderContent()}
                 </Suspense>

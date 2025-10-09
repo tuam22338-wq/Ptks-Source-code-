@@ -1,4 +1,5 @@
-import type { ElementType } from 'react';
+// FIX: Add React import for ElementType
+import type React from 'react';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -8,9 +9,9 @@ import {
   GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire, GiGroundbreaker,
   GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace, GiMeal
 } from 'react-icons/gi';
-import { FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain, FaBookOpen } from 'react-icons/fa';
+import { FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain } from 'react-icons/fa';
 
-export const UI_ICONS: { [key: string]: ElementType } = {
+export const UI_ICONS: { [key: string]: React.ElementType } = {
   GiCauldron, GiBroadsword, GiHealthNormal, GiHourglass, GiMagicSwirl,
   GiPentacle, GiPerspectiveDiceSixFacesRandom, GiRunningShoe, GiScrollQuill,
   GiSparklingSabre, GiStairsGoal, GiStoneTower, GiYinYang, GiSpinalCoil,
@@ -19,5 +20,5 @@ export const UI_ICONS: { [key: string]: ElementType } = {
   GiHerbsBundle, GiGoldBar, GiTreeBranch, GiWaterDrop, GiFire,
   GiGroundbreaker, GiChestArmor, GiLegArmor, GiBoots, GiRing, GiNecklace,
   GiMeal,
-  FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain, FaBookOpen
+  FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain
 };

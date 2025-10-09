@@ -1,9 +1,9 @@
-import type { FactionReputationStatus, DifficultyLevel, NpcDensity, QuickActionButtonConfig, AbilityRank, ItemQuality, ProgressionTierConfig } from '../types';
+import type { FactionReputationStatus, DifficultyLevel, NpcDensity, QuickActionButtonConfig, AbilityRank, ItemQuality } from '../types';
 import { DEFAULT_ATTRIBUTE_DEFINITIONS } from '../data/attributes';
 
 export const SYSTEM_SHOP_ITEMS = [
     { id: 'sys_item_stat_boost', name: 'Dịch Cân Tẩy Tủy Dịch', description: 'Một liều thuốc từ thế giới khác, giúp cải thiện toàn bộ thuộc tính cơ bản vĩnh viễn.', cost: 250, effect: { type: 'CHANGE_STAT', details: { attribute: 'all_base', change: 1 } } },
-    { id: 'sys_item_qi_boost', name: 'Linh Khí Kết Tinh', description: 'Một khối tinh thể chứa đựng linh khí thuần khiết, giúp tăng mạnh tu vi hiện tại.', cost: 100, effect: { type: 'CHANGE_STAT', details: { attribute: 'progressionResource', change: 5000 } } },
+    { id: 'sys_item_qi_boost', name: 'Linh Khí Kết Tinh', description: 'Một khối tinh thể chứa đựng linh khí thuần khiết, giúp tăng mạnh tu vi hiện tại.', cost: 100, effect: { type: 'CHANGE_STAT', details: { attribute: 'progressionPoints', change: 5000 } } },
     { id: 'sys_item_gacha_ticket', name: 'Vé Gacha Vận Mệnh', description: 'Một chiếc vé bí ẩn, có thể rút ra một vật phẩm hoặc kỳ ngộ ngẫu nhiên.', cost: 50, effect: { type: 'START_EVENT', details: { eventId: 'system_gacha' } } },
 ];
 
@@ -30,15 +30,16 @@ export const NPC_DENSITY_LEVELS: { id: NpcDensity; name: string; description: st
 ];
 
 export const ALL_ATTRIBUTES = DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.name);
-export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'progressionResource'];
+// FIX: Changed progressionPoints to spiritualQi to match new type
+export const ALL_PARSABLE_STATS = [...DEFAULT_ATTRIBUTE_DEFINITIONS.map(a => a.id), 'spiritualQi'];
 
 export const DEFAULT_BUTTONS: QuickActionButtonConfig[] = [
     { id: 'inventory', label: 'Túi Đồ', description: 'Mở túi đồ của bạn', iconName: 'GiSwapBag', actionText: 'mở túi đồ' },
-    { id: 'wiki', label: 'Bách Khoa', description: 'Mở Bách Khoa Toàn Thư để tra cứu thông tin thế giới.', iconName: 'FaBookOpen', actionText: 'mở bách khoa' },
     { id: 'dashboard', label: 'Trạng Thái', description: 'Mở bảng trạng thái nhân vật', iconName: 'FaUser', actionText: 'mở bảng trạng thái' },
 ];
 
-export const PROGRESSION_TIER_RANK_CAPS: Record<string, { maxRank: AbilityRank, maxQuality: ItemQuality }> = {
+// FIX: Renamed TIER_RANK_CAPS to REALM_RANK_CAPS
+export const REALM_RANK_CAPS: Record<string, { maxRank: AbilityRank, maxQuality: ItemQuality }> = {
     'pham_nhan': { maxRank: 'Phàm Giai', maxQuality: 'Phàm Phẩm' },
     'luyen_khi': { maxRank: 'Tiểu Giai', maxQuality: 'Linh Phẩm' },
     'truc_co': { maxRank: 'Trung Giai', maxQuality: 'Pháp Phẩm' },
@@ -50,10 +51,4 @@ export const PROGRESSION_TIER_RANK_CAPS: Record<string, { maxRank: AbilityRank, 
     'dai_thua': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
     'do_kiep': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
     'nhan_tien': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
-    'thien_tien': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
-    'kim_tien': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
-    'thai_at': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
-    'dai_la': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
-    'chuan_thanh': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
-    'thanh_nhan': { maxRank: 'Thánh Giai', maxQuality: 'Tuyệt Phẩm' },
 };

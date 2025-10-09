@@ -6,9 +6,6 @@ import { FaTimes, FaArrowLeft, FaArrowRight, FaSearch, FaFilter, FaSort, FaCheck
 import { useAppContext } from '../../../contexts/AppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 import { calculateDerivedStats } from '../../../utils/statCalculator';
-// FIX: Import useGameContext to access game-specific actions.
-import { useGameContext } from '../../../contexts/GameContext';
-import ItemTooltip from '../../../components/ItemTooltip';
 
 interface InventoryModalProps {
     isOpen: boolean;
@@ -19,22 +16,11 @@ const ITEM_FILTERS: { id: ItemFilter; label: string; }[] = [
     { id: 'all', label: 'Tất Cả' },
     { id: 'Vũ Khí', label: 'Vũ Khí' },
     { id: 'Phòng Cụ', label: 'Phòng Cụ' },
-    { id: 'Trang Sức', label: 'Trang Sức' },
     { id: 'Đan Dược', label: 'Đan Dược' },
     { id: 'Pháp Bảo', label: 'Pháp Bảo' },
     { id: 'Nguyên Liệu', label: 'Nguyên Liệu' },
     { id: 'Tạp Vật', label: 'Tạp Vật' },
-    { id: 'Sách Kỹ Năng', label: 'Sách Kỹ Năng' },
-    { id: 'Cổ Vật', label: 'Cổ Vật' },
 ];
-
-const ItemIcon: React.FC<{ item: InventoryItem; className?: string }> = ({ item, className }) => {
-    if (item.iconName && UI_ICONS[item.iconName]) {
-        const Icon = UI_ICONS[item.iconName];
-        return <Icon className={className || 'text-2xl'} />;
-    }
-    return <span className={className || 'text-2xl'} role="img" aria-label={item.name}>{item.icon || '📜'}</span>;
-};
 
 const EquipmentSlotComponent: React.FC<{
     slot: EquipmentSlot;
@@ -61,7 +47,7 @@ const EquipmentSlotComponent: React.FC<{
                 `}
             >
                 {item ? (
-                    <ItemIcon item={item} className="text-2xl" />
+                    <span className="text-2xl" role="img" aria-label={item.name}>{item.icon}</span>
                 ) : (
                     <Icon className="text-3xl text-gray-700" />
                 )}
@@ -71,10 +57,41 @@ const EquipmentSlotComponent: React.FC<{
     );
 };
 
+const ItemComparison: React.FC<{ item: InventoryItem; equipped: InventoryItem | null }> = ({ item, equipped }) => {
+    const itemBonuses = new Map((item.bonuses || []).map(b => [b.attribute, b.value]));
+    const equippedBonuses = new Map((equipped?.bonuses || []).map(b => [b.attribute, b.value]));
+    const allAttributes = new Set([...itemBonuses.keys(), ...equippedBonuses.keys()]);
+
+    if (allAttributes.size === 0) return null;
+
+    return (
+        <div className="mt-2 pt-2 border-t border-[var(--shadow-light)]/50">
+            {Array.from(allAttributes).map(attr => {
+                const itemValue = Number(itemBonuses.get(attr)) || 0;
+                const equippedValue = Number(equippedBonuses.get(attr)) || 0;
+                const diff = itemValue - equippedValue;
+                let diffColor = 'text-[var(--text-muted-color)]';
+                if (diff > 0) diffColor = 'text-[var(--success-color)]';
+                if (diff < 0) diffColor = 'text-[var(--error-color)]';
+
+                return (
+                    <div key={attr} className="flex justify-between items-center text-xs">
+                        <span style={{color: 'var(--text-color)'}}>{attr}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono w-8 text-right">{itemValue}</span>
+                            <span className={`font-mono font-bold w-10 text-center ${diffColor}`}>
+                                ({diff > 0 ? '+' : ''}{diff})
+                            </span>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
-    // FIX: handlePlayerAction has been moved to GameContext.
-    const { state } = useAppContext();
-    const { handlePlayerAction } = useGameContext();
+    const { state, handlePlayerAction } = useAppContext();
     const { gameState } = state;
     const { showNotification, closeInventoryModal } = useGameUIContext();
     
@@ -121,12 +138,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
     }, [createAndDispatchAction]);
 
     const handleUse = useCallback((itemToUse: InventoryItem) => {
-        const actionText = itemToUse.type === 'Đan Phương' || itemToUse.type === 'Sách Kỹ Năng' ? `Học ${itemToUse.name}` : `Sử dụng ${itemToUse.name}`;
+        const actionText = itemToUse.type === 'Đan Phương' ? `Học ${itemToUse.name}` : `Sử dụng ${itemToUse.name}`;
         createAndDispatchAction(actionText);
-    }, [createAndDispatchAction]);
-
-    const handleIdentify = useCallback((itemToIdentify: InventoryItem) => {
-        createAndDispatchAction(`Ta giám định ${itemToIdentify.name}`);
     }, [createAndDispatchAction]);
     
     const handleToggleSelectItem = useCallback((itemId: string) => {
@@ -151,8 +164,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
             acc[item.name] = (acc[item.name] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
-        // FIX: Operator '>' cannot be applied to types 'unknown' and 'number'. Explicitly cast `count` to a Number before comparison to ensure type safety.
-        const summary = Object.entries(itemCounts).map(([name, count]) => `${Number(count) > 1 ? `${count} ` : ''}${name}`).join(', ');
+
+        const summary = Object.entries(itemCounts).map(([name, count]) => `${count > 1 ? `${count} ` : ''}${name}`).join(', ');
         createAndDispatchAction(`Sử dụng ${summary}`);
     }, [selectedItems, playerCharacter, showNotification, createAndDispatchAction]);
 
@@ -230,18 +243,19 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                         </div>
                          <div className="flex-grow p-3 rounded-lg border border-[var(--shadow-light)] min-h-[14rem] flex flex-col justify-between">
                             {selectedItem ? (
-                                <ItemTooltip item={selectedItem} compareItem={equippedItemForComparison} />
+                                <div className="animate-fade-in" style={{animationDuration: '200ms'}}>
+                                    <h4 className={`font-bold font-title text-lg ${ITEM_QUALITY_STYLES[selectedItem.quality].color}`}>{selectedItem.name}</h4>
+                                    <p className="text-xs text-[var(--text-muted-color)] italic truncate">{selectedItem.description}</p>
+                                    {selectedItem.vitalEffects && selectedItem.vitalEffects.length > 0 && <div className="mt-1 text-xs text-yellow-300">{selectedItem.vitalEffects.map(b => `${b.vital === 'hunger' ? 'No bụng' : 'Nước uống'} ${b.value > 0 ? '+' : ''}${b.value}`).join(', ')}</div>}
+                                    {selectedItem.slot && !selectedItem.isEquipped && <ItemComparison item={selectedItem} equipped={equippedItemForComparison} />}
+                                </div>
                             ) : (
                                 <div className="h-full flex items-center justify-center text-[var(--text-muted-color)]">Di chuột qua vật phẩm để xem chi tiết.</div>
                             )}
-                            <div className="flex justify-end items-center gap-2 mt-2 pt-2 border-t border-[var(--shadow-light)]/30">
-                                {selectedItem && selectedItem.isIdentified === false && (
-                                    <button onClick={() => handleIdentify(selectedItem)} className="btn btn-primary !bg-purple-700/80 !text-sm !px-4 !py-1">Giám Định</button>
-                                )}
+                            <div className="flex justify-end items-center gap-2 mt-2">
                                 {selectedItem && selectedItem.isEquipped && selectedItem.slot && <button onClick={() => handleUnequip(selectedItem.slot!)} className="btn btn-neumorphic !text-sm !px-4 !py-1">Tháo Ra</button>}
-                                {selectedItem && selectedItem.slot && !selectedItem.isEquipped && selectedItem.isIdentified !== false && <button onClick={() => handleEquip(selectedItem)} className="btn btn-primary !bg-green-700/80 !text-sm !px-4 !py-1">Trang Bị</button>}
-                                {/* @google-genai-fix: Changed 'item.type' to 'selectedItem.type' to use the correct variable. */}
-                                {selectedItem && (selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương' || selectedItem.type === 'Linh Dược' || selectedItem.type === 'Sách Kỹ Năng') && <button onClick={() => handleUse(selectedItem)} className="btn btn-primary !bg-blue-700/80 !text-sm !px-4 !py-1">{selectedItem.type === 'Đan Phương' || selectedItem.type === 'Sách Kỹ Năng' ? 'Học' : 'Sử Dụng'}</button>}
+                                {selectedItem && selectedItem.slot && !selectedItem.isEquipped && <button onClick={() => handleEquip(selectedItem)} className="btn btn-primary !bg-green-700/80 !text-sm !px-4 !py-1">Trang Bị</button>}
+                                {selectedItem && (selectedItem.type === 'Đan Dược' || selectedItem.type === 'Đan Phương' || selectedItem.type === 'Linh Dược') && <button onClick={() => handleUse(selectedItem)} className="btn btn-primary !bg-blue-700/80 !text-sm !px-4 !py-1">{selectedItem.type === 'Đan Phương' ? 'Học' : 'Sử Dụng'}</button>}
                                 {selectedItem && <button onClick={() => handleDrop(selectedItem, 1)} className="btn btn-primary !bg-red-800/80 !text-sm !px-4 !py-1">Vứt Bỏ</button>}
                             </div>
                         </div>
@@ -286,9 +300,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                         ${selectedItems.has(item.id) ? 'border-[var(--secondary-accent-color)]' : 'border-[var(--shadow-light)] hover:border-[var(--primary-accent-color)]/70'}`}
                                 >
                                     {selectedItems.has(item.id) ? <FaCheckSquare className="absolute top-1 left-1 text-[var(--secondary-accent-color)]" /> : <FaSquare className="absolute top-1 left-1 text-transparent group-hover:text-gray-500" />}
-                                    <div className="flex items-center justify-center w-full h-full">
-                                        <ItemIcon item={item} className="text-4xl" />
-                                    </div>
+                                    <span className="text-4xl select-none" role="img" aria-label={item.name}>{item.icon || '📜'}</span>
                                     {Number(item.quantity) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-[var(--bg-color)]/80 px-1 rounded-sm">{item.quantity}</span>}
                                     <div className={`absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-[var(--bg-color)] ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>
                                 </button>

@@ -5,7 +5,8 @@ import type {
     Location, GameEvent, MajorEvent, ForeshadowedEvent, ResourceNode
 } from './core';
 import type { SpiritualRoot, CharacterIdentity, InnateTalent } from './character';
-import type { FullMod, ProgressionTierConfig, ModAttributeSystem, ModEvent, NamedProgressionSystem, ModLocation, ModNpc } from './modding';
+// FIX: Update imports to use renamed types 'RealmConfig' and 'NamedRealmSystem' and remove Faction to avoid circular dependency issues.
+import type { FullMod, RealmConfig, ModAttributeSystem, ModEvent, NamedRealmSystem, ModLocation, ModNpc } from './modding';
 import type { SystemInfo, NpcDensity, GameplaySettings } from './settings';
 import type { MechanicalIntent } from './ai';
 
@@ -42,22 +43,6 @@ export interface GameDate {
   actionPoints: number;
   maxActionPoints: number;
 }
-
-// --- NEW ITEM EFFECT & STATUS EFFECT SYSTEM ---
-export type StatusEffectType = 'Thiêu Đốt' | 'Trúng Độc' | 'Đóng Băng' | 'Choáng' | 'Suy Yếu' | 'Hỗn Loạn' | 'Xuất Huyết' | 'Tâm Ma' | 'Nguyền Rủa' | 'Hồi Phục' | 'Lá Chắn' | 'Tăng Tốc' | 'Cuồng Nộ' | 'Minh Triết' | 'Tàng Hình' | 'Hấp Huyết' | 'Phản Chấn';
-
-export interface ItemEffect {
-    type: 'APPLY_STATUS' | 'DEAL_DAMAGE' | 'HEAL' | 'MODIFY_STAT' | 'SUMMON';
-    description: string;
-    status?: StatusEffectType;
-    duration?: number;
-    damageType?: Element;
-    baseValue?: number;
-    attribute?: string; // For MODIFY_STAT
-}
-
-export type ConditionalEffectTrigger = 'ON_HIT_DEALT' | 'ON_HIT_TAKEN' | 'ON_KILL' | 'ON_HEAL' | 'ON_CRIT_DEALT' | 'ON_DODGE';
-// --- END NEW ITEM EFFECT SYSTEM ---
 
 
 // --- Gameplay Types ---
@@ -98,66 +83,33 @@ export interface MemoryState {
 }
 // --- END NPC MIND STATE ---
 
-export interface ProgressionState {
-    currentTierId: string;
-    currentSubTierId: string;
-    progressionResource: number;
+// FIX: Renamed ProgressionState to CultivationState
+export interface CultivationState {
+    currentRealmId: string;
+    currentStageId: string;
+    spiritualQi: number;
     hasConqueredInnerDemon: boolean;
 }
+
+// FIX: Renamed Ability to CultivationTechnique, moved definition to core.ts
 
 export interface InventoryItem {
     id: string;
     name: string;
     description: string;
-    lore?: string;
     quantity: number;
     type: ItemType;
-    quality: ItemQuality;
+    rank?: AbilityRank;
     icon?: string;
-    iconName?: string; // New: Key for UI_ICONS component
-    weight: number;
-    value?: number;
-    slot?: EquipmentSlot;
-    isEquipped?: boolean;
-    isIdentified?: boolean;
-
-    // Inherent item stats
-    itemStats?: {
-        damage?: number;
-        defense?: number;
-        critChance?: number;
-        critDamage?: number;
-    };
-
-    // Simple stat bonuses
     bonuses?: StatBonus[];
-
-    // Complex effects
-    passiveEffects?: ItemEffect[];
-    activeEffect?: ItemEffect; // For consumables or usable items
-    conditionalEffects?: {
-        trigger: ConditionalEffectTrigger;
-        chance: number; // 0-100
-        effect: ItemEffect;
-    }[];
-
-    // Set bonuses
-    setInfo?: {
-        setId: string;
-        setName: string;
-        part: number;
-        totalParts: number;
-    };
-    
-    // Curses
-    curseDescription?: string;
-    curseEffect?: ItemEffect;
-    
-    // Legacy support for older item types
+    weight: number;
+    quality: ItemQuality;
+    value?: number;
+    isEquipped?: boolean;
+    slot?: EquipmentSlot;
     recipeId?: string;
-    vitalEffects?: { vital: string, value: number }[];
+    vitalEffects?: { vital: string; value: number }[];
 }
-
 
 export interface Inventory {
     items: InventoryItem[];
@@ -173,7 +125,9 @@ export interface NPC {
     talents: InnateTalent[];
     locationId: string;
     relationships?: Relationship[];
-    progression: ProgressionState;
+    // FIX: Add missing cultivation property
+    cultivation: CultivationState;
+    // FIX: Add missing techniques property
     techniques: CultivationTechnique[];
     inventory: Inventory;
     currencies: Currency;
@@ -214,11 +168,12 @@ export interface DanhVong {
     status: string;
 }
 
-export interface ProgressionPath {
+// FIX: Renamed ProgressionPath to CultivationPath
+export interface CultivationPath {
   id: string;
   name: string;
   description: string;
-  requiredTierId: string; // The tier you must ENTER to be offered this path
+  requiredRealmId: string; // The tier you must ENTER to be offered this path
   bonuses: StatBonus[];
 }
 
@@ -251,7 +206,8 @@ export interface QuestObjective {
 }
 
 export interface QuestReward {
-    progressionResource?: number;
+    // FIX: Add missing spiritualQi property
+    spiritualQi?: number;
     currencies?: Currency;
     items?: { name: string, quantity: number }[];
     danhVong?: number;
@@ -294,14 +250,17 @@ export interface PlayerAiHooks {
 export interface PlayerCharacter {
     identity: CharacterIdentity;
     attributes: CharacterAttributes;
+    // FIX: Renamed powerSource to spiritualRoot
     spiritualRoot: SpiritualRoot | null;
     inventory: Inventory;
     currencies: Currency;
-    progression: ProgressionState;
+    // FIX: Add missing cultivation property
+    cultivation: CultivationState;
     currentLocationId: string;
     equipment: Partial<Record<EquipmentSlot, InventoryItem | null>>;
     vitals: PlayerVitals;
     
+    // FIX: Renamed mainAbilityInfo to mainCultivationTechniqueInfo and abilities to techniques
     mainCultivationTechniqueInfo: { name: string; description: string; } | null;
     techniques: CultivationTechnique[];
 
@@ -314,6 +273,7 @@ export interface PlayerCharacter {
     caveAbode: CaveAbode;
     healthStatus: CharacterStatus;
     activeEffects: ActiveEffect[];
+    // FIX: Add missing techniqueCooldowns property
     techniqueCooldowns: Record<string, number>;
     activeQuests: ActiveQuest[];
     completedQuestIds: string[];
@@ -380,11 +340,6 @@ export interface PlayerSectMember extends NPC {
   contribution: number;
 }
 
-export interface SectRank {
-    name: string;
-    contributionRequired: number;
-}
-
 export interface PlayerSect {
   id: string;
   name: string;
@@ -410,6 +365,7 @@ export interface WorldCreationData extends GameplaySettings {
     openingStory: string;
     importedMod: FullMod | null;
     fanficMode: boolean;
+    // FIX: Add missing 'hardcoreMode' property to align type with its usage.
     hardcoreMode: boolean;
     character: {
         name: string;
@@ -417,8 +373,10 @@ export interface WorldCreationData extends GameplaySettings {
         bio: string;
     };
     attributeSystem?: ModAttributeSystem;
-    progressionTemplateId: string;
-    namedProgressionSystem: NamedProgressionSystem | null;
+    enableRealmSystem: boolean; // Kept for UI state, will be translated to enableProgressionSystem
+    realmTemplateId: string; // Kept for UI state, will be translated
+    namedRealmSystem: NamedRealmSystem | null; // Updated type
+    // FIX: Add missing generationMode to satisfy the GameStartData type requirement in AppContext.
     generationMode: GenerationMode;
     // New data generation controls
     npcGenerationMode: DataGenerationMode;
@@ -428,17 +386,6 @@ export interface WorldCreationData extends GameplaySettings {
     customLocations: ModLocation[];
     customFactions: Faction[];
     dlcs?: { title: string; content: string }[];
-}
-
-export interface GameStartData extends WorldCreationData {
-  identity: CharacterIdentity;
-  npcDensity: NpcDensity;
-  difficulty: DifficultyLevel;
-  initialBonuses: StatBonus[];
-  initialItems: { name: string; description: string; quantity: number; type: ItemType; quality: ItemQuality; icon: string; }[];
-  spiritualRoot: SpiritualRoot;
-  danhVong: DanhVong;
-  initialCurrency: Currency;
 }
 
 export interface WorldTurnEntry {
@@ -463,13 +410,16 @@ export interface GameState {
     encounteredNpcIds: string[];
     activeMods: FullMod[];
     activeModIds?: string[];
-    progressionSystem: ProgressionTierConfig[];
-    progressionSystemInfo: {
+    // FIX: Rename progressionSystem to realmSystem and use RealmConfig
+    realmSystem: RealmConfig[];
+    // FIX: Rename progressionSystemInfo to realmSystemInfo
+    realmSystemInfo: {
         name: string;
         resourceName: string;
         resourceUnit: string;
     };
-    namedProgressionSystems?: NamedProgressionSystem[];
+    // FIX: Rename namedProgressionSystems to namedRealmSystems
+    namedRealmSystems?: NamedRealmSystem[];
     attributeSystem: ModAttributeSystem;
     majorEvents: MajorEvent[];
     activeStory: ActiveStoryState | null;
@@ -481,7 +431,6 @@ export interface GameState {
     eventIllustrations?: { eventId: string; imageUrl: string; narrative: string }[];
     storySummary?: string;
     shopStates?: Record<string, { itemPriceMultipliers: Record<string, number> }>;
-    playerStall: PlayerStall | null;
     playerSect: PlayerSect | null;
     isHydrated?: boolean;
     creationData?: {
@@ -494,29 +443,6 @@ export interface GameState {
     };
     gameplaySettings: GameplaySettings;
     worldTurnLog?: WorldTurnEntry[];
-}
-
-// --- Shop Types ---
-export interface ShopItem extends Omit<InventoryItem, 'id' | 'quantity'> {
-    price: {
-        currencyName: CurrencyType;
-        amount: number;
-    };
-    stock: number | 'infinite';
-}
-
-export interface PlayerStall {
-    locationId: string;
-    name: string;
-    items: ShopItem[];
-    earnings: Currency;
-}
-
-export interface Shop {
-    id: string;
-    name: string;
-    description: string;
-    inventory: ShopItem[];
 }
 
 // --- Sect Types ---
@@ -554,5 +480,19 @@ export interface Sect {
     joinRequirements: { attribute: string; value: number; greaterThan?: boolean }[];
     missions: SectMission[];
     iconName?: string;
+    // FIX: Renamed startingTechnique to use CultivationTechnique type
     startingTechnique?: Omit<CultivationTechnique, 'id' | 'level' | 'maxLevel'>;
+}
+
+// @FIX: Add Shop and ShopItem types to resolve module errors.
+export interface ShopItem extends Omit<InventoryItem, 'id' | 'isEquipped' | 'quantity'> {
+    price: { currencyName: CurrencyType; amount: number; };
+    stock: number; // -1 for infinite
+}
+
+export interface Shop {
+    id: string;
+    name: string;
+    description: string;
+    inventory: ShopItem[];
 }

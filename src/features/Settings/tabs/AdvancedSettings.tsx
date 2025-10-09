@@ -3,7 +3,7 @@ import type { GameSettings } from '../../../types';
 import { FaDownload, FaUpload, FaExclamationTriangle, FaVial, FaTrophy, FaShieldAlt } from 'react-icons/fa';
 import * as db from '../../../services/dbService';
 import { AI_SYNC_MODES } from '../../../constants';
-import HeuristicFixerModal from '../HeuristicFixerModal';
+import HeuristicFixerModal from '../HeuristicFixerModal'; // Import the new modal
 
 interface SettingsSectionProps {
     title: string;
@@ -37,7 +37,7 @@ interface AdvancedSettingsProps {
     handleSettingChange: (key: keyof GameSettings, value: any) => void;
 }
 
-const AdvancedSettingsComponent: React.FC<AdvancedSettingsProps> = ({ settings, handleSettingChange }) => {
+const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSettingChange }) => {
     const importInputRef = useRef<HTMLInputElement>(null);
     const [isFixerModalOpen, setFixerModalOpen] = useState(false);
 
@@ -59,7 +59,7 @@ const AdvancedSettingsComponent: React.FC<AdvancedSettingsProps> = ({ settings, 
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
             alert('Đã xuất dữ liệu thành công!');
-        } catch (error: any) {
+        } catch (error) {
             console.error("Failed to export data:", error);
             alert('Xuất dữ liệu thất bại.');
         }
@@ -107,7 +107,7 @@ const AdvancedSettingsComponent: React.FC<AdvancedSettingsProps> = ({ settings, 
                 await db.deleteDb();
                 alert("Đã xóa tất cả dữ liệu. Trang sẽ được tải lại.");
                 window.location.reload();
-            } catch (error: any) {
+            } catch (error) {
                 console.error("Failed to delete database:", error);
                 alert("Xóa dữ liệu thất bại.");
             }
@@ -122,50 +122,81 @@ const AdvancedSettingsComponent: React.FC<AdvancedSettingsProps> = ({ settings, 
                 <div className="flex flex-col">
                     <label className="flex items-center cursor-pointer">
                         <input type="checkbox" checked={settings.isPremium} onChange={e => handleSettingChange('isPremium', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                        <span className="ml-3 text-sm font-bold flex items-center gap-2" style={{color: settings.isPremium ? 'var(--primary-accent-color)' : 'var(--text-muted-color)'}}>
-                            <FaTrophy /> Kích hoạt Gói Đạo Tôn
-                        </span>
+                        <span className="ml-3 text-sm font-bold text-amber-300 flex items-center gap-2"><FaTrophy /> Kích hoạt Gói Đạo Tôn</span>
                     </label>
+                    <p className="mt-2 text-xs text-gray-500">
+                        Đây là tính năng mô phỏng. Trong phiên bản thực tế, đây sẽ là gói trả phí để ủng hộ nhà phát triển.
+                    </p>
                 </div>
             </SettingsRow>
-            <SettingsRow label="Chế độ Thử nghiệm (Testing)" description="Bật các tính năng đang trong giai đoạn thử nghiệm. Có thể không ổn định. Yêu cầu tải lại trang.">
+            <SettingsRow label="Thiên Đạo Trật Tự Giám" description="Bật hệ thống tự động phát hiện và sửa các lỗi dữ liệu đơn giản (ví dụ: chỉ số âm, máu cao hơn mức tối đa).">
+                <div className="flex flex-col gap-2">
+                    <label className="flex items-center cursor-pointer">
+                        <input type="checkbox" checked={settings.enableHeuristicFixerAI} onChange={e => handleSettingChange('enableHeuristicFixerAI', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                        <span className="ml-3 text-sm font-bold text-teal-300 flex items-center gap-2"><FaShieldAlt /> Bật Thiên Đạo Giám</span>
+                    </label>
+                     <button onClick={() => setFixerModalOpen(true)} className="btn btn-neumorphic mt-2 text-left w-full max-w-xs text-sm">
+                        Xem Báo Cáo Can Thiệp
+                    </button>
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Chế độ Đồng bộ AI" description="Chọn cách AI đồng bộ hóa trạng thái game. 'Thiên Cơ' được khuyến khích để đảm bảo tính nhất quán.">
+                <div className="flex items-center p-1 rounded-lg w-full" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                    {AI_SYNC_MODES.map(mode => (
+                        <button 
+                            key={mode.value} 
+                            className={`w-full text-center py-1.5 px-2 text-sm font-semibold rounded-md transition-colors duration-200 hover:bg-[var(--shadow-light)]/50 hover:text-[var(--text-color)] ${settings.aiSyncMode === mode.value ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : 'text-[var(--text-muted-color)]'}`} 
+                            onClick={() => handleSettingChange('aiSyncMode', mode.value)}
+                            title={mode.description}
+                        >
+                            {mode.label}
+                        </button>
+                    ))}
+                </div>
+            </SettingsRow>
+            <SettingsRow label="Bảng điều khiển nhà phát triển" description="Hiển thị một console trong game để theo dõi log và các thông tin gỡ lỗi.">
                 <label className="flex items-center cursor-pointer">
-                    <input type="checkbox" checked={settings.enableTestingMode} onChange={e => handleSettingChange('enableTestingMode', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                    <span className="ml-3 text-sm flex items-center gap-2" style={{color: 'var(--text-color)'}}>
-                        <FaVial /> Bật Chế độ Thử nghiệm
-                    </span>
+                    <input type="checkbox" checked={settings.enableDeveloperConsole} onChange={e => handleSettingChange('enableDeveloperConsole', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                    <span className="ml-3 text-sm" style={{color: 'var(--text-color)'}}>Bật Developer Console</span>
                 </label>
             </SettingsRow>
-             <SettingsRow label="Đồng bộ Trạng thái AI" description="Chọn cách AI đồng bộ hóa kết quả tường thuật với cơ chế game. 'Thiên Cơ' được khuyến khích.">
-                <select className="input-neumorphic w-full" value={settings.aiSyncMode} onChange={e => handleSettingChange('aiSyncMode', e.target.value)}>
-                    {AI_SYNC_MODES.map(mode => (
-                        <option key={mode.value} value={mode.value}>{mode.label} - {mode.description}</option>
-                    ))}
-                </select>
-            </SettingsRow>
-             <SettingsRow label="Thiên Đạo Giám Sát (Heuristic Fixer AI)" description="Cho phép một AI giám sát chạy ngầm để tự động phát hiện và sửa các lỗi logic trong dữ liệu game (ví dụ: HP âm).">
-                <div className="flex items-center gap-4">
+            <SettingsRow label="Chế độ Thử nghiệm (Live Editor)" description="Bật một bảng điều khiển đặc biệt trong game để chỉnh sửa trực tiếp chỉ số, NPC, và các dữ liệu khác. Cần tải lại game sau khi thay đổi.">
+                <div className="flex flex-col">
                      <label className="flex items-center cursor-pointer">
-                        <input type="checkbox" checked={settings.enableHeuristicFixerAI} onChange={e => handleSettingChange('enableHeuristicFixerAI', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
-                        <span className="ml-3 text-sm flex items-center gap-2" style={{color: 'var(--text-color)'}}>
-                            <FaShieldAlt /> Bật Thiên Đạo Giám Sát
-                        </span>
+                        <input type="checkbox" checked={settings.enableTestingMode} onChange={e => handleSettingChange('enableTestingMode', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                        <span className="ml-3 text-sm font-bold text-amber-300 flex items-center gap-2"><FaVial /> Bật Chế Độ Thử Nghiệm</span>
                     </label>
-                    <button onClick={() => setFixerModalOpen(true)} className="btn btn-neumorphic !text-xs !px-3 !py-1">Xem Báo Cáo</button>
+                    <p className="mt-2 text-xs text-yellow-400 bg-yellow-900/30 border border-yellow-500/50 p-2 rounded-md">
+                        <strong>Cảnh báo:</strong> Chế độ này dành cho người dùng nâng cao và các nhà phát triển mod. Việc chỉnh sửa trực tiếp có thể gây ra lỗi không mong muốn hoặc phá vỡ trải nghiệm game.
+                    </p>
                 </div>
             </SettingsRow>
-        </SettingsSection>
-        <SettingsSection title="Quản lý Dữ liệu">
-             <SettingsRow label="Sao lưu & Phục hồi" description="Xuất toàn bộ dữ liệu game của bạn ra một tệp JSON, hoặc nhập từ một tệp sao lưu.">
-                 <div className="flex flex-col sm:flex-row gap-2">
-                    <button onClick={handleExportData} className="btn btn-neumorphic flex-grow"><FaDownload className="mr-2"/> Sao lưu Dữ liệu</button>
-                    <input type="file" accept=".json" ref={importInputRef} onChange={handleImportData} className="hidden" />
-                    <button onClick={() => importInputRef.current?.click()} className="btn btn-neumorphic flex-grow"><FaUpload className="mr-2"/> Phục hồi từ Tệp</button>
+            <SettingsRow label="Chế độ hiệu suất" description="Tắt các hiệu ứng hình ảnh và chuyển động để cải thiện hiệu suất trên các thiết bị yếu.">
+                 <label className="flex items-center cursor-pointer">
+                    <input type="checkbox" checked={settings.enablePerformanceMode} onChange={e => handleSettingChange('enablePerformanceMode', e.target.checked)} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2 cursor-pointer" />
+                    <span className="ml-3 text-sm" style={{color: 'var(--text-color)'}}>Bật Performance Mode</span>
+                </label>
+            </SettingsRow>
+            <SettingsRow label="Quản lý Dữ liệu" description="Sao lưu toàn bộ dữ liệu game (lưu game, cài đặt, mods) ra file hoặc khôi phục từ file sao lưu.">
+                 <div className="flex gap-2">
+                    <button onClick={handleExportData} className="btn btn-neumorphic">
+                        <FaDownload /> Sao Lưu
+                    </button>
+                    <button onClick={() => importInputRef.current?.click()} className="btn btn-neumorphic">
+                        <FaUpload /> Nhập Dữ liệu
+                    </button>
+                    <input
+                        type="file"
+                        ref={importInputRef}
+                        className="hidden"
+                        accept=".json"
+                        onChange={handleImportData}
+                    />
                 </div>
             </SettingsRow>
-            <SettingsRow label="Xóa Dữ liệu" description="Hành động này sẽ xóa tất cả dữ liệu game, bao gồm các file lưu, cài đặt và mod đã tải. KHÔNG THỂ HOÀN TÁC.">
-                <button onClick={handleResetData} className="btn btn-neumorphic flex items-center gap-2" style={{backgroundColor: 'var(--error-color)', color: 'white', boxShadow: 'none'}}>
-                    <FaExclamationTriangle /> Xóa Toàn Bộ Dữ liệu
+            <SettingsRow label="Xóa toàn bộ dữ liệu" description="Hành động này sẽ xóa tất cả các file lưu, cài đặt và mod của bạn. Không thể hoàn tác.">
+                 <button onClick={handleResetData} className="btn flex items-center gap-2" style={{backgroundColor: 'var(--error-color)', color: 'white', boxShadow: 'var(--shadow-raised-interactive)'}}>
+                    <FaExclamationTriangle /> Xóa Dữ Liệu
                 </button>
             </SettingsRow>
         </SettingsSection>
@@ -173,4 +204,4 @@ const AdvancedSettingsComponent: React.FC<AdvancedSettingsProps> = ({ settings, 
     );
 };
 
-export const AdvancedSettings = memo(AdvancedSettingsComponent);
+export default memo(AdvancedSettings);

@@ -167,7 +167,7 @@ const NovelistScreen: React.FC = () => {
 
     const handleSubmitPrompt = async () => {
         if (!userInput.trim() || isGenerating || !activeNovel) return;
-
+        
         const userEntry: NovelContentEntry = { id: `prompt-${Date.now()}`, type: 'prompt', content: userInput, timestamp: new Date().toISOString() };
         const aiPlaceholder: NovelContentEntry = { id: `ai-${Date.now()}`, type: 'ai_generation', content: '', timestamp: new Date().toISOString() };
 
@@ -175,10 +175,6 @@ const NovelistScreen: React.FC = () => {
         await handleUpdateNovel({ ...activeNovel, content: newContent });
         setUserInput('');
         setIsGenerating(true);
-
-        // This variable will be updated inside the functional state update
-        // to hold the latest version of the novel state, preventing stale closures.
-        let currentNovelState: Novel | null = activeNovel;
 
         try {
             const stream = generateNovelChapter(userInput, activeNovel.content, activeNovel.synopsis, activeNovel.lorebook, activeNovel.fanficMode, state.settings);
@@ -193,33 +189,22 @@ const NovelistScreen: React.FC = () => {
                     if (aiEntryIndex !== -1) {
                         updatedContent[aiEntryIndex] = { ...updatedContent[aiEntryIndex], content: fullResponse };
                     }
-                    // Update our tracker variable with the newest state
-                    currentNovelState = { ...prev, content: updatedContent };
-                    return currentNovelState;
+                    return { ...prev, content: updatedContent };
                 });
             }
             
-            // After streaming is complete, save the final, most up-to-date state.
-            await handleUpdateNovel(currentNovelState);
+            const finalNovel = { ...activeNovel, content: activeNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: fullResponse} : e) };
+            await handleUpdateNovel(finalNovel);
 
         } catch (error: any) {
             console.error("Lỗi khi tạo chương mới:", error);
             const errorContent = `[Lỗi hệ thống: ${error.message}]`;
-            
-            // Use the last known good state from our tracker variable, or fall back to the stale closure
-            const baseNovelForError = currentNovelState || activeNovel;
-            const errorNovelState = {
-                ...baseNovelForError,
-                content: baseNovelForError.content.map(e => 
-                    e.id === aiPlaceholder.id ? {...e, content: errorContent} : e
-                ),
-            };
-            await handleUpdateNovel(errorNovelState);
+            const finalNovel = { ...activeNovel, content: activeNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: errorContent} : e) };
+            await handleUpdateNovel(finalNovel);
         } finally {
             setIsGenerating(false);
         }
     };
-
 
     const handleDeleteNovel = async (id: number) => {
         if (window.confirm("Bạn có chắc muốn xóa vĩnh viễn tiểu thuyết này?")) {
@@ -268,7 +253,7 @@ const NovelistScreen: React.FC = () => {
             };
             await handleUpdateNovel(updatedNovel);
             setUploadedText(null);
-        } catch (error: any) {
+        } catch (error) {
             alert('Lỗi khi trích xuất Lorebook.');
             console.error(error);
         } finally {
@@ -295,12 +280,6 @@ const NovelistScreen: React.FC = () => {
             <div className="flex flex-grow min-h-0">
                 {/* Left Sidebar - Novel List */}
                 <div className={`fixed md:relative top-0 left-0 h-full z-20 md:z-auto bg-[var(--bg-color)] w-64 md:w-72 flex-shrink-0 border-r border-[var(--shadow-light)] flex flex-col transition-transform duration-300 ${isLeftSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-                    <div className="flex justify-between items-center p-3 border-b border-[var(--shadow-light)]">
-                        <h3 className="text-lg font-bold font-title text-[var(--primary-accent-color)]">Tiểu Thuyết</h3>
-                        <button onClick={() => setLeftSidebarOpen(false)} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)] md:hidden">
-                            <FaTimes />
-                        </button>
-                    </div>
                      <div className="p-3"><button onClick={() => setNewNovelModalOpen(true)} className="btn btn-primary w-full"><FaPlus /> Tiểu Thuyết Mới</button></div>
                     <div className="flex-grow overflow-y-auto">
                         {novels.map(novel => (
@@ -311,8 +290,6 @@ const NovelistScreen: React.FC = () => {
                         ))}
                     </div>
                 </div>
-                {isLeftSidebarOpen && <div className="fixed inset-0 z-10 bg-black/50 md:hidden" onClick={() => setLeftSidebarOpen(false)}></div>}
-
 
                 {/* Main Content - Chat */}
                 <div className="flex-grow flex flex-col min-w-0">
@@ -359,36 +336,30 @@ const NovelistScreen: React.FC = () => {
 
                 {/* Right Sidebar - Lorebook */}
                 {activeNovel && (
-                    <>
-                        <div className={`fixed md:relative top-0 right-0 h-full z-20 md:z-auto bg-[var(--bg-color)] w-72 md:w-80 flex-shrink-0 border-l border-[var(--shadow-light)] flex flex-col transition-transform duration-300 ${isRightSidebarOpen ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0`}>
-                            <div className="flex justify-between items-center p-3 border-b border-[var(--shadow-light)]">
-                                <h3 className="text-lg font-bold font-title text-[var(--primary-accent-color)] flex items-center gap-2"><FaBook /> Lorebook</h3>
-                                <button onClick={() => setRightSidebarOpen(false)} className="p-2 text-[var(--text-muted-color)] hover:text-[var(--text-color)] md:hidden">
-                                    <FaTimes />
-                                </button>
-                            </div>
-                            <div className="p-3 flex-grow flex flex-col min-h-0">
-                                <textarea
-                                    value={activeNovel.lorebook}
-                                    onChange={e => handleUpdateNovel({ ...activeNovel, lorebook: e.target.value })}
-                                    placeholder="Lưu trữ thông tin quan trọng về nhân vật, địa điểm, cốt truyện... AI sẽ luôn tham khảo thông tin này."
-                                    className="input-neumorphic w-full flex-grow resize-y"
-                                />
-                            </div>
-                            <div className="p-3 border-t border-[var(--shadow-light)] space-y-3">
-                                <label className="flex items-center justify-between cursor-pointer">
-                                    <span className="text-sm font-semibold">Chế độ Đồng Nhân</span>
-                                    <input type="checkbox" checked={activeNovel.fanficMode} onChange={e => handleUpdateNovel({...activeNovel, fanficMode: e.target.checked})} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2"/>
-                                </label>
-                                <input type="file" accept=".txt" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-                                <button onClick={() => fileInputRef.current?.click()} disabled={isExtracting} className="btn btn-neumorphic w-full !text-sm"><FaFileUpload /> Tải lên .txt</button>
-                                <button onClick={handleExtractToLorebook} disabled={!uploadedText || isExtracting} className="btn btn-primary w-full !text-sm">
-                                    {isExtracting ? <LoadingSpinner size="sm" /> : <><FaSync /> Trích xuất vào Lorebook</>}
-                                </button>
-                            </div>
+                    <div className={`fixed md:relative top-0 right-0 h-full z-20 md:z-auto bg-[var(--bg-color)] w-72 md:w-80 flex-shrink-0 border-l border-[var(--shadow-light)] flex flex-col transition-transform duration-300 ${isRightSidebarOpen ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0`}>
+                        <div className="p-3 border-b border-[var(--shadow-light)]">
+                            <h3 className="text-lg font-bold font-title text-[var(--primary-accent-color)] flex items-center gap-2"><FaBook /> Lorebook</h3>
                         </div>
-                        {isRightSidebarOpen && <div className="fixed inset-0 z-10 bg-black/50 md:hidden" onClick={() => setRightSidebarOpen(false)}></div>}
-                    </>
+                        <div className="p-3 flex-grow flex flex-col min-h-0">
+                            <textarea
+                                value={activeNovel.lorebook}
+                                onChange={e => handleUpdateNovel({ ...activeNovel, lorebook: e.target.value })}
+                                placeholder="Lưu trữ thông tin quan trọng về nhân vật, địa điểm, cốt truyện... AI sẽ luôn tham khảo thông tin này."
+                                className="input-neumorphic w-full flex-grow resize-y"
+                            />
+                        </div>
+                        <div className="p-3 border-t border-[var(--shadow-light)] space-y-3">
+                            <label className="flex items-center justify-between cursor-pointer">
+                                <span className="text-sm font-semibold">Chế độ Đồng Nhân</span>
+                                <input type="checkbox" checked={activeNovel.fanficMode} onChange={e => handleUpdateNovel({...activeNovel, fanficMode: e.target.checked})} className="w-5 h-5 text-amber-500 bg-gray-700 border-gray-600 rounded focus:ring-amber-600 focus:ring-2"/>
+                            </label>
+                            <input type="file" accept=".txt" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                            <button onClick={() => fileInputRef.current?.click()} disabled={isExtracting} className="btn btn-neumorphic w-full !text-sm"><FaFileUpload /> Tải lên .txt</button>
+                            <button onClick={handleExtractToLorebook} disabled={!uploadedText || isExtracting} className="btn btn-primary w-full !text-sm">
+                                {isExtracting ? <LoadingSpinner size="sm" /> : <><FaSync /> Trích xuất vào Lorebook</>}
+                            </button>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

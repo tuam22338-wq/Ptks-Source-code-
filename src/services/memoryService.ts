@@ -31,8 +31,9 @@ export const extractEntities = (content: string, gameState: GameState): EntityRe
                 entities.set(item.id, { id: item.id, type: 'item', name: item.name });
                 return;
             }
+            // FIX: Access techniques from player character
             const tech = gameState.playerCharacter.techniques.find(t => t.name === name);
-            if (tech && tech.id && !entities.has(tech.id)) {
+            if (tech && !entities.has(tech.id)) {
                 entities.set(tech.id, { id: tech.id, type: 'technique', name: tech.name });
             }
         });
@@ -109,11 +110,12 @@ export const extractEntitiesFromText = (text: string, gameState: GameState): Ent
         ...gameState.activeNpcs.map(e => ({ id: e.id, name: e.identity.name, type: 'npc' as const })),
         ...gameState.discoveredLocations.map(e => ({ id: e.id, name: e.name, type: 'location' as const })),
         ...gameState.playerCharacter.inventory.items.map(e => ({ id: e.id, name: e.name, type: 'item' as const })),
+        // FIX: Access techniques from player character
         ...gameState.playerCharacter.techniques.map(e => ({ id: e.id, name: e.name, type: 'technique' as const })),
     ];
     
     for (const entity of allKnownEntities) {
-        if (entity.id && text.includes(entity.name) && !entities.has(entity.id)) {
+        if (text.includes(entity.name) && !entities.has(entity.id)) {
             entities.set(entity.id, { id: entity.id, type: entity.type, name: entity.name });
         }
     }

@@ -21,17 +21,39 @@ async function embedText(text: string[]): Promise<number[][]> {
     console.warn("SIMULATING EMBEDDINGS: Using random vectors. RAG search will not be semantically accurate.");
     return text.map(() => Array.from({ length: 768 }, () => Math.random() * 2 - 1));
 }
-// Placeholder for vector similarity search. In a real-world scenario, you might use
-// a library like 'vectra' or perform cosine similarity calculations if the dataset is small.
+
+// Helper function to calculate cosine similarity between two vectors
+const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
+    const dotProduct = vecA.reduce((sum, a, i) => sum + a * (vecB[i] || 0), 0);
+    const magnitudeA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+    const magnitudeB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+    if (magnitudeA === 0 || magnitudeB === 0) {
+        return 0;
+    }
+    return dotProduct / (magnitudeA * magnitudeB);
+};
+
+
+// Vector similarity search using cosine similarity.
 async function findSimilarEmbeddings(queryVector: number[], sourceIds: string[], topK: number): Promise<RagEmbedding[]> {
-    console.warn("SIMULATING VECTOR SEARCH: Returning random chunks. RAG search will not be semantically accurate.");
-    const potentialEmbeddings = await db.db.ragEmbeddings
-        .where('sourceId').anyOf(sourceIds)
-        .limit(100) // Get a random sample to simulate
-        .toArray();
+    console.warn("Using cosine similarity for vector search, but embeddings are still SIMULATED and not semantically meaningful.");
     
-    // Return a random subset as a placeholder for actual similarity search
-    return potentialEmbeddings.sort(() => 0.5 - Math.random()).slice(0, topK);
+    const allEmbeddings = await db.db.ragEmbeddings
+        .where('sourceId').anyOf(sourceIds)
+        .toArray();
+        
+    if (allEmbeddings.length === 0) {
+        return [];
+    }
+
+    const similarities = allEmbeddings.map(embedding => ({
+        ...embedding,
+        similarity: cosineSimilarity(queryVector, embedding.embedding)
+    }));
+    
+    similarities.sort((a, b) => b.similarity - a.similarity);
+    
+    return similarities.slice(0, topK);
 }
 export const getAllSources = async (): Promise<RagSource[]> => {
     return await db.db.ragSources.toArray();
@@ -50,7 +72,8 @@ export const addPlayerJournalSource = async (file: File): Promise<void> => {
     await db.db.ragSources.put(source);
 };
 export const deleteSource = async (sourceId: string): Promise<void> => {
-    await (db.db as unknown as Dexie).transaction('rw', db.db.ragSources, db.db.ragEmbeddings, async () => {
+    // FIX: Access tables via the exported 'db' instance from the 'db' module namespace.
+    await (db.db as Dexie).transaction('rw', db.db.ragSources, db.db.ragEmbeddings, async () => {
         await db.db.ragSources.delete(sourceId);
         await db.db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
     });
@@ -77,7 +100,8 @@ export const indexSource = async (sourceId: string): Promise<void> => {
             embedding: embeddings[i],
         }));
         // Clear old embeddings and add new ones
-        await (db.db as unknown as Dexie).transaction('rw', db.db.ragEmbeddings, async () => {
+        // FIX: Access tables via the exported 'db' instance from the 'db' module namespace.
+        await (db.db as Dexie).transaction('rw', db.db.ragEmbeddings, async () => {
             await db.db.ragEmbeddings.where('sourceId').equals(sourceId).delete();
             await db.db.ragEmbeddings.bulkAdd(embeddingObjects as RagEmbedding[]);
         });
