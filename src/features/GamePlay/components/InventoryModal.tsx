@@ -302,7 +302,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ isOpen }) => {
                                 >
                                     {selectedItems.has(item.id) ? <FaCheckSquare className="absolute top-1 left-1 text-[var(--secondary-accent-color)]" /> : <FaSquare className="absolute top-1 left-1 text-transparent group-hover:text-gray-500" />}
                                     <span className="text-4xl select-none" role="img" aria-label={item.name}>{item.icon || '📜'}</span>
-                                    {Number(item.quantity) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-[var(--bg-color)]/80 px-1 rounded-sm">{item.quantity}</span>}
+{/* FIX: Explicitly cast item.quantity to any then Number to resolve 'unknown' type error. */}
+                                    {Number(item.quantity as any) > 1 && <span className="absolute bottom-0 right-0 text-xs font-bold bg-[var(--bg-color)]/80 px-1 rounded-sm">{item.quantity}</span>}
                                     <div className={`absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-[var(--bg-color)] ${ITEM_QUALITY_STYLES[item.quality].color.replace('text', 'bg')}`}></div>
                                 </button>
                             ))}

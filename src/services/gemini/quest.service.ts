@@ -1,4 +1,5 @@
 
+
 import { Type } from "@google/genai";
 import type { GameState, MajorEvent, NPC, ActiveQuest, PlayerNpcRelationship } from '../../types';
 import { generateWithRetry } from './gemini.core';
@@ -8,9 +9,9 @@ const questObjectiveSchema = {
     type: Type.OBJECT,
     properties: {
         type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] },
-        description: { type: Type.STRING, description: "Mô tả mục tiêu cho người chơi. Ví dụ: 'Đi đến Sông Vị Thủy', 'Thu thập 3 Linh Tâm Thảo'." },
-        target: { type: Type.STRING, description: "ID hoặc Tên của mục tiêu. Ví dụ: 'song_vi_thuy', 'Linh Tâm Thảo', 'npc_khuong_tu_nha'." },
-        required: { type: Type.NUMBER, description: "Số lượng cần thiết." },
+        description: { type: Type.STRING },
+        target: { type: Type.STRING },
+        required: { type: Type.NUMBER },
     },
     required: ['type', 'description', 'target', 'required']
 };
@@ -18,8 +19,8 @@ const questObjectiveSchema = {
 const questRewardSchema = {
     type: Type.OBJECT,
     properties: {
-        spiritualQi: { type: Type.NUMBER, description: "Lượng linh khí thưởng." },
-        danhVong: { type: Type.NUMBER, description: "Lượng danh vọng thưởng." },
+        spiritualQi: { type: Type.NUMBER },
+        danhVong: { type: Type.NUMBER },
         items: {
             type: Type.ARRAY,
             items: {
@@ -31,7 +32,7 @@ const questRewardSchema = {
         currencies: {
             type: Type.OBJECT,
             properties: {
-                "Điểm Nguồn": { type: Type.NUMBER, description: "Lượng Điểm Nguồn thưởng." }
+                "Điểm Nguồn": { type: Type.NUMBER }
             }
         }
     }

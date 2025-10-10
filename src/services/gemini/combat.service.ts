@@ -23,8 +23,8 @@ export const decideNpcCombatAction = async (gameState: GameState, npc: NPC): Pro
         type: Type.OBJECT,
         properties: {
             action: { type: Type.STRING, enum: ['BASIC_ATTACK', 'USE_TECHNIQUE', 'DEFEND'] },
-            techniqueId: { type: Type.STRING, description: "ID của công pháp để sử dụng. Chỉ trả về nếu hành động là 'USE_TECHNIQUE'." },
-            narrative: { type: Type.STRING, description: "Một đoạn văn tường thuật sống động về hành động của NPC." },
+            techniqueId: { type: Type.STRING },
+            narrative: { type: Type.STRING },
         },
         required: ['action', 'narrative']
     };

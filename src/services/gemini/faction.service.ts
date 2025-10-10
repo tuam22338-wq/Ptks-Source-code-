@@ -1,4 +1,5 @@
 
+
 import { Type } from "@google/genai";
 import type { GameState, DynamicWorldEvent } from '../../types';
 import { generateWithRetry } from './gemini.core';
@@ -20,12 +21,12 @@ export const generateDynamicWorldEventFromAI = async (gameState: GameState): Pro
     const schema = {
         type: Type.OBJECT,
         properties: {
-            shouldCreateEvent: { type: Type.BOOLEAN, description: "Quyết định có nên tạo một sự kiện mới hay không." },
-            title: { type: Type.STRING, description: "Tiêu đề ngắn gọn, hấp dẫn cho sự kiện." },
-            description: { type: Type.STRING, description: "Mô tả chi tiết về sự kiện, điều gì đang xảy ra." },
-            duration: { type: Type.NUMBER, description: "Thời gian sự kiện kéo dài (tính bằng ngày trong game), ví dụ: 30." },
-            affectedFactions: { type: Type.ARRAY, items: { type: Type.STRING, enum: factions.length > 0 ? factions : undefined }, description: "Các phe phái chính bị ảnh hưởng bởi sự kiện này." },
-            affectedLocationIds: { type: Type.ARRAY, items: { type: Type.STRING, enum: locationIds.length > 0 ? locationIds : undefined }, description: "Các địa điểm chính nơi sự kiện diễn ra hoặc bị ảnh hưởng." },
+            shouldCreateEvent: { type: Type.BOOLEAN },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            duration: { type: Type.NUMBER },
+            affectedFactions: { type: Type.ARRAY, items: { type: Type.STRING, enum: factions.length > 0 ? factions : undefined } },
+            affectedLocationIds: { type: Type.ARRAY, items: { type: Type.STRING, enum: locationIds.length > 0 ? locationIds : undefined } },
         },
         required: ['shouldCreateEvent']
     };

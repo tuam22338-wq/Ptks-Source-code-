@@ -1,5 +1,6 @@
 
 
+
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship, GameSettings, WorldCreationData } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
@@ -51,7 +52,6 @@ export const generateLoadingNarratives = async (
         properties: {
             narratives: {
                 type: Type.ARRAY,
-                description: "Một danh sách các chuỗi thông điệp tải game.",
                 items: { type: Type.STRING }
             }
         },
@@ -216,25 +216,24 @@ export async function* chatWithGameMaster(
 
 const realmConfigSchema = {
     type: Type.ARRAY,
-    description: "Hệ thống cảnh giới tu luyện của thế giới. Nếu người dùng mô tả một hệ thống sức mạnh độc đáo, hãy suy luận và tạo ra cấu trúc này.",
     items: {
         type: Type.OBJECT,
         properties: {
-            name: { type: Type.STRING, description: "Tên của đại cảnh giới, ví dụ: 'Luyện Khí Kỳ', 'Hồn Sư'." },
-            description: { type: Type.STRING, description: "Mô tả về đại cảnh giới này." },
+            name: { type: Type.STRING },
+            description: { type: Type.STRING },
             stages: {
                 type: Type.ARRAY,
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        name: { type: Type.STRING, description: "Tên của tiểu cảnh giới, ví dụ: 'Tầng 1', 'Sơ Kỳ'." },
-                        qiRequired: { type: Type.NUMBER, description: "Lượng tu vi (linh khí) cần để đột phá lên tiểu cảnh giới này. Phải tăng dần một cách hợp lý." },
+                        name: { type: Type.STRING },
+                        qiRequired: { type: Type.NUMBER },
                         bonuses: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    attribute: { type: Type.STRING, description: "Tên thuộc tính. PHẢI là một trong các thuộc tính hợp lệ." },
+                                    attribute: { type: Type.STRING },
                                     value: { type: Type.NUMBER }
                                 },
                                 required: ['attribute', 'value']
@@ -251,16 +250,13 @@ const realmConfigSchema = {
 
 const aiHooksSchema = {
     type: Type.OBJECT,
-    description: "Các quy tắc AI tùy chỉnh. Suy luận các quy luật độc đáo của thế giới và điền vào đây.",
     properties: {
         on_world_build: {
             type: Type.ARRAY,
-            description: "Các quy tắc vĩnh cửu, không thay đổi của thế giới.",
             items: { type: Type.STRING }
         },
         on_action_evaluate: {
             type: Type.ARRAY,
-            description: "Các quy tắc động, được xem xét mỗi khi người chơi hành động.",
             items: { type: Type.STRING }
         }
     }
@@ -268,23 +264,21 @@ const aiHooksSchema = {
 
 const dynamicEventSchema = {
     type: Type.ARRAY,
-    description: "Các sự kiện động, tự động kích hoạt trong game. Ví dụ: thưởng vật phẩm khi người chơi bước vào một hang động.",
     items: {
         type: Type.OBJECT,
         properties: {
-            id: { type: Type.STRING, description: "ID duy nhất cho sự kiện, vd: 'hidden_chest_in_cave'."},
+            id: { type: Type.STRING},
             trigger: {
                 type: Type.OBJECT,
                 properties: {
                     type: { type: Type.STRING, enum: ['ON_ENTER_LOCATION', 'ON_TALK_TO_NPC', 'ON_GAME_DATE'] as EventTriggerType[] },
                     details: { 
-                        type: Type.OBJECT, 
-                        description: "Chi tiết tác nhân. Vd: { locationId: 'id_cua_hang_dong' } hoặc { year: 1, day: 10 }.",
+                        type: Type.OBJECT,
                         properties: {
-                            locationId: { type: Type.STRING, description: "ID của địa điểm (chỉ dùng cho trigger ON_ENTER_LOCATION)." },
-                            npcId: { type: Type.STRING, description: "ID của NPC (chỉ dùng cho trigger ON_TALK_TO_NPC)." },
-                            year: { type: Type.NUMBER, description: "Năm diễn ra sự kiện (chỉ dùng cho trigger ON_GAME_DATE)." },
-                            day: { type: Type.NUMBER, description: "Ngày diễn ra sự kiện (chỉ dùng cho trigger ON_GAME_DATE)." },
+                            locationId: { type: Type.STRING },
+                            npcId: { type: Type.STRING },
+                            year: { type: Type.NUMBER },
+                            day: { type: Type.NUMBER },
                         }
                     }
                 },
@@ -297,25 +291,24 @@ const dynamicEventSchema = {
                     properties: {
                         type: { type: Type.STRING, enum: ['GIVE_ITEM', 'REMOVE_ITEM', 'CHANGE_STAT', 'ADD_RUMOR', 'START_EVENT', 'START_STORY', 'UPDATE_REPUTATION'] as EventOutcomeType[] },
                         details: { 
-                            type: Type.OBJECT, 
-                            description: "Chi tiết kết quả. Vd: { itemName: 'Chìa Khóa Cũ', quantity: 1 } hoặc { attribute: 'Cơ Duyên', change: 5 }.",
+                            type: Type.OBJECT,
                             properties: {
-                                itemName: { type: Type.STRING, description: "Tên vật phẩm (cho outcome GIVE_ITEM/REMOVE_ITEM)." },
-                                quantity: { type: Type.NUMBER, description: "Số lượng vật phẩm (cho outcome GIVE_ITEM/REMOVE_ITEM)." },
-                                attribute: { type: Type.STRING, description: "Tên thuộc tính (cho outcome CHANGE_STAT)." },
-                                change: { type: Type.NUMBER, description: "Lượng thay đổi thuộc tính (cho outcome CHANGE_STAT)." },
-                                text: { type: Type.STRING, description: "Nội dung tin đồn (cho outcome ADD_RUMOR)." },
-                                factionName: { type: Type.STRING, description: "Tên phe phái (cho outcome UPDATE_REPUTATION)." },
-                                eventId: { type: Type.STRING, description: "ID của sự kiện khác để bắt đầu (cho outcome START_EVENT)." },
-                                storyId: { type: Type.STRING, description: "ID của hệ thống cốt truyện để bắt đầu (cho outcome START_STORY)." },
+                                itemName: { type: Type.STRING },
+                                quantity: { type: Type.NUMBER },
+                                attribute: { type: Type.STRING },
+                                change: { type: Type.NUMBER },
+                                text: { type: Type.STRING },
+                                factionName: { type: Type.STRING },
+                                eventId: { type: Type.STRING },
+                                storyId: { type: Type.STRING },
                             }
                         }
                     },
                     required: ['type', 'details']
                 }
             },
-            narrative: { type: Type.STRING, description: "Đoạn văn tường thuật sẽ hiển thị cho người chơi khi sự kiện xảy ra." },
-            cooldownDays: { type: Type.NUMBER, description: "Số ngày hồi chiêu. Để trống hoặc 0 nếu chỉ xảy ra một lần." }
+            narrative: { type: Type.STRING },
+            cooldownDays: { type: Type.NUMBER }
         },
         required: ['id', 'trigger', 'outcomes', 'narrative']
     }
@@ -323,35 +316,32 @@ const dynamicEventSchema = {
 
 const attributeSystemSchema = {
     type: Type.OBJECT,
-    description: "Hệ thống thuộc tính tùy chỉnh cho thế giới mod. Phải phù hợp với bối cảnh của câu chuyện.",
     properties: {
         definitions: {
             type: Type.ARRAY,
-            description: "Danh sách tất cả các định nghĩa thuộc tính.",
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    id: { type: Type.STRING, description: "ID duy nhất, không dấu, không khoảng trắng, vd: 'suc_ben_may_moc'." },
-                    name: { type: Type.STRING, description: "Tên hiển thị, vd: 'Sức Bền Máy Móc'." },
+                    id: { type: Type.STRING },
+                    name: { type: Type.STRING },
                     description: { type: Type.STRING },
-                    iconName: { type: Type.STRING, description: "Tên icon từ một thư viện có sẵn (ví dụ: 'GiSpinalCoil', 'FaBrain')." },
-                    type: { type: Type.STRING, enum: ['PRIMARY', 'SECONDARY', 'VITAL', 'INFORMATIONAL'], description: "Loại thuộc tính." },
-                    baseValue: { type: Type.NUMBER, description: "Giá trị khởi điểm cho PRIMARY và VITAL." },
-                    formula: { type: Type.STRING, description: "Công thức tính cho SECONDARY, vd: '(suc_manh * 2)'." },
-                    group: { type: Type.STRING, description: "ID của nhóm mà thuộc tính này thuộc về." }
+                    iconName: { type: Type.STRING },
+                    type: { type: Type.STRING, enum: ['PRIMARY', 'SECONDARY', 'VITAL', 'INFORMATIONAL'] },
+                    baseValue: { type: Type.NUMBER },
+                    formula: { type: Type.STRING },
+                    group: { type: Type.STRING }
                 },
                 required: ['id', 'name', 'description', 'iconName', 'type', 'group']
             }
         },
         groups: {
             type: Type.ARRAY,
-            description: "Các nhóm để tổ chức thuộc tính trong UI.",
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    id: { type: Type.STRING, description: "ID duy nhất cho nhóm, vd: 'cybernetics'." },
-                    name: { type: Type.STRING, description: "Tên hiển thị của nhóm, vd: 'Chỉ Số Cybernetic'." },
-                    order: { type: Type.NUMBER, description: "Thứ tự hiển thị." }
+                    id: { type: Type.STRING },
+                    name: { type: Type.STRING },
+                    order: { type: Type.NUMBER }
                 },
                 required: ['id', 'name', 'order']
             }
@@ -363,11 +353,11 @@ const attributeSystemSchema = {
 const namedRealmSystemSchema = {
     type: Type.OBJECT,
     properties: {
-        name: { type: Type.STRING, description: "Tên của Hệ Thống Sức Mạnh, vd: 'Hệ Thống Hồn Sư'."},
+        name: { type: Type.STRING },
         description: { type: Type.STRING },
-        resourceName: { type: Type.STRING, description: "Tên tài nguyên chính, vd: 'Hồn Lực'."},
-        resourceUnit: { type: Type.STRING, description: "Đơn vị của tài nguyên, vd: 'năm'."},
-        resourceIconName: { type: Type.STRING, description: "Tên icon cho tài nguyên (ví dụ: 'GiSoulVessel')."},
+        resourceName: { type: Type.STRING },
+        resourceUnit: { type: Type.STRING },
+        resourceIconName: { type: Type.STRING },
         realms: {
             type: Type.ARRAY,
             items: realmConfigSchema.items
@@ -382,12 +372,12 @@ const worldSchema = {
         modInfo: {
             type: Type.OBJECT,
             properties: {
-                id: { type: Type.STRING, description: "Một ID duy nhất, viết liền, không dấu, không khoảng trắng, ví dụ: 'hac_am_the_gioi'." },
-                name: { type: Type.STRING, description: "Tên của thế giới hoặc bản mod." },
-                author: { type: Type.STRING, description: "Tên tác giả (để trống nếu không có)." },
-                description: { type: Type.STRING, description: "Một mô tả ngắn gọn về bản mod." },
-                version: { type: Type.STRING, description: "Phiên bản, mặc định là '1.0.0'." },
-                tags: { type: Type.ARRAY, description: "Một danh sách tối đa 3 thể loại phù hợp với thế giới. Vd: ['Huyền Huyễn', 'Hắc Ám', 'Sinh Tồn']", items: { type: Type.STRING } },
+                id: { type: Type.STRING },
+                name: { type: Type.STRING },
+                author: { type: Type.STRING },
+                description: { type: Type.STRING },
+                version: { type: Type.STRING },
+                tags: { type: Type.ARRAY, items: { type: Type.STRING } },
             },
             required: ['id', 'name']
         },
@@ -399,13 +389,12 @@ const worldSchema = {
                     items: {
                         type: Type.OBJECT,
                         properties: {
-                            name: { type: Type.STRING, description: "Tên của kịch bản thế giới, phải giống với modInfo.name." },
-                            description: { type: Type.STRING, description: "Mô tả tổng quan về thế giới, lịch sử, các quy luật đặc biệt." },
-                            startingYear: { type: Type.NUMBER, description: "Năm bắt đầu của kịch bản." },
-                            eraName: { type: Type.STRING, description: "Tên của kỷ nguyên, ví dụ: 'Kỷ Nguyên Hắc Ám'." },
+                            name: { type: Type.STRING },
+                            description: { type: Type.STRING },
+                            startingYear: { type: Type.NUMBER },
+                            eraName: { type: Type.STRING },
                             majorEvents: {
                                 type: Type.ARRAY,
-                                description: "Các sự kiện lịch sử trọng đại của thế giới.",
                                 items: {
                                     type: Type.OBJECT,
                                     properties: {
@@ -421,41 +410,38 @@ const worldSchema = {
                             },
                             factions: {
                                 type: Type.ARRAY,
-                                description: "Các phe phái chính trong thế giới.",
                                 items: {
                                     type: Type.OBJECT,
-                                    properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, imageUrl: { type: Type.STRING, description: "Để trống." } },
+                                    properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, imageUrl: { type: Type.STRING } },
                                     required: ['name', 'description']
                                 }
                             },
                             initialLocations: {
                                 type: Type.ARRAY,
-                                description: "Các địa điểm khởi đầu trong thế giới.",
                                 items: {
                                     type: Type.OBJECT,
                                     properties: {
                                         name: { type: Type.STRING },
                                         description: { type: Type.STRING },
                                         type: { type: Type.STRING, enum: ['Thành Thị', 'Thôn Làng', 'Hoang Dã', 'Sơn Mạch', 'Thánh Địa', 'Bí Cảnh', 'Quan Ải'] },
-                                        neighbors: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Tên các địa điểm lân cận." },
+                                        neighbors: { type: Type.ARRAY, items: { type: Type.STRING } },
                                         coordinates: { type: Type.OBJECT, properties: { x: { type: Type.NUMBER }, y: { type: Type.NUMBER } }, required: ['x', 'y'] },
-                                        qiConcentration: { type: Type.NUMBER, description: "Nồng độ linh khí, từ 1 (thấp) đến 100 (cao)." }
+                                        qiConcentration: { type: Type.NUMBER }
                                     },
                                     required: ['name', 'description', 'type', 'neighbors', 'coordinates', 'qiConcentration']
                                 }
                             },
                             initialNpcs: {
                                 type: Type.ARRAY,
-                                description: "Các NPC khởi đầu trong thế giới.",
                                 items: {
                                     type: Type.OBJECT,
                                     properties: {
                                         name: { type: Type.STRING },
                                         status: { type: Type.STRING },
-                                        description: { type: Type.STRING, description: "Mô tả ngoại hình." },
+                                        description: { type: Type.STRING },
                                         origin: { type: Type.STRING },
                                         personality: { type: Type.STRING },
-                                        locationId: { type: Type.STRING, description: "Tên của địa điểm NPC đang ở." }
+                                        locationId: { type: Type.STRING }
                                     },
                                     required: ['name', 'status', 'description', 'origin', 'personality', 'locationId']
                                 }
@@ -471,13 +457,12 @@ const worldSchema = {
                 dynamicEvents: dynamicEventSchema,
                 tagDefinitions: {
                     type: Type.ARRAY,
-                    description: "Nếu thế giới có một thể loại rất độc đáo, hãy tạo ra một định nghĩa cho nó ở đây. Nếu không, để trống.",
                     items: {
                         type: Type.OBJECT,
                         properties: {
-                            id: { type: Type.STRING, description: "ID của thể loại, vd: 'vingroup_dystopia'." },
-                            name: { type: Type.STRING, description: "Tên thể loại, vd: 'Vingroup Dystopia'." },
-                            description: { type: Type.STRING, description: "Mô tả ý nghĩa của thể loại này." }
+                            id: { type: Type.STRING },
+                            name: { type: Type.STRING },
+                            description: { type: Type.STRING }
                         },
                         required: ['id', 'name', 'description']
                     }
@@ -733,10 +718,10 @@ export const generateCompleteWorldFromText = async (
             initialScene: {
                 type: Type.OBJECT,
                 properties: {
-                    openingNarrative: { type: Type.STRING, description: "Đoạn văn tường thuật mở đầu câu chuyện cho nhân vật chính." },
-                    familyNpcs: { type: Type.ARRAY, items: { type: Type.OBJECT }, description: "2-4 NPC là người thân, bạn bè của nhân vật chính." },
-                    dynamicNpcs: { type: Type.ARRAY, items: { type: Type.OBJECT }, description: "Khoảng 10 NPC ngẫu nhiên để làm thế giới sống động." },
-                    relationships: { type: Type.ARRAY, items: { type: Type.OBJECT }, description: "Mối quan hệ ban đầu của người chơi với các familyNpcs." }
+                    openingNarrative: { type: Type.STRING },
+                    familyNpcs: { type: Type.ARRAY, items: { type: Type.OBJECT } },
+                    dynamicNpcs: { type: Type.ARRAY, items: { type: Type.OBJECT } },
+                    relationships: { type: Type.ARRAY, items: { type: Type.OBJECT } }
                 },
                 required: ['openingNarrative', 'familyNpcs', 'dynamicNpcs', 'relationships']
             }

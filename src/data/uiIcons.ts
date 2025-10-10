@@ -1,5 +1,4 @@
-// FIX: Add React import for ElementType
-import type React from 'react';
+import type { ElementType } from 'react';
 import {
   GiCauldron, GiBroadsword,
   GiHealthNormal, GiHourglass, GiMagicSwirl, GiPentacle, GiPerspectiveDiceSixFacesRandom,
@@ -11,7 +10,7 @@ import {
 } from 'react-icons/gi';
 import { FaSun, FaMoon, FaShieldAlt, FaStore, FaBiohazard, FaBrain } from 'react-icons/fa';
 
-export const UI_ICONS: { [key: string]: React.ElementType } = {
+export const UI_ICONS: { [key: string]: ElementType } = {
   GiCauldron, GiBroadsword, GiHealthNormal, GiHourglass, GiMagicSwirl,
   GiPentacle, GiPerspectiveDiceSixFacesRandom, GiRunningShoe, GiScrollQuill,
   GiSparklingSabre, GiStairsGoal, GiStoneTower, GiYinYang, GiSpinalCoil,

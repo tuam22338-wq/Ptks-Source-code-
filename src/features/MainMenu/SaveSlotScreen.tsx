@@ -538,7 +538,9 @@ const SaveSlotScreen: React.FC = () => {
 
 
   if (isLoading) {
-      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={'fast'}/>;
+      // FIX: Use dynamic generationMode for LoadingScreen
+      const mode = quickCreateInfo ? 'fast' : formData.generationMode;
+      return <LoadingScreen message={loadingMessage} isGeneratingWorld={true} generationMode={mode}/>;
   }
 
   return (

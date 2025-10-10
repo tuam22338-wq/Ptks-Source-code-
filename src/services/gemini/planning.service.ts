@@ -23,7 +23,6 @@ export const generateNpcActionPlan = async (npc: NPC, gameState: GameState): Pro
         properties: {
             plan: {
                 type: Type.ARRAY,
-                description: "Một danh sách từ 2 đến 5 bước hành động cụ thể, hợp lý mà NPC có thể thực hiện để tiến gần hơn đến mục tiêu của mình. Các bước phải ngắn gọn và rõ ràng.",
                 items: { type: Type.STRING }
             }
         },

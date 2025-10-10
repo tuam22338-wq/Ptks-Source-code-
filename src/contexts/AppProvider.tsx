@@ -133,7 +133,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (err: any) {
             console.error("Lỗi tạo thế giới:", err);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
-            // @google-genai-fix: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
+            // FIX: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
+            // @google-genai-fix: Cast error to string to satisfy Error constructor.
             throw new Error(String(err));
         }
     }, [state.settings, memoizedLoadSaveSlots]);
@@ -144,7 +145,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (err: any) {
             console.error("Lỗi tạo nhanh thế giới:", err);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
-            // @google-genai-fix: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
+            // FIX: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
+            // @google-genai-fix: Cast error to string to satisfy Error constructor.
             throw new Error(String(err));
         }
     }, [state.settings, memoizedLoadSaveSlots]);

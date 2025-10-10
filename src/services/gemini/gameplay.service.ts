@@ -1,4 +1,5 @@
 
+
 import { Type, FunctionDeclaration } from "@google/genai";
 import type { StoryEntry, GameState, InnerDemonTrial, RealmConfig, GameSettings, MechanicalIntent, AIResponsePayload, DynamicWorldEvent, StatBonus, ArbiterDecision, NPC } from '../../types';
 import { NARRATIVE_STYLES, PERSONALITY_TRAITS, ALL_ATTRIBUTES, CURRENCY_DEFINITIONS, ALL_PARSABLE_STATS } from "../../constants";
@@ -102,7 +103,6 @@ Bạn được phép và được khuyến khích mô tả các cảnh sau một
 
     const newNpcSchema = {
         type: Type.OBJECT,
-        description: "Đối tượng NPC hoàn chỉnh.",
         properties: {
             identity: {
                 type: Type.OBJECT,
@@ -111,7 +111,7 @@ Bạn được phép và được khuyến khích mô tả các cảnh sau một
                     gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] },
                     appearance: { type: Type.STRING },
                     origin: { type: Type.STRING },
-                    personality: { type: Type.STRING, description: 'Tính cách của NPC, ví dụ: Trung Lập, Chính Trực, Hỗn Loạn, Tà Ác.' },
+                    personality: { type: Type.STRING },
                     age: { type: Type.NUMBER }
                 },
                 required: ['name', 'gender', 'appearance', 'origin', 'personality', 'age']
@@ -120,15 +120,12 @@ Bạn được phép và được khuyến khích mô tả các cảnh sau một
             cultivation: {
                 type: Type.OBJECT,
                 properties: {
-                    currentRealmId: { type: Type.STRING, description: "ID của cảnh giới, vd: 'luyen_khi'." },
-                    currentStageId: { type: Type.STRING, description: "ID của tiểu cảnh giới, vd: 'lk_1'." },
+                    currentRealmId: { type: Type.STRING },
+                    currentStageId: { type: Type.STRING },
                 },
                 required: ['currentRealmId', 'currentStageId']
             },
-            attributes: {
-                type: Type.OBJECT,
-                description: "Một đối tượng chứa các chỉ số cơ bản của NPC. Chỉ điền các chỉ số PRIMARY và VITALS. Ví dụ: { 'can_cot': { value: 10 }, 'sinh_menh': { value: 100, maxValue: 100 } }"
-            }
+            attributes: { type: Type.OBJECT }
         },
         required: ['identity', 'status', 'cultivation', 'attributes']
     };
@@ -136,28 +133,27 @@ Bạn được phép và được khuyến khích mô tả các cảnh sau một
     const masterSchema = {
       type: Type.OBJECT,
       properties: {
-        thought: { type: Type.STRING, description: "Your step-by-step reasoning. 1. Analyze the player's action and world state to decide the outcome (success/failure) and the logical reason. 2. Consider the NPC's state (if any are involved) and determine their internal reaction. 3. Formulate the consequences of the action and the next part of the story." },
-        narrative: { type: Type.STRING, description: "Đoạn văn tường thuật câu chuyện." },
+        thought: { type: Type.STRING },
+        narrative: { type: Type.STRING },
         mechanicalIntent: {
           type: Type.OBJECT,
-          description: "Tất cả các thay đổi cơ chế game được suy ra từ đoạn tường thuật.",
           properties: {
-            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, description: "ID của thuộc tính, ví dụ: 'can_cot', 'spiritualQi'." }, change: { type: Type.NUMBER, description: "Thay đổi giá trị hiện tại của chỉ số." }, changeMax: { type: Type.NUMBER, description: "Thay đổi giá trị TỐI ĐA của chỉ số (chỉ dành cho Sinh Mệnh, Linh Lực, Độ No, Độ Khát...)." } }, required: ['attribute'] } },
-            currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING, description: "Tên của loại tiền tệ." }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
-            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER, description: "Trọng lượng của vật phẩm. Ví dụ: 0.1 cho một viên đan dược, 5.0 cho một thanh kiếm." }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, description: "Tên thuộc tính bị ảnh hưởng." }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
+            statChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, change: { type: Type.NUMBER }, changeMax: { type: Type.NUMBER } }, required: ['attribute'] } },
+            currencyChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { currencyName: { type: Type.STRING }, change: { type: Type.NUMBER } }, required: ['currencyName', 'change'] } },
+            itemsGained: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật', 'Đan Lô', 'Linh Dược', 'Đan Phương', 'Nguyên Liệu'] }, quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm', 'Tiên Phẩm', 'Tuyệt Phẩm'] }, icon: { type: Type.STRING }, weight: { type: Type.NUMBER }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: {type: Type.NUMBER}}, required: ['attribute', 'value']}}}, required: ['name', 'quantity', 'description', 'type', 'quality', 'icon', 'weight'] } },
             itemsLost: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER } }, required: ['name', 'quantity'] } },
             newTechniques: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, type: { type: Type.STRING, enum: ['Linh Kỹ', 'Thần Thông', 'Độn Thuật', 'Tuyệt Kỹ', 'Tâm Pháp', 'Luyện Thể', 'Kiếm Quyết'] }, rank: { type: Type.STRING, enum: ['Phàm Giai', 'Tiểu Giai', 'Trung Giai', 'Cao Giai', 'Siêu Giai', 'Địa Giai', 'Thiên Giai', 'Thánh Giai'] } }, required: ['name', 'description', 'type', 'rank'] } },
             newQuests: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, source: { type: Type.STRING }, objectives: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING, enum: ['TRAVEL', 'GATHER', 'TALK', 'DEFEAT'] }, description: { type: Type.STRING }, target: { type: Type.STRING }, required: { type: Type.NUMBER } }, required: ['type', 'description', 'target', 'required'] } } }, required: ['title', 'description', 'source', 'objectives'] } },
-            newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING, description: "Tên thuộc tính bị ảnh hưởng." }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
+            newEffects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, duration: { type: Type.NUMBER }, isBuff: { type: Type.BOOLEAN }, bonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: { type: Type.NUMBER } }, required: ['attribute', 'value'] } } }, required: ['name', 'description', 'duration', 'isBuff', 'bonuses'] } },
             npcEncounters: { type: Type.ARRAY, items: { type: Type.STRING } },
             newNpcsCreated: { type: Type.ARRAY, items: newNpcSchema },
-            locationChange: { type: Type.STRING, description: "ID của địa điểm mới nếu người chơi di chuyển thành công." },
+            locationChange: { type: Type.STRING },
             timeJump: { type: Type.OBJECT, properties: { years: { type: Type.NUMBER }, seasons: { type: Type.NUMBER }, days: { type: Type.NUMBER } } },
             emotionChanges: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { npcName: { type: Type.STRING }, emotion: { type: Type.STRING, enum: ['trust', 'fear', 'anger'] }, change: { type: Type.NUMBER }, reason: { type: Type.STRING } }, required: ['npcName', 'emotion', 'change', 'reason'] } },
             systemActions: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { actionType: { type: Type.STRING, enum: ['JOIN_SECT', 'CRAFT_ITEM', 'UPGRADE_CAVE'] }, details: { type: Type.OBJECT, properties: { sectId: { type: Type.STRING }, recipeId: { type: Type.STRING }, facilityId: { type: Type.STRING } } } }, required: ['actionType', 'details'] } },
-            realmChange: { type: Type.STRING, description: "ID của đại cảnh giới mới nếu người chơi đột phá. Ví dụ: 'truc_co'." },
-            stageChange: { type: Type.STRING, description: "ID của tiểu cảnh giới mới nếu người chơi đột phá. Ví dụ: 'tc_so_ky'." },
-            dialogueState: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['START', 'END'] }, npcName: { type: Type.STRING, description: "Tên NPC để bắt đầu hội thoại." } } },
+            realmChange: { type: Type.STRING },
+            stageChange: { type: Type.STRING },
+            dialogueState: { type: Type.OBJECT, properties: { status: { type: Type.STRING, enum: ['START', 'END'] }, npcName: { type: Type.STRING } } },
             knownRecipeIdsGained: { type: Type.ARRAY, items: { type: Type.STRING } },
           }
         }
@@ -325,10 +321,9 @@ export const generateInnerDemonTrial = async (gameState: GameState, targetRealm:
     const trialSchema = {
         type: Type.OBJECT,
         properties: {
-            challenge: { type: Type.STRING, description: "Một câu hỏi hoặc tình huống thử thách đạo tâm của người chơi, dựa trên xuất thân, tính cách và các sự kiện đã trải qua. Ví dụ: 'Sức mạnh và tình thân, ngươi chọn gì?'." },
+            challenge: { type: Type.STRING },
             choices: {
                 type: Type.ARRAY,
-                description: "3 lựa chọn cho người chơi. Chỉ có MỘT lựa chọn là đúng đắn (isCorrect = true), thể hiện đạo tâm kiên định. Hai lựa chọn còn lại đại diện cho sự yếu đuối, tham lam, hoặc sợ hãi.",
                 items: {
                     type: Type.OBJECT,
                     properties: {

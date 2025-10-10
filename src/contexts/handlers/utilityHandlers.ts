@@ -1,6 +1,4 @@
-// FIX: Add React import for RefObject type
-import type React from 'react';
-import type { Dispatch } from 'react';
+import type { Dispatch, RefObject } from 'react';
 import type { GameSettings, SaveSlot, FullMod, ModInLibrary } from '../../types';
 import type { Action, AppState } from '../gameReducer';
 import * as db from '../../services/dbService';
@@ -14,7 +12,7 @@ export function speak(
     text: string,
     settings: GameSettings,
     voices: SpeechSynthesisVoice[],
-    ttsAudioRef: React.RefObject<HTMLAudioElement | null>,
+    ttsAudioRef: RefObject<HTMLAudioElement | null>,
     force = false
 ) {
     if (!text || (!settings.enableTTS && !force)) return;
@@ -57,7 +55,7 @@ export function speak(
     }
 }
 
-export function cancelSpeech(ttsAudioRef: React.RefObject<HTMLAudioElement | null>) {
+export function cancelSpeech(ttsAudioRef: RefObject<HTMLAudioElement | null>) {
     window.speechSynthesis.cancel();
     if (ttsAudioRef.current) {
         ttsAudioRef.current.pause();

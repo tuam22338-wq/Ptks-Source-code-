@@ -23,18 +23,17 @@ export const executeNpcAction = async (npc: NPC, action: string, gameState: Game
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            narrative: { type: Type.STRING, description: "Một đoạn văn ngắn (2-3 câu) tường thuật lại hành động của NPC một cách chi tiết và sống động." },
+            narrative: { type: Type.STRING },
             outcome: {
                 type: Type.OBJECT,
-                description: "Kết quả cơ chế của hành động.",
                 properties: {
-                    success: { type: Type.BOOLEAN, description: "Hành động có thành công hay không." },
-                    newStatus: { type: Type.STRING, description: "Trạng thái mới của NPC sau khi thực hiện hành động. Ví dụ: 'Đang trên đường đến Rừng Thanh Âm', 'Vừa đến nơi và đang tìm kiếm thảo dược'." },
-                    locationChange: { type: Type.STRING, description: "ID của địa điểm mới nếu hành động là di chuyển thành công." },
+                    success: { type: Type.BOOLEAN },
+                    newStatus: { type: Type.STRING },
+                    locationChange: { type: Type.STRING },
                 },
                 required: ['success', 'newStatus']
             },
-            rumorText: { type: Type.STRING, description: "Một tin đồn có thể được tạo ra từ hành động này. Để trống nếu không có gì đáng chú ý." },
+            rumorText: { type: Type.STRING },
         },
         required: ['narrative', 'outcome'],
     };
@@ -92,8 +91,8 @@ export const generateRelationshipUpdate = async (
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            newRelationshipDescription: { type: Type.STRING, description: `Một mô tả mới cho mối quan hệ giữa ${npc1.identity.name} và ${npc2.identity.name}. Mô tả này nên phản ánh sự thay đổi (hoặc không thay đổi) trong mối quan hệ của họ.` },
-            rumorText: { type: Type.STRING, description: "Một tin đồn có thể được tạo ra từ sự tương tác này. Tin đồn phải ngắn gọn và thú vị. Nếu không có tin đồn, trả về một chuỗi rỗng." },
+            newRelationshipDescription: { type: Type.STRING },
+            rumorText: { type: Type.STRING },
         },
         required: ['newRelationshipDescription', 'rumorText'],
     };

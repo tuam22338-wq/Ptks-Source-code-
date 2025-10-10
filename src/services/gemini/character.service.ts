@@ -1,4 +1,5 @@
 
+
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem, GenerationMode } from '../../types';
@@ -31,32 +32,29 @@ Khi gán "bonuses", bạn CHỈ ĐƯỢC PHÉP sử dụng tên thuộc tính t�
     const responseSchema = {
         type: Type.OBJECT,
         properties: {
-            refined_appearance: { type: Type.STRING, description: `Một mô tả ngoại hình chi tiết hơn (2-3 câu), kết hợp ý tưởng của người chơi ('${context.draftIdentity.appearance}') với huyết mạch và xuất thân.` },
-            origin_story: { type: Type.STRING, description: 'VIẾT MỘT CÂU TRUYỆN NỀN (backstory) HOÀN CHỈNH, có chiều sâu (khoảng 4-6 câu), kết nối tất cả các yếu tố (huyết mạch, xuất thân, tính cách) thành một câu chuyện logic và hấp dẫn.' },
+            refined_appearance: { type: Type.STRING },
+            origin_story: { type: Type.STRING },
             power_source: {
                 type: Type.OBJECT,
-                description: "Một 'Nguồn Gốc Sức Mạnh' độc đáo dựa trên toàn bộ thông tin.",
                 properties: {
-                    name: { type: Type.STRING, description: "Tên gọi độc đáo, thi vị cho nguồn sức mạnh. Ví dụ: 'Huyết Mạch Cổ Long', 'Dị Bảo Thôn Phệ', 'Trái Tim Máy Móc'." },
-                    description: { type: Type.STRING, description: "Mô tả chi tiết về nguồn gốc sức mạnh, giải thích nó hoạt động như thế nào." },
+                    name: { type: Type.STRING },
+                    description: { type: Type.STRING },
                 },
                 required: ['name', 'description']
             },
             bonuses: {
                 type: Type.ARRAY,
-                description: "Một danh sách từ 2-4 bonus thuộc tính phù hợp với bản chất của câu chuyện và nguồn sức mạnh.",
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        attribute: { type: Type.STRING, description: `Tên của thuộc tính. PHẢI là một trong các thuộc tính hợp lệ đã được liệt kê trong bối cảnh.` },
-                        value: { type: Type.NUMBER, description: "Giá trị bonus, có thể dương hoặc âm." }
+                        attribute: { type: Type.STRING },
+                        value: { type: Type.NUMBER }
                     },
                     required: ['attribute', 'value']
                 }
             },
             starting_items: {
                 type: Type.ARRAY,
-                description: "Danh sách 0-2 vật phẩm khởi đầu phù hợp với xuất thân.",
                 items: {
                     type: Type.OBJECT,
                     properties: {
@@ -65,14 +63,13 @@ Khi gán "bonuses", bạn CHỈ ĐƯỢC PHÉP sử dụng tên thuộc tính t�
                         description: { type: Type.STRING },
                         type: { type: Type.STRING, enum: ['Vũ Khí', 'Phòng Cụ', 'Đan Dược', 'Pháp Bảo', 'Tạp Vật'] as ItemType[] },
                         quality: { type: Type.STRING, enum: ['Phàm Phẩm', 'Linh Phẩm', 'Pháp Phẩm', 'Bảo Phẩm'] as ItemQuality[] },
-                        icon: { type: Type.STRING, description: "Một emoji phù hợp."}
+                        icon: { type: Type.STRING }
                     },
                     required: ['name', 'quantity', 'description', 'type', 'quality', 'icon']
                 }
             },
             starting_currency: {
                 type: Type.OBJECT,
-                description: "Một đối tượng chứa tiền tệ khởi đầu, phù hợp với xuất thân. Ví dụ: một thương nhân giàu có có thể có nhiều 'Bạc'.",
                 properties: {
                     "Bạc": { type: Type.NUMBER },
                     "Linh thạch hạ phẩm": { type: Type.NUMBER }
@@ -175,12 +172,12 @@ export const generateInitialWorldDetails = async (
     const familyMemberSchema = {
         type: Type.OBJECT,
         properties: {
-            name: { type: Type.STRING, description: `Tên của thành viên gia đình, nên có họ là '${playerCharacter.identity.familyName || ''}'.` },
+            name: { type: Type.STRING },
             gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] },
-            age: { type: Type.NUMBER, description: 'Tuổi của nhân vật, phải hợp lý so với người chơi (18 tuổi).' },
-            relationship_type: { type: Type.STRING, description: 'Mối quan hệ với người chơi (ví dụ: Phụ thân, Mẫu thân, Huynh đệ, Thanh mai trúc mã).' },
-            status: { type: Type.STRING, description: 'Mô tả ngắn gọn về tình trạng hoặc nghề nghiệp hiện tại (ví dụ: "Là một thợ rèn trong trấn", "Nội trợ trong gia đình", "Đang học tại trường làng").' },
-            description: { type: Type.STRING, description: 'Mô tả ngắn gọn ngoại hình.' },
+            age: { type: Type.NUMBER },
+            relationship_type: { type: Type.STRING },
+            status: { type: Type.STRING },
+            description: { type: Type.STRING },
             personality: { type: Type.STRING, enum: ['Trung Lập', 'Chính Trực', 'Hỗn Loạn', 'Tà Ác'] },
         },
         required: ['name', 'gender', 'age', 'relationship_type', 'status', 'description', 'personality'],
@@ -195,55 +192,52 @@ export const generateInitialWorldDetails = async (
         properties: {
             name: { type: Type.STRING },
             gender: { type: Type.STRING, enum: ['Nam', 'Nữ'] },
-            status: { type: Type.STRING, description: 'Mô tả trạng thái hiện tại của NPC (ví dụ: "Đang ngồi thiền trong hang động", "Đang mua bán ở chợ").' },
-            description: { type: Type.STRING, description: 'Mô tả ngoại hình của NPC.' },
-            origin: { type: Type.STRING, description: 'Mô tả xuất thân, nguồn gốc của NPC.' },
-            personality: { type: Type.STRING, description: 'Tính cách của NPC (ví dụ: Trung Lập, Tà Ác, Hỗn Loạn, Chính Trực).' },
-            motivation: { type: Type.STRING, description: "Động lực cốt lõi, sâu xa nhất của NPC. Ví dụ: 'Chứng tỏ bản thân', 'Tìm kiếm sự thật', 'Báo thù cho gia tộc'." },
-            goals: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách 1-3 mục tiêu dài hạn mà NPC đang theo đuổi. Ví dụ: ['Trở thành đệ nhất luyện đan sư', 'Tìm ra kẻ đã hãm hại sư phụ']." },
-            realmName: { type: Type.STRING, description: 'Tên cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
-            element: { type: Type.STRING, description: 'Thuộc tính ngũ hành của NPC.' },
+            status: { type: Type.STRING },
+            description: { type: Type.STRING },
+            origin: { type: Type.STRING },
+            personality: { type: Type.STRING },
+            motivation: { type: Type.STRING },
+            goals: { type: Type.ARRAY, items: { type: Type.STRING } },
+            realmName: { type: Type.STRING },
+            element: { type: Type.STRING },
             initialEmotions: {
                 type: Type.OBJECT,
-                description: "Trạng thái cảm xúc ban đầu của NPC. Dựa vào tính cách để quyết định.",
                 properties: {
-                    trust: { type: Type.NUMBER, description: "Độ tin tưởng ban đầu (0-100)." },
-                    fear: { type: Type.NUMBER, description: "Mức độ sợ hãi/nhút nhát (0-100)." },
-                    anger: { type: Type.NUMBER, description: "Mức độ nóng giận/thù địch (0-100)." }
+                    trust: { type: Type.NUMBER },
+                    fear: { type: Type.NUMBER },
+                    anger: { type: Type.NUMBER }
                 },
                 required: ['trust', 'fear', 'anger']
             },
-            ChinhDao: { type: Type.NUMBER, description: 'Điểm Chính Đạo (0-100).' },
-            MaDao: { type: Type.NUMBER, description: 'Điểm Ma Đạo (0-100).' },
-            LucLuong: { type: Type.NUMBER, description: 'Chỉ số Lực Lượng (sát thương vật lý).' },
-            LinhLucSatThuong: { type: Type.NUMBER, description: 'Chỉ số Linh Lực Sát Thương (sát thương phép).' },
-            CanCot: { type: Type.NUMBER, description: 'Chỉ số Căn Cốt (phòng ngự vật lý).' },
-            NguyenThanKhang: { type: Type.NUMBER, description: 'Chỉ số Nguyên Thần Kháng (phòng ngự phép).' },
-            SinhMenh: { type: Type.NUMBER, description: 'Chỉ số Sinh Mệnh chiến đấu.' },
+            ChinhDao: { type: Type.NUMBER },
+            MaDao: { type: Type.NUMBER },
+            LucLuong: { type: Type.NUMBER },
+            LinhLucSatThuong: { type: Type.NUMBER },
+            CanCot: { type: Type.NUMBER },
+            NguyenThanKhang: { type: Type.NUMBER },
+            SinhMenh: { type: Type.NUMBER },
             currency: {
                 type: Type.OBJECT,
-                description: 'Số tiền NPC sở hữu. Có thể để trống nếu là người thường.',
                 properties: {
-                    linhThachHaPham: { type: Type.NUMBER, description: 'Số Linh thạch hạ phẩm.' },
-                    bac: { type: Type.NUMBER, description: 'Số Bạc.' },
+                    linhThachHaPham: { type: Type.NUMBER },
+                    bac: { type: Type.NUMBER },
                 }
             },
             talents: {
                 type: Type.ARRAY,
-                description: "Một danh sách từ 0 đến 3 tiên tư độc đáo.",
                 items: {
                     type: Type.OBJECT,
                     properties: {
                         name: { type: Type.STRING },
                         description: { type: Type.STRING },
-                        rank: { type: Type.STRING, description: "Hạng của tiên tư." },
+                        rank: { type: Type.STRING },
                         effect: { type: Type.STRING },
                          bonuses: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    attribute: { type: Type.STRING, description: "Tên thuộc tính. PHẢI là một trong các thuộc tính hợp lệ." },
+                                    attribute: { type: Type.STRING },
                                     value: { type: Type.NUMBER }
                                 },
                                 required: ['attribute', 'value']
@@ -253,7 +247,7 @@ export const generateInitialWorldDetails = async (
                     required: ['name', 'description', 'rank', 'effect'],
                 },
             },
-            locationId: { type: Type.STRING, description: "ID của địa điểm NPC đang ở." },
+            locationId: { type: Type.STRING },
         },
         required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'motivation', 'goals', 'realmName', 'element', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'LucLuong', 'LinhLucSatThuong', 'CanCot', 'NguyenThanKhang', 'SinhMenh', 'currency', 'initialEmotions'],
     };
@@ -263,16 +257,11 @@ export const generateInitialWorldDetails = async (
         properties: {
             family_members: {
                 type: Type.ARRAY,
-                description: 'Danh sách 2-4 thành viên gia đình hoặc bạn bè thân thiết. Họ đều là PHÀM NHÂN.',
                 items: familyMemberSchema,
             },
-            opening_narrative: {
-                type: Type.STRING,
-                description: 'Đoạn văn tường thuật mở đầu câu chuyện.'
-            },
+            opening_narrative: { type: Type.STRING },
             dynamic_npcs: {
                 type: Type.ARRAY,
-                description: `Danh sách ${count} NPC ngẫu nhiên để làm thế giới sống động.`,
                 items: dynamicNpcSchema,
             }
         },

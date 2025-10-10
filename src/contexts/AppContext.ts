@@ -1,5 +1,4 @@
-// FIX: Add React import to resolve namespace error.
-import type React from 'react';
+import type { Dispatch } from 'react';
 import { createContext } from 'react';
 import type { View } from './AppProvider';
 import type { GameSettings, PlayerCharacter, NpcDensity, DifficultyLevel, SpiritualRoot, DanhVong, StatBonus, ItemType, ItemQuality, Currency, FullMod, GenerationMode, WorldCreationData, ModAttributeSystem, NamedRealmSystem, GameplaySettings, DataGenerationMode, ModNpc, ModLocation, Faction } from '../types';
@@ -30,7 +29,7 @@ export interface GameStartData extends GameplaySettings {
 
 export interface AppContextType {
     state: AppState;
-    dispatch: React.Dispatch<Action>;
+    dispatch: Dispatch<Action>;
     handleNavigate: (targetView: View) => void;
     handleSettingChange: (key: keyof GameSettings, value: any) => void;
     handleDynamicBackgroundChange: (themeId: string) => Promise<void>;
