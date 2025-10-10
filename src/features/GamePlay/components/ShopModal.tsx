@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import type { GameState, ShopItem, InventoryItem } from '../../../types';
 import { ITEM_QUALITY_STYLES } from '../../../constants';
 import { FaTimes, FaCoins, FaGem } from 'react-icons/fa';
-import { useAppContext } from '../../../contexts/AppContext';
+// FIX: useAppContext is in its own file
+import { useAppContext } from '../../../contexts/useAppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 
 interface ShopModalProps {

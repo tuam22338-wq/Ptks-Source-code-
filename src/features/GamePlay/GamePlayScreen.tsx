@@ -13,7 +13,8 @@ import InnerDemonTrialModal from './components/InnerDemonTrialModal';
 import { generateInnerDemonTrial, askAiAssistant } from '../../services/geminiService';
 import { CULTIVATION_PATHS } from '../../constants';
 import { InventoryModal } from './components/InventoryModal';
-import { useAppContext } from '../../contexts/AppContext';
+// FIX: useAppContext is in its own file
+import { useAppContext } from '../../contexts/useAppContext';
 import { GameUIProvider, useGameUIContext } from '../../contexts/GameUIContext';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import Sidebar from './components/Sidebar/Sidebar';

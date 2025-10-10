@@ -1,6 +1,7 @@
 import React, { memo, useState, useEffect, useMemo } from 'react';
 import LoadingSpinner from './LoadingSpinner';
-import { useAppContext } from '../contexts/AppContext';
+// FIX: useAppContext is in its own file
+import { useAppContext } from '../contexts/useAppContext';
 
 interface LoadingScreenProps {
     message: string;

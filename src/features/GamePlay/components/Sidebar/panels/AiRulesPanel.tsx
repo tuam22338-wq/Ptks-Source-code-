@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import type { GameState, PlayerAiHooks } from '../../../../../types';
-import { useAppContext } from '../../../../../contexts/AppContext';
+// FIX: Fix import path for `useAppContext` to point to the correct module.
+import { useAppContext } from '../../../../../contexts/useAppContext';
 import { FaDownload, FaUpload } from 'react-icons/fa';
 
 const Field: React.FC<{ label: string; description: string; children: React.ReactNode }> = ({ label, description, children }) => (

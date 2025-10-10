@@ -4,7 +4,8 @@ import { summarizeLargeTextForWorldGen, generateWorldFromText, chatWithGameMaste
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { FaFileUpload, FaDownload, FaBrain, FaArrowLeft, FaComments, FaDatabase, FaCog, FaTimes, FaPaperPlane, FaUserCircle, FaLightbulb, FaCopy, FaCheckCircle } from 'react-icons/fa';
 import { GiSparkles } from 'react-icons/gi';
-import { useAppContext } from '../../contexts/AppContext';
+// FIX: Fix import path for `useAppContext` to point to the correct module.
+import { useAppContext } from '../../contexts/useAppContext';
 import { PROMPT_TEMPLATES, PromptTemplate } from '../../data/promptTemplates';
 
 type ActiveTab = 'data' | 'gm' | 'prompts';

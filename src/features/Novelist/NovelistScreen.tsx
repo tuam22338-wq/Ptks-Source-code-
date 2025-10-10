@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaArrowLeft, FaPlus, FaDownload, FaUserCircle, FaPaperPlane, FaTrash, FaCog, FaBars, FaTimes, FaBook, FaFileUpload, FaSync } from 'react-icons/fa';
 import { GiSparkles } from 'react-icons/gi';
-import { useAppContext } from '../../contexts/AppContext';
+// FIX: Fix import path for `useAppContext` to point to the correct module.
+import { useAppContext } from '../../contexts/useAppContext';
 import { db } from '../../services/dbService';
 import type { Novel, NovelContentEntry, GameSettings, NarrativeStyle, AIModel, NovelAiSettings } from '../../types';
 import { generateNovelChapter, extractLoreFromText } from '../../services/gemini/novel.service';

@@ -3,7 +3,8 @@ import { FaPaperPlane, FaComment, FaBolt, FaBrain, FaChevronUp, FaChevronDown, F
 import { GiSprout, GiSwapBag, GiStairsGoal, GiPerson } from 'react-icons/gi';
 import type { Location, GameState, QuickActionButtonConfig } from '../../../types';
 import { UI_ICONS, DEFAULT_BUTTONS } from '../../../constants';
-import { useAppContext } from '../../../contexts/AppContext';
+// FIX: useAppContext is in its own file
+import { useAppContext } from '../../../contexts/useAppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 
 type ActionType = 'say' | 'act' | 'ask';

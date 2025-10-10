@@ -1,10 +1,7 @@
-
-
-
 import React, { memo, useState, useEffect } from 'react';
 import { FaDatabase, FaGlobe, FaTools, FaCog, FaInfoCircle, FaBookOpen, FaDiscord, FaHeart, FaTrophy, FaPenFancy, FaSave, FaBrain, FaCode } from 'react-icons/fa';
 import { GiScrollUnfurled, GiCircleClaws } from 'react-icons/gi';
-import { useAppContext } from '../../contexts/AppContext';
+import { useAppContext } from '../../contexts/useAppContext';
 import UpdateModal from './UpdateModal';
 import * as db from '../../services/dbService';
 import { CURRENT_GAME_VERSION } from '../../constants';

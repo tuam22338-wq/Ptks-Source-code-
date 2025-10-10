@@ -8,7 +8,9 @@ import { GamePlayScreen } from './features/GamePlay/GamePlayScreen';
 import InfoScreen from './features/Info/InfoScreen';
 import DeveloperConsole from './components/DeveloperConsole';
 import SpecialEffectsOverlay from './components/SpecialEffectsOverlay';
-import { AppProvider, useAppContext } from './contexts/AppContext';
+// FIX: AppProvider and useAppContext are in different files and `useAppContext` should be imported from its own file.
+import { AppProvider } from './contexts/AppProvider';
+import { useAppContext } from './contexts/useAppContext';
 import NovelistScreen from './features/Novelist/NovelistScreen'; // Import a tela mới
 import LoadGameScreen from './features/MainMenu/LoadGameScreen';
 

@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
 import type { GameSettings } from '../../../types';
 import { LAYOUT_MODES, THEME_OPTIONS, FONT_OPTIONS, DYNAMIC_BACKGROUND_OPTIONS } from '../../../constants';
-import { useAppContext } from '../../../contexts/AppContext';
+// FIX: Fix import path for `useAppContext` to point to the correct module.
+import { useAppContext } from '../../../contexts/useAppContext';
 import LoadingSpinner from '../../../components/LoadingSpinner';
 import { FaCheckCircle, FaExclamationTriangle, FaCrown } from 'react-icons/fa';
 

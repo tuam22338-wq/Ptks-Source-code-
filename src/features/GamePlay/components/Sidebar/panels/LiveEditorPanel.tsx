@@ -1,8 +1,7 @@
-
-
 import React, { memo, useState, useEffect } from 'react';
 import type { GameState, CharacterAttributes, Currency, NPC } from '../../../../../types';
-import { useAppContext } from '../../../../../contexts/AppContext';
+// FIX: Fix import path for `useAppContext` to point to the correct module.
+import { useAppContext } from '../../../../../contexts/useAppContext';
 import { useGameUIContext } from '../../../../../contexts/GameUIContext';
 import { FaExclamationTriangle, FaSave } from 'react-icons/fa';
 

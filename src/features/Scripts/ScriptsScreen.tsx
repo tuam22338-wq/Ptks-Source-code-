@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaArrowLeft, FaPlus, FaUpload, FaEdit, FaTrash, FaCodeBranch } from 'react-icons/fa';
-import { useAppContext } from '../../contexts/AppContext';
+// FIX: Fix import path for `useAppContext` to point to the correct module.
+import { useAppContext } from '../../contexts/useAppContext';
 
 const mockScripts = [
     { id: 'ui_enhancement_1', name: 'Giao Diện Nâng Cao', author: 'Community', version: '1.2', description: 'Bổ sung thêm một panel hiển thị thông tin thời tiết và các hiệu ứng đặc biệt của khu vực.', isEnabled: true },

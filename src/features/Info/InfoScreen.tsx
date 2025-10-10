@@ -1,8 +1,6 @@
-
-
 import React, { memo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
-import { useAppContext } from '../../contexts/AppContext';
+import { useAppContext } from '../../contexts/useAppContext';
 import { CURRENT_GAME_VERSION } from '../../constants';
 
 const InfoScreen: React.FC = () => {
@@ -29,8 +27,8 @@ const InfoScreen: React.FC = () => {
 
         <div className="neumorphic-inset-box p-4">
             <h3 className="text-xl font-bold font-title mb-2" style={{color: 'var(--primary-accent-color)'}}>Đội Ngũ Phát Triển</h3>
-            <p style={{color: 'var(--text-muted-color)'}}>Developer: <strong style={{color: 'var(--text-color)'}}>Nguyen Hoang Truong</strong></p>
-            <p style={{color: 'var(--text-muted-color)'}}>Tester: <strong style={{color: 'var(--text-color)'}}>NVH</strong></p>
+            <p style={{color: 'var(--text-muted-color)'}}>Developer: <strong style={{color: 'var(--text-color)'}}>{'Nguyen Hoang Truong'}</strong></p>
+            <p style={{color: 'var(--text-muted-color)'}}>Tester: <strong style={{color: 'var(--text-color)'}}>{'NVH'}</strong></p>
             <p className="mt-4" style={{color: 'var(--text-muted-color)'}}>Xin chân thành cảm ơn bạn đã trải nghiệm sản phẩm này!</p>
         </div>
 

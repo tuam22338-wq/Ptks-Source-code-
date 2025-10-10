@@ -3,7 +3,8 @@ import type { GameState, InventoryItem, EquipmentSlot, StatBonus, PlayerCharacte
 import { ITEM_QUALITY_STYLES, EQUIPMENT_SLOTS, EQUIPMENT_SLOT_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, UI_ICONS } from '../../../constants';
 import { GiWeight, GiPerson } from "react-icons/gi";
 import { FaTimes, FaArrowLeft, FaArrowRight, FaSearch, FaFilter, FaSort, FaCheckSquare, FaSquare } from 'react-icons/fa';
-import { useAppContext } from '../../../contexts/AppContext';
+// FIX: useAppContext is in its own file
+import { useAppContext } from '../../../contexts/useAppContext';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
 import { calculateDerivedStats } from '../../../utils/statCalculator';
 

@@ -6,7 +6,8 @@ import LoadingSpinner from '../../../components/LoadingSpinner';
 import { FaTimes } from 'react-icons/fa';
 import { PHAP_BAO_RANKS, DEFAULT_ATTRIBUTE_DEFINITIONS } from '../../../constants';
 import { useGameUIContext } from '../../../contexts/GameUIContext';
-import { useAppContext } from '../../../contexts/AppContext';
+// FIX: useAppContext is in its own file
+import { useAppContext } from '../../../contexts/useAppContext';
 
 const getBaseAttributeValue = (character: PlayerCharacter | NPC, attributeId: string): number => {
     return character.attributes[attributeId]?.value || 0;

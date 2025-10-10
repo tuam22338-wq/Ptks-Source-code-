@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaArrowLeft, FaPaperPlane, FaRobot } from 'react-icons/fa';
-import { useAppContext } from '../../contexts/AppContext';
+// FIX: Fix import path for `useAppContext` to point to the correct module.
+import { useAppContext } from '../../contexts/useAppContext';
 
 const placeholderScript = `{
   "scriptInfo": {

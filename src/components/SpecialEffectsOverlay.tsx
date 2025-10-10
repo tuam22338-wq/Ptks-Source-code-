@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAppContext } from '../contexts/AppContext';
+import { useAppContext } from '../contexts/useAppContext';
 import type { ItemQuality, InventoryItem } from '../types';
 import { ITEM_QUALITY_STYLES } from '../constants';
 import { GiStarsStack } from 'react-icons/gi';

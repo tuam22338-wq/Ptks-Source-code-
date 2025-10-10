@@ -2,7 +2,7 @@ import React, { useState, memo } from 'react';
 import type { GameSettings } from '../../types';
 import { FaArrowLeft, FaDesktop, FaRobot, FaShieldAlt, FaCog, FaGamepad, FaVolumeUp, FaSearchPlus, FaPenFancy, FaCheckCircle } from 'react-icons/fa';
 import { GiGears } from 'react-icons/gi';
-import { useAppContext } from '../../contexts/AppContext';
+import { useAppContext } from '../../contexts/useAppContext';
 import RagSourceManagerModal from './RagSourceManagerModal';
 // Import tab components
 import InterfaceSettings from './tabs/InterfaceSettings';

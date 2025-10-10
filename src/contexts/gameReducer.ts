@@ -1,6 +1,8 @@
 import type { GameState, SaveSlot, GameSettings, BackgroundState, ModInLibrary, FullMod, StoryEntry, Novel } from '../types';
-import type { View } from './AppContext';
+import type { View } from './AppProvider';
 import { sanitizeGameState } from '../utils/gameStateSanitizer';
+// FIX: Import DEFAULT_SETTINGS to initialize state
+import { DEFAULT_SETTINGS } from '../constants';
 
 // Define the shape of our global state
 export interface AppState {
@@ -57,7 +59,6 @@ export type Action =
   | { type: 'SET_NOVELS'; payload: Novel[] }
   | { type: 'SET_ACTIVE_NOVEL_ID'; payload: number | null }
   | { type: 'UPDATE_NOVEL'; payload: Novel }
-  // FIX: Add action to set current slot ID
   | { type: 'SET_CURRENT_SLOT_ID'; payload: number | null }
   | { type: 'SET_SETTINGS_SAVING_STATUS'; payload: 'idle' | 'saving' | 'saved' };
 
@@ -240,4 +241,27 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
         default:
             return state;
     }
+};
+
+export const initialState: AppState = {
+    view: 'mainMenu',
+    isLoading: false,
+    loadingMessage: '',
+    loadingNarratives: null,
+    isMigratingData: true,
+    migrationMessage: 'Kiểm tra hệ thống lưu trữ...',
+    gameState: null,
+    saveSlots: [],
+    currentSlotId: null,
+    settings: DEFAULT_SETTINGS,
+    storageUsage: { usageString: '0 B / 0 B', percentage: 0 },
+    activeWorldId: 'khoi_nguyen_gioi',
+    backgrounds: { status: {}, urls: {} },
+    installedMods: [],
+    modBeingEdited: null,
+    pdfTextForGenesis: null,
+    // State for Novelist AI
+    novels: [],
+    activeNovelId: null,
+    settingsSavingStatus: 'idle',
 };

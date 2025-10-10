@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship, GameSettings, WorldCreationData } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
@@ -756,12 +757,35 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         delete dynamicWorldSchema.properties.content.properties.realmConfigs;
         delete dynamicWorldSchema.properties.content.properties.namedRealmSystems;
     }
-    // If user provides these, AI should not generate them from scratch
-    if (factions && factions.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.factions;
-    if (locations && locations.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialLocations;
-    if (npcs && npcs.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.initialNpcs;
-    if (majorEvents && majorEvents.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.majorEvents;
-    if (tagDefinitions && tagDefinitions.length > 0) delete dynamicWorldSchema.properties.content.properties.tagDefinitions;
+    
+    const worldDataItemsSchema = dynamicWorldSchema.properties.content.properties.worldData.items;
+
+    // If user provides data, remove corresponding generation properties from the AI schema.
+    const toRemove: string[] = [];
+    if (factions && factions.length > 0) {
+        toRemove.push('factions');
+        delete worldDataItemsSchema.properties.factions;
+    }
+    if (locations && locations.length > 0) {
+        toRemove.push('initialLocations');
+        delete worldDataItemsSchema.properties.initialLocations;
+    }
+    if (npcs && npcs.length > 0) {
+        toRemove.push('initialNpcs');
+        delete worldDataItemsSchema.properties.initialNpcs;
+    }
+    if (majorEvents && majorEvents.length > 0) {
+        toRemove.push('majorEvents');
+        delete worldDataItemsSchema.properties.majorEvents;
+    }
+    
+    if (toRemove.length > 0) {
+        worldDataItemsSchema.required = worldDataItemsSchema.required.filter((p: string) => !toRemove.includes(p));
+    }
+    
+    if (tagDefinitions && tagDefinitions.length > 0) {
+        delete dynamicWorldSchema.properties.content.properties.tagDefinitions;
+    }
 
 
     const masterPrompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những ý tưởng cốt lõi thành một thế giới game có cấu trúc hoàn chỉnh.
