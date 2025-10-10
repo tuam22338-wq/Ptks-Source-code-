@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaEdit, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import type { RealmConfig, SubTier, ModAttributeSystem, NamedRealmSystem, AttributeDefinition, StatBonus } from '../../../types';
 import SubTierEditorModal from './SubTierEditorModal';
+import { UI_ICONS } from '../../../constants';
 
 interface RealmEditorModalProps {
     isOpen: boolean;
@@ -68,7 +69,7 @@ const TierBonusEditor: React.FC<{
 
 const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, onSave, initialSystems, attributeSystem }) => {
     const [tiers, setTiers] = useState<RealmConfig[]>([]);
-    const [systemInfo, setSystemInfo] = useState({ name: '', description: '', resourceName: 'Linh Khí', resourceUnit: 'điểm' });
+    const [systemInfo, setSystemInfo] = useState({ name: '', description: '', resourceName: 'Linh Khí', resourceUnit: 'điểm', resourceIconName: 'GiMagicSwirl' });
     const [expandedTiers, setExpandedTiers] = useState<Record<string, boolean>>({});
     const [isSubTierModalOpen, setIsSubTierModalOpen] = useState(false);
     const [editingSubTier, setEditingSubTier] = useState<{ subTier: SubTier | null; tierIndex: number }>({ subTier: null, tierIndex: -1 });
@@ -82,6 +83,7 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                 description: mainSystem?.description || 'Hệ thống tiến trình mặc định.',
                 resourceName: mainSystem?.resourceName || 'Điểm Kinh Nghiệm',
                 resourceUnit: mainSystem?.resourceUnit || 'điểm',
+                resourceIconName: mainSystem?.resourceIconName || 'GiMagicSwirl',
             });
             const initialExpanded = (mainSystem?.realms || []).reduce((acc, tier, index) => {
                 acc[tier.id || index] = index === 0;
@@ -165,9 +167,14 @@ const RealmEditorModal: React.FC<RealmEditorModalProps> = ({ isOpen, onClose, on
                         <div className="neumorphic-inset-box p-3 mb-3 space-y-3">
                             <h4 className="font-bold" style={{color: 'var(--text-color)'}}>Thông Tin Hệ Thống</h4>
                             <input value={systemInfo.name} onChange={e => handleSystemInfoChange('name', e.target.value)} className="input-neumorphic w-full" placeholder="Tên Hệ Thống (Vd: Hệ Thống Hồn Sư)"/>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                                 <input value={systemInfo.resourceName} onChange={e => handleSystemInfoChange('resourceName', e.target.value)} className="input-neumorphic w-full" placeholder="Tên Tài Nguyên (Vd: Hồn Lực)"/>
                                 <input value={systemInfo.resourceUnit} onChange={e => handleSystemInfoChange('resourceUnit', e.target.value)} className="input-neumorphic w-full" placeholder="Đơn Vị (Vd: năm, cấp)"/>
+                                <select value={systemInfo.resourceIconName} onChange={e => handleSystemInfoChange('resourceIconName', e.target.value)} className="input-neumorphic w-full">
+                                    {Object.keys(UI_ICONS).sort().map(iconName => (
+                                        <option key={iconName} value={iconName}>{iconName}</option>
+                                    ))}
+                                </select>
                             </div>
                             <textarea value={systemInfo.description} onChange={e => handleSystemInfoChange('description', e.target.value)} rows={2} className="input-neumorphic w-full resize-y" placeholder="Mô tả hệ thống..."/>
                         </div>

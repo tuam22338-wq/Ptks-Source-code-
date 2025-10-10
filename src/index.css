@@ -408,6 +408,30 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
+/* --- Genre Theming --- */
+body.genre-khoa-huyen-vien-tuong,
+body.genre-cyber-tu-chan,
+body.genre-steampunk-ma-thuat {
+  --font-family-body: 'Orbitron', sans-serif;
+  --font-family-title: 'Orbitron', sans-serif;
+}
+
+.scanlines-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 6px 100%;
+    animation: scanlines-anim 5s linear infinite;
+}
+
+@keyframes scanlines-anim {
+    from { background-position: 0 0; }
+    to { background-position: 0 200%; }
+}
+
+
 /* Keyframe Animations */
 .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
 .animate-fade-in-menu { animation: fade-in-menu 0.8s ease-out forwards; }

@@ -11,6 +11,8 @@ export const REALM_TEMPLATES: { id: string; name: string; description: string; s
             description: 'Con đường tu luyện để trường sinh bất tử, từ một凡人 yếu đuối đến tồn tại tối cao.',
             resourceName: 'Linh Khí',
             resourceUnit: 'điểm',
+            // FIX: Add missing 'resourceIconName' property.
+            resourceIconName: 'GiMagicSwirl',
             realms: [
                 { id: 'luyen_khi', name: 'Luyện Khí', bonuses: [], stages: [{ id: 'lk_1', name: 'Tầng 1', qiRequired: 100, bonuses: [] }, { id: 'lk_9', name: 'Tầng 9', qiRequired: 50000, bonuses: [] }] },
                 { id: 'truc_co', name: 'Trúc Cơ', bonuses: [], stages: [{ id: 'tc_so_ky', name: 'Sơ Kỳ', qiRequired: 150000, bonuses: [] }] },
@@ -30,6 +32,8 @@ export const REALM_TEMPLATES: { id: string; name: string; description: string; s
             description: 'Con đường trở thành đại hiệp, từ một kẻ vô danh tiểu tốt đến võ lâm minh chủ.',
             resourceName: 'Nội Lực',
             resourceUnit: 'năm',
+            // FIX: Add missing 'resourceIconName' property.
+            resourceIconName: 'GiYinYang',
             realms: [
                 { id: 'tam_luu', name: 'Tam Lưu', bonuses: [], stages: [{ id: 'tl_1', name: 'Sơ Nhập', qiRequired: 10, bonuses: [] }] },
                 { id: 'nhi_luu', name: 'Nhị Lưu', bonuses: [], stages: [{ id: 'nl_1', name: 'Hạ Cấp', qiRequired: 50, bonuses: [] }] },
@@ -49,6 +53,8 @@ export const REALM_TEMPLATES: { id: string; name: string; description: string; s
             description: 'Con đường tiến hóa trong một thế giới tương lai, từ người thường đến thực thể bán thần.',
             resourceName: 'Năng Lượng Lõi',
             resourceUnit: 'Joule',
+            // FIX: Add missing 'resourceIconName' property.
+            resourceIconName: 'GiBoltSpellCast',
             realms: [
                 { id: 'cap_e', name: 'Cấp E', description: 'Người thường hoặc cấy ghép cơ bản.', bonuses: [], stages: [{ id: 'e_1', name: 'Bậc 1', qiRequired: 1000, bonuses: [] }] },
                 { id: 'cap_d', name: 'Cấp D', description: 'Chiến binh đường phố được tăng cường.', bonuses: [], stages: [{ id: 'd_1', name: 'Bậc 1', qiRequired: 10000, bonuses: [] }] },

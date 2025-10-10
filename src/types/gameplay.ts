@@ -400,6 +400,7 @@ export interface GameState {
     version?: string;
     activeWorldId: string;
     difficulty?: DifficultyLevel;
+    genre: string;
     playerCharacter: PlayerCharacter;
     activeNpcs: NPC[];
     discoveredLocations: Location[];
@@ -417,6 +418,7 @@ export interface GameState {
         name: string;
         resourceName: string;
         resourceUnit: string;
+        resourceIconName: string;
     };
     // FIX: Rename namedProgressionSystems to namedRealmSystems
     namedRealmSystems?: NamedRealmSystem[];

@@ -72,25 +72,29 @@ Bạn được phép và được khuyến khích mô tả các cảnh sau một
         ? `G. **TƯỜNG THUẬT CƠ CHẾ:** Bạn PHẢI lồng ghép các thay đổi cơ chế (nhận vật phẩm, tăng chỉ số) vào trong đoạn văn tường thuật một cách tự nhiên. Ví dụ, thay vì chỉ nói "bạn nhặt được vật phẩm", hãy mô tả "tay bạn chạm vào một vật lạnh lẽo, đó là một thanh [Thiết Kiếm]".`
         : '';
         
-    const powerUpActionInstruction = `K. **LUẬT HÀNH ĐỘNG TĂNG CƯỜNG SỨC MẠNH:** Khi người chơi thực hiện các hành động cơ bản để mạnh lên (ví dụ: "tu luyện", "thiền", "hấp thụ năng lượng", "tập luyện", "sạc pin"), bạn PHẢI hiểu rằng họ đang cố gắng tăng chỉ số chính của hệ thống sức mạnh, đó là '${realmSystemInfo.resourceName}'. **Hãy tường thuật lại quá trình này một cách phù hợp với THỂ LOẠI của thế giới.** Ví dụ, với thế giới Võ Hiệp, đó là "vận công hấp thụ nội lực". Với thế giới Cyberpunk, đó là "kết nối vào lõi năng lượng để sạc pin". Sau đó, tạo ra một 'statChanges' với { attribute: 'spiritualQi', change: [một lượng hợp lý] }.\`;`;
+    const progressionResourceInstruction = `J. **LUẬT HỆ THỐNG SỨC MẠNH (CỰC KỲ QUAN TRỌNG):** Trong thế giới này, tài nguyên chính để thăng tiến sức mạnh được gọi là **'${realmSystemInfo.resourceName}'**. Tuy nhiên, trong đối tượng JSON \`mechanicalIntent\`, bạn BẮT BUỘC phải sử dụng ID nội bộ là **'spiritualQi'** để đại diện cho tài nguyên này. Game sẽ tự động hiển thị đúng tên cho người chơi. **TUYỆT ĐỐI KHÔNG** sử dụng '${realmSystemInfo.resourceName}' làm ID thuộc tính trong \`statChanges\`.`;
+
+    const powerUpActionInstruction = `K. **LUẬT HÀNH ĐỘNG TĂNG CƯỜNG SỨC MẠNH:** Khi người chơi thực hiện các hành động cơ bản để mạnh lên (ví dụ: "tu luyện", "thiền", "hấp thụ năng lượng", "tập luyện", "sạc pin"), bạn PHẢI hiểu rằng họ đang cố gắng tăng '${realmSystemInfo.resourceName}'. **Hãy tường thuật lại quá trình này một cách phù hợp với THỂ LOẠI của thế giới.** Ví dụ, với thế giới Võ Hiệp, đó là "vận công hấp thụ nội lực". Với thế giới Cyberpunk, đó là "kết nối vào lõi năng lượng để sạc pin". Sau đó, tạo ra một 'statChanges' với { attribute: 'spiritualQi', change: [một lượng hợp lý] } (tuân theo Luật J).`;
     
-    const impliedStateChangeInstruction = `L. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
+    const survivalByLevelInstruction = `L. **LUẬT SINH TỒN THEO CẤP BẬC:** Cấp bậc/cảnh giới tu luyện càng cao, khả năng chống chọi đói và khát càng mạnh. Khi người chơi đột phá đại cảnh giới/cấp bậc lớn, hãy tăng GIỚI HẠN TỐI ĐA (sử dụng 'changeMax') của chỉ số 'hunger' và 'thirst'.`;
+
+    const impliedStateChangeInstruction = `M. **LUẬT SUY LUẬN TRẠNG THÁI (QUAN TRỌNG):** Dựa vào tường thuật, hãy suy luận ra các thay đổi trạng thái tiềm ẩn và phản ánh chúng trong 'mechanicalIntent'. Ví dụ: nếu người chơi vừa trải qua một trận chiến vất vả, hãy giảm một chút 'hunger' và 'thirst'. Nếu họ ăn một bữa thịnh soạn, hãy tăng các chỉ số đó. Nếu họ bị thương, hãy giảm 'sinh_menh'. Luôn luôn đồng bộ hóa tường thuật và cơ chế.`;
     
-    const newNpcInstruction = `M. **LUẬT SÁNG TẠO NPC (QUAN TRỌNG):** Nếu bạn giới thiệu một nhân vật hoàn toàn mới trong phần tường thuật, bạn BẮT BUỘC phải tạo một đối tượng NPC hoàn chỉnh cho nhân vật đó và thêm vào mảng \`newNpcsCreated\` trong \`mechanicalIntent\`. NPC phải có đầy đủ thông tin (tên, ngoại hình, xuất thân, tính cách, cảnh giới, chỉ số cơ bản...). Điều này giúp game chính thức công nhận sự tồn tại của họ.`;
+    const newNpcInstruction = `N. **LUẬT SÁNG TẠO NPC (QUAN TRỌNG):** Nếu bạn giới thiệu một nhân vật hoàn toàn mới trong phần tường thuật, bạn BẮT BUỘC phải tạo một đối tượng NPC hoàn chỉnh cho nhân vật đó và thêm vào mảng \`newNpcsCreated\` trong \`mechanicalIntent\`. NPC phải có đầy đủ thông tin (tên, ngoại hình, xuất thân, tính cách, cảnh giới/cấp bậc, chỉ số cơ bản...). Điều này giúp game chính thức công nhận sự tồn tại của họ.`;
 
     const interruptionChance = { 'none': 0, 'rare': 0.10, 'occasional': 0.25, 'frequent': 0.50, 'chaotic': 0.75 }[gameplaySettings.worldInterruptionFrequency] || 0.25;
 
-    const interruptionInstruction = `N. **LUẬT GIÁN ĐOẠN BẤT NGỜ:** Thế giới này luôn biến động. Dựa trên mức độ "Biến Hóa Của Thế Giới" (${gameplaySettings.worldInterruptionFrequency}, tương đương ${interruptionChance * 100}% cơ hội), hãy cân nhắc việc tạo ra một sự kiện bất ngờ để **GIÁN ĐOẠN** hành động của người chơi thay vì thực hiện nó trực tiếp. Nếu bạn quyết định gián đoạn, hãy mô tả sự kiện đó và các hậu quả cơ chế liên quan.`;
+    const interruptionInstruction = `O. **LUẬT GIÁN ĐOẠN BẤT NGỜ:** Thế giới này luôn biến động. Dựa trên mức độ "Biến Hóa Của Thế Giới" (${gameplaySettings.worldInterruptionFrequency}, tương đương ${interruptionChance * 100}% cơ hội), hãy cân nhắc việc tạo ra một sự kiện bất ngờ để **GIÁN ĐOẠN** hành động của người chơi thay vì thực hiện nó trực tiếp. Nếu bạn quyết định gián đoạn, hãy mô tả sự kiện đó và các hậu quả cơ chế liên quan.`;
     
-    const dialogueInstruction = `O. **LUẬT HỘI THOẠI (ƯU TIÊN CAO):** Khi "BỐI CẢNH HỘI THOẠI" được cung cấp, bạn phải nhập vai NPC được chỉ định. Phản hồi của bạn trong \`narrative\` phải là lời nói của NPC đó. Lời nói phải tuân thủ 100% tính cách, mục tiêu, và trạng thái cảm xúc của NPC. Sử dụng lịch sử trò chuyện để trả lời một cách logic. Dựa trên lời nói của người chơi, hãy cập nhật cảm xúc của NPC (trust, fear, anger) trong \`mechanicalIntent.emotionChanges\`.`;
+    const dialogueInstruction = `P. **LUẬT HỘI THOẠI (ƯU TIÊN CAO):** Khi "BỐI CẢNH HỘI THOẠI" được cung cấp, bạn phải nhập vai NPC được chỉ định. Phản hồi của bạn trong \`narrative\` phải là lời nói của NPC đó. Lời nói phải tuân thủ 100% tính cách, mục tiêu, và trạng thái cảm xúc của NPC. Sử dụng lịch sử trò chuyện để trả lời một cách logic. Dựa trên lời nói của người chơi, hãy cập nhật cảm xúc của NPC (trust, fear, anger) trong \`mechanicalIntent.emotionChanges\`.`;
 
-    const dynamicPacingInstruction = `P. **LUẬT VỀ NHỊP ĐỘ TƯỜNG THUẬT ĐỘNG (CỰC KỲ QUAN TRỌNG):** Bạn PHẢI tự động điều chỉnh văn phong và nhịp độ dựa trên bối cảnh để tạo ra trải nghiệm sống động nhất.
+    const dynamicPacingInstruction = `Q. **LUẬT VỀ NHỊP ĐỘ TƯỜNG THUẬT ĐỘNG (CỰC KỲ QUAN TRỌNG):** Bạn PHẢI tự động điều chỉnh văn phong và nhịp độ dựa trên bối cảnh để tạo ra trải nghiệm sống động nhất.
     - **Khi đang trong TRẬN CHIẾN (\`combatState\` có tồn tại):** Dùng câu văn NGẮN, dồn dập, mạnh mẽ. Tập trung vào hành động, âm thanh va chạm, cảm giác đau đớn, và các chi tiết giác quan của trận đấu. Ví dụ: "Kiếm quang lóe lên! Bạn lách người. Gió rít qua tai. Một vết cắt rướm máu trên vai."
     - **Khi đang KHÁM PHÁ (hành động như "khám phá", "nhìn xung quanh"):** Dùng câu văn DÀI, giàu hình ảnh, và có tính mô tả cao. Tập trung vào không khí, quang cảnh, mùi hương, âm thanh của môi trường để xây dựng cảm giác kỳ vĩ hoặc đáng sợ.
-    - **Khi đang HỘI THOẠI (\`dialogueWithNpcId\` có tồn tại):** Tập trung vào lời nói, tông giọng, và ẩn ý. Xen kẽ với các mô tả ngắn gọn về ngôn ngữ cơ thể, biểu cảm của nhân vật.
+    - **Khi đang HỘI THOẠI (\`dialogueWithNpcId\` tồn tại):** Tập trung vào lời nói, tông giọng, và ẩn ý. Xen kẽ với các mô tả ngắn gọn về ngôn ngữ cơ thể, biểu cảm của nhân vật.
     - **Khi thực hiện HÀNH ĐỘNG HỆ THỐNG (tu luyện, chế tạo):** Tường thuật một cách rõ ràng, súc tích, tập trung vào quá trình và kết quả.`;
 
-    const dialogueStateInstruction = `Q. **LUẬT QUẢN LÝ HỘI THOẠI:** Dựa vào hành động của người chơi và bối cảnh, bạn PHẢI quyết định trạng thái hội thoại.
+    const dialogueStateInstruction = `R. **LUẬT QUẢN LÝ HỘI THOẠI:** Dựa vào hành động của người chơi và bối cảnh, bạn PHẢI quyết định trạng thái hội thoại.
     - Nếu người chơi bắt đầu nói chuyện với một NPC (ví dụ: "nói chuyện với A", "hỏi A về..."), hãy đặt \`dialogueState\` thành \`{ "status": "START", "npcName": "tên NPC" }\`.
     - Nếu người chơi đang trong một cuộc hội thoại (\`dialogueWithNpcId\` tồn tại) và hành động của họ không liên quan (ví dụ: di chuyển, tấn công), hãy đặt \`dialogueState\` thành \`{ "status": "END" }\`.
     - Trong các trường hợp khác, không cần đặt \`dialogueState\`.`;
@@ -192,8 +196,9 @@ F.  **ĐỊNH DẠNG TƯỜNG THUẬT:** Trong \`narrative\`, hãy sử dụng d
 ${narrateSystemChangesInstruction}
 H.  **LUẬT ĐỘT PHÁ CẢNH GIỚI (Cập nhật):** Khi người chơi đột phá cảnh giới, bạn PHẢI cập nhật cả \`realmChange\` (ID cảnh giới mới) và \`stageChange\` (ID tiểu cảnh giới mới). **QUAN TRỌNG:** Bạn **KHÔNG** được thay đổi chỉ số \`spiritualQi\` khi đột phá. Hệ thống sẽ tự động xử lý. Chỉ cần cung cấp ID cảnh giới mới.
 I.  **LUẬT ĐỘT PHÁ TÙY CHỈNH (CỰC KỲ QUAN TRỌNG):** Bối cảnh game đã cung cấp "Mục tiêu tiếp theo" cho việc đột phá. Khi người chơi đột phá thành công, bạn PHẢI tường thuật lại quá trình đó.
-J. **LUẬT SINH TỒN THEO CẢNH GIỚI:** Cảnh giới tu luyện càng cao, khả năng chống chọi đói và khát càng mạnh. Khi người chơi đột phá đại cảnh giới, hãy tăng GIỚI HẠN TỐI ĐA (sử dụng 'changeMax') của chỉ số 'hunger' và 'thirst'.
+${progressionResourceInstruction}
 ${powerUpActionInstruction}
+${survivalByLevelInstruction}
 ${impliedStateChangeInstruction}
 ${newNpcInstruction}
 ${interruptionInstruction}

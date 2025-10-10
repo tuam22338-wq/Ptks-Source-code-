@@ -7,6 +7,7 @@ export interface AppState {
     view: View;
     isLoading: boolean;
     loadingMessage: string;
+    loadingNarratives: string[] | null;
     isMigratingData: boolean;
     migrationMessage: string;
     gameState: GameState | null;
@@ -29,6 +30,7 @@ export interface AppState {
 export type Action =
   | { type: 'NAVIGATE'; payload: View }
   | { type: 'SET_LOADING'; payload: { isLoading: boolean; message?: string } }
+  | { type: 'SET_LOADING_NARRATIVES'; payload: string[] | null }
   | { type: 'SET_MIGRATION_STATE'; payload: { isMigrating: boolean; message?: string } }
   | { type: 'SET_SAVE_SLOTS'; payload: SaveSlot[] }
   | { type: 'SET_SETTINGS'; payload: GameSettings }
@@ -67,11 +69,22 @@ export const gameReducer = (state: AppState, action: Action): AppState => {
             return { ...state, view: action.payload };
 
         case 'SET_LOADING':
+            if (!action.payload.isLoading) {
+                return {
+                    ...state,
+                    isLoading: false,
+                    loadingMessage: '',
+                    loadingNarratives: null,
+                };
+            }
             return { 
                 ...state, 
                 isLoading: action.payload.isLoading, 
                 loadingMessage: action.payload.message || (action.payload.isLoading ? state.loadingMessage : '') 
             };
+
+        case 'SET_LOADING_NARRATIVES':
+            return { ...state, loadingNarratives: action.payload };
 
         case 'SET_MIGRATION_STATE':
             return { 

@@ -1,17 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
-// FIX: Import `FaUpload` icon to resolve usage error.
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { FaArrowLeft, FaFileUpload, FaBrain, FaToggleOn, FaToggleOff, FaSave, FaPlus, FaTrash, FaEdit, FaBolt, FaChevronDown, FaChevronUp, FaDownload, FaUpload } from 'react-icons/fa';
+import { GiGalaxy } from 'react-icons/gi';
 import { useAppContext } from '../../contexts/AppContext';
 import { CURRENT_GAME_VERSION, ATTRIBUTE_TEMPLATES, UI_ICONS, NARRATIVE_STYLES, DEATH_PENALTY_LEVELS, WORLD_INTERRUPTION_LEVELS } from '../../constants';
 import { REALM_TEMPLATES } from '../../data/realmTemplates';
 import type { SaveSlot, FullMod, WorldCreationData, ModAttributeSystem, AttributeDefinition, AttributeGroupDefinition, NamedRealmSystem, GenerationMode, NarrativeStyle, DeathPenalty, WorldInterruptionFrequency, DataGenerationMode, ModNpc, ModLocation, Faction } from '../../types';
 import LoadingScreen from '../../components/LoadingScreen';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import AttributeEditorModal from '../../features/Mods/components/AttributeEditorModal';
 import RealmEditorModal from '../../features/Mods/components/RealmEditorModal';
 import NpcEditorModal from '../../features/Mods/components/NpcEditorModal';
 import LocationEditorModal from '../../features/Mods/components/LocationEditorModal';
 import FactionEditorModal from '../../features/Mods/components/FactionEditorModal';
-import { generateWorldFromText } from '../../services/gemini/modding.service';
+import { streamWorldAnalysis } from '../../services/gemini/modding.service';
 
 const GENRE_OPTIONS = [
     'Huyền Huyễn Tu Tiên',
@@ -117,6 +118,37 @@ const SlotSelectionModal: React.FC<{
     );
 };
 
+// --- Helper Components & Hooks for Interactive Creation ---
+const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
+    const parsedContent = useMemo(() => {
+        let html = content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mt-2" style="color: var(--secondary-accent-color)">$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-3" style="color: var(--primary-accent-color)">$1</h2>')
+            .replace(/^- (.*$)/gim, '<li class="ml-4">$1</li>')
+            .replace(/<\/li>\s*<li>/g, '</li><li>') // fix for multiple list items
+            .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+            .replace(/\n/g, '<br />');
+        return { __html: html };
+    }, [content]);
+
+    return <div className="prose prose-sm max-w-none prose-p:text-[var(--text-color)]" dangerouslySetInnerHTML={parsedContent} />;
+};
+
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
+}
+
 
 // --- Main World Creator Screen Component ---
 const SaveSlotScreen: React.FC = () => {
@@ -131,6 +163,11 @@ const SaveSlotScreen: React.FC = () => {
   const [isQuickCreateOpen, setQuickCreateOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showCustomGenreInput, setShowCustomGenreInput] = useState(false);
+
+  // State for Interactive Creation
+  const [mirrorContent, setMirrorContent] = useState('');
+  const [isMirrorLoading, setIsMirrorLoading] = useState(false);
+
 
   const [quickCreateInfo, setQuickCreateInfo] = useState<{description: string; characterName: string} | null>(null);
 
@@ -192,6 +229,44 @@ const SaveSlotScreen: React.FC = () => {
     narrateSystemChanges: true,
     worldInterruptionFrequency: 'occasional',
   });
+
+  // --- Effect for Interactive Creation Mirror ---
+  const debouncedSetting = useDebounce(formData.setting, 1000); // 1-second debounce
+
+  useEffect(() => {
+    if (!debouncedSetting || debouncedSetting.length < 50) {
+        setMirrorContent('');
+        return;
+    }
+
+    // Abort previous stream if a new one starts
+    const abortController = new AbortController();
+    
+    const streamAnalysis = async () => {
+        setIsMirrorLoading(true);
+        setMirrorContent('');
+        try {
+            const stream = streamWorldAnalysis(debouncedSetting, state.settings);
+            for await (const chunk of stream) {
+                if (abortController.signal.aborted) break;
+                setMirrorContent(prev => prev + chunk);
+            }
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                console.error("Error streaming world analysis:", error);
+                setMirrorContent('Lỗi kết nối đến Thiên Cơ Kính. Vui lòng thử lại.');
+            }
+        } finally {
+            setIsMirrorLoading(false);
+        }
+    };
+
+    streamAnalysis();
+    
+    return () => {
+        abortController.abort();
+    };
+}, [debouncedSetting, state.settings]);
 
   const handleAddDlc = () => {
     setFormData(p => ({ ...p, dlcs: [...(p.dlcs || []), { title: '', content: '' }] }));
@@ -530,240 +605,256 @@ const SaveSlotScreen: React.FC = () => {
             />
         </div>
       
-        <div className="flex-grow min-h-0 overflow-y-auto pr-2 space-y-6">
-            {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30">{error}</p>}
-            
-            <Section title="1. Hồn Của Thế Giới">
-                <Field label="Thể Loại" description="Quyết định văn phong và không khí chính của câu chuyện. Sẽ tự động chọn một mẫu thuộc tính phù hợp.">
-                    <select name="genre-select" value={showCustomGenreInput ? 'custom' : formData.genre} onChange={handleGenreSelectChange} className="input-neumorphic">
-                        {GENRE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        <option value="custom">Tự Định Nghĩa...</option>
-                    </select>
-                    {showCustomGenreInput && (
-                         <input
-                            name="genre"
-                            value={formData.genre}
-                            onChange={handleInputChange}
-                            className="input-neumorphic mt-2"
-                            placeholder="Nhập thể loại của bạn..."
-                            autoFocus
-                        />
-                    )}
-                </Field>
-                <Field label="Chủ Đề (Cụ thể hơn)" description="Giúp AI tập trung vào một khía cạnh cụ thể trong thể loại bạn chọn.">
-                    <input name="theme" value={formData.theme} onChange={handleInputChange} className="input-neumorphic" placeholder="VD: Ngôi nhà ma ám, Lời nguyền rồng, Tu tiên độ kiếp..."/>
-                </Field>
-                <Field label="Bối Cảnh (Thế giới/Môi trường)" description="Mô tả nơi câu chuyện sẽ diễn ra.">
-                    <textarea name="setting" value={formData.setting} onChange={handleInputChange} rows={3} className="input-neumorphic resize-y" placeholder="VD: Thành phố bỏ hoang sau đại dịch, Vương quốc Eldoria huyền bí, Tam Giới hỗn loạn..."/>
-                </Field>
-            </Section>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow min-h-0">
+            {/* Left Column: Form */}
+            <div className="flex-grow min-h-0 overflow-y-auto pr-2 space-y-6">
+                {error && <p className="text-red-400 bg-red-500/10 p-3 rounded-md border border-red-500/30">{error}</p>}
+                
+                <Section title="1. Hồn Của Thế Giới">
+                    <Field label="Thể Loại" description="Quyết định văn phong và không khí chính của câu chuyện. Sẽ tự động chọn một mẫu thuộc tính phù hợp.">
+                        <select name="genre-select" value={showCustomGenreInput ? 'custom' : formData.genre} onChange={handleGenreSelectChange} className="input-neumorphic">
+                            {GENRE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            <option value="custom">Tự Định Nghĩa...</option>
+                        </select>
+                        {showCustomGenreInput && (
+                            <input
+                                name="genre"
+                                value={formData.genre}
+                                onChange={handleInputChange}
+                                className="input-neumorphic mt-2"
+                                placeholder="Nhập thể loại của bạn..."
+                                autoFocus
+                            />
+                        )}
+                    </Field>
+                    <Field label="Ý Tưởng Cốt Lõi (Core Idea)" description="Mô tả ý tưởng chính về thế giới của bạn. Thiên Cơ Kính sẽ phân tích và đưa ra gợi ý dựa trên nội dung này.">
+                        <textarea name="setting" value={formData.setting} onChange={handleInputChange} rows={8} className="input-neumorphic resize-y" placeholder="VD: Một thế giới cyberpunk nơi tu sĩ cấy ghép linh hồn vào máy móc để trường sinh, các tập đoàn lớn là những tông môn mới, và 'linh khí' chính là dòng dữ liệu thuần khiết..."/>
+                    </Field>
+                    <Field label="Chủ Đề (Cụ thể hơn)" description="Giúp AI tập trung vào một khía cạnh cụ thể trong thể loại bạn chọn.">
+                        <input name="theme" value={formData.theme} onChange={handleInputChange} className="input-neumorphic" placeholder="VD: Ngôi nhà ma ám, Lời nguyền rồng, Tu tiên độ kiếp..."/>
+                    </Field>
+                </Section>
 
-             <Section title="2. Cài Đặt Sáng Thế Nâng Cao">
-                <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full flex justify-between items-center px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-left text-[var(--text-color)] hover:bg-black/40">
-                    <span className="font-semibold">Tùy Chỉnh Lối Chơi & AI</span>
-                    {showAdvanced ? <FaChevronUp /> : <FaChevronDown />}
-                </button>
-                 {showAdvanced && (
-                    <div className="p-4 space-y-4 border-t border-gray-600/50 animate-fade-in">
-                        <Field label="Phong Cách Tường Thuật" description="Chọn văn phong và giọng điệu cho AI kể chuyện.">
-                             <select name="narrativeStyle" value={formData.narrativeStyle} onChange={e => setFormData(p => ({ ...p, narrativeStyle: e.target.value as NarrativeStyle }))} className="input-neumorphic">
-                                {NARRATIVE_STYLES.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Độ dài Phản hồi AI (Số từ)" description="Đặt độ dài gần đúng cho mỗi phản hồi tường thuật của AI.">
-                            <div className="flex items-center gap-4">
-                                <input type="range" min="100" max="5000" step="100" value={formData.aiResponseWordCount} onChange={(e) => setFormData(p => ({ ...p, aiResponseWordCount: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
-                                <span className="font-mono text-sm w-20 text-center">{formData.aiResponseWordCount}</span>
-                            </div>
-                        </Field>
-                        <Field label="Mức Độ Biến Hóa Của Thế Giới" description="Tần suất các sự kiện ngẫu nhiên xảy ra làm gián đoạn hành động của bạn.">
-                            <select name="worldInterruptionFrequency" value={formData.worldInterruptionFrequency} onChange={e => setFormData(p => ({ ...p, worldInterruptionFrequency: e.target.value as WorldInterruptionFrequency }))} className="input-neumorphic">
-                                {WORLD_INTERRUPTION_LEVELS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                        </Field>
-                         <Field label="Hình Phạt Khi Tử Vong" description="Chọn hình phạt sẽ xảy ra khi nhân vật của bạn chết.">
-                             <select name="deathPenalty" value={formData.deathPenalty} onChange={e => setFormData(p => ({ ...p, deathPenalty: e.target.value as DeathPenalty }))} className="input-neumorphic">
-                                {DEATH_PENALTY_LEVELS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                        </Field>
-                        <Field label="Bật Cơ Chế Sinh Tồn" description="Bật hoặc tắt nhu cầu về đói, khát.">
-                             <button onClick={() => setFormData(p => ({ ...p, enableSurvivalMechanics: !p.enableSurvivalMechanics }))} className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
-                                {formData.enableSurvivalMechanics ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
-                                <span>Bật đói và khát</span>
-                            </button>
-                        </Field>
-                        <Field label="DLC (Mở Rộng AI)" description="Thêm các đoạn văn bản mở rộng để AI sử dụng làm lore hoặc quy tắc khi tạo thế giới và tường thuật.">
-                            <div className="space-y-3">
-                                {(formData.dlcs || []).map((dlc, index) => (
-                                    <div key={index} className="neumorphic-inset-box p-3 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                value={dlc.title}
-                                                onChange={(e) => handleDlcChange(index, 'title', e.target.value)}
-                                                className="input-neumorphic !py-1 flex-grow"
-                                                placeholder={`Tiêu đề DLC ${index + 1}`}
-                                            />
-                                            <button onClick={() => handleDeleteDlc(index)} className="p-2 text-[var(--text-muted-color)] hover:text-red-400">
-                                                <FaTrash />
-                                            </button>
-                                        </div>
-                                        <textarea
-                                            value={dlc.content}
-                                            onChange={(e) => handleDlcChange(index, 'content', e.target.value)}
-                                            rows={4}
-                                            className="input-neumorphic w-full resize-y"
-                                            placeholder="Dán nội dung lore, quy tắc, hoặc bối cảnh vào đây..."
-                                        />
-                                    </div>
-                                ))}
-                                <button onClick={handleAddDlc} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-2 bg-cyan-900/30 rounded">
-                                    <FaPlus /> Thêm DLC
-                                </button>
-                            </div>
-                        </Field>
-                    </div>
-                 )}
-            </Section>
-
-            <Section title="3. Hệ Thống Cảnh Giới & Thuộc Tính">
-                 <Field label="Hệ thống Cảnh giới" description="Thế giới của bạn có hệ thống cấp bậc, tu luyện, hay sức mạnh không?">
-                    <button onClick={() => setFormData(p => ({ ...p, enableRealmSystem: !p.enableRealmSystem }))} className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
-                        {formData.enableRealmSystem ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
-                        <span>{formData.enableRealmSystem ? 'Đang Bật' : 'Đang Tắt'}</span>
+                <Section title="2. Cài Đặt Sáng Thế Nâng Cao">
+                    <button onClick={() => setShowAdvanced(!showAdvanced)} className="w-full flex justify-between items-center px-4 py-3 bg-black/30 border border-gray-600 rounded-lg text-left text-[var(--text-color)] hover:bg-black/40">
+                        <span className="font-semibold">Tùy Chỉnh Lối Chơi & AI</span>
+                        {showAdvanced ? <FaChevronUp /> : <FaChevronDown />}
                     </button>
-                </Field>
-                 {formData.enableRealmSystem && (
-                     <Field label="Chọn Mẫu Cảnh Giới" description="Bắt đầu với một hệ thống có sẵn hoặc tự tạo.">
-                        <div className="flex items-center gap-2">
-                           <select value={formData.realmTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="input-neumorphic">
-                                {REALM_TEMPLATES.map(template => (
-                                    <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
-                                ))}
-                                <option value="custom">Tùy Chỉnh</option>
+                    {showAdvanced && (
+                        <div className="p-4 space-y-4 border-t border-gray-600/50 animate-fade-in">
+                            <Field label="Phong Cách Tường Thuật" description="Chọn văn phong và giọng điệu cho AI kể chuyện.">
+                                <select name="narrativeStyle" value={formData.narrativeStyle} onChange={e => setFormData(p => ({ ...p, narrativeStyle: e.target.value as NarrativeStyle }))} className="input-neumorphic">
+                                    {NARRATIVE_STYLES.map(style => <option key={style.value} value={style.value}>{style.label}</option>)}
+                                </select>
+                            </Field>
+                            <Field label="Độ dài Phản hồi AI (Số từ)" description="Đặt độ dài gần đúng cho mỗi phản hồi tường thuật của AI.">
+                                <div className="flex items-center gap-4">
+                                    <input type="range" min="100" max="5000" step="100" value={formData.aiResponseWordCount} onChange={(e) => setFormData(p => ({ ...p, aiResponseWordCount: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" />
+                                    <span className="font-mono text-sm w-20 text-center">{formData.aiResponseWordCount}</span>
+                                </div>
+                            </Field>
+                            <Field label="Mức Độ Biến Hóa Của Thế Giới" description="Tần suất các sự kiện ngẫu nhiên xảy ra làm gián đoạn hành động của bạn.">
+                                <select name="worldInterruptionFrequency" value={formData.worldInterruptionFrequency} onChange={e => setFormData(p => ({ ...p, worldInterruptionFrequency: e.target.value as WorldInterruptionFrequency }))} className="input-neumorphic">
+                                    {WORLD_INTERRUPTION_LEVELS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                </select>
+                            </Field>
+                            <Field label="Hình Phạt Khi Tử Vong" description="Chọn hình phạt sẽ xảy ra khi nhân vật của bạn chết.">
+                                <select name="deathPenalty" value={formData.deathPenalty} onChange={e => setFormData(p => ({ ...p, deathPenalty: e.target.value as DeathPenalty }))} className="input-neumorphic">
+                                    {DEATH_PENALTY_LEVELS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                </select>
+                            </Field>
+                            <Field label="Bật Cơ Chế Sinh Tồn" description="Bật hoặc tắt nhu cầu về đói, khát.">
+                                <button onClick={() => setFormData(p => ({ ...p, enableSurvivalMechanics: !p.enableSurvivalMechanics }))} className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
+                                    {formData.enableSurvivalMechanics ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
+                                    <span>Bật đói và khát</span>
+                                </button>
+                            </Field>
+                            <Field label="DLC (Mở Rộng AI)" description="Thêm các đoạn văn bản mở rộng để AI sử dụng làm lore hoặc quy tắc khi tạo thế giới và tường thuật.">
+                                <div className="space-y-3">
+                                    {(formData.dlcs || []).map((dlc, index) => (
+                                        <div key={index} className="neumorphic-inset-box p-3 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    value={dlc.title}
+                                                    onChange={(e) => handleDlcChange(index, 'title', e.target.value)}
+                                                    className="input-neumorphic !py-1 flex-grow"
+                                                    placeholder={`Tiêu đề DLC ${index + 1}`}
+                                                />
+                                                <button onClick={() => handleDeleteDlc(index)} className="p-2 text-[var(--text-muted-color)] hover:text-red-400">
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
+                                            <textarea
+                                                value={dlc.content}
+                                                onChange={(e) => handleDlcChange(index, 'content', e.target.value)}
+                                                rows={4}
+                                                className="input-neumorphic w-full resize-y"
+                                                placeholder="Dán nội dung lore, quy tắc, hoặc bối cảnh vào đây..."
+                                            />
+                                        </div>
+                                    ))}
+                                    <button onClick={handleAddDlc} className="w-full mt-2 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-2 bg-cyan-900/30 rounded">
+                                        <FaPlus /> Thêm DLC
+                                    </button>
+                                </div>
+                            </Field>
+                        </div>
+                    )}
+                </Section>
+
+                <Section title="3. Hệ Thống Cảnh Giới & Thuộc Tính">
+                    <Field label="Bật Hệ Thống Cảnh Giới" description="Bật hoặc tắt hệ thống tu luyện/cấp bậc cho thế giới.">
+                        <button onClick={() => setFormData(p => ({ ...p, enableRealmSystem: !p.enableRealmSystem }))} className="flex items-center gap-2" style={{color: 'var(--text-color)'}}>
+                            {formData.enableRealmSystem ? <FaToggleOn className="text-green-400 text-2xl"/> : <FaToggleOff className="text-2xl"/>}
+                            <span>{formData.enableRealmSystem ? 'Đang Bật' : 'Đang Tắt'}</span>
+                        </button>
+                    </Field>
+                    <Field label="Mẫu Hệ Thống Cảnh Giới" description="Chọn một mẫu có sẵn hoặc tùy chỉnh để định hình con đường sức mạnh." disabled={!formData.enableRealmSystem}>
+                        <div className="flex gap-2">
+                            <select name="realmTemplateId" value={formData.realmTemplateId} onChange={e => handleRealmTemplateChange(e.target.value)} className="input-neumorphic flex-grow" disabled={!formData.enableRealmSystem}>
+                                {REALM_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
-                            <button onClick={() => setRealmEditorOpen(true)} className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 flex items-center gap-2"><FaEdit /> Sửa</button>
+                            <button onClick={() => setRealmEditorOpen(true)} className="btn btn-neumorphic" disabled={!formData.enableRealmSystem}><FaEdit /></button>
                         </div>
                     </Field>
-                 )}
-                <Field label="Hệ Thống Thuộc Tính" description="Bắt đầu với một hệ thống thuộc tính có sẵn.">
-                    <select onChange={e => handleTemplateChange(e.target.value)} className="input-neumorphic">
-                        {ATTRIBUTE_TEMPLATES.map(template => (
-                            <option key={template.id} value={template.id}>{template.name} - {template.description}</option>
-                        ))}
-                    </select>
-                </Field>
-                {formData.attributeSystem?.groups.map(group => (
-                    <div key={group.id} className="neumorphic-inset-box p-3">
-                        <h4 className="font-bold text-lg" style={{color: 'var(--primary-accent-color)'}}>{group.name}</h4>
-                        <div className="mt-2 space-y-2">
-                            {formData.attributeSystem.definitions.filter(def => def.group === group.id).map(def => (
-                                <div key={def.id} className="flex justify-between items-center p-2 rounded" style={{boxShadow: 'var(--shadow-pressed)'}}>
-                                    <div className="flex items-center gap-2">
-                                        {React.createElement(UI_ICONS[def.iconName] || 'span', { style: { color: 'var(--secondary-accent-color)' } })}
-                                        <span className="text-sm font-semibold" style={{color: 'var(--text-color)'}}>{def.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={() => handleOpenAttributeModal(group, def)} className="p-1 text-[var(--text-muted-color)] hover:text-[var(--text-color)]"><FaEdit /></button>
-                                        <button onClick={() => handleDeleteAttribute(def.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
-                                    </div>
-                                </div>
-                            ))}
+                    <Field label="Hệ Thống Thuộc Tính" description="Chọn mẫu thuộc tính phù hợp với thể loại hoặc tạo hệ thống của riêng bạn.">
+                        <div className="flex gap-2">
+                            <select onChange={(e) => handleTemplateChange(e.target.value)} className="input-neumorphic flex-grow">
+                                {ATTRIBUTE_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
                         </div>
-                        <button onClick={() => handleOpenAttributeModal(group, null)} className="w-full mt-3 text-sm flex items-center justify-center gap-2 p-1 rounded hover:brightness-125" style={{ color: 'var(--secondary-accent-color)', backgroundColor: 'rgba(var(--secondary-accent-color-rgb), 0.1)'}}>
-                            <FaPlus /> Thêm thuộc tính vào nhóm
-                        </button>
-                    </div>
-                ))}
-            </Section>
-
-            <Section title="4. Tạo Nhân Vật Chính">
-                <Field label="Tên Nhân Vật" description="Nhập tên cho nhân vật của bạn.">
-                    <input name="character.name" value={formData.character.name} onChange={handleInputChange} className="input-neumorphic"/>
-                </Field>
-                <Field label="Giới Tính" description="">
-                     <select name="character.gender" value={formData.character.gender} onChange={handleInputChange} className="input-neumorphic">
-                        <option value="AI">Để AI quyết định</option>
-                        <option value="Nam">Nam</option>
-                        <option value="Nữ">Nữ</option>
-                    </select>
-                </Field>
-                <Field label="Sơ Lược Tiểu Sử/Đặc Điểm (2-3 câu)" description="Cung cấp cho AI một vài ý tưởng về nhân vật của bạn.">
-                    <textarea name="character.bio" value={formData.character.bio} onChange={handleInputChange} rows={3} className="input-neumorphic resize-y" placeholder="VD: Một thám tử tư nghiện cà phê với quá khứ bí ẩn, một đệ tử ngoại môn vô danh tình cờ nhặt được bí kíp..."/>
-                </Field>
-            </Section>
-
-            <Section title="5. Dữ Liệu Thế Giới">
-                <Field label="NPC Ban Đầu" description="Chọn cách tạo các NPC ban đầu trong thế giới.">
-                    <div className="flex gap-2 items-start">
-                        <select name="npcGenerationMode" value={formData.npcGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic flex-grow">
-                            <option value="AI">Để AI Tự Tạo</option>
-                            <option value="CUSTOM">Tự Định Nghĩa</option>
-                            <option value="NONE">Không Tạo Ban Đầu</option>
+                        <div className="mt-4 p-2 rounded-lg" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                            <h4 className="text-sm font-bold mb-2 text-center" style={{color: 'var(--text-muted-color)'}}>Các Thuộc Tính Hiện Tại</h4>
+                            <div className="max-h-48 overflow-y-auto pr-2 text-xs grid grid-cols-2 gap-x-4">
+                                {formData.attributeSystem?.definitions.map(attr => (
+                                    <div key={attr.id} className="flex items-center justify-between py-1 border-b" style={{borderColor: 'var(--shadow-dark)'}}>
+                                        <span className="flex items-center gap-1">
+                                            {React.createElement(UI_ICONS[attr.iconName] || FaBolt, { className: 'text-[var(--secondary-accent-color)]'})}
+                                            <span style={{color: 'var(--text-color)'}}>{attr.name}</span>
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                             <button onClick={() => { const group = formData.attributeSystem?.groups.find(g => g.id === attr.group); if(group) handleOpenAttributeModal(group, attr); }} className="p-1 opacity-50 hover:opacity-100"><FaEdit /></button>
+                                             <button onClick={() => handleDeleteAttribute(attr.id)} className="p-1 opacity-50 hover:opacity-100 text-red-400"><FaTrash /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                             <button onClick={() => { const group = formData.attributeSystem?.groups[0]; if(group) handleOpenAttributeModal(group, null); }} className="w-full mt-2 text-xs text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded">
+                                <FaPlus /> Thêm Thuộc Tính Mới
+                            </button>
+                        </div>
+                    </Field>
+                </Section>
+                 <Section title="4. Tạo Nhân Vật Chính">
+                    <Field label="Tên Nhân Vật Chính" description="Tên gọi sẽ đồng hành cùng bạn trong suốt hành trình.">
+                        <input name="character.name" value={formData.character.name} onChange={handleInputChange} className="input-neumorphic" placeholder="Nhập tên nhân vật..."/>
+                    </Field>
+                    <Field label="Giới Tính" description="Chọn giới tính cho nhân vật hoặc để AI tự quyết định.">
+                        <select name="character.gender" value={formData.character.gender} onChange={handleInputChange} className="input-neumorphic">
+                            <option value="AI">Để AI quyết định</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
                         </select>
-                    </div>
-                    {formData.npcGenerationMode === 'CUSTOM' && (
-                        <div className="mt-2 p-2 border border-gray-700 rounded-lg space-y-2">
-                            {formData.customNpcs.map(npc => (
-                                <div key={npc.id} className="flex justify-between items-center p-2 bg-black/20 rounded">
-                                    <span className="text-sm font-semibold">{npc.name}</span>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => { setEditingNpc(npc); setNpcModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
-                                        <button onClick={() => handleDeleteNpc(npc.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
-                                    </div>
-                                </div>
-                            ))}
-                            <button onClick={() => { setEditingNpc(null); setNpcModalOpen(true); }} className="w-full mt-1 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus /> Thêm NPC</button>
-                        </div>
-                    )}
-                </Field>
-                 <Field label="Địa Điểm Ban Đầu" description="Chọn cách tạo các địa điểm ban đầu.">
-                     <div className="flex gap-2 items-start">
-                        <select name="locationGenerationMode" value={formData.locationGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic flex-grow">
-                            <option value="AI">Sử dụng từ Thế giới Mặc định</option>
+                    </Field>
+                    <Field label="Ý tưởng Ngoại hình/Tiểu sử" description="Mô tả sơ lược, AI sẽ dựa vào đây để tạo ra một câu chuyện nền có chiều sâu hơn.">
+                        <textarea name="character.bio" value={formData.character.bio} onChange={handleInputChange} rows={3} className="input-neumorphic resize-y" placeholder="VD: Một thiếu niên có mái tóc bạch kim và đôi mắt màu hổ phách, mang trong mình một bí mật động trời..."/>
+                    </Field>
+                </Section>
+                 <Section title="5. Dữ Liệu Thế Giới">
+                    <Field label="Phe Phái (Factions)" description="Chọn cách tạo ra các phe phái trong thế giới.">
+                        <select name="factionGenerationMode" value={formData.factionGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic">
+                            <option value="AI">AI Tự Động Tạo</option>
                             <option value="CUSTOM">Tự Định Nghĩa</option>
-                            <option value="NONE">Không Tạo Ban Đầu</option>
+                            <option value="NONE">Không có Phe Phái</option>
                         </select>
-                    </div>
-                     {formData.locationGenerationMode === 'CUSTOM' && (
-                        <div className="mt-2 p-2 border border-gray-700 rounded-lg space-y-2">
-                            {formData.customLocations.map(loc => (
-                                <div key={loc.id} className="flex justify-between items-center p-2 bg-black/20 rounded">
-                                    <span className="text-sm font-semibold">{loc.name}</span>
-                                     <div className="flex gap-2">
-                                        <button onClick={() => { setEditingLocation(loc); setLocationModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
-                                        <button onClick={() => handleDeleteLocation(loc.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                        {formData.factionGenerationMode === 'CUSTOM' && (
+                            <div className="mt-3 p-2 rounded-lg space-y-2" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                                {formData.customFactions.map((faction, index) => (
+                                    <div key={index} className="flex justify-between items-center p-2 rounded bg-black/20">
+                                        <span className="font-semibold text-sm">{faction.name}</span>
+                                        <div>
+                                            <button onClick={() => { setEditingFaction(faction); setFactionModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                            <button onClick={() => handleDeleteFaction(faction.name)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            <button onClick={() => { setEditingLocation(null); setLocationModalOpen(true); }} className="w-full mt-1 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus /> Thêm Địa Điểm</button>
-                        </div>
-                    )}
-                </Field>
-                <Field label="Phe Phái Ban Đầu" description="Chọn cách tạo các phe phái ban đầu.">
-                     <div className="flex gap-2 items-start">
-                        <select name="factionGenerationMode" value={formData.factionGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic flex-grow">
-                            <option value="AI">Sử dụng từ Thế giới Mặc định</option>
+                                ))}
+                                <button onClick={() => { setEditingFaction(null); setFactionModalOpen(true); }} className="w-full text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-2 bg-cyan-900/30 rounded">
+                                    <FaPlus /> Thêm Phe Phái
+                                </button>
+                            </div>
+                        )}
+                    </Field>
+                    <Field label="Địa Điểm (Locations)" description="Chọn cách tạo ra các địa điểm khởi đầu trong thế giới.">
+                        <select name="locationGenerationMode" value={formData.locationGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic">
+                            <option value="AI">AI Tự Động Tạo</option>
                             <option value="CUSTOM">Tự Định Nghĩa</option>
-                            <option value="NONE">Không Tạo Ban Đầu</option>
+                            <option value="NONE">Không có Địa Điểm</option>
                         </select>
-                    </div>
-                    {formData.factionGenerationMode === 'CUSTOM' && (
-                        <div className="mt-2 p-2 border border-gray-700 rounded-lg space-y-2">
-                            {formData.customFactions.map(faction => (
-                                <div key={faction.name} className="flex justify-between items-center p-2 bg-black/20 rounded">
-                                    <span className="text-sm font-semibold">{faction.name}</span>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => { setEditingFaction(faction); setFactionModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
-                                        <button onClick={() => handleDeleteFaction(faction.name)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                        {formData.locationGenerationMode === 'CUSTOM' && (
+                            <div className="mt-3 p-2 rounded-lg space-y-2" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                                {formData.customLocations.map((loc, index) => (
+                                    <div key={index} className="flex justify-between items-center p-2 rounded bg-black/20">
+                                        <span className="font-semibold text-sm">{loc.name}</span>
+                                        <div>
+                                            <button onClick={() => { setEditingLocation(loc); setLocationModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                            <button onClick={() => handleDeleteLocation(loc.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            <button onClick={() => { setEditingFaction(null); setFactionModalOpen(true); }} className="w-full mt-1 text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-1 bg-cyan-900/30 rounded"><FaPlus /> Thêm Phe Phái</button>
-                        </div>
-                    )}
-                </Field>
-            </Section>
-
+                                ))}
+                                 <button onClick={() => { setEditingLocation(null); setLocationModalOpen(true); }} className="w-full text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-2 bg-cyan-900/30 rounded">
+                                    <FaPlus /> Thêm Địa Điểm
+                                </button>
+                            </div>
+                        )}
+                    </Field>
+                    <Field label="Nhân Vật (NPCs)" description="Chọn cách tạo ra các NPC khởi đầu trong thế giới.">
+                        <select name="npcGenerationMode" value={formData.npcGenerationMode} onChange={handleDataGenModeChange} className="input-neumorphic">
+                            <option value="AI">AI Tự Động Tạo</option>
+                            <option value="CUSTOM">Tự Định Nghĩa</option>
+                            <option value="NONE">Không có NPC</option>
+                        </select>
+                        {formData.npcGenerationMode === 'CUSTOM' && (
+                            <div className="mt-3 p-2 rounded-lg space-y-2" style={{boxShadow: 'var(--shadow-pressed)'}}>
+                                {formData.customNpcs.map((npc, index) => (
+                                     <div key={index} className="flex justify-between items-center p-2 rounded bg-black/20">
+                                        <span className="font-semibold text-sm">{npc.name}</span>
+                                        <div>
+                                            <button onClick={() => { setEditingNpc(npc); setNpcModalOpen(true); }} className="p-1 text-[var(--text-muted-color)] hover:text-white"><FaEdit /></button>
+                                            <button onClick={() => handleDeleteNpc(npc.id)} className="p-1 text-[var(--text-muted-color)] hover:text-red-400"><FaTrash /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <button onClick={() => { setEditingNpc(null); setNpcModalOpen(true); }} className="w-full text-sm text-cyan-300/80 hover:text-cyan-200 flex items-center justify-center gap-2 p-2 bg-cyan-900/30 rounded">
+                                    <FaPlus /> Thêm NPC
+                                </button>
+                            </div>
+                        )}
+                    </Field>
+                </Section>
+            </div>
+            
+            {/* Right Column: Thien Co Kinh */}
+            <div className="hidden lg:flex flex-col h-full">
+                <div className="neumorphic-inset-box p-4 flex-grow flex flex-col min-h-0">
+                    <h3 className="text-xl font-bold font-title text-center mb-4 flex items-center justify-center gap-2" style={{color: 'var(--primary-accent-color)'}}>
+                        <GiGalaxy /> Thiên Cơ Kính
+                    </h3>
+                    <div className="overflow-y-auto pr-2 flex-grow">
+                        {isMirrorLoading && mirrorContent === '' ? (
+                            <div className="flex items-center justify-center h-full">
+                                <LoadingSpinner message="Thiên Cơ đang suy diễn..." />
+                            </div>
+                        ) : mirrorContent ? (
+                            <MarkdownRenderer content={mirrorContent} />
+                        ) : (
+                            <div className="text-center text-[var(--text-muted-color)] pt-16">
+                                <p>Hãy mô tả ý tưởng thế giới của bạn vào ô "Ý Tưởng Cốt Lõi" bên trái (khoảng 50 ký tự trở lên).</p>
+                                <p className="mt-2 text-sm">Thiên Cơ Kính sẽ phân tích và đưa ra gợi ý theo thời gian thực để giúp bạn xây dựng một thế giới có chiều sâu.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div className="flex-shrink-0 mt-6 pt-4 border-t border-gray-700/60 flex justify-center">

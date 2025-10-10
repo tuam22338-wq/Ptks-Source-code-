@@ -106,6 +106,31 @@ export const createFullGameStateContext = (gameState: GameState, settings: GameS
 
     const isBreakthroughPossible = playerCharacter.cultivation.spiritualQi >= qiToNextStage && qiToNextStage !== Infinity;
 
+    // --- GENRE-AWARE PROGRESSION CONTEXT ---
+    const hasProgressionSystem = realmSystem.length > 0 && !(realmSystem.length === 1 && realmSystem[0].id === 'pham_nhan');
+    const isCultivationGenre = gameState.genre.includes('Tu Tiên') || gameState.genre.includes('Huyền Huyễn') || (realmSystemInfo.name && realmSystemInfo.name.includes('Tu Luyện'));
+
+    let progressionContext = '';
+    if (hasProgressionSystem) {
+        if (isCultivationGenre) {
+            progressionContext = `
+- **Cảnh giới:** ${currentRealm?.name || 'Phàm Nhân'} - ${currentStage?.name || ''} (${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${(qiToNextStage !== Infinity ? qiToNextStage.toLocaleString() : 'MAX')} ${realmSystemInfo.resourceName})
+${nextRealmInfo ? `- ${nextRealmInfo}` : ''}
+${isBreakthroughPossible ? `- **[TRẠNG THÁI QUAN TRỌNG]: ĐÃ ĐỦ ĐIỀU KIỆN ĐỂ ĐỘT PHÁ!**` : ''}
+    `;
+        } else {
+            // For other genres, use more generic terms
+            const genericNextRealmInfo = nextRealmInfo ? `- Mục tiêu tiếp theo: ${nextRealmInfo.replace('Cảnh giới:', 'Cấp:').replace('tiểu cảnh giới:', 'bậc:')}` : '';
+            progressionContext = `
+- **${realmSystemInfo.name || 'Cấp Bậc'}:** ${currentRealm?.name || 'Cơ bản'} - ${currentStage?.name || ''}
+- **${realmSystemInfo.resourceName || 'Kinh Nghiệm'}:** ${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${(qiToNextStage !== Infinity ? qiToNextStage.toLocaleString() : 'MAX')} ${realmSystemInfo.resourceUnit || 'điểm'}
+${genericNextRealmInfo}
+${isBreakthroughPossible ? `- **[TRẠNG THÁI QUAN TRỌNG]: ĐÃ ĐỦ ĐIỀU KIỆN ĐỂ NÂNG CẤP!**` : ''}
+    `;
+        }
+    }
+
+
   let dialogueContext = '';
   if (dialogueWithNpcId) {
       const npc = activeNpcs.find(n => n.id === dialogueWithNpcId);
@@ -163,15 +188,15 @@ ${(dialogueHistory || []).map(h => `  - ${h.speaker === 'player' ? playerCharact
   // FIX: Added return statement
   return `
 ### BỐI CẢNH GAME TOÀN CỤC ###
+- **Thể Loại Thế Giới:** ${gameState.genre}. Văn phong và nội dung phải phù hợp với thể loại này.
+- **Tên Hệ Thống Sức Mạnh:** ${realmSystemInfo.name}.
 ${modContext}
 ${dialogueContext}
 ${playerRulesContext}
 **Thời gian:** ${gameDate.era} năm ${gameDate.year}, ${gameDate.season}, ${gameDate.timeOfDay} (giờ ${gameDate.shichen}). Thời tiết: ${gameDate.weather}.
 **Nhân Vật Chính: ${playerCharacter.identity.name}**
 - **Trạng thái:** ${playerCharacter.healthStatus}. ${activeEffectsSummary}
-- **Cảnh giới:** ${currentRealm?.name} - ${currentStage?.name || ''} (${playerCharacter.cultivation.spiritualQi.toLocaleString()} / ${(qiToNextStage !== Infinity ? qiToNextStage.toLocaleString() : 'MAX')} ${realmSystemInfo.resourceName})
-${nextRealmInfo ? `- ${nextRealmInfo}` : ''}
-${isBreakthroughPossible ? `- **[TRẠNG THÁI QUAN TRỌNG]: ĐÃ ĐỦ ĐIỀU KIỆN ĐỂ ĐỘT PHÁ!**` : ''}
+${progressionContext}
 - **Thuộc tính:**${attributeSummary}
 - **Danh Vọng:** ${playerCharacter.danhVong.status} (${playerCharacter.danhVong.value}).
 - **Tiền tệ:** ${currencySummary || 'Không có'}.

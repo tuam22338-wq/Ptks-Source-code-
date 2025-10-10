@@ -1,8 +1,5 @@
-
-
-
 import { Type } from "@google/genai";
-import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship } from '../../types';
+import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship, GameSettings, WorldCreationData } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 import * as db from '../dbService';
@@ -218,6 +215,21 @@ const attributeSystemSchema = {
     required: ['definitions', 'groups']
 };
 
+const namedRealmSystemSchema = {
+    type: Type.OBJECT,
+    properties: {
+        name: { type: Type.STRING, description: "Tên của Hệ Thống Sức Mạnh, vd: 'Hệ Thống Hồn Sư'."},
+        description: { type: Type.STRING },
+        resourceName: { type: Type.STRING, description: "Tên tài nguyên chính, vd: 'Hồn Lực'."},
+        resourceUnit: { type: Type.STRING, description: "Đơn vị của tài nguyên, vd: 'năm'."},
+        resourceIconName: { type: Type.STRING, enum: availableIconNames, description: "Tên icon cho tài nguyên, vd: 'GiSoulVessel'."},
+        realms: {
+            type: Type.ARRAY,
+            items: realmConfigSchema.items
+        }
+    },
+    required: ['name', 'description', 'resourceName', 'resourceUnit', 'resourceIconName', 'realms']
+};
 
 const worldSchema = {
     type: Type.OBJECT,
@@ -309,6 +321,7 @@ const worldSchema = {
                 },
                 items: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING } } } },
                 realmConfigs: realmConfigSchema,
+                namedRealmSystems: { type: Type.ARRAY, items: namedRealmSystemSchema },
                 aiHooks: aiHooksSchema,
                 dynamicEvents: dynamicEventSchema,
                 tagDefinitions: {
@@ -447,7 +460,7 @@ Tập trung vào việc trích xuất nhanh và chính xác các thực thể ch
         -   **\`initialLocations\`:** Nhận diện tất cả các địa danh được mô tả, suy luận ra \`type\`, \`qiConcentration\`, và mối quan hệ \`neighbors\`. Tự động tạo \`coordinates\` (x, y) một cách logic để tạo thành một bản đồ hợp lý.
         -   **\`initialNpcs\`:** Nhận diện tất cả các nhân vật được mô tả, trích xuất ngoại hình, tính cách, xuất thân. Quan trọng nhất, suy luận \`locationId\` (tên địa điểm) mà họ có khả năng xuất hiện nhất.
     4.  **\`items\` (Tùy chọn):** Nếu văn bản mô tả các vật phẩm đặc biệt (thần binh, bảo vật), hãy trích xuất chúng.
-    5.  **\`realmConfigs\` (Hệ Thống Tu Luyện):** Phân tích kỹ lưỡng các đoạn văn mô tả hệ thống sức mạnh, cấp bậc, hoặc con đường tu luyện. Nếu có, hãy suy luận và tạo ra một cấu trúc \`realmConfigs\` hoàn chỉnh. Đảm bảo \`qiRequired\` tăng dần một cách logic và \`bonuses\` phù hợp với mô tả của từng cấp bậc.
+    5.  **\`namedRealmSystems\` (Hệ Thống Sức Mạnh):** Phân tích kỹ lưỡng các đoạn văn mô tả hệ thống sức mạnh, cấp bậc, hoặc con đường tu luyện. Nếu có, hãy suy luận và tạo ra một cấu trúc \`namedRealmSystems\` hoàn chỉnh. Đảm bảo \`qiRequired\` tăng dần một cách logic, \`bonuses\` phù hợp, và chọn một \`resourceIconName\` hợp lý.
     6.  **\`attributeSystem\` (HỆ THỐNG THUỘC TÍNH - QUAN TRỌNG):**
         **QUY TẮC SÁNG TẠO TỪ ĐẦU:** Bạn phải thiết kế và tạo ra một hệ thống thuộc tính **HOÀN TOÀN MỚI** từ con số không, dựa trên bối cảnh và lore được cung cấp.
         - **KHÔNG GIẢ ĐỊNH:** Không có bất kỳ thuộc tính mặc định nào tồn tại. Bạn phải tự định nghĩa tất cả, bao gồm cả các thuộc tính cơ bản như sinh mệnh, năng lượng, v.v.
@@ -741,6 +754,7 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
     }
     if (namedRealmSystems && namedRealmSystems.length > 0) {
         delete dynamicWorldSchema.properties.content.properties.realmConfigs;
+        delete dynamicWorldSchema.properties.content.properties.namedRealmSystems;
     }
     // If user provides these, AI should not generate them from scratch
     if (factions && factions.length > 0) delete dynamicWorldSchema.properties.content.properties.worldData.items.properties.factions;
@@ -899,5 +913,112 @@ export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promis
         console.error("Failed to parse AI response for world generation:", e);
         console.error("Raw AI response:", response.text);
         throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");
+    }
+};
+
+export async function* streamWorldAnalysis(
+    description: string,
+    settings: GameSettings
+): AsyncIterable<string> {
+    const prompt = `Bạn là AI Sáng Thế 'Thiên Cơ Kính', một trợ lý sáng tạo. Nhiệm vụ của bạn là phân tích mô tả thế giới của người dùng theo thời gian thực và đưa ra các gợi ý, phân tích và ý tưởng để làm cho thế giới đó trở nên sâu sắc và thú vị hơn.
+
+**Mô tả của người dùng:**
+---
+${description}
+---
+
+**Nhiệm vụ của bạn:**
+Dựa trên mô tả, hãy cung cấp một bản phân tích và gợi ý có cấu trúc. Sử dụng markdown để định dạng. Phân tích của bạn nên bao gồm các mục sau (nếu có thể suy luận):
+
+*   **## Phân Tích Thể Loại & Chủ Đề:**
+    -   Nhận diện các thể loại chính (vd: Tu tiên, Cyberpunk, Hắc ám) và các chủ đề cốt lõi.
+
+*   **## Khái Niệm Chính & Gợi Ý Tên Gọi:**
+    -   Trích xuất các khái niệm độc đáo và gợi ý những tên gọi thi vị hơn. (Vd: "dòng dữ liệu thuần khiết" có thể gọi là "Linh Tức").
+
+*   **## Gợi Ý Phe Phái & Xung Đột:**
+    -   Dựa trên các thế lực được mô tả, đề xuất tên và mục tiêu cho các phe phái chính.
+    -   Suy luận ra xung đột trung tâm của thế giới.
+
+*   **## Gợi Ý Hệ Thống Sức Mạnh:**
+    -   Đề xuất một hệ thống sức mạnh/tu luyện phù hợp với bối cảnh. Các cấp bậc và tên gọi nên độc đáo.
+
+*   **## Câu Hỏi Gợi Mở:**
+    -   Đặt 1-2 câu hỏi để người dùng suy nghĩ sâu hơn về thế giới của họ. (Vd: "Điều gì sẽ xảy ra nếu công nghệ cấy ghép linh hồn bị lỗi?", "Nguồn gốc của dòng dữ liệu thuần khiết từ đâu?").
+
+Hãy trả lời một cách sáng tạo và gợi mở.`;
+
+    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    
+    const config: any = {
+        temperature: 0.7,
+        topK: settings.topK,
+        topP: settings.topP,
+    };
+    
+    const stream = await generateWithRetryStream({
+        model,
+        contents: prompt,
+        config: config,
+    }, specificApiKey);
+    
+    for await (const chunk of stream) {
+        yield chunk.text;
+    }
+}
+
+export const generateLoadingNarratives = async (
+    worldCreationData: WorldCreationData,
+    settings: GameSettings
+): Promise<string[]> => {
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+            narratives: {
+                type: Type.ARRAY,
+                description: "Danh sách 5-7 thông điệp ngắn gọn, huyền ảo.",
+                items: { type: Type.STRING },
+            },
+        },
+        required: ['narratives'],
+    };
+
+    const prompt = `Bạn là AI Sáng Thế, một nhà thơ vũ trụ. Dựa trên ý tưởng cốt lõi về một thế giới, hãy sáng tạo ra 5-7 dòng thông điệp ngắn gọn, huyền ảo, và đầy thi vị để hiển thị trên màn hình tải game trong lúc thế giới đang được kiến tạo. Những thông điệp này nên gợi lên cảm giác thế giới đang được "sinh ra".
+
+    **Ý tưởng thế giới:**
+    - Thể loại: ${worldCreationData.genre}
+    - Chủ đề: ${worldCreationData.theme}
+    - Bối cảnh: ${worldCreationData.setting}
+
+    **Yêu cầu:**
+    - Mỗi thông điệp phải ngắn gọn (dưới 15 từ).
+    - Văn phong phải huyền ảo, thơ mộng, phù hợp với cảm giác "Sáng Thế".
+    - Trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
+
+    const model = settings.quickSupportModel || 'gemini-2.5-flash';
+    const specificApiKey = settings.modelApiKeyAssignments?.quickSupportModel;
+
+    try {
+        const response = await generateWithRetry({
+            model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+                temperature: 1.0,
+            },
+        }, specificApiKey);
+        
+        const result = JSON.parse(response.text);
+        return result.narratives || [];
+    } catch (error) {
+        console.warn("Failed to generate loading narratives, using defaults.", error);
+        return [
+            "Đang gieo mầm nhân quả...",
+            "Thiên đạo đang định hình...",
+            "Vạn vật đang chờ đợi...",
+            "Viết nên chương đầu tiên của số phận...",
+        ];
     }
 };

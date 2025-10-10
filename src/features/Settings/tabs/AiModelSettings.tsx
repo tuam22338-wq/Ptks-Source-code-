@@ -134,7 +134,7 @@ const AiModelSettings: React.FC<AiModelSettingsProps> = ({ settings, handleSetti
                     {modelConfigs.map(config => {
                         let modelsToShow = AI_MODELS;
                         if (config.modelType === 'text') {
-                            modelsToShow = AI_MODELS.filter(m => settings.isPremium || m.value !== 'gemini-2.5-pro');
+                            modelsToShow = AI_MODELS.filter(m => settings.isPremium || !m.value.includes('pro'));
                         }
 
                         return (

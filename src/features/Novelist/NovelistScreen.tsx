@@ -197,8 +197,8 @@ const NovelistScreen: React.FC = () => {
     const [userInput, setUserInput] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [isNewNovelModalOpen, setNewNovelModalOpen] = useState(false);
-    const [isLeftSidebarOpen, setLeftSidebarOpen] = useState(true);
-    const [isRightSidebarOpen, setRightSidebarOpen] = useState(true);
+    const [isLeftSidebarOpen, setLeftSidebarOpen] = useState(window.innerWidth >= 768);
+    const [isRightSidebarOpen, setRightSidebarOpen] = useState(window.innerWidth >= 768);
 
     const contentEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -353,20 +353,38 @@ const NovelistScreen: React.FC = () => {
         <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
             <NewNovelModal isOpen={isNewNovelModalOpen} onClose={() => setNewNovelModalOpen(false)} onCreate={handleCreateNovel} />
 
+            {/* Backdrop for mobile sidebars */}
+            {(isLeftSidebarOpen || isRightSidebarOpen) && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-10 md:hidden"
+                    onClick={() => {
+                        setLeftSidebarOpen(false);
+                        setRightSidebarOpen(false);
+                    }}
+                />
+            )}
+
             <div className="flex-shrink-0 flex justify-between items-center p-3 border-b border-[var(--shadow-light)]">
-                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)]" title="Quay Lại Menu">
-                    <FaArrowLeft className="w-5 h-5" />
-                </button>
-                <h2 className="text-2xl font-bold font-title text-[var(--primary-accent-color)]">Tiểu Thuyết Gia AI</h2>
                 <button onClick={() => setLeftSidebarOpen(!isLeftSidebarOpen)} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)] md:hidden" title="Mở danh sách">
                     <FaBars />
                 </button>
+                 <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)] hidden md:block" title="Quay Lại Menu">
+                    <FaArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-2xl font-bold font-title text-[var(--primary-accent-color)]">Tiểu Thuyết Gia AI</h2>
+                 <div className="w-9 h-9"></div> {/* Spacer to balance title */}
             </div>
 
             <div className="flex flex-grow min-h-0">
                 {/* Left Sidebar - Novel List */}
                 <div className={`fixed md:relative top-0 left-0 h-full z-20 md:z-auto bg-[var(--bg-color)] w-64 md:w-72 flex-shrink-0 border-r border-[var(--shadow-light)] flex flex-col transition-transform duration-300 ${isLeftSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-                     <div className="p-3"><button onClick={() => setNewNovelModalOpen(true)} className="btn btn-primary w-full"><FaPlus /> Tiểu Thuyết Mới</button></div>
+                    <div className="p-3 border-b border-[var(--shadow-light)] flex justify-between items-center">
+                        <h3 className="font-bold text-lg">Tiểu Thuyết</h3>
+                        <button onClick={() => setLeftSidebarOpen(false)} className="p-2 md:hidden">
+                            <FaTimes />
+                        </button>
+                    </div>
+                    <div className="p-3"><button onClick={() => setNewNovelModalOpen(true)} className="btn btn-primary w-full"><FaPlus /> Tiểu Thuyết Mới</button></div>
                     <div className="flex-grow overflow-y-auto">
                         {novels.map(novel => (
                             <button key={novel.id} onClick={() => handleSelectNovel(novel)} className={`w-full text-left p-3 text-sm flex justify-between items-start transition-colors group ${activeNovel?.id === novel.id ? 'bg-[var(--primary-accent-color)]/10 text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`}>
@@ -432,6 +450,11 @@ const NovelistScreen: React.FC = () => {
                 {/* Right Sidebar - Lorebook */}
                 {activeNovel && (
                     <div className={`fixed md:relative top-0 right-0 h-full z-20 md:z-auto bg-[var(--bg-color)] w-72 md:w-80 flex-shrink-0 border-l border-[var(--shadow-light)] flex flex-col transition-transform duration-300 ${isRightSidebarOpen ? 'translate-x-0' : 'translate-x-full'} md:translate-x-0`}>
+                        <div className="p-3 border-b border-[var(--shadow-light)] flex justify-end items-center md:hidden">
+                             <button onClick={() => setRightSidebarOpen(false)} className="p-2">
+                                <FaTimes />
+                            </button>
+                        </div>
                         <RightSidebar 
                             activeNovel={activeNovel} 
                             onUpdate={handleDebouncedUpdate}

@@ -8,7 +8,7 @@ import { gameReducer, AppState, Action } from './gameReducer';
 import { processPlayerAction } from '../services/actionService';
 import { generateAndCacheBackgroundSet } from '../services/gemini/asset.service';
 import { generateCharacterFromPrompts, generateInitialWorldDetails } from '../services/gemini/character.service';
-import { generateCompleteWorldFromText, generateWorldFromPrompts } from '../services/gemini/modding.service';
+import { generateCompleteWorldFromText, generateWorldFromPrompts, generateLoadingNarratives } from '../services/gemini/modding.service';
 
 export type View = 'mainMenu' | 'saveSlots' | 'settings' | 'gamePlay' | 'info' | 'novelist' | 'loadGame' | 'aiTraining' | 'scripts' | 'createScript';
 
@@ -78,6 +78,7 @@ const initialState: AppState = {
     view: 'mainMenu',
     isLoading: false,
     loadingMessage: '',
+    loadingNarratives: null,
     isMigratingData: true,
     migrationMessage: 'Kiểm tra hệ thống lưu trữ...',
     gameState: null,
@@ -324,8 +325,16 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
     const handleCreateAndStartGame = useCallback(async (worldCreationData: WorldCreationData, slotId: number) => {
         dispatch({ type: 'SET_CURRENT_SLOT_ID', payload: slotId });
-        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Đang chuẩn bị...' } });
+        dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'Chuẩn bị Sáng Thế...' } });
     
+        try {
+            const narratives = await generateLoadingNarratives(worldCreationData, state.settings);
+            dispatch({ type: 'SET_LOADING_NARRATIVES', payload: narratives });
+        } catch (e) {
+            console.warn("Không thể tạo thông điệp tải game, tiếp tục không có chúng.");
+            dispatch({ type: 'SET_LOADING_NARRATIVES', payload: null });
+        }
+
         try {
             let primaryWorldMod = worldCreationData.importedMod;
             const modLibrary = await db.getModLibrary();
@@ -353,7 +362,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
                         openingStory: worldCreationData.openingStory,
                     },
                     attributeSystem: worldCreationData.attributeSystem,
-                    namedRealmSystems: worldCreationData.enableRealmSystem && worldCreationData.namedRealmSystem ? [worldCreationData.namedRealmSystem] : undefined,
+                    namedRealmSystem: worldCreationData.enableRealmSystem && worldCreationData.namedRealmSystem ? [worldCreationData.namedRealmSystem] : undefined,
                     factions: worldCreationData.factionGenerationMode === 'CUSTOM' ? worldCreationData.customFactions : undefined,
                     locations: worldCreationData.locationGenerationMode === 'CUSTOM' ? worldCreationData.customLocations : undefined,
                     npcs: worldCreationData.npcGenerationMode === 'CUSTOM' ? worldCreationData.customNpcs : undefined,
@@ -436,6 +445,19 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         dispatch({ type: 'SET_CURRENT_SLOT_ID', payload: slotId });
         dispatch({ type: 'SET_LOADING', payload: { isLoading: true, message: 'AI đang sáng thế, xin chờ...' } });
 
+        const tempDataForNarrative: Partial<WorldCreationData> = {
+            genre: 'AI Generated',
+            theme: 'AI Generated',
+            setting: description,
+        };
+        try {
+            const narratives = await generateLoadingNarratives(tempDataForNarrative as WorldCreationData, state.settings);
+            dispatch({ type: 'SET_LOADING_NARRATIVES', payload: narratives });
+        } catch (e) {
+            console.warn("Không thể tạo thông điệp tải game cho tạo nhanh, tiếp tục không có chúng.");
+            dispatch({ type: 'SET_LOADING_NARRATIVES', payload: null });
+        }
+
         try {
             const { mod, characterData, openingNarrative, familyNpcs, dynamicNpcs, relationships } = await generateCompleteWorldFromText(description, characterName, 'fast');
 
@@ -487,8 +509,9 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 
         } catch (error: unknown) {
             console.error("Lỗi trong quá trình Tạo Nhanh:", error);
-            // FIX: The caught 'error' of type 'unknown' cannot be passed to the Error constructor directly. Casting it to a string resolves the type mismatch.
-            throw new Error(String(error));
+            // FIX: Handle 'unknown' error type by converting it to a string before passing to the Error constructor.
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(message);
         }
     }, [loadSaveSlots, state.settings]);
 

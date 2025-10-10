@@ -191,6 +191,10 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
         dataToProcess.dialogueHistory = [];
     }
 
+    if (!dataToProcess.genre) {
+        dataToProcess.genre = 'Huyền Huyễn Tu Tiên';
+    }
+
 
     dataToProcess.version = CURRENT_GAME_VERSION;
 
@@ -214,6 +218,7 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
             name: mainSystem.name,
             resourceName: mainSystem.resourceName || 'Linh Khí',
             resourceUnit: mainSystem.resourceUnit || 'điểm',
+            resourceIconName: mainSystem.resourceIconName || 'GiMagicSwirl',
         };
     } else {
         dataToProcess.realmSystem = (modLegacyRealms && modLegacyRealms.length > 0 ? modLegacyRealms : REALM_SYSTEM).map(r => ({ ...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_') }));
@@ -221,11 +226,15 @@ export const migrateGameState = async (savedGame: any): Promise<GameState> => {
             name: 'Hệ Thống Tu Luyện Mặc Định',
             resourceName: 'Linh Khí',
             resourceUnit: 'điểm',
+            resourceIconName: 'GiMagicSwirl',
         };
     }
      // Fallback for very old saves that don't have this field
     if (!dataToProcess.realmSystemInfo) {
-        dataToProcess.realmSystemInfo = { name: 'Hệ Thống Tu Luyện Mặc Định', resourceName: 'Linh Khí', resourceUnit: 'điểm' };
+        dataToProcess.realmSystemInfo = { name: 'Hệ Thống Tu Luyện Mặc Định', resourceName: 'Linh Khí', resourceUnit: 'điểm', resourceIconName: 'GiMagicSwirl' };
+    }
+    if (!dataToProcess.realmSystemInfo.resourceIconName) {
+        dataToProcess.realmSystemInfo.resourceIconName = 'GiMagicSwirl';
     }
 
 
@@ -362,7 +371,8 @@ export const createNewGameState = async (
     let realmSystemInfoToUse: GameState['realmSystemInfo'] = {
         name: 'Hệ Thống Năng Lượng Cơ Bản',
         resourceName: 'Năng Lượng',
-        resourceUnit: 'điểm'
+        resourceUnit: 'điểm',
+        resourceIconName: 'GiMagicSwirl',
     };
 
     const modNamedSystems = activeMods.find(m => m.content.namedRealmSystems && m.content.namedRealmSystems.length > 0)?.content.namedRealmSystems;
@@ -374,6 +384,7 @@ export const createNewGameState = async (
             name: namedRealmSystem.name,
             resourceName: namedRealmSystem.resourceName || 'Linh Khí',
             resourceUnit: namedRealmSystem.resourceUnit || 'điểm',
+            resourceIconName: namedRealmSystem.resourceIconName || 'GiMagicSwirl',
         };
     } else if (modNamedSystems && modNamedSystems.length > 0) {
         const mainSystem = modNamedSystems[0];
@@ -382,6 +393,7 @@ export const createNewGameState = async (
             name: mainSystem.name,
             resourceName: mainSystem.resourceName || 'Linh Khí',
             resourceUnit: mainSystem.resourceUnit || 'điểm',
+            resourceIconName: mainSystem.resourceIconName || 'GiMagicSwirl',
         };
     } else if (modLegacyRealms && modLegacyRealms.length > 0) {
         realmSystemToUse = modLegacyRealms.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
@@ -389,6 +401,7 @@ export const createNewGameState = async (
             name: 'Hệ Thống Tu Luyện Tùy Chỉnh',
             resourceName: 'Linh Khí',
             resourceUnit: 'điểm',
+            resourceIconName: 'GiMagicSwirl',
         };
     } else if (genre === 'Huyền Huyễn Tu Tiên') {
         realmSystemToUse = REALM_SYSTEM.map(r => ({...r, id: r.id || r.name.toLowerCase().replace(/\s+/g, '_')}));
@@ -396,6 +409,7 @@ export const createNewGameState = async (
             name: 'Hệ Thống Tu Luyện Mặc Định',
             resourceName: 'Linh Khí',
             resourceUnit: 'điểm',
+            resourceIconName: 'GiMagicSwirl',
         };
     }
     
@@ -542,6 +556,7 @@ export const createNewGameState = async (
     const newGameState: GameState = {
         version: CURRENT_GAME_VERSION,
         activeWorldId: activeWorldId,
+        genre: genre,
         playerCharacter,
         activeNpcs: allNpcs,
         gameDate: initialGameDate,

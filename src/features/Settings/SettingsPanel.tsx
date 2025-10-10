@@ -12,8 +12,9 @@ import RagSettings from './tabs/RagSettings';
 import SafetySettings from './tabs/SafetySettings';
 import AdvancedSettings from './tabs/AdvancedSettings';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import NovelistSettings from './tabs/NovelistSettings';
 
-type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'advanced';
+type SettingsTab = 'interface' | 'sound' | 'ai_models' | 'rag' | 'safety' | 'advanced' | 'novelist';
 
 const TabButton: React.FC<{
   tabId: SettingsTab;
@@ -51,6 +52,7 @@ export const SettingsPanel: React.FC = () => {
             <div className="flex-shrink-0 grid grid-cols-3 sm:grid-cols-5 lg:flex lg:items-center gap-2 p-2 rounded-lg border mb-6" style={{boxShadow: 'var(--shadow-pressed)', borderColor: 'var(--shadow-dark)'}}>
                 <TabButton tabId="interface" activeTab={activeTab} onClick={setActiveTab} icon={FaDesktop} label="Giao Diện" />
                 <TabButton tabId="sound" activeTab={activeTab} onClick={setActiveTab} icon={FaVolumeUp} label="Âm Thanh" />
+                <TabButton tabId="novelist" activeTab={activeTab} onClick={setActiveTab} icon={FaPenFancy} label="Tiểu Thuyết Gia" />
                 <TabButton tabId="ai_models" activeTab={activeTab} onClick={setActiveTab} icon={FaRobot} label="AI Models" />
                 <TabButton tabId="rag" activeTab={activeTab} onClick={setActiveTab} icon={FaSearchPlus} label="RAG" />
                 <TabButton tabId="safety" activeTab={activeTab} onClick={setActiveTab} icon={FaShieldAlt} label="An Toàn" />
@@ -60,6 +62,7 @@ export const SettingsPanel: React.FC = () => {
             <div className="flex-grow min-h-0 overflow-y-auto pr-2">
                 {activeTab === 'interface' && <InterfaceSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'sound' && <SoundSettings settings={settings} handleSettingChange={handleSettingChange} />}
+                {activeTab === 'novelist' && <NovelistSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'ai_models' && <AiModelSettings settings={settings} handleSettingChange={handleSettingChange} />}
                 {activeTab === 'rag' && <RagSettings settings={settings} handleSettingChange={handleSettingChange} onOpenRagManager={() => setIsRagManagerOpen(true)} />}
                 {activeTab === 'safety' && <SafetySettings settings={settings} handleSettingChange={handleSettingChange} />}

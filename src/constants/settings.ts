@@ -66,7 +66,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     gameSpeed: 'normal',
     fontFamily: "'Noto Serif', serif",
     // FIX: The type 'Theme' was missing 'theme-ink-wash-bamboo'. This is fixed in `src/types/settings.ts`, resolving the assignment error here.
-    theme: 'theme-bich-du-cung',
+    theme: 'theme-luu-ly-ngoc-tinh',
     customThemeColors: {
         '--bg-color': '#2A3F3A',
         '--text-color': '#E0EFEA',
@@ -101,7 +101,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     validationServiceCap: 'strict',
     narrateSystemChanges: true,
     worldInterruptionFrequency: 'occasional',
-    mainTaskModel: 'gemini-2.5-pro',
+    mainTaskModel: 'gemini-2.5-flash',
     quickSupportModel: 'gemini-2.5-flash',
     itemAnalysisModel: 'gemini-2.5-flash',
     itemCraftingModel: 'gemini-2.5-flash',
@@ -117,8 +117,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
     ragOrchestratorModel: 'gemini-2.5-flash',
     memorySynthesisModel: 'gemini-2.5-flash',
     narrativeHarmonizerModel: 'gemini-2.5-flash',
-    novelistModel: 'gemini-2.5-flash',
     heuristicFixerModel: 'gemini-2.5-flash', // Add default model
+    novelistModel: 'gemini-2.5-flash',
     novelistWordCount: 3000,
     novelistNarrativeStyle: 'classic_wuxia',
     novelistTemperature: 1.0,
@@ -126,6 +126,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     novelistTopP: 0.95,
     novelistEnableThinking: true,
     novelistThinkingBudget: 500,
+    enableNovelistNsfwMode: false,
     gameMasterWordCount: 3000,
     enableGoogleGrounding: false,
     autoSummaryFrequency: 50,

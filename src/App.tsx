@@ -1,4 +1,4 @@
-import React, { useMemo, lazy, Suspense } from 'react';
+import React, { useMemo, lazy, Suspense, useEffect } from 'react';
 import Header from './components/Header';
 import LoadingScreen from './components/LoadingScreen';
 import { SettingsPanel } from './features/Settings/SettingsPanel';
@@ -88,6 +88,40 @@ const InkSplatterOverlay: React.FC = () => {
             })}
         </div>
     );
+};
+
+const GenreEffectsOverlay: React.FC = () => {
+    const { state } = useAppContext();
+    const genre = state.gameState?.genre;
+
+    useEffect(() => {
+        if (!genre) {
+            // Cleanup function to remove any genre class when gameState is cleared
+            return () => {
+                 document.body.className = document.body.className.split(' ').filter(c => !c.startsWith('genre-')).join(' ');
+            }
+        }
+        
+        const genreClass = `genre-${genre.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        document.body.classList.add(genreClass);
+
+        return () => {
+            document.body.classList.remove(genreClass);
+        };
+    }, [genre]);
+
+    if (state.settings.enablePerformanceMode || !genre) {
+        return null;
+    }
+    
+    // Add specific visual overlays here based on genre
+    const isCyberpunk = ['Khoa Huyễn Viễn Tưởng', 'Cyber Tu Chân', 'Steampunk & Ma Thuật'].includes(genre);
+
+    if (isCyberpunk) {
+        return <div className="scanlines-overlay"></div>;
+    }
+
+    return null;
 };
 
 
@@ -217,6 +251,7 @@ const AppContent: React.FC = () => {
             <BackgroundOverlay />
             <AmbientEffectsOverlay />
             <InkSplatterOverlay />
+            {gameState && <GenreEffectsOverlay />}
             {gameState && <WeatherOverlay />}
             {gameState && <SpecialEffectsOverlay />}
 

@@ -112,6 +112,7 @@ export interface GameSettings extends GameplaySettings {
     novelistTopP: number;
     novelistEnableThinking: boolean;
     novelistThinkingBudget: number;
+    enableNovelistNsfwMode: boolean; // Add new setting for novelist
     gameMasterWordCount: number;
     enableGoogleGrounding: boolean;
     autoSummaryFrequency: number;

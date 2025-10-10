@@ -52,7 +52,8 @@ export class MyDatabase extends Dexie {
   constructor() {
     super('TamThienTheGioiDB');
     // FIX: Upgraded database version to 7 to reflect schema generalization.
-    (this as Dexie).version(7).stores({
+    // FIX: Cast 'this' to Dexie to access the 'version' method, resolving a TypeScript error where the method was not found on the subclass type. This follows the existing pattern in this file for handling Dexie's type quirks.
+    (this as Dexie).version(8).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',

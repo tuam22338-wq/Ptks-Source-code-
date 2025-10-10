@@ -1,4 +1,4 @@
-import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, StatBonus, CharacterAttributes, WorldTurnEntry } from '../types';
+import type { GameState, Rumor, NPC, DynamicWorldEvent, Currency, Relationship, StatBonus, CharacterAttributes, WorldTurnEntry, ForeshadowedEvent } from '../types';
 import { generateRelationshipUpdate, executeNpcAction } from './gemini/npc.service';
 import { generateNpcActionPlan } from './gemini/planning.service';
 import { generateDynamicWorldEventFromAI } from './gemini/faction.service';
@@ -34,6 +34,8 @@ export const simulateWorldTurn = async (
     let currentTurnState = JSON.parse(JSON.stringify(gameState)); // Deep copy to avoid mutation issues
     let { activeNpcs, realmSystem } = currentTurnState;
     const newRumors: Rumor[] = [];
+    const totalDays = (currentTurnState.gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(currentTurnState.gameDate.season) * 30) + currentTurnState.gameDate.day;
+
 
     // --- Pillar 2: NPC Goal & Planning Simulation ---
     const npcsToSimulatePlan = activeNpcs
@@ -119,7 +121,6 @@ export const simulateWorldTurn = async (
 
 
     // --- Pillar 4: Faction Ambition Simulation ---
-    // FIX: Access worldEventFrequency from gameState's gameplaySettings, not global settings.
     const eventFrequency = gameState.gameplaySettings.worldEventFrequency || 'occasional';
     const eventChanceMap = {
         'rare': 0.10,
@@ -134,7 +135,6 @@ export const simulateWorldTurn = async (
         try {
             const eventData = await generateDynamicWorldEventFromAI(currentTurnState);
             if (eventData) {
-                const totalDays = (currentTurnState.gameDate.year * 4 * 30) + (['Xuân', 'Hạ', 'Thu', 'Đông'].indexOf(currentTurnState.gameDate.season) * 30) + currentTurnState.gameDate.day;
                 const newEvent: DynamicWorldEvent = {
                     ...eventData,
                     id: `world-event-${Date.now()}`,
@@ -156,15 +156,44 @@ export const simulateWorldTurn = async (
             }
         } catch (error) {
             console.error("[WorldSim] Failed to simulate faction turn:", error);
-            // Don't crash the game, just log the error.
+        }
+    }
+
+    // --- Pillar 5: Foreshadowed Events ---
+    const activeForeshadowed = (currentTurnState.worldState.foreshadowedEvents || []).filter(
+        (event: ForeshadowedEvent) => totalDays >= event.potentialTriggerDay && !(currentTurnState.worldState.triggeredDynamicEventIds || {})[event.id]
+    );
+
+    for (const fe of activeForeshadowed) {
+        const chanceMap: Record<ForeshadowedEvent['chance'], number> = { 'Thấp': 0.15, 'Vừa': 0.40, 'Cao': 0.75, 'Chắc chắn': 1.0 };
+        if (Math.random() < chanceMap[fe.chance]) {
+            console.log(`[WorldSim] Foreshadowed event triggered: ${fe.title}`);
+            const newEvent: DynamicWorldEvent = {
+                id: `de_from_${fe.id}`,
+                title: `[Điềm Báo Ứng Nghiệm] ${fe.title}`,
+                description: fe.description,
+                turnStart: totalDays,
+                duration: 30, // Default duration
+                affectedFactions: [],
+                affectedLocationIds: [currentTurnState.playerCharacter.currentLocationId],
+            };
+            if (!currentTurnState.worldState.dynamicEvents) {
+                currentTurnState.worldState.dynamicEvents = [];
+            }
+            currentTurnState.worldState.dynamicEvents.push(newEvent);
+            
+            if (!currentTurnState.worldState.triggeredDynamicEventIds) {
+                currentTurnState.worldState.triggeredDynamicEventIds = {};
+            }
+            currentTurnState.worldState.triggeredDynamicEventIds[fe.id] = totalDays;
         }
     }
     
     const newWorldState = {
         ...currentTurnState.worldState,
         rumors: [...currentTurnState.worldState.rumors, ...newRumors.filter((nr: Rumor) => !currentTurnState.worldState.rumors.some((r: Rumor) => r.text === nr.text))],
-        dynamicEvents: currentTurnState.worldState.dynamicEvents || [], // ensure it exists
-        foreshadowedEvents: currentTurnState.worldState.foreshadowedEvents || [], // ensure it exists
+        dynamicEvents: currentTurnState.worldState.dynamicEvents || [],
+        foreshadowedEvents: currentTurnState.worldState.foreshadowedEvents || [],
     };
 
     return {

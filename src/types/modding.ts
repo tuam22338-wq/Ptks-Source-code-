@@ -74,6 +74,7 @@ export interface NamedRealmSystem {
     description: string;
     resourceName: string; // Vd: 'Linh Khí', 'Hồn Lực', 'Điểm Kinh Nghiệm'
     resourceUnit: string; // Vd: 'điểm', 'năm', 'vòng'
+    resourceIconName: string;
     realms: RealmConfig[]; // field name 'realms' is kept for backward compatibility with schema
 }
 
