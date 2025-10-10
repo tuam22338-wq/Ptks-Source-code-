@@ -51,6 +51,8 @@ export interface AppContextType {
     handleToggleMod: (modId: string) => Promise<void>;
     handleDeleteModFromLibrary: (modId: string) => Promise<void>;
     handleEditWorld: (worldId: string) => Promise<void>;
+    handleSaveHotmark: () => Promise<void>;
+    handleLoadHotmark: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);

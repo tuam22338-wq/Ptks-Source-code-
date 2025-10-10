@@ -1,9 +1,154 @@
 
+
 import { Type } from "@google/genai";
 import type { CommunityMod, FullMod, ModInfo, StatBonus, EventTriggerType, EventOutcomeType, ModAttributeSystem, RealmConfig, QuickActionBarConfig, NamedRealmSystem, Faction, ModLocation, ModNpc, ModForeshadowedEvent, MajorEvent, ModTagDefinition, CharacterIdentity, SpiritualRoot, Currency, ItemType, ItemQuality, NPC, PlayerNpcRelationship, GameSettings, WorldCreationData } from '../../types';
 import { ALL_ATTRIBUTES, COMMUNITY_MODS_URL, UI_ICONS, DEFAULT_ATTRIBUTE_DEFINITIONS, DEFAULT_ATTRIBUTE_GROUPS, REALM_SYSTEM } from "../../constants";
 import { generateWithRetry, generateWithRetryStream } from './gemini.core';
 import * as db from '../dbService';
+
+// FIX: Added fixModStructure function to be used by world generation services.
+const fixModStructure = (mod: any): FullMod => {
+    if (mod && mod.modInfo && mod.content) {
+        return mod as FullMod; // Already valid
+    }
+    console.warn("AI returned an incomplete mod structure. Attempting to fix.", mod);
+    // Attempt to fix a common mistake where 'content' is at the top level
+    if (mod && mod.worldData) {
+        return {
+            modInfo: mod.modInfo || { // Use modInfo if it exists, otherwise create one
+                id: `generated_world_${Date.now()}`,
+                name: mod.worldData[0]?.name || "Generated World (Fixed)",
+                description: mod.worldData[0]?.description || "World generated from text, structure was fixed.",
+                version: "1.0.0",
+                tags: mod.worldData[0]?.tags || [],
+            },
+            content: {
+                ...mod,
+                // Remove modInfo from content if it was there
+                ...(mod.modInfo && { modInfo: undefined })
+            }
+        };
+    }
+    throw new Error("AI đã trả về một cấu trúc mod không hợp lệ và không thể tự động sửa chữa. JSON phải có thuộc tính `modInfo` và `content` ở cấp cao nhất.");
+};
+
+export const generateLoadingNarratives = async (
+    worldCreationData: Partial<WorldCreationData>,
+    settings: GameSettings
+): Promise<string[]> => {
+    const prompt = `Dựa trên ý tưởng về một thế giới game sau đây, hãy tạo ra 4-6 thông điệp tải game (loading screen messages) ngắn gọn, đậm chất thơ, huyền ảo, hoặc kịch tính bằng tiếng Việt.
+    
+    - Thể loại: ${worldCreationData.genre}
+    - Chủ đề: ${worldCreationData.theme}
+    - Bối cảnh: ${worldCreationData.setting}
+    
+    Ví dụ: "Nơi Thần Ma giao tranh, vạn vật hóa tro bụi...", "Giữa ngân hà tĩnh lặng, một tiếng thì thầm cổ xưa vang vọng...", "Bánh xe vận mệnh đã bắt đầu xoay chuyển."
+    
+    Chỉ trả về danh sách các thông điệp.`;
+
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+            narratives: {
+                type: Type.ARRAY,
+                description: "Một danh sách các chuỗi thông điệp tải game.",
+                items: { type: Type.STRING }
+            }
+        },
+        required: ['narratives']
+    };
+    
+    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
+    try {
+        const response = await generateWithRetry({
+            model: settings?.quickSupportModel || 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+                temperature: 1.2, // Higher temperature for creativity
+            }
+        }, specificApiKey);
+        
+        const result = JSON.parse(response.text);
+        return result.narratives || [];
+    } catch (error) {
+        console.error("Failed to generate loading narratives:", error);
+        return []; // Return empty array on failure
+    }
+};
+
+export const generateWorldFromPrompts = async (prompts: any): Promise<FullMod> => {
+    const prompt = `Bạn là một AI Sáng Thế, có khả năng biến những ý tưởng rời rạc thành một thế giới game có cấu trúc.
+    Dựa trên các prompt từ người dùng, hãy tạo ra một file mod JSON hoàn chỉnh.
+
+    **Thông tin cơ bản về Mod:**
+    - Tên Mod/Thế giới: ${prompts.modInfo.name}
+    - Thể loại: ${prompts.modInfo.tags.join(', ')}
+    - Tác giả: ${prompts.modInfo.author}
+
+    **Ý tưởng cốt lõi từ người dùng:**
+    - Bối cảnh (Setting): ${prompts.prompts.setting}
+    - Mục tiêu chính (Main Goal): ${prompts.prompts.mainGoal}
+    - Câu chuyện mở đầu (Opening Story): ${prompts.prompts.openingStory}
+
+    **Dữ liệu có sẵn (nếu có):**
+    - Hệ thống thuộc tính: ${prompts.attributeSystem ? 'Đã được cung cấp.' : 'Cần bạn tạo ra.'}
+    - Hệ thống cảnh giới: ${prompts.namedRealmSystems ? 'Đã được cung cấp.' : 'Cần bạn tạo ra.'}
+    - Phe phái tùy chỉnh: ${prompts.factions ? `${prompts.factions.length} phe phái.` : 'Không có.'}
+    - Địa điểm tùy chỉnh: ${prompts.locations ? `${prompts.locations.length} địa điểm.` : 'Không có.'}
+    - NPC tùy chỉnh: ${prompts.npcs ? `${prompts.npcs.length} NPC.` : 'Không có.'}
+
+    **Nhiệm vụ:**
+    1.  **Tổng hợp & Sáng tạo:** Kết hợp tất cả các ý tưởng trên để tạo ra một thế giới nhất quán.
+    2.  **Điền vào \`worldData\`:**
+        -   Viết một mô tả thế giới chi tiết.
+        -   Tạo ra các sự kiện lịch sử (\`majorEvents\`), phe phái (\`factions\`), địa điểm (\`initialLocations\`), và NPC (\`initialNpcs\`) dựa trên ý tưởng của người dùng. Nếu người dùng đã cung cấp dữ liệu tùy chỉnh, hãy ưu tiên sử dụng và mở rộng chúng. Nếu không, hãy tự tạo ra.
+    3.  **Tạo Hệ thống (Nếu cần):**
+        -   Nếu \`attributeSystem\` chưa được cung cấp, hãy tạo một hệ thống phù hợp với thể loại.
+        -   Nếu \`namedRealmSystems\` chưa được cung cấp, hãy tạo một hệ thống cảnh giới/cấp bậc phù hợp.
+    4.  **Hoàn thiện Mod:** Trả về một đối tượng JSON hoàn chỉnh theo schema \`worldSchema\`.
+
+    Hãy bắt đầu sáng thế!`;
+
+    const generationSchema = JSON.parse(JSON.stringify(worldSchema));
+    delete generationSchema.properties.content.properties.dynamicEvents;
+    delete generationSchema.properties.content.properties.aiHooks;
+    
+    const settings = await db.getSettings();
+    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
+
+    const generationConfig: any = {
+        responseMimeType: "application/json",
+        responseSchema: generationSchema,
+        temperature: 1.0,
+        topK: settings?.topK,
+        topP: settings?.topP,
+    };
+
+    const response = await generateWithRetry({
+        model,
+        contents: prompt,
+        config: generationConfig,
+    }, specificApiKey);
+
+    try {
+        let cleanedString = response.text.trim();
+        if (cleanedString.startsWith("```json")) {
+            cleanedString = cleanedString.substring(7);
+            if (cleanedString.endsWith("```")) {
+                cleanedString = cleanedString.slice(0, -3);
+            }
+        }
+        const json = JSON.parse(cleanedString);
+        return fixModStructure(json) as FullMod;
+    } catch (e) {
+        console.error("Failed to parse AI response for world generation from prompts:", e);
+        console.error("Raw AI response:", response.text);
+        throw new Error("AI đã trả về dữ liệu JSON không hợp lệ từ prompts.");
+    }
+};
 
 export const fetchCommunityMods = async (): Promise<CommunityMod[]> => {
     try {
@@ -89,7 +234,7 @@ const realmConfigSchema = {
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                                    attribute: { type: Type.STRING, description: "Tên thuộc tính. PHẢI là một trong các thuộc tính hợp lệ." },
                                     value: { type: Type.NUMBER }
                                 },
                                 required: ['attribute', 'value']
@@ -176,7 +321,6 @@ const dynamicEventSchema = {
     }
 };
 
-const availableIconNames = Object.keys(UI_ICONS);
 const attributeSystemSchema = {
     type: Type.OBJECT,
     description: "Hệ thống thuộc tính tùy chỉnh cho thế giới mod. Phải phù hợp với bối cảnh của câu chuyện.",
@@ -190,7 +334,7 @@ const attributeSystemSchema = {
                     id: { type: Type.STRING, description: "ID duy nhất, không dấu, không khoảng trắng, vd: 'suc_ben_may_moc'." },
                     name: { type: Type.STRING, description: "Tên hiển thị, vd: 'Sức Bền Máy Móc'." },
                     description: { type: Type.STRING },
-                    iconName: { type: Type.STRING, enum: availableIconNames, description: "Tên icon từ danh sách có sẵn." },
+                    iconName: { type: Type.STRING, description: "Tên icon từ một thư viện có sẵn (ví dụ: 'GiSpinalCoil', 'FaBrain')." },
                     type: { type: Type.STRING, enum: ['PRIMARY', 'SECONDARY', 'VITAL', 'INFORMATIONAL'], description: "Loại thuộc tính." },
                     baseValue: { type: Type.NUMBER, description: "Giá trị khởi điểm cho PRIMARY và VITAL." },
                     formula: { type: Type.STRING, description: "Công thức tính cho SECONDARY, vd: '(suc_manh * 2)'." },
@@ -223,7 +367,7 @@ const namedRealmSystemSchema = {
         description: { type: Type.STRING },
         resourceName: { type: Type.STRING, description: "Tên tài nguyên chính, vd: 'Hồn Lực'."},
         resourceUnit: { type: Type.STRING, description: "Đơn vị của tài nguyên, vd: 'năm'."},
-        resourceIconName: { type: Type.STRING, enum: availableIconNames, description: "Tên icon cho tài nguyên, vd: 'GiSoulVessel'."},
+        resourceIconName: { type: Type.STRING, description: "Tên icon cho tài nguyên (ví dụ: 'GiSoulVessel')."},
         realms: {
             type: Type.ARRAY,
             items: realmConfigSchema.items
@@ -580,469 +724,132 @@ export const generateCompleteWorldFromText = async (
                     spiritualRoot: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, elements: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { type: { type: Type.STRING }, purity: { type: Type.NUMBER } } } } } },
                     initialBonuses: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { attribute: { type: Type.STRING }, value: { type: Type.NUMBER } } } },
                     initialItems: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, quantity: { type: Type.NUMBER }, description: { type: Type.STRING }, type: { type: Type.STRING }, quality: { type: Type.STRING }, icon: { type: Type.STRING } } } },
-                    initialCurrency: { type: Type.OBJECT, properties: { "Bạc": { type: Type.NUMBER }, "Linh thạch hạ phẩm": { type: Type.NUMBER } } }
+                    initialCurrency: { type: Type.OBJECT }
                 },
+                 required: ['identity', 'spiritualRoot', 'initialBonuses', 'initialItems', 'initialCurrency']
             },
-
-            // Opening Narrative & NPC Part
-            opening_narrative: { type: Type.STRING },
-            family_members: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gender: { type: Type.STRING }, age: { type: Type.NUMBER }, relationship_type: { type: Type.STRING }, status: { type: Type.STRING }, description: { type: Type.STRING }, personality: { type: Type.STRING } } } },
-            dynamic_npcs: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, gender: { type: Type.STRING }, status: { type: Type.STRING }, description: { type: Type.STRING }, origin: { type: Type.STRING }, personality: { type: Type.STRING }, locationId: { type: Type.STRING }, realmName: { type: Type.STRING } } } },
+            
+            // Initial Scene Generation
+            initialScene: {
+                type: Type.OBJECT,
+                properties: {
+                    openingNarrative: { type: Type.STRING, description: "Đoạn văn tường thuật mở đầu câu chuyện cho nhân vật chính." },
+                    familyNpcs: { type: Type.ARRAY, items: { type: Type.OBJECT }, description: "2-4 NPC là người thân, bạn bè của nhân vật chính." },
+                    dynamicNpcs: { type: Type.ARRAY, items: { type: Type.OBJECT }, description: "Khoảng 10 NPC ngẫu nhiên để làm thế giới sống động." },
+                    relationships: { type: Type.ARRAY, items: { type: Type.OBJECT }, description: "Mối quan hệ ban đầu của người chơi với các familyNpcs." }
+                },
+                required: ['openingNarrative', 'familyNpcs', 'dynamicNpcs', 'relationships']
+            }
         },
-        required: ['generatedMod', 'characterData', 'opening_narrative', 'family_members', 'dynamic_npcs']
+        required: ['generatedMod', 'characterData', 'initialScene']
     };
 
-    const prompt = `Bạn là một AI Sáng Thế Toàn Năng, có khả năng biến một ý tưởng ngắn gọn thành một thế giới game hoàn chỉnh và một câu chuyện mở đầu hấp dẫn.
-    **NHIỆM VỤ TỔNG THỂ:** Dựa trên mô tả của người dùng, hãy thực hiện đồng thời 3 tác vụ sau và trả về kết quả trong MỘT đối tượng JSON duy nhất.
+    const prompt = `Bạn là AI Sáng Thế Toàn Năng, có khả năng biến một ý tưởng đơn giản thành một thế giới game hoàn chỉnh và một nhân vật chính có chiều sâu trong một lần duy nhất.
 
-    **Ý Tưởng Cốt Lõi Của Người Dùng:**
-    - Tên nhân vật chính: "${characterName}"
-    - Mô tả thế giới: "${text}"
+**Ý Tưởng Cốt Lõi (Người dùng):**
+- Tên nhân vật chính: "${characterName}"
+- Mô tả thế giới: "${text}"
 
-    ---
-    **TÁC VỤ 1: KIẾN TẠO THẾ GIỚI (TẠO \`generatedMod\`)**
-    Phân tích mô tả để tạo ra một cấu trúc thế giới hoàn chỉnh.
-    1.  **\`modInfo\`:** Tạo ID, tên, thể loại...
-    2.  **\`attributeSystem\`:** Thiết kế một hệ thống thuộc tính MỚI, phù hợp với bối cảnh.
-    3.  **\`namedRealmSystems\`:** Thiết kế một hệ thống cảnh giới/sức mạnh MỚI.
-    4.  **\`worldData\`:** Tạo lịch sử, phe phái, bản đồ, NPC ban đầu...
-    -   **QUAN TRỌNG:** Tên các địa điểm, NPC trong \`worldData\` phải khớp với những gì bạn sẽ tạo trong Tác Vụ 3.
+**NHIỆM VỤ TỐI THƯỢNG:**
+Hãy thực hiện đồng thời 3 nhiệm vụ lớn sau và trả về MỘT đối tượng JSON duy nhất chứa tất cả kết quả.
 
-    ---
-    **TÁC VỤ 2: KIẾN TẠO NHÂN VẬT CHÍNH (TẠO \`characterData\`)**
-    Dựa trên thế giới vừa tạo, hãy tạo ra nhân vật chính.
-    1.  **\`identity\`:** Quyết định giới tính (Nam/Nữ), viết một tiểu sử (origin) và mô tả ngoại hình (appearance) chi tiết.
-    2.  **\`spiritualRoot\`:** Tạo một Nguồn Gốc Sức Mạnh độc đáo, bao gồm cả thuộc tính 'elements'.
-    3.  **\`initialBonuses\`, \`initialItems\`, \`initialCurrency\`:** Gán các chỉ số thưởng, vật phẩm, và tiền tệ khởi đầu hợp lý.
+**1. KIẾN TẠO THẾ GIỚI (generatedMod):**
+- **Phân tích & Suy luận:** Đọc kỹ mô tả, sau đó phân tích và suy luận ra toàn bộ cấu trúc thế giới theo \`worldSchema\` đã cung cấp.
+- **Tạo Hệ Thống Thuộc Tính:** Dựa trên bối cảnh, hãy thiết kế một \`attributeSystem\` hoàn toàn mới và độc đáo.
+- **Tạo Hệ Thống Sức Mạnh:** Dựa trên bối cảnh, hãy thiết kế một \`namedRealmSystems\` phù hợp.
+- **Tạo Dữ Liệu Khởi Đầu:** Tạo ra các \`majorEvents\`, \`factions\`, \`initialLocations\`, và \`initialNpcs\` để làm nền tảng cho thế giới.
 
-    ---
-    **TÁC VỤ 3: VIẾT TRUYỆN MỞ ĐẦU & TẠO DÂN CƯ (TẠO \`opening_narrative\`, \`family_members\`, \`dynamic_npcs\`)**
-    1.  **\`family_members\`:** Tạo 2-3 người thân (phàm nhân) cho nhân vật chính.
-    2.  **\`dynamic_npcs\`:** Tạo 5-10 NPC ngẫu nhiên để làm thế giới sống động.
-    3.  **\`opening_narrative\`:** Viết một đoạn văn mở đầu (4-6 câu) thật hấp dẫn, thiết lập bối cảnh, giới thiệu nhân vật chính và một vài người thân của họ trong thế giới bạn vừa tạo.
+**2. TẠO NHÂN VẬT CHÍNH (characterData):**
+- **Sáng tạo Nhân vật:** Dựa trên bối cảnh thế giới vừa tạo và tên người dùng cung cấp, hãy tạo ra một nhân vật chính phù hợp.
+- **Viết Tiểu sử (\`origin\`):** Viết một câu chuyện nền hấp dẫn, giải thích vị trí của nhân vật trong thế giới này.
+- **Tạo Nguồn Gốc Sức Mạnh (\`spiritualRoot\`):** Tạo ra một nguồn gốc sức mạnh độc đáo, phù hợp với tiểu sử.
+- **Thiết lập Khởi đầu:** Gán cho nhân vật các \`initialBonuses\`, \`initialItems\`, và \`initialCurrency\` hợp lý.
 
-    ---
-    Hãy thực hiện tất cả các tác vụ và trả về một đối tượng JSON duy nhất theo schema đã cung cấp.`;
+**3. TẠO CẢNH MỞ ĐẦU (initialScene):**
+- **Viết Chương Mở đầu (\`openingNarrative\`):** Viết một đoạn văn tường thuật hấp dẫn, đặt nhân vật chính vào bối cảnh khởi đầu.
+- **Tạo Gia Đình & Bạn Bè (\`familyNpcs\` & \`relationships\`):** Tạo ra 2-4 NPC là người thân hoặc bạn bè gần gũi và thiết lập mối quan hệ của họ với người chơi.
+- **Tạo Dân Cư (\`dynamicNpcs\`):** Tạo thêm khoảng 10 NPC ngẫu nhiên để làm thế giới sống động ngay từ đầu.
 
+**QUY TẮC:**
+- **Tính nhất quán:** Tất cả các phần phải logic và liên kết chặt chẽ với nhau.
+- **Tuân thủ Schema:** Trả về kết quả dưới dạng một đối tượng JSON duy nhất, hợp lệ theo schema tổng thể đã cung cấp.
+
+Bắt đầu sáng thế!`;
+    
     const settings = await db.getSettings();
     const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
-    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
     
-    const generationConfig: any = {
-        responseMimeType: "application/json",
-        responseSchema: masterSchema,
-        temperature: 1.0,
-        topK: settings?.topK,
-        topP: settings?.topP,
-    };
-
-    if (mode === 'fast' && model === 'gemini-2.5-flash') {
-        generationConfig.thinkingConfig = { thinkingBudget: 0 };
-    }
-    
-    const response = await generateWithRetry({ model, contents: prompt, config: generationConfig }, specificApiKey);
-    
-    try {
-        const json = JSON.parse(response.text);
-
-        // Post-process the generated data to ensure consistency and correct types
-        const mod = json.generatedMod as FullMod;
-        const characterData = json.characterData as any;
-        
-        // Ensure spiritualRoot.elements exists
-        if (characterData.spiritualRoot && !characterData.spiritualRoot.elements) {
-            characterData.spiritualRoot.elements = [];
-        }
-
-        // Finalize character identity
-        const finalIdentity: CharacterIdentity = {
-            name: characterName,
-            familyName: '',
-            age: 18,
-            personality: 'Trung Lập',
-            ...characterData.identity
-        };
-        characterData.identity = finalIdentity;
-
-        // Create family NPCs and relationships
-        const familyNpcs: NPC[] = (json.family_members || []).map((member: any): NPC => {
-            const npcId = `family-npc-${Math.random().toString(36).substring(2, 9)}`;
-            return {
-                id: npcId,
-                identity: { name: member.name, gender: member.gender, appearance: member.description, origin: `Người thân của ${characterName}.`, personality: member.personality, age: member.age },
-                status: member.status, attributes: {}, emotions: { trust: 70, fear: 10, anger: 5 }, memory: { shortTerm: [], longTerm: [] }, motivation: `Bảo vệ và chăm sóc cho gia đình.`, goals: [`Mong ${characterName} có một cuộc sống bình an.`], currentPlan: null, talents: [], locationId: mod.content.worldData?.[0].initialLocations[0].id || '', cultivation: { currentRealmId: 'pham_nhan', currentStageId: 'pn_1', spiritualQi: 0, hasConqueredInnerDemon: true }, techniques: [], inventory: { items: [], weightCapacity: 10 }, currencies: { 'Bạc': 10 + Math.floor(Math.random() * 50) }, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [], tuoiTho: 80,
-            };
-        });
-        const relationships: PlayerNpcRelationship[] = familyNpcs.map((npc, i) => ({
-            npcId: npc.id, type: json.family_members[i].relationship_type, value: 80, status: 'Tri kỷ',
-        }));
-
-        // Create dynamic NPCs
-        const dynamicNpcs: NPC[] = (json.dynamic_npcs || []).map((npcData: any): NPC => {
-             const realmSystem = mod.content.namedRealmSystems?.[0]?.realms || mod.content.realmConfigs || REALM_SYSTEM;
-             const targetRealm = realmSystem.find(r => r.name === npcData.realmName) || realmSystem[0];
-             const targetStage = (targetRealm.stages && targetRealm.stages.length > 0) ? targetRealm.stages[0] : {id: 'pn_1'};
-            return {
-                id: `dynamic-npc-${Math.random().toString(36).substring(2, 9)}`,
-                identity: { name: npcData.name, gender: npcData.gender, appearance: npcData.description, origin: npcData.origin, personality: npcData.personality, age: 30 + Math.floor(Math.random() * 100) },
-                status: npcData.status, locationId: npcData.locationId, cultivation: { currentRealmId: targetRealm.id, currentStageId: targetStage.id, spiritualQi: 0, hasConqueredInnerDemon: true },
-                attributes: {}, emotions: { trust: 50, fear: 10, anger: 10 }, memory: { shortTerm: [], longTerm: [] }, motivation: 'Sống sót.', goals: [], currentPlan: null, talents: [], techniques: [], inventory: { items: [], weightCapacity: 10 }, currencies: {}, equipment: {}, healthStatus: 'HEALTHY', activeEffects: [], tuoiTho: 100,
-            };
-        });
-        
-        return {
-            mod: json.generatedMod,
-            characterData: json.characterData,
-            openingNarrative: json.opening_narrative,
-            familyNpcs,
-            dynamicNpcs,
-            relationships,
-        };
-
-    } catch (e) {
-        console.error("Failed to parse AI response for complete world generation:", e);
-        console.error("Raw AI response:", response.text);
-        throw new Error("AI đã trả về dữ liệu JSON không hợp lệ cho việc tạo nhanh.");
-    }
-};
-
-interface WorldGenPrompts {
-    modInfo: Omit<ModInfo, 'description' | 'version'>;
-    prompts: {
-        setting: string;
-        mainGoal?: string;
-        openingStory?: string;
-    };
-    aiHooks?: {
-        on_world_build?: string;
-        on_action_evaluate?: string;
-    };
-    attributeSystem?: ModAttributeSystem;
-    namedRealmSystems?: NamedRealmSystem[];
-    quickActionBars?: QuickActionBarConfig[];
-    factions?: Faction[];
-    locations?: ModLocation[];
-    npcs?: ModNpc[];
-    majorEvents?: MajorEvent[];
-    foreshadowedEvents?: ModForeshadowedEvent[];
-    tagDefinitions?: ModTagDefinition[];
-}
-
-export const generateWorldFromPrompts = async (prompts: WorldGenPrompts): Promise<FullMod> => {
-    const { modInfo, prompts: userPrompts, aiHooks, attributeSystem, namedRealmSystems, quickActionBars, factions, locations, npcs, majorEvents, foreshadowedEvents, tagDefinitions } = prompts;
-
-    const aiHooksText = (aiHooks?.on_world_build || '') + '\n' + (aiHooks?.on_action_evaluate || '');
-    
-    const attributeContext = attributeSystem
-        ? `### HỆ THỐNG THUỘC TÍNH (ĐÃ ĐỊNH NGHĨA SẴN) ###\nĐây là các thuộc tính của thế giới này. Hãy sử dụng chúng khi tạo NPC và các yếu tố khác.\n${attributeSystem.definitions.map(d => `- ${d.name}: ${d.description}`).join('\n')}\n### KẾT THÚC HỆ THỐNG THUỘC TÍNH ###`
-        : '';
-        
-    const realmContext = namedRealmSystems && namedRealmSystems.length > 0
-        ? `### HỆ THỐNG CẢNH GIỚI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nThế giới này có ${namedRealmSystems.length} hệ thống tu luyện khác nhau. Hệ thống chính là "${namedRealmSystems[0].name}". AI không cần tạo thêm hệ thống tu luyện.\n### KẾT THÚC HỆ THỐNG CẢNH GIỚI ###`
-        : "### HỆ THỐNG CẢNH GIỚI ###\nAI tự do sáng tạo hệ thống tu luyện.";
-    
-    const factionContext = factions && factions.length > 0 ? `### PHE PHÁI (ĐÃ ĐỊNH NGHĨA SẴN) ###\nNgười dùng đã định nghĩa các phe phái sau. Hãy xây dựng thế giới xoay quanh chúng:\n${factions.map(f => `- ${f.name}: ${f.description}`).join('\n')}\n` : '';
-    const locationContext = locations && locations.length > 0 ? `### ĐỊA ĐIỂM (ĐÃ ĐỊNH NGHĨA SẴN) ###\nNgười dùng đã định nghĩa các địa điểm sau. Đây là các địa điểm chính của thế giới. Hãy tạo ra các sự kiện và NPC phù hợp với những nơi này:\n${locations.map(l => `- ${l.name}: ${l.description}`).join('\n')}\n` : '';
-    const npcContext = npcs && npcs.length > 0 ? `### NHÂN VẬT (ĐÃ ĐỊNH NGHĨA SẴN) ###\nNgười dùng đã định nghĩa các nhân vật sau. Hãy đặt họ vào thế giới và tạo ra các sự kiện liên quan đến họ:\n${npcs.map(n => `- ${n.name}: ${n.description}`).join('\n')}\n` : '';
-
-
-    // Clone the base schema to modify it
-    const dynamicWorldSchema = JSON.parse(JSON.stringify(worldSchema));
-    
-    // If systems are provided by the user, the AI should not generate them.
-    if (attributeSystem) {
-        delete dynamicWorldSchema.properties.content.properties.attributeSystem;
-    }
-    if (namedRealmSystems && namedRealmSystems.length > 0) {
-        delete dynamicWorldSchema.properties.content.properties.realmConfigs;
-        delete dynamicWorldSchema.properties.content.properties.namedRealmSystems;
-    }
-    
-    const worldDataItemsSchema = dynamicWorldSchema.properties.content.properties.worldData.items;
-
-    // If user provides data, remove corresponding generation properties from the AI schema.
-    const toRemove: string[] = [];
-    if (factions && factions.length > 0) {
-        toRemove.push('factions');
-        delete worldDataItemsSchema.properties.factions;
-    }
-    if (locations && locations.length > 0) {
-        toRemove.push('initialLocations');
-        delete worldDataItemsSchema.properties.initialLocations;
-    }
-    if (npcs && npcs.length > 0) {
-        toRemove.push('initialNpcs');
-        delete worldDataItemsSchema.properties.initialNpcs;
-    }
-    if (majorEvents && majorEvents.length > 0) {
-        toRemove.push('majorEvents');
-        delete worldDataItemsSchema.properties.majorEvents;
-    }
-    
-    if (toRemove.length > 0) {
-        worldDataItemsSchema.required = worldDataItemsSchema.required.filter((p: string) => !toRemove.includes(p));
-    }
-    
-    if (tagDefinitions && tagDefinitions.length > 0) {
-        delete dynamicWorldSchema.properties.content.properties.tagDefinitions;
-    }
-
-
-    const masterPrompt = `Bạn là một AI Sáng Thế, một thực thể có khả năng biến những ý tưởng cốt lõi thành một thế giới game có cấu trúc hoàn chỉnh.
-    Nhiệm vụ của bạn là đọc và phân tích các ý tưởng do người dùng cung cấp, sau đó mở rộng, chi tiết hóa và suy luận ra toàn bộ dữ liệu cần thiết để tạo thành một bản mod game theo schema JSON đã cho.
-
-    **Ý Tưởng Cốt Lõi từ Người Dùng:**
-    ---
-    - **Tên Mod:** ${modInfo.name}
-    - **Thể Loại:** ${modInfo.tags.join(', ')}
-    - **Bối Cảnh (Setting):** ${userPrompts.setting}
-    - **Mục Tiêu Chính (Nếu có):** ${userPrompts.mainGoal || "AI tự do sáng tạo."}
-    - **Quy Luật Thế Giới (AI Hooks):** ${aiHooksText.trim() || "Không có quy luật đặc biệt, AI tự do sáng tạo."}
-    - **Cốt Truyện Khởi Đầu (Nếu có):** ${userPrompts.openingStory || "AI tự tạo một phần mở đầu hấp dẫn."}
-    ---
-    
-    ${attributeContext}
-    ${realmContext}
-    ${factionContext}
-    ${locationContext}
-    ${npcContext}
-
-    **Quy trình Sáng Tạo & Suy Luận:**
-    1.  **\`modInfo\`:** Sử dụng thông tin \`name\`, \`id\`, và \`tags\` được cung cấp. Tạo một mô tả ngắn gọn dựa trên bối cảnh.
-    2.  **\`worldData\`:** Đây là phần quan trọng nhất. Dựa trên Bối Cảnh, Mục Tiêu và Quy Luật:
-        -   Nếu người dùng chưa cung cấp, hãy sáng tạo Lịch sử & Sự kiện (\`majorEvents\`), Phe phái (\`factions\`), Bản đồ (\`initialLocations\`), và Nhân vật (\`initialNpcs\`). Nếu người dùng ĐÃ cung cấp, hãy xây dựng thế giới dựa trên chúng.
-    3.  **\`items\` (Tùy chọn):** Tạo ra 1-2 vật phẩm khởi đầu hoặc vật phẩm quan trọng liên quan đến cốt truyện.
-    4.  **Hệ Thống (QUAN TRỌNG):** Dựa vào các hệ thống đã được định nghĩa sẵn (nếu có) và ý tưởng của người dùng, hãy sáng tạo và điền vào các phần còn lại của thế giới. TUYỆT ĐỐI KHÔNG được tạo lại hệ thống tu luyện, thuộc tính, phe phái, địa điểm, sự kiện hoặc NPC nếu chúng đã được cung cấp.
-    5.  **Tính Nhất Quán:** Đảm bảo tất cả các tham chiếu bằng TÊN (như \`neighbors\`, \`locationId\` của NPC) đều trỏ đến các thực thể đã được tạo ra trong cùng một file JSON.
-
-    **QUY TẮC JSON TỐI QUAN TRỌNG:** Toàn bộ phản hồi phải là một đối tượng JSON hợp lệ. Khi tạo các giá trị chuỗi (string) như mô tả, tóm tắt, v.v., hãy đảm bảo rằng bất kỳ dấu ngoặc kép (") nào bên trong chuỗi đều được thoát đúng cách bằng một dấu gạch chéo ngược (\\"). Ví dụ: "description": "Nhân vật này được biết đến với biệt danh \\"Kẻ Vô Danh\\"."
-
-    Hãy thực hiện nhiệm vụ và trả về một đối tượng JSON duy nhất theo đúng schema.`;
-
-    const settings = await db.getSettings();
-    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
+    // Use the faster model for this complex, one-shot generation
     const response = await generateWithRetry({
-        model: settings?.gameMasterModel || 'gemini-2.5-flash',
-        contents: masterPrompt,
+        model: 'gemini-2.5-flash',
+        contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: dynamicWorldSchema,
+            // This schema is too complex, so we won't send it for validation.
+            // We will parse the raw JSON and handle potential errors.
+            // responseSchema: masterSchema, 
             temperature: 1.0,
-            topK: settings?.topK,
-            topP: settings?.topP,
         }
     }, specificApiKey);
     
     try {
-        let cleanedString = response.text.trim();
-        if (cleanedString.startsWith("```json")) {
-            cleanedString = cleanedString.substring(7);
-            if (cleanedString.endsWith("```")) {
-                cleanedString = cleanedString.slice(0, -3);
-            }
-        }
-        const generatedJson = JSON.parse(cleanedString);
-        
-        // Start building the final mod object
-        const finalMod: FullMod = {
-            modInfo: {
-                ...modInfo,
-                description: generatedJson.modInfo.description || `Một thế giới được tạo bởi AI dựa trên bối cảnh: ${userPrompts.setting}`,
-                version: '1.0.0',
-                author: modInfo.author || generatedJson.modInfo.author
+        const json = JSON.parse(response.text);
+
+        const mod = fixModStructure(json.generatedMod);
+
+        const result: QuickGenResult = {
+            mod,
+            characterData: {
+                ...json.characterData,
+                identity: {
+                    ...json.characterData.identity,
+                    name: characterName, // Ensure player's name is used
+                    age: 18,
+                    personality: 'Trung Lập'
+                },
             },
-            content: {
-                ...generatedJson.content
-            }
+            openingNarrative: json.initialScene.openingNarrative,
+            familyNpcs: json.initialScene.familyNpcs || [],
+            dynamicNpcs: json.initialScene.dynamicNpcs || [],
+            relationships: json.initialScene.relationships || []
         };
-
-        // Add back user-defined systems if they were provided
-        if (attributeSystem) {
-            finalMod.content.attributeSystem = attributeSystem;
-        }
-        if (namedRealmSystems) {
-            finalMod.content.namedRealmSystems = namedRealmSystems;
-        }
-        if (quickActionBars && quickActionBars.length > 0) {
-            finalMod.content.quickActionBars = quickActionBars;
-        }
-        if (tagDefinitions && tagDefinitions.length > 0) {
-            finalMod.content.tagDefinitions = tagDefinitions;
-        }
-        // Ensure user-provided AI Hooks take precedence
-        if (aiHooks) {
-            finalMod.content.aiHooks = {
-                on_world_build: aiHooks.on_world_build ? aiHooks.on_world_build.split('\n').filter(Boolean) : finalMod.content.aiHooks?.on_world_build,
-                on_action_evaluate: aiHooks.on_action_evaluate ? aiHooks.on_action_evaluate.split('\n').filter(Boolean) : finalMod.content.aiHooks?.on_action_evaluate,
-            };
-        }
         
-        // Ensure worldData structure exists
-        if (!finalMod.content.worldData || finalMod.content.worldData.length === 0) {
-            finalMod.content.worldData = [{
-// FIX: Added missing 'id' property required by ModWorldData type.
-                id: finalMod.modInfo.id,
-                name: finalMod.modInfo.name,
-                description: generatedJson.content?.worldData?.[0]?.description || finalMod.modInfo.description || '',
-                startingYear: generatedJson.content?.worldData?.[0]?.startingYear || 1,
-                eraName: generatedJson.content?.worldData?.[0]?.eraName || 'Kỷ Nguyên Mới',
-                majorEvents: [],
-                factions: [],
-                initialLocations: [],
-                initialNpcs: [],
-            }];
-        }
-        
-        // Overwrite with user-defined data
-        if (factions && factions.length > 0) finalMod.content.worldData[0].factions = factions;
-        if (locations && locations.length > 0) finalMod.content.worldData[0].initialLocations = locations;
-        if (npcs && npcs.length > 0) finalMod.content.worldData[0].initialNpcs = npcs;
-        if (majorEvents && majorEvents.length > 0) finalMod.content.worldData[0].majorEvents = majorEvents;
-        if (foreshadowedEvents && foreshadowedEvents.length > 0) finalMod.content.worldData[0].foreshadowedEvents = foreshadowedEvents;
+        return result;
 
-
-        // Post-processing to add IDs where names are used as references
-        if (finalMod.content?.worldData?.[0]) {
-            const world = finalMod.content.worldData[0];
-            const locationNameIdMap = new Map<string, string>();
-            
-            if (world.initialLocations) {
-                world.initialLocations = world.initialLocations.map((loc: any) => {
-                    const id = loc.id || loc.name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '');
-                    locationNameIdMap.set(loc.name, id);
-                    return { ...loc, id: id };
-                });
-                
-                world.initialLocations.forEach((loc: any) => {
-                    loc.neighbors = (loc.neighbors || []).map((name: string) => locationNameIdMap.get(name) || name);
-                });
-            }
-            
-            if (world.initialNpcs) {
-                world.initialNpcs.forEach((npc: any) => {
-                    npc.locationId = locationNameIdMap.get(npc.locationId) || npc.locationId;
-                });
-            }
-            
-            if (finalMod.content.dynamicEvents) {
-                finalMod.content.dynamicEvents.forEach((event: any) => {
-                    if (event.trigger.type === 'ON_ENTER_LOCATION' && event.trigger.details.locationId) {
-                        event.trigger.details.locationId = locationNameIdMap.get(event.trigger.details.locationId) || event.trigger.details.locationId;
-                    }
-                });
-            }
-        }
-        return finalMod;
     } catch (e) {
-        console.error("Failed to parse AI response for world generation:", e);
-        console.error("Raw AI response:", response.text);
-        throw new Error("AI đã trả về dữ liệu JSON không hợp lệ.");
+        console.error("Lỗi nghiêm trọng khi tạo thế giới nhanh:", e);
+        console.error("Raw response:", response.text);
+        throw new Error("AI đã trả về dữ liệu không hợp lệ trong quá trình Sáng Thế. Vui lòng thử lại với một ý tưởng khác.");
     }
-};
+}
 
 export async function* streamWorldAnalysis(
-    description: string,
+    text: string,
     settings: GameSettings
 ): AsyncIterable<string> {
-    const prompt = `Bạn là AI Sáng Thế 'Thiên Cơ Kính', một trợ lý sáng tạo. Nhiệm vụ của bạn là phân tích mô tả thế giới của người dùng theo thời gian thực và đưa ra các gợi ý, phân tích và ý tưởng để làm cho thế giới đó trở nên sâu sắc và thú vị hơn.
 
-**Mô tả của người dùng:**
+    const prompt = `Bạn là Thiên Cơ Kính, một pháp bảo AI có khả năng phân tích và suy diễn. Hãy phân tích đoạn văn mô tả ý tưởng thế giới sau đây và đưa ra các gợi ý, phân tích, và ý tưởng mở rộng để giúp người dùng xây dựng một thế giới có chiều sâu.
+
+**Ý tưởng của người dùng:**
 ---
-${description}
+${text}
 ---
 
 **Nhiệm vụ của bạn:**
-Dựa trên mô tả, hãy cung cấp một bản phân tích và gợi ý có cấu trúc. Sử dụng markdown để định dạng. Phân tích của bạn nên bao gồm các mục sau (nếu có thể suy luận):
+1.  **Phân tích Cốt lõi:** Tóm tắt ý tưởng chính và chủ đề của thế giới.
+2.  **Gợi ý Mở rộng:** Đặt ra các câu hỏi gợi mở để người dùng suy nghĩ sâu hơn. Ví dụ: "Hệ thống tu luyện này có cái giá phải trả nào không?", "Mâu thuẫn chính trong xã hội này là gì?".
+3.  **Đề xuất Ý tưởng:** Đưa ra 2-3 ý tưởng cụ thể để làm phong phú thêm thế giới. Ví dụ: một phe phái bí ẩn, một sự kiện lịch sử, một địa danh độc đáo.
+4.  **Sử dụng Markdown:** Định dạng câu trả lời của bạn bằng Markdown (sử dụng \`##\`, \`###\`, \`*\`, \`-\`) để dễ đọc.`;
 
-*   **## Phân Tích Thể Loại & Chủ Đề:**
-    -   Nhận diện các thể loại chính (vd: Tu tiên, Cyberpunk, Hắc ám) và các chủ đề cốt lõi.
+    const model = settings.quickSupportModel || 'gemini-2.5-flash';
+    const specificApiKey = settings?.modelApiKeyAssignments?.quickSupportModel;
 
-*   **## Khái Niệm Chính & Gợi Ý Tên Gọi:**
-    -   Trích xuất các khái niệm độc đáo và gợi ý những tên gọi thi vị hơn. (Vd: "dòng dữ liệu thuần khiết" có thể gọi là "Linh Tức").
-
-*   **## Gợi Ý Phe Phái & Xung Đột:**
-    -   Dựa trên các thế lực được mô tả, đề xuất tên và mục tiêu cho các phe phái chính.
-    -   Suy luận ra xung đột trung tâm của thế giới.
-
-*   **## Gợi Ý Hệ Thống Sức Mạnh:**
-    -   Đề xuất một hệ thống sức mạnh/tu luyện phù hợp với bối cảnh. Các cấp bậc và tên gọi nên độc đáo.
-
-*   **## Câu Hỏi Gợi Mở:**
-    -   Đặt 1-2 câu hỏi để người dùng suy nghĩ sâu hơn về thế giới của họ. (Vd: "Điều gì sẽ xảy ra nếu công nghệ cấy ghép linh hồn bị lỗi?", "Nguồn gốc của dòng dữ liệu thuần khiết từ đâu?").
-
-Hãy trả lời một cách sáng tạo và gợi mở.`;
-
-    const model = settings?.gameMasterModel || 'gemini-2.5-flash';
-    const specificApiKey = settings?.modelApiKeyAssignments?.gameMasterModel;
-    
-    const config: any = {
-        temperature: 0.7,
-        topK: settings.topK,
-        topP: settings.topP,
-    };
-    
     const stream = await generateWithRetryStream({
         model,
         contents: prompt,
-        config: config,
     }, specificApiKey);
     
     for await (const chunk of stream) {
         yield chunk.text;
     }
 }
-
-export const generateLoadingNarratives = async (
-    worldCreationData: WorldCreationData,
-    settings: GameSettings
-): Promise<string[]> => {
-    const schema = {
-        type: Type.OBJECT,
-        properties: {
-            narratives: {
-                type: Type.ARRAY,
-                description: "Danh sách 5-7 thông điệp ngắn gọn, huyền ảo.",
-                items: { type: Type.STRING },
-            },
-        },
-        required: ['narratives'],
-    };
-
-    const prompt = `Bạn là AI Sáng Thế, một nhà thơ vũ trụ. Dựa trên ý tưởng cốt lõi về một thế giới, hãy sáng tạo ra 5-7 dòng thông điệp ngắn gọn, huyền ảo, và đầy thi vị để hiển thị trên màn hình tải game trong lúc thế giới đang được kiến tạo. Những thông điệp này nên gợi lên cảm giác thế giới đang được "sinh ra".
-
-    **Ý tưởng thế giới:**
-    - Thể loại: ${worldCreationData.genre}
-    - Chủ đề: ${worldCreationData.theme}
-    - Bối cảnh: ${worldCreationData.setting}
-
-    **Yêu cầu:**
-    - Mỗi thông điệp phải ngắn gọn (dưới 15 từ).
-    - Văn phong phải huyền ảo, thơ mộng, phù hợp với cảm giác "Sáng Thế".
-    - Trả về kết quả dưới dạng một đối tượng JSON duy nhất theo schema đã cung cấp.`;
-
-    const model = settings.quickSupportModel || 'gemini-2.5-flash';
-    const specificApiKey = settings.modelApiKeyAssignments?.quickSupportModel;
-
-    try {
-        const response = await generateWithRetry({
-            model,
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: schema,
-                temperature: 1.0,
-            },
-        }, specificApiKey);
-        
-        const result = JSON.parse(response.text);
-        return result.narratives || [];
-    } catch (error) {
-        console.warn("Failed to generate loading narratives, using defaults.", error);
-        return [
-            "Đang gieo mầm nhân quả...",
-            "Thiên đạo đang định hình...",
-            "Vạn vật đang chờ đợi...",
-            "Viết nên chương đầu tiên của số phận...",
-        ];
-    }
-};

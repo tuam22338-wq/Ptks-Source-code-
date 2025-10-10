@@ -34,6 +34,11 @@ export interface DbModContent {
     mod: FullMod;
 }
 
+export interface DbHotmark {
+  id: string;
+  data: GameState;
+}
+
 export class MyDatabase extends Dexie {
   saveSlots!: Table<DbSaveSlot, number>;
   settings!: Table<DbSetting, string>;
@@ -48,12 +53,13 @@ export class MyDatabase extends Dexie {
   assetCache!: Table<{id: string, data: any}, string>;
   novels!: Table<Novel, number>; // Bảng mới cho tính năng Tiểu Thuyết Gia AI
   heuristicFixLogs!: Table<HeuristicFixReport, number>; // Bảng mới cho Thiên Đạo Giám
+  hotmarks!: Table<DbHotmark, string>; // Bảng mới cho hotmarks
 
   constructor() {
     super('TamThienTheGioiDB');
     // FIX: Upgraded database version to 7 to reflect schema generalization.
     // FIX: Cast 'this' to Dexie to access the 'version' method, resolving a TypeScript error where the method was not found on the subclass type. This follows the existing pattern in this file for handling Dexie's type quirks.
-    (this as Dexie).version(8).stores({
+    (this as Dexie).version(9).stores({
       saveSlots: 'id',
       settings: 'key',
       modLibrary: 'modInfo.id',
@@ -67,6 +73,7 @@ export class MyDatabase extends Dexie {
       assetCache: 'id',
       novels: '++id, title, lastModified',
       heuristicFixLogs: '++id, timestamp', // Schema cho bảng logs
+      hotmarks: 'id', // Schema cho bảng hotmarks
     });
     // This will upgrade from version 6 to 7.
     (this as Dexie).on('populate', () => {
@@ -410,4 +417,15 @@ export const addHeuristicFixLog = async (log: Omit<HeuristicFixReport, 'id'>): P
 
 export const getAllHeuristicFixLogs = async (): Promise<HeuristicFixReport[]> => {
     return db.heuristicFixLogs.orderBy('timestamp').reverse().toArray();
+};
+
+// --- Hotmark Service ---
+export const saveHotmark = async (gameState: GameState): Promise<void> => {
+    // Save the full, raw game state without dehydration for debugging fidelity
+    await db.hotmarks.put({ id: 'current_hotmark', data: gameState });
+};
+
+export const loadHotmark = async (): Promise<GameState | null> => {
+    const hotmark = await db.hotmarks.get('current_hotmark');
+    return hotmark ? hotmark.data : null;
 };

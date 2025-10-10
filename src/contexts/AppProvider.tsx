@@ -133,8 +133,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (err: any) {
             console.error("Lỗi tạo thế giới:", err);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
-            // FIX: Cast unknown error to string for Error constructor.
-            // FIX: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
+            // @google-genai-fix: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
             throw new Error(String(err));
         }
     }, [state.settings, memoizedLoadSaveSlots]);
@@ -145,7 +144,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         } catch (err: any) {
             console.error("Lỗi tạo nhanh thế giới:", err);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
-            // FIX: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
+            // @google-genai-fix: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
             throw new Error(String(err));
         }
     }, [state.settings, memoizedLoadSaveSlots]);
@@ -172,6 +171,28 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleSetActiveWorldId = useCallback((worldId: string) => setActiveWorldId(worldId, dispatch), []);
     const handleEditWorld = useCallback(async (worldId: string) => console.log("Placeholder for edit world", worldId), []);
 
+    const handleSaveHotmark = useCallback(async () => {
+        if (state.gameState) {
+            await db.saveHotmark(state.gameState);
+            console.log('%c[Hotmark] Game state snapshot saved.', 'color: #4ade80');
+        } else {
+            console.error('[Hotmark] No active game state to save.');
+            throw new Error("Không có trạng thái game đang hoạt động.");
+        }
+    }, [state.gameState]);
+
+    const handleLoadHotmark = useCallback(async () => {
+        const loadedState = await db.loadHotmark();
+        if (loadedState) {
+            dispatch({ type: 'UPDATE_GAME_STATE', payload: loadedState });
+            console.log('%c[Hotmark] Game state snapshot loaded.', 'color: #22d3ee');
+        } else {
+            console.error('[Hotmark] No hotmark found to load.');
+            throw new Error("Không tìm thấy hotmark.");
+        }
+    }, [dispatch]);
+
+
     // --- CONTEXT VALUE & RENDER ---
 
     const contextValue = {
@@ -180,7 +201,8 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         handlePlayerAction, handleUpdatePlayerCharacter, handleSlotSelection, handleSaveGame,
         handleDeleteGame, handleVerifyAndRepairSlot, quitGame: quitGameHandler,
         speak: speakHandler, cancelSpeech: memoizedCancelSpeech, handleInstallMod, handleToggleMod,
-        handleDeleteModFromLibrary, handleSetActiveWorldId, handleEditWorld
+        handleDeleteModFromLibrary, handleSetActiveWorldId, handleEditWorld,
+        handleSaveHotmark, handleLoadHotmark
     };
 
     return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;

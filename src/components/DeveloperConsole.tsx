@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
-import { FaTimes, FaTrash, FaChevronUp, FaCode, FaBrain, FaTerminal, FaKey, FaSyncAlt, FaExclamationCircle, FaCheckCircle, FaRocket } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaChevronUp, FaCode, FaBrain, FaTerminal, FaKey, FaSyncAlt, FaExclamationCircle, FaCheckCircle, FaRocket, FaBookmark, FaUndo } from 'react-icons/fa';
+import { useAppContext } from '../contexts/useAppContext';
 
 // Log entry types
 interface LogEntry {
@@ -110,6 +111,9 @@ const DeveloperConsole: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'ai' | 'logs'>('ai');
     const logContainerRef = useRef<HTMLDivElement>(null);
 
+    const { state, handleSaveHotmark, handleLoadHotmark } = useAppContext();
+    const [hotmarkStatus, setHotmarkStatus] = useState('');
+
     useEffect(() => {
         const originalConsole = { ...console };
         const logToState = (level: LogEntry['level']) => (...args: any[]) => {
@@ -137,6 +141,30 @@ const DeveloperConsole: React.FC = () => {
             logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
         }
     }, [generalLogs, aiLogs, isPanelOpen, activeTab]);
+
+    const onSaveHotmark = async () => {
+        setHotmarkStatus('Đang lưu...');
+        try {
+            await handleSaveHotmark();
+            setHotmarkStatus('Đã lưu!');
+        } catch (e: any) {
+            setHotmarkStatus(`Lỗi: ${e.message}`);
+        } finally {
+            setTimeout(() => setHotmarkStatus(''), 2500);
+        }
+    };
+
+    const onLoadHotmark = async () => {
+        setHotmarkStatus('Đang tải...');
+         try {
+            await handleLoadHotmark();
+            setHotmarkStatus('Đã tải!');
+        } catch (e: any) {
+            setHotmarkStatus(`Lỗi: ${e.message}`);
+        } finally {
+            setTimeout(() => setHotmarkStatus(''), 2500);
+        }
+    };
     
     const renderAiLog = (log: AiLogEntry, index: number) => {
         switch(log.event) {
@@ -190,6 +218,18 @@ const DeveloperConsole: React.FC = () => {
                 <div className="flex justify-between items-center p-1 bg-gray-800/80 flex-shrink-0">
                     <span className="font-bold text-gray-300">Developer Console</span>
                     <div className="flex items-center gap-2">
+                        {hotmarkStatus && (
+                            <span className={`text-xs px-2 py-0.5 rounded ${hotmarkStatus.includes('Lỗi') ? 'bg-red-500/50 text-red-300' : 'bg-green-500/50 text-green-300'}`}>
+                                {hotmarkStatus}
+                            </span>
+                        )}
+                        <button onClick={onSaveHotmark} disabled={!state.gameState} className="p-1 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed" title="Lưu Hotmark (Snapshot Trạng thái Game)">
+                            <FaBookmark />
+                        </button>
+                        <button onClick={onLoadHotmark} className="p-1 text-gray-400 hover:text-white" title="Tải Hotmark (Quay lại Snapshot)">
+                            <FaUndo />
+                        </button>
+                        <div className="w-px h-4 bg-gray-600"></div>
                         <button onClick={() => { activeTab === 'ai' ? setAiLogs([]) : setGeneralLogs([]); }} className="p-1 text-gray-400 hover:text-white" title="Clear Current Tab"><FaTrash /></button>
                         <button onClick={() => setIsPanelOpen(false)} className="p-1 text-gray-400 hover:text-white" title="Minimize to Icon"><FaChevronUp /></button>
                     </div>

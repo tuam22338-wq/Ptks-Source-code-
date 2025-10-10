@@ -1,7 +1,4 @@
 
-
-
-
 import { Type } from "@google/genai";
 import type { ElementType } from 'react';
 import type { InnateTalent, CharacterIdentity, GameState, Gender, NPC, PlayerNpcRelationship, ModTalent, ModTalentRank, TalentSystemConfig, Element, Currency, CharacterAttributes, StatBonus, SpiritualRoot, ItemType, ItemQuality, ModAttributeSystem, GenerationMode } from '../../types';
@@ -51,7 +48,7 @@ Khi gán "bonuses", bạn CHỈ ĐƯỢC PHÉP sử dụng tên thuộc tính t�
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        attribute: { type: Type.STRING, description: `Tên của thuộc tính. PHẢI là một trong các giá trị sau: ${availableAttributes.join(', ')}` },
+                        attribute: { type: Type.STRING, description: `Tên của thuộc tính. PHẢI là một trong các thuộc tính hợp lệ đã được liệt kê trong bối cảnh.` },
                         value: { type: Type.NUMBER, description: "Giá trị bonus, có thể dương hoặc âm." }
                     },
                     required: ['attribute', 'value']
@@ -204,8 +201,8 @@ export const generateInitialWorldDetails = async (
             personality: { type: Type.STRING, description: 'Tính cách của NPC (ví dụ: Trung Lập, Tà Ác, Hỗn Loạn, Chính Trực).' },
             motivation: { type: Type.STRING, description: "Động lực cốt lõi, sâu xa nhất của NPC. Ví dụ: 'Chứng tỏ bản thân', 'Tìm kiếm sự thật', 'Báo thù cho gia tộc'." },
             goals: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Danh sách 1-3 mục tiêu dài hạn mà NPC đang theo đuổi. Ví dụ: ['Trở thành đệ nhất luyện đan sư', 'Tìm ra kẻ đã hãm hại sư phụ']." },
-            realmName: { type: Type.STRING, enum: availableRealms.length > 0 ? availableRealms : ['Phàm Nhân'], description: 'Cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
-            element: { type: Type.STRING, enum: elements, description: 'Thuộc tính ngũ hành của NPC.' },
+            realmName: { type: Type.STRING, description: 'Tên cảnh giới tu luyện của NPC, dựa trên sức mạnh của họ. "Phàm Nhân" cho người thường.' },
+            element: { type: Type.STRING, description: 'Thuộc tính ngũ hành của NPC.' },
             initialEmotions: {
                 type: Type.OBJECT,
                 description: "Trạng thái cảm xúc ban đầu của NPC. Dựa vào tính cách để quyết định.",
@@ -239,14 +236,14 @@ export const generateInitialWorldDetails = async (
                     properties: {
                         name: { type: Type.STRING },
                         description: { type: Type.STRING },
-                        rank: { type: Type.STRING, enum: TALENT_RANK_NAMES },
+                        rank: { type: Type.STRING, description: "Hạng của tiên tư." },
                         effect: { type: Type.STRING },
                          bonuses: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
-                                    attribute: { type: Type.STRING, enum: ALL_ATTRIBUTES },
+                                    attribute: { type: Type.STRING, description: "Tên thuộc tính. PHẢI là một trong các thuộc tính hợp lệ." },
                                     value: { type: Type.NUMBER }
                                 },
                                 required: ['attribute', 'value']
@@ -256,7 +253,7 @@ export const generateInitialWorldDetails = async (
                     required: ['name', 'description', 'rank', 'effect'],
                 },
             },
-            locationId: { type: Type.STRING, enum: availableLocations },
+            locationId: { type: Type.STRING, description: "ID của địa điểm NPC đang ở." },
         },
         required: ['name', 'gender', 'status', 'description', 'origin', 'personality', 'motivation', 'goals', 'realmName', 'element', 'talents', 'locationId', 'ChinhDao', 'MaDao', 'LucLuong', 'LinhLucSatThuong', 'CanCot', 'NguyenThanKhang', 'SinhMenh', 'currency', 'initialEmotions'],
     };
