@@ -247,9 +247,10 @@ export async function playerAction(
             onStreamUpdate
         );
         dispatch({ type: 'PLAYER_ACTION_RESOLVED', payload: finalState });
-    } catch (error: any) {
+    } catch (error) {
         console.error("AI story generation failed:", error);
-        const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${error.message}`;
+        const message = error instanceof Error ? error.message : String(error);
+        const errorMessage = `[Hệ Thống] Lỗi kết nối với Thiên Đạo: ${message}`;
         
         dispatch({
             type: 'UPDATE_GAME_STATE',

@@ -160,8 +160,9 @@ const GamePlayScreenContent: React.FC = memo(() => {
         try {
             const answer = await askAiAssistant(query, gameState);
             addStoryEntry({ type: 'system-notification', content: `[Thiên Cơ]: ${answer}` });
-        } catch (error: any) {
-            addStoryEntry({ type: 'system', content: `[Lỗi Thiên Cơ]: ${error.message}` });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            addStoryEntry({ type: 'system', content: `[Lỗi Thiên Cơ]: ${message}` });
         } finally {
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false }});
         }

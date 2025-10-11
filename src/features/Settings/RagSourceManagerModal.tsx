@@ -19,8 +19,9 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
         try {
             const loadedSources = await ragService.getAllSources();
             setSources(loadedSources);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(message);
         } finally {
             setIsLoading(false);
         }
@@ -38,8 +39,9 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
                 await ragService.addPlayerJournalSource(file);
                 // Refresh the list after adding
                 await loadSources();
-            } catch (err: any) {
-                setError(`Lỗi khi thêm nguồn: ${err.message}`);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                setError(`Lỗi khi thêm nguồn: ${message}`);
             }
         }
         // Reset file input to allow re-uploading the same file
@@ -53,8 +55,9 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
         setSources(prev => prev.map(s => s.id === sourceId ? { ...s, status: 'INDEXING' } : s));
         try {
             await ragService.indexSource(sourceId);
-        } catch (err: any) {
-             setError(`Lỗi khi lập chỉ mục '${sourceId}': ${err.message}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+             setError(`Lỗi khi lập chỉ mục '${sourceId}': ${message}`);
         } finally {
             // Refresh the list to get the final status
             await loadSources();
@@ -67,8 +70,9 @@ const RagSourceManagerModal: React.FC<RagSourceManagerModalProps> = ({ onClose }
             try {
                 await ragService.deleteSource(sourceId);
                 await loadSources();
-            } catch (err: any) {
-                setError(`Lỗi khi xóa nguồn '${sourceId}': ${err.message}`);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                setError(`Lỗi khi xóa nguồn '${sourceId}': ${message}`);
             }
         }
     };

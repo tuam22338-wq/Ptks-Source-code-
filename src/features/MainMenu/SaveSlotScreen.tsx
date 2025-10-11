@@ -136,8 +136,8 @@ const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
     return <div className="prose prose-sm max-w-none prose-p:text-[var(--text-color)]" dangerouslySetInnerHTML={parsedContent} />;
 };
 
-function useDebounce<T>(value: T, delay: number): T {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedValue(value);
@@ -251,8 +251,8 @@ const SaveSlotScreen: React.FC = () => {
                 if (abortController.signal.aborted) break;
                 setMirrorContent(prev => prev + chunk);
             }
-        } catch (error: any) {
-            if (error.name !== 'AbortError') {
+        } catch (error) {
+            if (error instanceof Error && error.name !== 'AbortError') {
                 console.error("Error streaming world analysis:", error);
                 setMirrorContent('Lỗi kết nối đến Thiên Cơ Kính. Vui lòng thử lại.');
             }
@@ -350,8 +350,9 @@ const SaveSlotScreen: React.FC = () => {
             character: p.character,
         }));
 
-      } catch (err: any) {
-        setError(`Lỗi khi nhập mod: ${err.message}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(`Lỗi khi nhập mod: ${message}`);
       }
     };
     reader.readAsText(file);
@@ -387,8 +388,9 @@ const SaveSlotScreen: React.FC = () => {
             await handleCreateAndStartGame(formData, slotId);
         }
         // On success, AppContext will handle navigation.
-    } catch (err: any) {
-        setError(`Lỗi tạo thế giới: ${err.message}`);
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(`Lỗi tạo thế giới: ${message}`);
         setIsLoading(false);
     }
   };
@@ -522,8 +524,9 @@ const SaveSlotScreen: React.FC = () => {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-        } catch (err: any) {
-            setError(`Lỗi khi xuất mẫu: ${err.message}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(`Lỗi khi xuất mẫu: ${message}`);
         }
     };
     

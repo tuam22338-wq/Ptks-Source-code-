@@ -2,7 +2,8 @@ import React, { memo, useRef, useState, useEffect } from 'react';
 import type { GameSettings, FullMod, GenerationMode, NovelContentEntry } from '../../types';
 import { summarizeLargeTextForWorldGen, generateWorldFromText, chatWithGameMaster } from '../../services/gemini/modding.service';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { FaFileUpload, FaDownload, FaBrain, FaArrowLeft, FaComments, FaDatabase, FaCog, FaTimes, FaPaperPlane, FaUserCircle, FaLightbulb, FaCopy, FaCheckCircle } from 'react-icons/fa';
+// FIX: Import `FaTrash` from `react-icons/fa` to resolve 'Cannot find name' error.
+import { FaFileUpload, FaDownload, FaBrain, FaArrowLeft, FaComments, FaDatabase, FaCog, FaTimes, FaPaperPlane, FaUserCircle, FaLightbulb, FaCopy, FaCheckCircle, FaTrash } from 'react-icons/fa';
 import { GiSparkles } from 'react-icons/gi';
 // FIX: Fix import path for `useAppContext` to point to the correct module.
 import { useAppContext } from '../../contexts/useAppContext';
@@ -95,8 +96,9 @@ const WorldDataTrainingPanel: React.FC = () => {
             if (file.type === 'application/pdf') text = await extractTextFromPdf(file);
             else text = await file.text();
             setFileContent(text);
-        } catch (err: any) {
-            setError(`Lỗi đọc file: ${err.message}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(`Lỗi đọc file: ${message}`);
             setFileContent(null);
             setFileName(null);
         } finally {
@@ -120,8 +122,9 @@ const WorldDataTrainingPanel: React.FC = () => {
             const rawMod = await generateWorldFromText(summarizedText, generationMode);
             const mod = fixModStructure(rawMod);
             setGeneratedMod(mod);
-        } catch (err: any) {
-            setError(`Lỗi tạo dữ liệu thế giới: ${err.message}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(`Lỗi tạo dữ liệu thế giới: ${message}`);
         } finally {
             setIsLoading(false);
         }
@@ -140,8 +143,9 @@ const WorldDataTrainingPanel: React.FC = () => {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-        } catch (err: any) {
-            setError(`Lỗi khi tải xuống file: ${err.message}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setError(`Lỗi khi tải xuống file: ${message}`);
         }
     };
 
@@ -271,8 +275,9 @@ const GameMasterChatPanel: React.FC<{
                     return latestHistory;
                 });
             }
-        } catch (error: any) {
-            setHistory(prev => [...prev, { role: 'model', content: `[Lỗi] Không thể kết nối đến AI: ${error.message}` }]);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setHistory(prev => [...prev, { role: 'model', content: `[Lỗi] Không thể kết nối đến AI: ${message}` }]);
         } finally {
             setIsGenerating(false);
         }
@@ -307,8 +312,9 @@ const GameMasterChatPanel: React.FC<{
             const mod = fixModStructure(rawMod);
             setGeneratedMod(mod);
 
-        } catch (err: any) {
-            setWorldGenError(`Lỗi tạo dữ liệu thế giới: ${err.message}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setWorldGenError(`Lỗi tạo dữ liệu thế giới: ${message}`);
         } finally {
             setWorldGenLoading(false);
         }
@@ -327,8 +333,9 @@ const GameMasterChatPanel: React.FC<{
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-        } catch (err: any) {
-            setWorldGenError(`Lỗi khi tải xuống file: ${err.message}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            setWorldGenError(`Lỗi khi tải xuống file: ${message}`);
         }
     };
     
@@ -360,157 +367,140 @@ const GameMasterChatPanel: React.FC<{
             </div>
              <div className="gemini-input-container">
                 <div className="flex items-center gap-2 mb-2">
-                     <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)]"><FaCog /></button>
-                     <button 
-                        onClick={handleGenerateFromChat} 
-                        disabled={isGenerating || isWorldGenLoading || history.length === 0}
-                        className="flex-grow px-4 py-2 bg-teal-700/80 text-white font-bold rounded-lg hover:bg-teal-600/80 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        <FaBrain /> Kiến Tạo Thế Giới
+                     <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)]" title="Cài đặt"><FaCog /></button>
+                     <button onClick={() => setHistory([])} className="p-2 rounded-full hover:bg-[var(--shadow-light)] text-[var(--text-muted-color)]" title="Xóa lịch sử"><FaTrash /></button>
+                     <div className="flex-grow"></div>
+                      <div className="relative">
+                        <button onClick={handleGenerateFromChat} disabled={isWorldGenLoading || history.length === 0} className="btn btn-primary !bg-teal-600 !py-2 !px-4 text-sm flex items-center gap-2">
+                            <FaBrain /> Tạo World Data
+                        </button>
+                        {(isWorldGenLoading || worldGenError || generatedMod) && (
+                            <div className="absolute bottom-full right-0 mb-2 w-72 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-3 z-10">
+                                {isWorldGenLoading && <LoadingSpinner message={worldGenMessage} size="sm" />}
+                                {worldGenError && <p className="text-sm text-red-400">{worldGenError}</p>}
+                                {generatedMod && (
+                                    <div className="text-center">
+                                        <p className="font-semibold text-green-400">Tạo thế giới thành công!</p>
+                                        <button onClick={handleDownloadGeneratedMod} className="btn btn-primary !bg-green-600 mt-2 text-sm w-full">
+                                            <FaDownload /> Tải xuống file
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="gemini-input-bar">
+                    <textarea 
+                        value={userInput}
+                        onChange={e => setUserInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                        disabled={isGenerating}
+                        placeholder="Trò chuyện với Game Master AI để xây dựng thế giới..."
+                        rows={1}
+                        className="gemini-textarea"
+                    />
+                    <button onClick={handleSendMessage} disabled={isGenerating || !userInput.trim()} className="gemini-send-button">
+                        {isGenerating ? <div className="gemini-loader"/> : <FaPaperPlane />}
                     </button>
                 </div>
-
-                {isWorldGenLoading && <div className="mt-2"><LoadingSpinner message={worldGenMessage} /></div>}
-                {worldGenError && <p className="bg-red-900/20 p-2 rounded mt-2 text-sm" style={{color: 'var(--error-color)'}}>{worldGenError}</p>}
-                {generatedMod && (
-                    <div className="mt-2 p-4 bg-green-900/20 border border-green-500/50 rounded-lg text-center">
-                        <p className="font-semibold" style={{color: 'var(--success-color)'}}>Tạo thế giới thành công!</p>
-                        <button onClick={handleDownloadGeneratedMod} className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-500 flex items-center gap-2 mx-auto">
-                            <FaDownload /> Tải xuống file Mod JSON
-                        </button>
-                    </div>
-                )}
-
-                <div className="flex items-center gap-2 rounded-full p-2" style={{boxShadow: 'var(--shadow-pressed)'}}>
-                    <textarea value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }} disabled={isGenerating} placeholder="Trò chuyện với Game Master AI để xây dựng thế giới..." rows={1} className="flex-grow bg-transparent border-none outline-none resize-none text-[var(--text-color)] placeholder-[var(--text-muted-color)] disabled:bg-transparent px-2" />
-                    <button onClick={handleSendMessage} disabled={isGenerating || !userInput.trim()} className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors disabled:cursor-not-allowed" style={{ backgroundColor: isGenerating || !userInput.trim() ? 'transparent' : 'var(--primary-accent-color)', color: 'var(--primary-accent-text-color)'}}>{isGenerating ? <div className="gemini-loader" style={{ borderColor: 'var(--text-muted-color)', borderTopColor: 'transparent'}}></div> : <FaPaperPlane />}</button>
-                </div>
             </div>
         </div>
     );
 };
 
-// --- Prompt Engineering Tab ---
-const PromptEngineeringPanel: React.FC<{
-    setActiveTab: (tab: ActiveTab) => void;
-    setUserInputForGM: (input: string) => void;
-}> = ({ setActiveTab, setUserInputForGM }) => {
-    
-    const [copySuccess, setCopySuccess] = useState('');
 
-    const groupedPrompts = React.useMemo(() => {
-        return PROMPT_TEMPLATES.reduce((acc, prompt) => {
-            const category = prompt.category;
-            if (!(acc as any)[category]) {
-                (acc as any)[category] = [];
-            }
-            (acc as any)[category].push(prompt);
-            return acc;
-        }, {} as Record<string, PromptTemplate[]>);
-    }, []);
+// --- Prompt Library Tab ---
 
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            setCopySuccess(text);
-            setTimeout(() => setCopySuccess(''), 2000);
-        }, (err) => {
-            console.error('Lỗi sao chép: ', err);
+const PromptLibraryPanel: React.FC<{
+    onSelect: (prompt: string) => void;
+}> = ({ onSelect }) => {
+    const [selectedCategory, setSelectedCategory] = useState<string>('Kiến tạo Thế giới');
+    const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
+
+    const categories = [...new Set(PROMPT_TEMPLATES.map(p => p.category))];
+    const filteredPrompts = PROMPT_TEMPLATES.filter(p => p.category === selectedCategory);
+
+    const handleCopy = (promptText: string) => {
+        navigator.clipboard.writeText(promptText).then(() => {
+            setCopiedPrompt(promptText);
+            setTimeout(() => setCopiedPrompt(null), 2000);
         });
     };
-
-    const handleUseInChat = (promptText: string) => {
-        setUserInputForGM(promptText);
-        setActiveTab('gm');
-    };
-
+    
     return (
-        <div className="p-4 space-y-6">
-            <h3 className="text-xl font-bold font-title text-center" style={{color: 'var(--primary-accent-color)'}}>Thư Viện Prompt Mẫu</h3>
-            <p className="text-sm text-center" style={{color: 'var(--text-muted-color)'}}>Học hỏi các kỹ thuật prompt chuyên nghiệp để ra lệnh cho AI một cách hiệu quả nhất. Sử dụng các mẫu dưới đây làm nền tảng để sáng tạo thế giới của riêng bạn.</p>
-            {Object.entries(groupedPrompts).map(([category, prompts]) => (
-                <div key={category}>
-                    <h4 className="text-lg font-bold font-title mb-3 pb-2 border-b" style={{color: 'var(--text-color)', borderColor: 'var(--shadow-light)'}}>{category}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {(prompts as PromptTemplate[]).map((p, index) => (
-                            <div key={index} className="neumorphic-inset-box p-4 flex flex-col">
-                                <h5 className="font-bold" style={{color: 'var(--primary-accent-color)'}}>{p.title}</h5>
-                                <p className="text-xs italic mt-1 mb-2" style={{color: 'var(--text-muted-color)'}}>{p.description}</p>
-                                <pre className="text-sm p-3 rounded whitespace-pre-wrap font-mono flex-grow" style={{boxShadow: 'var(--shadow-pressed)', color: 'var(--text-color)'}}>{p.prompt}</pre>
-                                <div className="flex gap-2 mt-3">
-                                    <button onClick={() => handleCopy(p.prompt)} className="btn btn-neumorphic !text-xs flex-1">
-                                        <FaCopy /> {copySuccess === p.prompt ? 'Đã chép!' : 'Sao chép'}
-                                    </button>
-                                    <button onClick={() => handleUseInChat(p.prompt)} className="btn btn-primary !text-xs flex-1">
-                                        Sử dụng trong Chat
-                                    </button>
-                                </div>
+       <div className="flex h-full">
+            <nav className="w-48 flex-shrink-0 bg-black/10 p-2 space-y-1">
+                {categories.map(category => (
+                    <button 
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`w-full text-left text-sm p-2 rounded-md font-semibold transition-colors ${selectedCategory === category ? 'bg-[var(--primary-accent-color)]/20 text-[var(--primary-accent-color)]' : 'text-gray-400 hover:bg-gray-800/50'}`}
+                    >
+                        {category}
+                    </button>
+                ))}
+            </nav>
+            <div className="flex-grow p-4 overflow-y-auto">
+                <div className="space-y-3">
+                    {filteredPrompts.map(template => (
+                         <div key={template.title} className="neumorphic-inset-box p-3">
+                            <h4 className="font-bold text-[var(--text-color)]">{template.title}</h4>
+                            <p className="text-xs text-[var(--text-muted-color)] mt-1 mb-2">{template.description}</p>
+                            <div className="flex gap-2">
+                                <button onClick={() => onSelect(template.prompt)} className="btn btn-primary !text-xs !py-1 flex-1"><FaLightbulb /> Sử dụng</button>
+                                <button onClick={() => handleCopy(template.prompt)} className="btn btn-neumorphic !text-xs !py-1 flex-1">
+                                    {copiedPrompt === template.prompt ? <FaCheckCircle /> : <FaCopy />}
+                                    {copiedPrompt === template.prompt ? 'Đã chép' : 'Sao chép'}
+                                </button>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
-            ))}
-        </div>
+            </div>
+       </div>
     );
 };
 
-
-// --- Main Screen ---
 
 const AiTrainingScreen: React.FC = () => {
-    const { handleNavigate, state } = useAppContext();
-    const [activeTab, setActiveTab] = useState<ActiveTab>('gm');
-    const [userInputForGM, setUserInputForGM] = useState('');
+    const { handleNavigate } = useAppContext();
+    const [activeTab, setActiveTab] = useState<ActiveTab>('data');
+    const [gmUserInput, setGmUserInput] = useState('');
 
     return (
-        <div className="w-full animate-fade-in flex flex-col h-full min-h-0">
+        <div className="w-full animate-fade-in flex flex-col h-full min-h-0 p-4 sm:p-6">
             <div className="flex-shrink-0 flex justify-between items-center mb-6">
-                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full hover:bg-[var(--shadow-light)] transition-colors" title="Quay Lại Menu" style={{color: 'var(--text-muted-color)'}}><FaArrowLeft className="w-5 h-5" /></button>
-                <h2 className="text-3xl font-bold font-title">Huấn Luyện AI</h2>
-                <div className="w-9 h-9"></div> {/* Spacer */}
+                <h2 className="text-2xl sm:text-3xl font-bold font-title">Huấn Luyện AI</h2>
+                <button onClick={() => handleNavigate('mainMenu')} className="p-2 rounded-full text-[var(--text-muted-color)] hover:text-[var(--text-color)] hover:bg-gray-700/50" title="Quay Lại Menu">
+                    <FaArrowLeft className="w-5 h-5" />
+                </button>
             </div>
             
-            <div className="flex-shrink-0 flex items-center gap-2 p-1 rounded-t-lg border-b" style={{boxShadow: 'var(--shadow-pressed)', borderColor: 'var(--shadow-light)'}}>
-                <button onClick={() => setActiveTab('gm')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'gm' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'gm' ? 'var(--text-muted-color)' : undefined}}>
-                    <FaComments /> Game Master AI
-                </button>
-                 <button onClick={() => setActiveTab('prompts')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'prompts' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'prompts' ? 'var(--text-muted-color)' : undefined}}>
-                    <FaLightbulb /> Kỹ Thuật Prompt
-                </button>
-                <button onClick={() => setActiveTab('data')} className={`w-1/3 flex items-center justify-center gap-2 py-3 font-semibold rounded-t-md transition-colors ${activeTab === 'data' ? 'bg-[var(--bg-color)] text-[var(--primary-accent-color)]' : 'hover:bg-[var(--shadow-light)]'}`} style={{color: activeTab !== 'data' ? 'var(--text-muted-color)' : undefined}}>
-                    <FaDatabase /> Huấn Luyện Dữ Liệu
-                </button>
+            <div className="flex-shrink-0 flex items-center gap-2 p-2 rounded-lg border mb-4 mx-4" style={{boxShadow: 'var(--shadow-pressed)', borderColor: 'var(--shadow-dark)'}}>
+                 <TabButton id="data" activeTab={activeTab} onClick={setActiveTab} icon={FaDatabase} label="Dữ Liệu Thế Giới" />
+                 <TabButton id="gm" activeTab={activeTab} onClick={setActiveTab} icon={FaComments} label="Trò chuyện GM" />
+                 <TabButton id="prompts" activeTab={activeTab} onClick={setActiveTab} icon={FaLightbulb} label="Thư viện Prompt" />
             </div>
 
-            <div className="flex-grow min-h-0 overflow-y-auto rounded-b-xl" style={{backgroundColor: 'var(--bg-color)'}}>
-                {activeTab === 'data' && (
-                    <div className="p-4">
-                        <SettingsSection title="Tạo Dữ Liệu Thế Giới Từ Văn Bản">
-                            <WorldDataTrainingPanel />
-                        </SettingsSection>
-                    </div>
-                )}
-                {activeTab === 'gm' && (
-                    <GameMasterChatPanel userInput={userInputForGM} setUserInput={setUserInputForGM} />
-                )}
-                {activeTab === 'prompts' && (
-                    <PromptEngineeringPanel setActiveTab={setActiveTab} setUserInputForGM={setUserInputForGM} />
-                )}
-            </div>
-            
-            <div className="flex-shrink-0 mt-6 pt-4 border-t border-[var(--shadow-light)] flex justify-end items-center" style={{ minHeight: '52px' }}>
-                {state.settingsSavingStatus === 'saving' && (
-                    <div className="text-sm flex items-center gap-2" style={{color: 'var(--text-muted-color)'}}>
-                        <LoadingSpinner size="sm" /> Đang lưu...
-                    </div>
-                )}
-                {state.settingsSavingStatus === 'saved' && (
-                    <div className="text-sm flex items-center gap-2" style={{color: 'var(--success-color)'}}>
-                        <FaCheckCircle /> Đã lưu tự động
-                    </div>
-                )}
+            <div className="flex-grow min-h-0 mx-4 mb-4 rounded-xl" style={{boxShadow: 'var(--shadow-raised)'}}>
+                 {activeTab === 'data' && <div className="p-4 sm:p-6"><WorldDataTrainingPanel /></div>}
+                 {activeTab === 'gm' && <GameMasterChatPanel userInput={gmUserInput} setUserInput={setGmUserInput} />}
+                 {activeTab === 'prompts' && <PromptLibraryPanel onSelect={(prompt) => { setGmUserInput(prompt); setActiveTab('gm'); }} />}
             </div>
         </div>
     );
 };
+
+const TabButton: React.FC<{ id: ActiveTab, activeTab: ActiveTab, onClick: (id: ActiveTab) => void, icon: React.ElementType, label: string }> = ({ id, activeTab, onClick, icon: Icon, label }) => (
+    <button
+        onClick={() => onClick(id)}
+        className={`flex-grow flex flex-col items-center justify-center p-2 text-[var(--text-muted-color)] rounded-lg transition-colors duration-200 hover:bg-[var(--shadow-light)]/50 hover:text-[var(--text-color)] ${activeTab === id ? 'bg-[var(--shadow-light)] text-[var(--text-color)]' : ''}`}
+    >
+        <Icon className="text-xl mb-1" />
+        <span className="text-xs font-semibold text-center">{label}</span>
+    </button>
+);
+
 
 export default memo(AiTrainingScreen);

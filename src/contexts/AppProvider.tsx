@@ -1,9 +1,9 @@
 import React, { useEffect, useCallback, FC, PropsWithChildren, useRef, useReducer, useState } from 'react';
 import { AppContext } from './AppContext';
 import { gameReducer, initialState } from './gameReducer';
-import * as db from '../services/dbService';
-import { apiKeyManager } from '../services/gemini/gemini.core';
-import { DEFAULT_SETTINGS, THEME_OPTIONS } from '../constants';
+import * as db from '../../services/dbService';
+import { apiKeyManager } from '../../services/gemini/gemini.core';
+import { DEFAULT_SETTINGS, THEME_OPTIONS } from '../../constants';
 // FIX: Add missing type imports
 import type { GameSettings, FullMod } from '../types';
 
@@ -80,7 +80,12 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         if (theme) document.body.classList.add(theme);
 
         if (theme === 'theme-custom' && customThemeColors) {
-            Object.entries(customThemeColors).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
+            // FIX: The value from customThemeColors might not be a string if data is malformed from storage. Add a type check.
+            Object.entries(customThemeColors).forEach(([key, value]) => {
+                if (typeof value === 'string') {
+                    document.documentElement.style.setProperty(key, value);
+                }
+            });
         } else {
             Object.keys(DEFAULT_SETTINGS.customThemeColors).forEach(key => document.documentElement.style.removeProperty(key));
         }
@@ -127,37 +132,35 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
         handleSettingChange('dynamicBackground', themeId);
     }, [state.backgrounds.urls, handleSettingChange]);
     
-    const handleCreateAndStartGame = useCallback(async (data, slotId) => {
+    const handleCreateAndStartGame = useCallback(async (data: any, slotId: any) => {
         try {
             await createAndStartGame(data, slotId, dispatch, state.settings, memoizedLoadSaveSlots);
-        } catch (err: any) {
+        } catch (err) {
             console.error("Lỗi tạo thế giới:", err);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
-            // FIX: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
-            // @google-genai-fix: Cast error to string to satisfy Error constructor.
-            throw new Error(String(err));
+            const message = err instanceof Error ? err.message : String(err);
+            throw new Error(message);
         }
     }, [state.settings, memoizedLoadSaveSlots]);
 
-    const handleQuickCreateAndStartGame = useCallback(async (desc, name, slotId) => {
+    const handleQuickCreateAndStartGame = useCallback(async (desc: any, name: any, slotId: any) => {
         try {
             await quickCreateAndStartGame(desc, name, slotId, dispatch, state.settings, memoizedLoadSaveSlots);
-        } catch (err: any) {
+        } catch (err) {
             console.error("Lỗi tạo nhanh thế giới:", err);
             dispatch({ type: 'SET_LOADING', payload: { isLoading: false } });
-            // FIX: The caught error `err` can be of type 'unknown', which is not assignable to the 'string' parameter of the Error constructor. Casting it to a string resolves this.
-            // @google-genai-fix: Cast error to string to satisfy Error constructor.
-            throw new Error(String(err));
+            const message = err instanceof Error ? err.message : String(err);
+            throw new Error(message);
         }
     }, [state.settings, memoizedLoadSaveSlots]);
 
     const memoizedCancelSpeech = useCallback(() => cancelSpeech(ttsAudioRef), []);
 
-    const handlePlayerAction = useCallback((text, type, apCost, showNotification) => {
+    const handlePlayerAction = useCallback((text: any, type: any, apCost: any, showNotification: any) => {
         return playerAction(text, type, apCost, showNotification, state, dispatch, memoizedCancelSpeech, abortControllerRef);
     }, [state, memoizedCancelSpeech]);
 
-    const handleUpdatePlayerCharacter = useCallback((updater) => updatePlayerCharacter(updater, dispatch), []);
+    const handleUpdatePlayerCharacter = useCallback((updater: any) => updatePlayerCharacter(updater, dispatch), []);
 
     const handleSlotSelection = useCallback((slotId: number) => loadGame(slotId, state.saveSlots, dispatch), [state.saveSlots]);
     const handleSaveGame = useCallback(() => saveGame(state.gameState, state.currentSlotId, dispatch, memoizedLoadSaveSlots), [state.gameState, state.currentSlotId, memoizedLoadSaveSlots]);
@@ -165,7 +168,7 @@ export const AppProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
     const handleVerifyAndRepairSlot = useCallback((slotId: number) => verifyAndRepairSlot(slotId, dispatch, memoizedLoadSaveSlots), [memoizedLoadSaveSlots]);
     const quitGameHandler = useCallback(() => quitGame(dispatch, memoizedCancelSpeech), [memoizedCancelSpeech]);
 
-    const speakHandler = useCallback((text, force) => speak(text, state.settings, voices, ttsAudioRef, force), [state.settings, voices]);
+    const speakHandler = useCallback((text: any, force: any) => speak(text, state.settings, voices, ttsAudioRef, force), [state.settings, voices]);
 
     const handleInstallMod = useCallback((modData: FullMod) => installMod(modData, state, dispatch), [state]);
     const handleToggleMod = useCallback((modId: string) => toggleMod(modId, state, dispatch), [state]);

@@ -87,9 +87,10 @@ const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ settings, handleSet
                 await db.importAllData(data);
                 alert("Nhập dữ liệu thành công! Trò chơi sẽ được tải lại.");
                 window.location.reload();
-            } catch (error: any) {
+            } catch (error) {
                 console.error("Failed to import data:", error);
-                alert(`Nhập dữ liệu thất bại: ${error.message}`);
+                const message = error instanceof Error ? error.message : String(error);
+                alert(`Nhập dữ liệu thất bại: ${message}`);
             } finally {
                 if(importInputRef.current) importInputRef.current.value = "";
             }

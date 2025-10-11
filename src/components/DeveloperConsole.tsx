@@ -147,8 +147,9 @@ const DeveloperConsole: React.FC = () => {
         try {
             await handleSaveHotmark();
             setHotmarkStatus('Đã lưu!');
-        } catch (e: any) {
-            setHotmarkStatus(`Lỗi: ${e.message}`);
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            setHotmarkStatus(`Lỗi: ${message}`);
         } finally {
             setTimeout(() => setHotmarkStatus(''), 2500);
         }
@@ -159,8 +160,9 @@ const DeveloperConsole: React.FC = () => {
          try {
             await handleLoadHotmark();
             setHotmarkStatus('Đã tải!');
-        } catch (e: any) {
-            setHotmarkStatus(`Lỗi: ${e.message}`);
+        } catch (e) {
+            const message = e instanceof Error ? e.message : String(e);
+            setHotmarkStatus(`Lỗi: ${message}`);
         } finally {
             setTimeout(() => setHotmarkStatus(''), 2500);
         }

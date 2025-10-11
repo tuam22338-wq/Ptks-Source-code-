@@ -90,10 +90,11 @@ const SoundSettings: React.FC<SoundSettingsProps> = ({ settings, handleSettingCh
             }
             const data = await response.json();
             setElevenLabsVoices(data.voices || []);
-        } catch (error: any) {
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             console.error(error);
             setElevenLabsVoices([]);
-            setElevenLabsError(error.message);
+            setElevenLabsError(message);
         } finally {
             setIsLoadingVoices(false);
         }

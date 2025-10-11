@@ -15,7 +15,7 @@ import type {
 } from './core';
 import type { CharacterIdentity } from './character';
 // FIX: Correct imports to resolve circular dependencies and missing types.
-import type { NPC } from './gameplay';
+
 
 export interface ModTagDefinition {
     id: string; // e.g., 'cyberpunk_tu_chan'

@@ -57,8 +57,7 @@ export class MyDatabase extends Dexie {
 
   constructor() {
     super('TamThienTheGioiDB');
-    // FIX: Upgraded database version to 7 to reflect schema generalization.
-    // FIX: Cast 'this' to Dexie to access the 'version' method, resolving a TypeScript error where the method was not found on the subclass type. This follows the existing pattern in this file for handling Dexie's type quirks.
+    // FIX: Cast `this` to Dexie to resolve type errors with Dexie methods.
     (this as Dexie).version(9).stores({
       saveSlots: 'id',
       settings: 'key',
@@ -75,7 +74,7 @@ export class MyDatabase extends Dexie {
       heuristicFixLogs: '++id, timestamp', // Schema cho bảng logs
       hotmarks: 'id', // Schema cho bảng hotmarks
     });
-    // This will upgrade from version 6 to 7.
+    // FIX: Cast `this` to Dexie to resolve type errors with Dexie methods.
     (this as Dexie).on('populate', () => {
         // This is where you'd put initial data if needed.
     });
@@ -83,11 +82,13 @@ export class MyDatabase extends Dexie {
 
   // New methods to encapsulate casting for meta-operations
   public getTables(): Table[] {
+    // FIX: Cast `this` to `any` to access the meta-property `tables`.
     // This is a safe cast as `tables` is a meta-property on Dexie instances.
-    return (this as Dexie).tables;
+    return (this as any).tables;
   }
 
   public async deleteDatabase(): Promise<void> {
+    // FIX: Cast `this` to `Dexie` to call the root delete method.
     // This is a safe cast to call the root delete method.
     return (this as Dexie).delete();
   }
@@ -217,7 +218,7 @@ export const saveModToLibrary = async (mod: ModInLibrary): Promise<void> => {
 }
 
 export const saveModLibrary = async (library: ModInLibrary[]): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
+    // FIX: Cast `db` to `Dexie` to use the transaction method.
     await (db as Dexie).transaction('rw', db.modLibrary, async () => {
         await db.modLibrary.clear();
         await db.modLibrary.bulkPut(library);
@@ -278,7 +279,7 @@ export const setLastDismissedUpdate = async (version: string): Promise<void> => 
 export const exportAllData = async (): Promise<Record<string, any>> => {
   const data: Record<string, any> = {};
   const allTables = db.getTables();
-  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
+  // FIX: Cast `db` to `Dexie` to use the transaction method.
   await (db as Dexie).transaction('r', allTables, async () => {
     for (const table of allTables) {
       data[table.name] = await table.toArray();
@@ -310,7 +311,7 @@ export const importAllData = async (data: Record<string, any>): Promise<void> =>
   }
 
   const allTables = db.getTables();
-  // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
+  // FIX: Cast `db` to `Dexie` to use the transaction method.
   await (db as Dexie).transaction('rw', allTables, async () => {
     // Clear all tables first for a clean import
     await Promise.all(allTables.map(table => table.clear()));
@@ -345,7 +346,7 @@ export const saveMemoryFragment = async (fragment: MemoryFragment): Promise<numb
 };
 
 export const deleteMemoryForSlot = async (slotId: number): Promise<void> => {
-    // FIX: Cast 'db' to Dexie to access inherited methods like 'transaction'.
+    // FIX: Cast `db` to `Dexie` to use the transaction method.
     await (db as Dexie).transaction('rw', db.memoryFragments, db.graphEdges, async () => {
         await db.memoryFragments.where('slotId').equals(slotId).delete();
         await db.graphEdges.where('slotId').equals(slotId).delete();
@@ -384,8 +385,7 @@ export const getRelevantMemories = async (
   // Deduplicate and sort
   const uniqueFragments = Array.from(new Map(allFragments.map(f => [f.id, f])).values());
   
-  // FIX: Explicitly type sort function parameters to resolve 'unknown' type error.
-  uniqueFragments.sort((a: MemoryFragment, b: MemoryFragment) => {
+  uniqueFragments.sort((a, b) => {
       if (a.gameDate.year !== b.gameDate.year) return b.gameDate.year - a.gameDate.year;
       const seasonOrder = ['Xuân', 'Hạ', 'Thu', 'Đông'];
       if (a.gameDate.season !== b.gameDate.season) return seasonOrder.indexOf(b.gameDate.season) - seasonOrder.indexOf(a.gameDate.season);

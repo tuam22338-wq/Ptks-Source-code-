@@ -316,9 +316,10 @@ const NovelistScreen: React.FC = () => {
             const finalNovelState = { ...updatedNovel, content: updatedNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: fullResponse} : e) };
             await db.novels.put({ ...finalNovelState, lastModified: new Date().toISOString() });
 
-        } catch (error: any) {
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             console.error("Lỗi khi tạo chương mới:", error);
-            const errorContent = `[Lỗi hệ thống: ${error.message}]`;
+            const errorContent = `[Lỗi hệ thống: ${message}]`;
             const finalNovelState = { ...updatedNovel, content: updatedNovel.content.map(e => e.id === aiPlaceholder.id ? {...e, content: errorContent} : e) };
             await db.novels.put({ ...finalNovelState, lastModified: new Date().toISOString() });
         } finally {

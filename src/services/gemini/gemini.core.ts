@@ -103,8 +103,8 @@ const executeApiCallWithPool = async <T>(apiFunction: (instance: GoogleGenAI) =>
                 try {
                     const result = await apiFunction(currentInstance);
                     return result;
-                } catch (error: any) {
-                    if (error.toString().includes('503') && retry503 < MAX_503_RETRIES - 1) {
+                } catch (error) {
+                    if (String(error).includes('503') && retry503 < MAX_503_RETRIES - 1) {
                         const jitterDelay = delay + Math.random() * 500;
                         console.log(`Service unavailable (503) on key index ${currentIndex}. Retrying in ${Math.round(jitterDelay)}ms... (Attempt ${retry503 + 1}/${MAX_503_RETRIES})`);
                         await new Promise(res => setTimeout(res, jitterDelay));
@@ -114,10 +114,11 @@ const executeApiCallWithPool = async <T>(apiFunction: (instance: GoogleGenAI) =>
                     throw error;
                 }
             }
-        } catch (error: any) {
-             console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'FAIL', keyIndex: currentIndex, reason: error.message });
-             console.warn(`API call failed with key index ${currentIndex}. Error:`, error.message);
-            if (error.toString().includes('429') || error.message?.includes('quota') || error.toString().includes('503')) {
+        } catch (error) {
+             const message = error instanceof Error ? error.message : String(error);
+             console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'FAIL', keyIndex: currentIndex, reason: message });
+             console.warn(`API call failed with key index ${currentIndex}. Error:`, message);
+            if (String(error).includes('429') || message.includes('quota') || String(error).includes('503')) {
                  console.log({ type: 'AI_MONITOR', event: 'KEY_ROTATION', fromIndex: currentIndex, toIndex: (currentIndex + 1) % apiKeyManager.totalKeys, reason: 'Failure/Quota/503' });
                 continue;
             } else {
@@ -135,8 +136,8 @@ const executeApiCallWithSingleKey = async <T>(apiFunction: (instance: GoogleGenA
     for (let retry503 = 0; retry503 < MAX_503_RETRIES; retry503++) {
         try {
             return await apiFunction(instance);
-        } catch (error: any) {
-            if (error.toString().includes('503') && retry503 < MAX_503_RETRIES - 1) {
+        } catch (error) {
+            if (String(error).includes('503') && retry503 < MAX_503_RETRIES - 1) {
                 const jitterDelay = delay + Math.random() * 500;
                 console.log(`Service unavailable (503) on specific key. Retrying in ${Math.round(jitterDelay)}ms... (Attempt ${retry503 + 1}/${MAX_503_RETRIES})`);
                 await new Promise(res => setTimeout(res, jitterDelay));
@@ -177,8 +178,9 @@ const executeWithModelRotation = async <T>(
             }
             console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'SUCCESS', model: currentModel });
             return result;
-        } catch (error: any) {
-            const isAllKeysFailedError = error.message.includes("Tất cả các API key đều đã hết hạn ngạch") || error.toString().includes('503');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            const isAllKeysFailedError = message.includes("Tất cả các API key đều đã hết hạn ngạch") || String(error).includes('503');
             const fallbackModel = apiKeyManager.isModelRotationEnabled() ? modelFallbackMap[currentModel] : undefined;
 
             if (isAllKeysFailedError && fallbackModel) {
@@ -191,7 +193,7 @@ const executeWithModelRotation = async <T>(
                     delete currentRequest.config.thinkingConfig;
                 }
             } else {
-                console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'FAIL', model: currentModel, reason: error.message });
+                console.log({ type: 'AI_MONITOR', event: 'API_CALL', status: 'FAIL', model: currentModel, reason: message });
                 throw error;
             }
         }

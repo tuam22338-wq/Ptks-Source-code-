@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* --- GLOBAL STYLES & THEME "THIÊN MỆNH NGỌC TỶ" --- */
 :root {
   /* Default Theme: Thiên Mệnh Ngọc Tỷ */
@@ -411,7 +415,7 @@ input[type="range"]::-moz-range-thumb {
 /* --- Genre Theming --- */
 body.genre-khoa-huyen-vien-tuong,
 body.genre-cyber-tu-chan,
-body.genre-steampunk-ma-thuat {
+body.genre-steampunk-ma-thu-thuat {
   --font-family-body: 'Orbitron', sans-serif;
   --font-family-title: 'Orbitron', sans-serif;
 }
